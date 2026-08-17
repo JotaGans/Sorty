@@ -3,178 +3,190 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>IMARPE - Gestión de Proyectos Web</title>
+  <title>IMARPE Gantt v8.6 - Sistema de Gestión</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f5f6fa; }
+    .gantt-rail { background-color: #f1f2f6; border-radius: 4px; height: 14px; position: relative; width: 100%; min-width: 220px; overflow: hidden; }
+    .gantt-bar { height: 14px; border-radius: 4px; position: absolute; top: 0; }
+    .gantt-progress { height: 14px; border-radius: 4px; position: absolute; top: 0; left: 0; background-color: #d35400; }
+    .tree-row-l1 { background-color: #e8f4f8 !important; font-weight: bold; color: #2c3e50; }
+    .tree-row-l4 { font-style: italic; color: #576574; }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
+<body class="text-[#2c3e50] min-h-screen flex flex-col">
 
-  <!-- BARRA DE NAVEGACIÓN -->
-  <header class="bg-[#0f2a4a] text-white shadow-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center space-x-3">
-        <span class="font-bold text-2xl tracking-wider text-teal-400">IMARPE</span>
-        <span class="text-xs md:text-sm bg-blue-900 border border-blue-700 px-2 py-0.5 rounded text-gray-200">Gantt & CPM Cloud</span>
+  <!-- VISTA DE INICIO DE SESIÓN -->
+  <div id="view-login" class="fixed inset-0 bg-[#0f2a4a] flex items-center justify-center p-4 z-50">
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-200">
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-[#0f2a4a]">SISTEMA IMARPE</h2>
+        <p class="text-xs text-gray-500 font-semibold mt-1">Control de Gestión, Programas y Gantt</p>
       </div>
-      
-      <div id="user-pill" class="hidden flex items-center space-x-3">
-        <span id="user-name" class="text-sm font-semibold text-gray-200"></span>
-        <span id="user-role" class="text-xs bg-teal-600 px-2 py-0.5 rounded font-bold uppercase"></span>
-        <button onclick="cerrarSesion()" class="text-xs bg-red-600 hover:bg-red-700 px-2.5 py-1 rounded transition font-semibold">Salir</button>
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase text-gray-600">Usuario</label>
+          <input type="text" id="login-username" required class="w-full mt-1 p-2.5 border border-gray-300 rounded focus:border-[#0f2a4a] outline-none font-semibold" placeholder="admin / coordinador / operario">
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase text-gray-600">Contraseña</label>
+          <input type="password" id="login-password" required class="w-full mt-1 p-2.5 border border-gray-300 rounded focus:border-[#0f2a4a] outline-none" placeholder="••••••••">
+        </div>
+        <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold py-3 rounded transition shadow">Ingresar al Sistema</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- CINTA SUPERIOR AZUL CORPORATIVA IMARPE (PyQt6 Style) -->
+  <header class="bg-[#0f2a4a] text-white shadow-md">
+    <div class="max-w-[1550px] mx-auto px-4 md:px-8 h-[80px] flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-12 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
+      </div>
+      <div class="flex-1 max-w-2xl px-4 text-right">
+        <input type="text" id="txt-nombre-proyecto" class="w-full bg-transparent text-white font-bold text-lg md:text-2xl text-right border-b border-transparent focus:border-teal-400 outline-none px-2 py-1 transition" value="SISTEMA DE GESTION ANTISOBORNO (SGAS)">
+      </div>
+      <div id="user-info" class="flex items-center space-x-3 border-l border-blue-800 pl-4">
+        <div class="text-right hidden sm:block">
+          <p id="user-display" class="text-xs font-bold text-gray-200">Usuario</p>
+          <p id="role-display" class="text-[10px] text-teal-300 uppercase font-semibold">Rol</p>
+        </div>
+        <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-2.5 py-1.5 rounded font-bold transition">Salir</button>
       </div>
     </div>
   </header>
 
-  <!-- PANTALLA LOGIN -->
-  <main id="view-login" class="flex-1 flex items-center justify-center p-4">
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-200">
-      <h2 class="text-2xl font-bold text-[#0f2a4a] text-center mb-6">Iniciar Sesión</h2>
-      <form id="login-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-semibold text-gray-700">Usuario</label>
-          <input type="text" id="login-username" required class="w-full mt-1 p-2.5 border rounded-lg focus:ring-2 focus:ring-[#0f2a4a] outline-none" placeholder="admin">
-        </div>
-        <div>
-          <label class="block text-sm font-semibold text-gray-700">Contraseña</label>
-          <input type="password" id="login-password" required class="w-full mt-1 p-2.5 border rounded-lg focus:ring-2 focus:ring-[#0f2a4a] outline-none" placeholder="admin123">
-        </div>
-        <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold py-3 rounded-lg transition duration-200 shadow">Ingresar</button>
-      </form>
-    </div>
-  </main>
-
-  <!-- PANEL PRINCIPAL -->
-  <main id="view-dashboard" class="hidden flex-1 max-w-7xl w-full mx-auto p-3 md:p-6 space-y-4">
+  <!-- CONTENEDOR PRINCIPAL -->
+  <main id="view-dashboard" class="flex-1 max-w-[1550px] w-full mx-auto p-4 md:p-6 space-y-4">
     
-    <!-- TARJETAS DE INDICADORES (KPIs) -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-      <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-teal-500">
-        <span class="text-xs font-bold text-gray-500 uppercase">Avance Global</span>
-        <p id="kpi-avance" class="text-2xl font-bold text-[#0f2a4a]">0%</p>
+    <!-- TARJETAS DE INDICADORES (KPIs PyQt6) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-[#1abc9c] text-white p-4 rounded-lg shadow">
+        <span class="text-xs font-bold uppercase tracking-wider">AVANCE GLOBAL</span>
+        <p id="kpi-avance" class="text-3xl font-bold mt-1">0%</p>
       </div>
-      <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
-        <span class="text-xs font-bold text-gray-500 uppercase">Ejecutados</span>
-        <p id="kpi-ejecutado" class="text-2xl font-bold text-green-600">0</p>
+      <div class="bg-[#2ecc71] text-white p-4 rounded-lg shadow">
+        <span class="text-xs font-bold uppercase tracking-wider">EJECUTADO</span>
+        <p id="kpi-ejecutado" class="text-3xl font-bold mt-1">0 Items</p>
       </div>
-      <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-yellow-500">
-        <span class="text-xs font-bold text-gray-500 uppercase">En Proceso</span>
-        <p id="kpi-proceso" class="text-2xl font-bold text-yellow-600">0</p>
+      <div class="bg-[#f1c40f] text-[#2c3e50] p-4 rounded-lg shadow">
+        <span class="text-xs font-bold uppercase tracking-wider">EN PROCESO</span>
+        <p id="kpi-proceso" class="text-3xl font-bold mt-1">0 Items</p>
       </div>
-      <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-red-500">
-        <span class="text-xs font-bold text-gray-500 uppercase">Pendientes</span>
-        <p id="kpi-pendiente" class="text-2xl font-bold text-red-600">0</p>
+      <div class="bg-[#e74c3c] text-white p-4 rounded-lg shadow">
+        <span class="text-xs font-bold uppercase tracking-wider">PENDIENTE</span>
+        <p id="kpi-pendiente" class="text-3xl font-bold mt-1">0 Items</p>
       </div>
     </div>
 
-    <!-- BOTONERA DE ACCIÓN -->
-    <div class="flex flex-wrap gap-2 justify-between items-center bg-white p-3 rounded-lg shadow-sm">
-      <div class="flex flex-wrap gap-2">
-        <button onclick="abrirModalNuevaActividad()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow">
-          + Agregar Actividad
+    <!-- BOTONERA SUPERIOR DE CONTROL (Estilo v8.6) -->
+    <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="abrirModalNuevaActividad(1)" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-4 py-2 rounded transition shadow">
+          + Agregar Actividad (Nivel 1)
         </button>
-        <button onclick="verRutaCritica()" class="bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow">
-          🔥 Calcular Ruta Crítica (CPM)
+        
+        <!-- SELECTOR DE JERARQUÍA "VER HASTA..." -->
+        <div class="relative inline-block">
+          <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="bg-[#2c3e50] hover:bg-[#34495e] text-white text-xs md:text-sm font-bold px-3 py-2 rounded outline-none cursor-pointer">
+            <option value="4">👁️ Ver hasta: Nivel 4 (Todo)</option>
+            <option value="1">Nivel 1: Solo Actividades</option>
+            <option value="2">Nivel 2: Hasta Tareas</option>
+            <option value="3">Nivel 3: Hasta Subtareas</option>
+          </select>
+        </div>
+
+        <button onclick="verRutaCritica()" class="bg-[#c0392b] hover:bg-[#a93226] text-white text-xs md:text-sm font-bold px-4 py-2 rounded transition shadow flex items-center space-x-1">
+          <span>🔥 Ruta Crítica (CPM)</span>
         </button>
       </div>
-      <button onclick="cargarActividades()" class="text-gray-600 hover:text-gray-900 text-sm font-semibold p-2">🔄 Actualizar</button>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="abrirHistorial()" class="bg-[#718093] hover:bg-[#576574] text-white text-xs md:text-sm font-bold px-3 py-2 rounded transition">
+          📜 Ver Historial
+        </button>
+        <button onclick="abrirResponsables()" class="bg-[#2980b9] hover:bg-[#1f618d] text-white text-xs md:text-sm font-bold px-3 py-2 rounded transition">
+          ⚙️ Responsables
+        </button>
+      </div>
     </div>
 
-    <!-- TABLA RESPONSIVA -->
-    <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+    <!-- TABLA ÁRBOL WBS + GANTT ESCALONADO ORIGINAL -->
+    <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-          <thead class="bg-[#0f2a4a] text-white">
+        <table class="w-full text-left text-xs md:text-sm border-collapse" id="tabla-gantt-main">
+          <thead class="bg-[#0f2a4a] text-white select-none">
             <tr>
-              <th class="p-3">Código</th>
-              <th class="p-3">Descripción</th>
-              <th class="p-3 hidden md:table-cell">Responsable</th>
-              <th class="p-3">Estado</th>
-              <th class="p-3 text-center">Avance</th>
-              <th class="p-3 hidden sm:table-cell text-center">Días</th>
-              <th class="p-3 hidden md:table-cell">Predecesores</th>
-              <th class="p-3 text-center">Acciones</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 w-28">Código</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 min-w-[220px]">Descripción de Actividad</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 hidden md:table-cell w-48">Responsable asignado</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 w-28">Estado</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 hidden sm:table-cell w-24">Inicio</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 hidden sm:table-cell w-24">Fin</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 text-center w-16">Días</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 text-center w-20">% Avance</th>
+              <th class="p-2.5 font-bold min-w-[320px]">Línea de Tiempo (Gantt)</th>
+              <th class="p-2.5 font-bold text-center w-16">Acción</th>
             </tr>
           </thead>
           <tbody id="lista-actividades" class="divide-y divide-gray-200">
-            <!-- Renderizado dinámico -->
+            <!-- Cargado dinámicamente -->
           </tbody>
         </table>
       </div>
     </div>
   </main>
 
-  <!-- MODAL RUTA CRÍTICA (FLOTANTE ENCIMA DE LA INTERFAZ) -->
+  <!-- MODAL RUTA CRÍTICA (CPM FLOTANTE) -->
   <div id="modal-cpm" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col">
-      <div class="bg-red-600 text-white p-4 flex justify-between items-center">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col">
+      <div class="bg-[#c0392b] text-white p-4 flex justify-between items-center">
         <div class="flex items-center space-x-2">
           <span class="text-xl">📍</span>
-          <h3 class="font-bold text-lg">Cálculo de Ruta Crítica (CPM)</h3>
+          <h3 class="font-bold text-lg">Cálculo de Ruta Crítica (CPM) - Tiempo Real</h3>
         </div>
-        <button onclick="cerrarModalCPM()" class="text-white hover:text-gray-200 text-2xl font-bold">&times;</button>
+        <button onclick="cerrarModalCPM()" class="text-white text-2xl font-bold">&times;</button>
       </div>
       
       <div class="p-5 overflow-y-auto space-y-4">
         <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded">
-          <p class="text-sm font-semibold text-red-900">Duración Estimada del Proyecto: <span id="cpm-duracion" class="text-lg font-bold"></span> días</p>
-          <p class="text-xs text-red-700">Las actividades críticas (holgura = 0) no admiten holgura sin retrasar el fin del proyecto.</p>
+          <p class="text-sm font-semibold text-red-900">Duración Estimada del Proyecto: <span id="cpm-duracion" class="text-xl font-bold">0</span> días</p>
+          <p class="text-xs text-red-700">Las actividades marcadas con holgura 0 pertenecen a la Ruta Crítica; cualquier retraso postergará el proyecto completo.</p>
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left">
-            <thead class="bg-gray-100 font-bold border-b">
-              <tr>
-                <th class="p-2">Código</th>
-                <th class="p-2">Actividad</th>
-                <th class="p-2 text-center">Días</th>
-                <th class="p-2 text-center">ES - EF</th>
-                <th class="p-2 text-center">LS - LF</th>
-                <th class="p-2 text-center">Holgura</th>
-                <th class="p-2 text-center">Condición</th>
-              </tr>
-            </thead>
-            <tbody id="cpm-tabla-body" class="divide-y divide-gray-100">
-              <!-- Datos CPM -->
-            </tbody>
-          </table>
-        </div>
+        <table class="w-full text-xs text-left">
+          <thead class="bg-gray-100 font-bold border-b">
+            <tr>
+              <th class="p-2">Código</th>
+              <th class="p-2">Actividad</th>
+              <th class="p-2 text-center">Duración</th>
+              <th class="p-2 text-center">ES - EF</th>
+              <th class="p-2 text-center">LS - LF</th>
+              <th class="p-2 text-center">Holgura</th>
+              <th class="p-2 text-center">Condición</th>
+            </tr>
+          </thead>
+          <tbody id="cpm-tabla-body" class="divide-y divide-gray-100"></tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- MODAL CREAR / EDITAR ACTIVIDAD -->
+  <!-- MODAL FORMULARIO DE ACTIVIDAD CON CALCULADORA BIDIRECCIONAL -->
   <div id="modal-actividad" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
         <h3 id="modal-titulo" class="font-bold">Nueva Actividad</h3>
         <button onclick="cerrarModalActividad()" class="text-white text-2xl">&times;</button>
       </div>
-      <form id="form-actividad" class="p-4 space-y-3">
+      <form id="form-actividad" class="p-5 space-y-3">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-xs font-bold text-gray-600">Código WBS</label>
-            <input type="text" id="act-codigo" placeholder="Ej: 1.1" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+            <label class="text-xs font-bold text-gray-700">Código WBS</label>
+            <input type="text" id="act-codigo" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a] font-bold">
           </div>
           <div>
-            <label class="text-xs font-bold text-gray-600">Duración (Días)</label>
-            <input type="number" id="act-dias" min="1" value="5" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
-          </div>
-        </div>
-
-        <div>
-          <label class="text-xs font-bold text-gray-600">Descripción</label>
-          <input type="text" id="act-desc" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs font-bold text-gray-600">Responsable</label>
-            <input type="text" id="act-resp" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-gray-600">Estado</label>
+            <label class="text-xs font-bold text-gray-700">Estado</label>
             <select id="act-estado" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
               <option value="Pendiente">Pendiente</option>
               <option value="En proceso">En proceso</option>
@@ -183,25 +195,98 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-bold text-gray-700">Descripción de Actividad</label>
+          <input type="text" id="act-desc" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-gray-700">Responsable Asignado</label>
+          <select id="act-resp" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]"></select>
+        </div>
+
+        <!-- CALCULADORA BIDIRECCIONAL EN TIEMPO REAL -->
+        <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded border">
           <div>
-            <label class="text-xs font-bold text-gray-600">% Avance</label>
-            <input type="number" id="act-avance" min="0" max="100" value="0" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+            <label class="text-xs font-bold text-gray-700">Fecha de Inicio</label>
+            <input type="date" id="act-fecha-inicio" required class="w-full border p-1.5 rounded text-xs outline-none">
           </div>
           <div>
-            <label class="text-xs font-bold text-gray-600">Predecesores (separados por coma)</label>
-            <input type="text" id="act-predecesores" placeholder="Ej: 1.1, 1.2" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+            <label class="text-xs font-bold text-gray-700">Fecha de Fin (Auto)</label>
+            <input type="date" id="act-fecha-fin" required class="w-full border p-1.5 rounded text-xs outline-none">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs font-bold text-gray-700">Duración estimada (Días manual)</label>
+            <input type="number" id="act-dias" min="1" value="5" required class="w-full border p-1.5 rounded text-xs outline-none font-bold text-[#0f2a4a]">
           </div>
         </div>
 
-        <button type="submit" class="w-full bg-[#0f2a4a] text-white font-bold py-2.5 rounded-lg hover:bg-[#1b4f8a] transition">Guardar Actividad</button>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-700">% Avance (0 a 100)</label>
+            <input type="number" id="act-avance" min="0" max="100" value="0" class="w-full border p-2 rounded text-sm outline-none">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-700">Predecesores (CPM)</label>
+            <input type="text" id="act-predecesores" placeholder="Ej: 1.1, 1.2" class="w-full border p-2 rounded text-sm outline-none">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-[#0f2a4a] text-white font-bold py-2.5 rounded hover:bg-[#1b4f8a] transition mt-2">Guardar Registro</button>
       </form>
     </div>
   </div>
 
+  <!-- MODAL HISTORIAL DE CAMBIOS -->
+  <div id="modal-historial" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden max-h-[85vh] flex flex-col">
+      <div class="bg-[#718093] text-white p-4 flex justify-between items-center">
+        <h3 class="font-bold text-base">📜 Historial de Cambios e Incidencias - Auditoría</h3>
+        <button onclick="cerrarHistorial()" class="text-white text-2xl font-bold">&times;</button>
+      </div>
+      <div class="p-4 overflow-y-auto">
+        <table class="w-full text-xs text-left">
+          <thead class="bg-gray-100 font-bold border-b">
+            <tr>
+              <th class="p-2">Fecha y Hora</th>
+              <th class="p-2">Usuario</th>
+              <th class="p-2">Tipo de Acción</th>
+              <th class="p-2">Detalle de Modificación</th>
+            </tr>
+          </thead>
+          <tbody id="historial-tabla-body" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL RESPONSABLES -->
+  <div id="modal-responsables" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[85vh] flex flex-col">
+      <div class="bg-[#2980b9] text-white p-4 flex justify-between items-center">
+        <h3 class="font-bold text-base">⚙️ Administrador de Responsables - IMARPE</h3>
+        <button onclick="cerrarResponsables()" class="text-white text-2xl font-bold">&times;</button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3">
+        <table class="w-full text-xs text-left">
+          <thead class="bg-gray-100 font-bold border-b">
+            <tr>
+              <th class="p-2">Apellidos y Nombres</th>
+              <th class="p-2">Cargo / Rol</th>
+              <th class="p-2">Correo Electrónico</th>
+            </tr>
+          </thead>
+          <tbody id="responsables-tabla-body" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Las peticiones usan rutas relativas: funcionan en local y en Railway sin cambios
     let token = localStorage.getItem("token");
+    let actividadesGlobal = [];
+    let responsablesGlobal = [];
+    let nivelFiltroActivo = 4;
 
     document.addEventListener("DOMContentLoaded", () => {
       if (token) {
@@ -209,6 +294,7 @@
       } else {
         mostrarLogin();
       }
+      configurarCalculadoraBidireccional();
     });
 
     // --- AUTENTICACIÓN ---
@@ -223,7 +309,7 @@
 
       try {
         const res = await fetch(`/token`, { method: "POST", body: formData });
-        if (!res.ok) throw new Error("Credenciales incorrectas");
+        if (!res.ok) throw new Error("Credenciales inválidas");
         const data = await res.json();
         
         token = data.access_token;
@@ -237,86 +323,206 @@
 
     function mostrarLogin() {
       document.getElementById("view-login").classList.remove("hidden");
-      document.getElementById("view-dashboard").classList.add("hidden");
-      document.getElementById("user-pill").classList.add("hidden");
     }
 
     function mostrarDashboard() {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
-      document.getElementById("user-name").innerText = user.nombre_completo || user.username;
-      document.getElementById("user-role").innerText = user.rol;
-      
+      document.getElementById("user-display").innerText = user.nombre_completo || user.username;
+      document.getElementById("role-display").innerText = user.rol;
       document.getElementById("view-login").classList.add("hidden");
-      document.getElementById("view-dashboard").classList.remove("hidden");
-      document.getElementById("user-pill").classList.remove("hidden");
-      cargarActividades();
+      cargarDatosIniciales();
     }
 
     function cerrarSesion() {
       localStorage.clear();
       token = null;
-      mostrarLogin();
+      location.reload();
     }
 
-    // --- CARGAR Y RENDERIZAR ACTIVIDADES ---
-    async function cargarActividades() {
+    // --- CARGA DE DATOS ---
+    async function cargarDatosIniciales() {
+      await cargarProyectoNombre();
+      await cargarResponsables();
+      await cargarActividades();
+    }
+
+    async function cargarProyectoNombre() {
       try {
-        const res = await fetch(`/actividades`);
-        const actividades = await res.json();
-        renderizarTabla(actividades);
-        actualizarKPIs(actividades);
-      } catch (err) {
-        console.error("Error al cargar:", err);
-      }
+        const res = await fetch(`/configuracion/nombre_proyecto`);
+        if (res.ok) {
+          const d = await res.json();
+          if (d.valor) document.getElementById("txt-nombre-proyecto").value = d.valor;
+        }
+      } catch(e){}
     }
 
-    function renderizarTabla(lista) {
+    document.getElementById("txt-nombre-proyecto").addEventListener("change", async (e) => {
+      await fetch(`/configuracion/nombre_proyecto`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ valor: e.target.value })
+      });
+    });
+
+    async function cargarResponsables() {
+      const res = await fetch(`/responsables`);
+      responsablesGlobal = await res.json();
+      const sel = document.getElementById("act-resp");
+      sel.innerHTML = '<option value="No asignado">No asignado</option>';
+      responsablesGlobal.forEach(r => {
+        sel.innerHTML += `<option value="${r.nombre}">${r.nombre} (${r.cargo || 'Personal'})</option>`;
+      });
+    }
+
+    async function cargarActividades() {
+      const res = await fetch(`/actividades`);
+      actividadesGlobal = await res.json();
+      renderizarTabla();
+      actualizarKPIs();
+    }
+
+    // --- RENDERIZADO DEL GANTT ESCALONADO ORIGINAL ---
+    function renderizarTabla() {
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
 
-      lista.forEach(act => {
-        const esPadre = !act.codigo.includes(".");
+      const anioActual = new Date().getFullYear();
+      const inicioAnio = new Date(anioActual, 0, 1).getTime();
+      const finAnio = new Date(anioActual, 11, 31).getTime();
+      const totalDiasAnio = (finAnio - inicioAnio) / (1000 * 60 * 60 * 24) + 1;
+
+      actividadesGlobal.forEach(act => {
+        const partes = act.codigo.replace(/\.$/, "").split(".");
+        const nivel = partes.length;
+
+        if (nivel > nivelFiltroActivo) return;
+
+        const esNivel1 = (nivel === 1);
         const tr = document.createElement("tr");
-        tr.className = esPadre ? "bg-blue-50/60 font-semibold" : "hover:bg-gray-50";
+        tr.className = esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50");
+
+        // Cálculo del Gantt Escalonado
+        let ganttHTML = '<div class="gantt-rail"></div>';
+        if (act.fecha_inicio && act.fecha_fin && act.fecha_inicio !== "Definir") {
+          try {
+            const [d1, m1, y1] = act.fecha_inicio.split("/").map(Number);
+            const [d2, m2, y2] = act.fecha_fin.split("/").map(Number);
+            const dtIni = new Date(y1, m1 - 1, d1).getTime();
+            const dtFin = new Date(y2, m2 - 1, d2).getTime();
+
+            const diasDesdeInicio = Math.max(0, (dtIni - inicioAnio) / (1000 * 60 * 60 * 24));
+            const duracion = Math.max(1, (dtFin - dtIni) / (1000 * 60 * 60 * 24) + 1);
+
+            const leftPct = Math.min(100, Math.max(0, (diasDesdeInicio / totalDiasAnio) * 100));
+            const widthPct = Math.min(100 - leftPct, Math.max(2, (duracion / totalDiasAnio) * 100));
+
+            let barColor = "#bdc5c8"; // Pendiente
+            if (act.estado === "Ejecutado") barColor = "#2ecc71";
+            else if (act.estado === "En proceso") barColor = "#f39c12";
+
+            let subAvanceHTML = "";
+            if (act.estado === "En proceso" && act.avance > 0) {
+              subAvanceHTML = `<div class="gantt-progress" style="width: ${act.avance}%;"></div>`;
+            }
+
+            ganttHTML = `
+              <div class="gantt-rail" title="Inicio: ${act.fecha_inicio} | Fin: ${act.fecha_fin} (${act.dias} días)">
+                <div class="gantt-bar" style="left: ${leftPct}%; width: ${widthPct}%; background-color: ${barColor};">
+                  ${subAvanceHTML}
+                </div>
+              </div>
+            `;
+          } catch(e) {}
+        }
+
+        const paddingLeft = (nivel - 1) * 16 + 8;
 
         tr.innerHTML = `
-          <td class="p-3 font-mono text-xs ${esPadre ? 'font-bold text-[#0f2a4a]' : 'pl-6 text-gray-600'}">${act.codigo}</td>
-          <td class="p-3">${act.descripcion}</td>
-          <td class="p-3 hidden md:table-cell text-gray-600">${act.responsable || '-'}</td>
-          <td class="p-3">
-            <span class="px-2 py-0.5 text-xs rounded-full font-bold ${
-              act.estado === 'Ejecutado' ? 'bg-green-100 text-green-700' :
-              act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-700'
+          <td class="p-2 font-mono font-bold text-xs border-r border-gray-100">${act.codigo}</td>
+          <td class="p-2 border-r border-gray-100" style="padding-left: ${paddingLeft}px;">${act.descripcion}</td>
+          <td class="p-2 border-r border-gray-100 hidden md:table-cell text-xs text-gray-600">${act.responsable || '-'}</td>
+          <td class="p-2 border-r border-gray-100">
+            <span class="px-2 py-0.5 rounded text-[11px] font-bold ${
+              act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' :
+              act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700'
             }">${act.estado}</span>
           </td>
-          <td class="p-3 text-center">
-            <div class="w-full bg-gray-200 rounded-full h-2.5 max-w-[80px] mx-auto overflow-hidden">
-              <div class="bg-[#0f2a4a] h-2.5 rounded-full" style="width: ${act.avance}%"></div>
-            </div>
-            <span class="text-xs text-gray-500 font-semibold">${act.avance}%</span>
-          </td>
-          <td class="p-3 hidden sm:table-cell text-center text-xs font-semibold">${act.dias}d</td>
-          <td class="p-3 hidden md:table-cell text-xs text-gray-500">${act.predecesores || '-'}</td>
-          <td class="p-3 text-center space-x-1">
-            <button onclick="eliminarActividad('${act.codigo}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-1">🗑️</button>
+          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs">${act.fecha_inicio || '-'}</td>
+          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs">${act.fecha_fin || '-'}</td>
+          <td class="p-2 border-r border-gray-100 text-center font-bold text-xs">${act.dias}</td>
+          <td class="p-2 border-r border-gray-100 text-center font-bold text-xs">${act.avance}%</td>
+          <td class="p-2 border-r border-gray-100">${ganttHTML}</td>
+          <td class="p-2 text-center">
+            <button onclick="eliminarActividad('${act.codigo}')" class="text-red-500 hover:text-red-700 font-bold px-1.5 py-0.5">🗑️</button>
           </td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    function actualizarKPIs(lista) {
-      const raices = lista.filter(a => !a.codigo.includes("."));
-      const global = raices.length > 0 ? Math.round(raices.reduce((acc, a) => acc + a.avance, 0) / raices.length) : 0;
-      document.getElementById("kpi-avance").innerText = `${global}%`;
-      document.getElementById("kpi-ejecutado").innerText = lista.filter(a => a.estado === 'Ejecutado').length;
-      document.getElementById("kpi-proceso").innerText = lista.filter(a => a.estado === 'En proceso').length;
-      document.getElementById("kpi-pendiente").innerText = lista.filter(a => a.estado === 'Pendiente').length;
+    function filtrarNivelJerarquico(val) {
+      nivelFiltroActivo = parseInt(val);
+      renderizarTabla();
     }
 
-    // --- FORMULARIO Y CRUD ---
-    function abrirModalNuevaActividad() {
+    function actualizarKPIs() {
+      const raices = actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
+      const globalPct = raices.length > 0 ? Math.round(raices.reduce((acc, a) => acc + a.avance, 0) / raices.length) : 0;
+      
+      document.getElementById("kpi-avance").innerText = `${globalPct}%`;
+      document.getElementById("kpi-ejecutado").innerText = `${actividadesGlobal.filter(a => a.estado === 'Ejecutado').length} Items`;
+      document.getElementById("kpi-proceso").innerText = `${actividadesGlobal.filter(a => a.estado === 'En proceso').length} Items`;
+      document.getElementById("kpi-pendiente").innerText = `${actividadesGlobal.filter(a => a.estado === 'Pendiente').length} Items`;
+    }
+
+    // --- CALCULADORA BIDIRECCIONAL EN TIEMPO REAL ---
+    function configurarCalculadoraBidireccional() {
+      let bloqueando = false;
+      const fIni = document.getElementById("act-fecha-inicio");
+      const fFin = document.getElementById("act-fecha-fin");
+      const txtDias = document.getElementById("act-dias");
+
+      function sumarDias(strF, dias) {
+        const d = new Date(strF + "T00:00:00");
+        d.setDate(d.getDate() + (dias - 1));
+        return d.toISOString().split("T")[0];
+      }
+
+      txtDias.addEventListener("input", () => {
+        if (bloqueando || !fIni.value || !txtDias.value) return;
+        bloqueando = true;
+        fFin.value = sumarDias(fIni.value, parseInt(txtDias.value));
+        bloqueando = false;
+      });
+
+      fFin.addEventListener("input", () => {
+        if (bloqueando || !fIni.value || !fFin.value) return;
+        const d1 = new Date(fIni.value + "T00:00:00");
+        const d2 = new Date(fFin.value + "T00:00:00");
+        const diff = Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+        if (diff > 0) {
+          bloqueando = true;
+          txtDias.value = diff;
+          bloqueando = false;
+        }
+      });
+
+      fIni.addEventListener("input", () => {
+        if (bloqueando || !fIni.value) return;
+        bloqueando = true;
+        const d = parseInt(txtDias.value) || 5;
+        fFin.value = sumarDias(fIni.value, d);
+        bloqueando = false;
+      });
+    }
+
+    // --- MODALES Y ACCIONES ---
+    function abrirModalNuevaActividad(nivel = 1) {
       document.getElementById("form-actividad").reset();
+      const anio = new Date().getFullYear();
+      document.getElementById("act-fecha-inicio").value = `${anio}-01-01`;
+      document.getElementById("act-fecha-fin").value = `${anio}-01-05`;
+      document.getElementById("act-dias").value = 5;
       document.getElementById("modal-actividad").classList.remove("hidden");
     }
 
@@ -326,16 +532,20 @@
 
     document.getElementById("form-actividad").addEventListener("submit", async (e) => {
       e.preventDefault();
+      
+      const [y1, m1, d1] = document.getElementById("act-fecha-inicio").value.split("-");
+      const [y2, m2, d2] = document.getElementById("act-fecha-fin").value.split("-");
+
       const payload = {
-        codigo: document.getElementById("act-codigo").value,
-        descripcion: document.getElementById("act-desc").value,
-        dias: parseInt(document.getElementById("act-dias").value),
+        codigo: document.getElementById("act-codigo").value.trim(),
+        descripcion: document.getElementById("act-desc").value.trim(),
         responsable: document.getElementById("act-resp").value,
         estado: document.getElementById("act-estado").value,
         avance: parseInt(document.getElementById("act-avance").value),
-        predecesores: document.getElementById("act-predecesores").value,
-        fecha_inicio: "01/01/2026",
-        fecha_fin: "05/01/2026"
+        fecha_inicio: `${d1}/${m1}/${y1}`,
+        fecha_fin: `${d2}/${m2}/${y2}`,
+        dias: parseInt(document.getElementById("act-dias").value),
+        predecesores: document.getElementById("act-predecesores").value.trim()
       };
 
       const res = await fetch(`/actividades`, {
@@ -349,61 +559,94 @@
         cargarActividades();
       } else {
         const err = await res.json();
-        alert(err.detail || "Error al guardar");
+        alert(err.detail || "Error al registrar");
       }
     });
 
-    async function eliminarActividad(codigo) {
-      if (!confirm(`¿Eliminar la actividad ${codigo} y todas sus dependencias?`)) return;
-      const res = await fetch(`/actividades/${codigo}`, {
+    async function eliminarActividad(cod) {
+      if (!confirm(`¿Eliminar la actividad ${cod} y todos sus desgloses jerárquicos?`)) return;
+      const res = await fetch(`/actividades/${cod}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
-      if (res.ok) {
-        cargarActividades();
-      } else {
-        const err = await res.json();
-        alert(err.detail || "Error al eliminar");
-      }
+      if (res.ok) cargarActividades();
+      else alert("No tiene permisos para eliminar.");
     }
 
-    // --- MODAL DE RUTA CRÍTICA (CPM) ---
+    // --- RUTA CRÍTICA (CPM) ---
     async function verRutaCritica() {
-      try {
-        const res = await fetch(`/ruta-critica`);
-        const cpm = await res.json();
-        
-        document.getElementById("cpm-duracion").innerText = cpm.duracion_proyecto_dias;
-        const tbody = document.getElementById("cpm-tabla-body");
-        tbody.innerHTML = "";
+      const res = await fetch(`/ruta-critica`);
+      const cpm = await res.json();
+      document.getElementById("cpm-duracion").innerText = cpm.duracion_proyecto_dias;
+      const tbody = document.getElementById("cpm-tabla-body");
+      tbody.innerHTML = "";
 
-        Object.values(cpm.detalles).forEach(nodo => {
-          const tr = document.createElement("tr");
-          tr.className = nodo.es_critica ? "bg-red-50 font-semibold text-red-900" : "";
-          tr.innerHTML = `
-            <td class="p-2 font-mono font-bold">${nodo.codigo}</td>
-            <td class="p-2">${nodo.descripcion}</td>
-            <td class="p-2 text-center">${nodo.duracion}d</td>
-            <td class="p-2 text-center">${nodo.ES} - ${nodo.EF}</td>
-            <td class="p-2 text-center">${nodo.LS} - ${nodo.LF}</td>
-            <td class="p-2 text-center font-bold">${nodo.holgura}</td>
-            <td class="p-2 text-center">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${nodo.es_critica ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">
-                ${nodo.es_critica ? 'CRÍTICA' : 'Normal'}
-              </span>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        document.getElementById("modal-cpm").classList.remove("hidden");
-      } catch (err) {
-        alert("Error al calcular la ruta crítica.");
-      }
+      Object.values(cpm.detalles).forEach(n => {
+        const tr = document.createElement("tr");
+        tr.className = n.es_critica ? "bg-red-50 font-bold text-red-900" : "";
+        tr.innerHTML = `
+          <td class="p-2 font-mono">${n.codigo}</td>
+          <td class="p-2">${n.descripcion}</td>
+          <td class="p-2 text-center">${n.duracion}d</td>
+          <td class="p-2 text-center">${n.ES} - ${n.EF}</td>
+          <td class="p-2 text-center">${n.LS} - ${n.LF}</td>
+          <td class="p-2 text-center">${n.holgura}</td>
+          <td class="p-2 text-center">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${n.es_critica ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">
+              ${n.es_critica ? 'CRÍTICA' : 'Normal'}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById("modal-cpm").classList.remove("hidden");
     }
 
     function cerrarModalCPM() {
       document.getElementById("modal-cpm").classList.add("hidden");
+    }
+
+    // --- HISTORIAL ---
+    async function abrirHistorial() {
+      const res = await fetch(`/historial`);
+      const data = await res.json();
+      const tbody = document.getElementById("historial-tabla-body");
+      tbody.innerHTML = "";
+      data.forEach(h => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="p-2 text-gray-500">${h.timestamp}</td>
+            <td class="p-2 font-bold">${h.usuario || 'Sistema'}</td>
+            <td class="p-2 font-semibold text-[#0f2a4a]">${h.accion}</td>
+            <td class="p-2">${h.detalle}</td>
+          </tr>
+        `;
+      });
+      document.getElementById("modal-historial").classList.remove("hidden");
+    }
+
+    function cerrarHistorial() {
+      document.getElementById("modal-historial").classList.add("hidden");
+    }
+
+    // --- RESPONSABLES ---
+    async function abrirResponsables() {
+      const tbody = document.getElementById("responsables-tabla-body");
+      tbody.innerHTML = "";
+      responsablesGlobal.forEach(r => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="p-2 font-bold">${r.nombre}</td>
+            <td class="p-2">${r.cargo || '-'}</td>
+            <td class="p-2 text-blue-600">${r.correo || '-'}</td>
+          </tr>
+        `;
+      });
+      document.getElementById("modal-responsables").classList.remove("hidden");
+    }
+
+    function cerrarResponsables() {
+      document.getElementById("modal-responsables").classList.add("hidden");
     }
   </script>
 </body>
