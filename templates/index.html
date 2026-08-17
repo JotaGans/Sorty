@@ -12,9 +12,11 @@
     .gantt-progress { height: 14px; border-radius: 4px; position: absolute; top: 0; left: 0; background-color: #d35400; }
     .tree-row-l1 { background-color: #e8f4f8 !important; font-weight: bold; color: #2c3e50; }
     .tree-row-l4 { font-style: italic; color: #576574; }
+    .cell-editable { cursor: pointer; transition: background 0.15s ease; }
+    .cell-editable:hover { background-color: #d6e4f0 !important; }
   </style>
 </head>
-<body class="text-[#2c3e50] min-h-screen flex flex-col">
+<body class="text-[#2c3e50] min-h-screen flex flex-col select-none">
 
   <!-- VISTA DE INICIO DE SESIÓN -->
   <div id="view-login" class="fixed inset-0 bg-[#0f2a4a] flex items-center justify-center p-4 z-50">
@@ -37,7 +39,7 @@
     </div>
   </div>
 
-  <!-- CINTA SUPERIOR AZUL CORPORATIVA IMARPE (PyQt6 Style) -->
+  <!-- CINTA SUPERIOR AZUL CORPORATIVA IMARPE -->
   <header class="bg-[#0f2a4a] text-white shadow-md">
     <div class="max-w-[1550px] mx-auto px-4 md:px-8 h-[80px] flex items-center justify-between">
       <div class="flex items-center space-x-4">
@@ -79,22 +81,19 @@
       </div>
     </div>
 
-    <!-- BOTONERA SUPERIOR DE CONTROL (Estilo v8.6) -->
+    <!-- BOTONERA DE CONTROL (Estilo v8.6) -->
     <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-3 rounded-lg shadow-sm border border-gray-200">
       <div class="flex flex-wrap items-center gap-2">
         <button onclick="abrirModalNuevaActividad(1)" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-4 py-2 rounded transition shadow">
           + Agregar Actividad (Nivel 1)
         </button>
         
-        <!-- SELECTOR DE JERARQUÍA "VER HASTA..." -->
-        <div class="relative inline-block">
-          <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="bg-[#2c3e50] hover:bg-[#34495e] text-white text-xs md:text-sm font-bold px-3 py-2 rounded outline-none cursor-pointer">
-            <option value="4">👁️ Ver hasta: Nivel 4 (Todo)</option>
-            <option value="1">Nivel 1: Solo Actividades</option>
-            <option value="2">Nivel 2: Hasta Tareas</option>
-            <option value="3">Nivel 3: Hasta Subtareas</option>
-          </select>
-        </div>
+        <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="bg-[#2c3e50] hover:bg-[#34495e] text-white text-xs md:text-sm font-bold px-3 py-2 rounded outline-none cursor-pointer">
+          <option value="4">👁️ Ver hasta: Nivel 4 (Todo)</option>
+          <option value="1">Nivel 1: Solo Actividades</option>
+          <option value="2">Nivel 2: Hasta Tareas</option>
+          <option value="3">Nivel 3: Hasta Subtareas</option>
+        </select>
 
         <button onclick="verRutaCritica()" class="bg-[#c0392b] hover:bg-[#a93226] text-white text-xs md:text-sm font-bold px-4 py-2 rounded transition shadow flex items-center space-x-1">
           <span>🔥 Ruta Crítica (CPM)</span>
@@ -111,25 +110,25 @@
       </div>
     </div>
 
-    <!-- TABLA ÁRBOL WBS + GANTT ESCALONADO ORIGINAL -->
+    <!-- TABLA ÁRBOL WBS + GANTT ESCALONADO CON DOBLE CLIC ACTIVO -->
     <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs md:text-sm border-collapse" id="tabla-gantt-main">
           <thead class="bg-[#0f2a4a] text-white select-none">
             <tr>
               <th class="p-2.5 font-bold border-r border-blue-900 w-28">Código</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 min-w-[220px]">Descripción de Actividad</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 hidden md:table-cell w-48">Responsable asignado</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 w-28">Estado</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 hidden sm:table-cell w-24">Inicio</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 hidden sm:table-cell w-24">Fin</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 text-center w-16">Días</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 text-center w-20">% Avance</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 min-w-[240px]">Descripción de Actividad ✎</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 hidden md:table-cell w-48">Responsable asignado ✎</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 w-28">Estado ✎</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 hidden sm:table-cell w-24">Inicio ✎</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 hidden sm:table-cell w-24">Fin ✎</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 text-center w-16">Días ✎</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 text-center w-20">% Avance ✎</th>
               <th class="p-2.5 font-bold min-w-[320px]">Línea de Tiempo (Gantt)</th>
-              <th class="p-2.5 font-bold text-center w-16">Acción</th>
+              <th class="p-2.5 font-bold text-center w-24">Acciones</th>
             </tr>
           </thead>
-          <tbody id="lista-actividades" class="divide-y divide-gray-200">
+          <tbody id="lista-actividades" class="divide-y divide-gray-200 select-none">
             <!-- Cargado dinámicamente -->
           </tbody>
         </table>
@@ -151,7 +150,7 @@
       <div class="p-5 overflow-y-auto space-y-4">
         <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded">
           <p class="text-sm font-semibold text-red-900">Duración Estimada del Proyecto: <span id="cpm-duracion" class="text-xl font-bold">0</span> días</p>
-          <p class="text-xs text-red-700">Las actividades marcadas con holgura 0 pertenecen a la Ruta Crítica; cualquier retraso postergará el proyecto completo.</p>
+          <p class="text-xs text-red-700">Las actividades con holgura 0 pertenecen a la Ruta Crítica; cualquier retraso postergará el proyecto.</p>
         </div>
 
         <table class="w-full text-xs text-left">
@@ -172,11 +171,11 @@
     </div>
   </div>
 
-  <!-- MODAL FORMULARIO DE ACTIVIDAD CON CALCULADORA BIDIRECCIONAL -->
+  <!-- MODAL FORMULARIO DE ACTIVIDAD (CREAR Y EDITAR) -->
   <div id="modal-actividad" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
-        <h3 id="modal-titulo" class="font-bold">Nueva Actividad</h3>
+        <h3 id="modal-titulo" class="font-bold">Registro de Actividad</h3>
         <button onclick="cerrarModalActividad()" class="text-white text-2xl">&times;</button>
       </div>
       <form id="form-actividad" class="p-5 space-y-3">
@@ -237,7 +236,7 @@
     </div>
   </div>
 
-  <!-- MODAL HISTORIAL DE CAMBIOS -->
+  <!-- MODAL HISTORIAL -->
   <div id="modal-historial" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden max-h-[85vh] flex flex-col">
       <div class="bg-[#718093] text-white p-4 flex justify-between items-center">
@@ -249,9 +248,8 @@
           <thead class="bg-gray-100 font-bold border-b">
             <tr>
               <th class="p-2">Fecha y Hora</th>
-              <th class="p-2">Usuario</th>
-              <th class="p-2">Tipo de Acción</th>
-              <th class="p-2">Detalle de Modificación</th>
+              <th class="p-2">Acción</th>
+              <th class="p-2">Detalle</th>
             </tr>
           </thead>
           <tbody id="historial-tabla-body" class="divide-y divide-gray-100"></tbody>
@@ -381,7 +379,16 @@
       actualizarKPIs();
     }
 
-    // --- RENDERIZADO DEL GANTT ESCALONADO ORIGINAL ---
+    // Utilidad: Verificar si un código tiene hijos (es actividad madre)
+    function tieneHijos(codigo) {
+      const codLimpio = codigo.replace(/\.$/, "");
+      return actividadesGlobal.some(a => {
+        const aCod = a.codigo.replace(/\.$/, "");
+        return aCod.startsWith(codLimpio + ".") && aCod !== codLimpio;
+      });
+    }
+
+    // --- RENDERIZADO DEL GANTT Y TABLA ÁRBOL ---
     function renderizarTabla() {
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
@@ -401,7 +408,7 @@
         const tr = document.createElement("tr");
         tr.className = esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50");
 
-        // Cálculo del Gantt Escalonado
+        // Gantt Escalonado con sub-avance naranja
         let ganttHTML = '<div class="gantt-rail"></div>';
         if (act.fecha_inicio && act.fecha_fin && act.fecha_inicio !== "Definir") {
           try {
@@ -416,7 +423,7 @@
             const leftPct = Math.min(100, Math.max(0, (diasDesdeInicio / totalDiasAnio) * 100));
             const widthPct = Math.min(100 - leftPct, Math.max(2, (duracion / totalDiasAnio) * 100));
 
-            let barColor = "#bdc5c8"; // Pendiente
+            let barColor = "#bdc5c8";
             if (act.estado === "Ejecutado") barColor = "#2ecc71";
             else if (act.estado === "En proceso") barColor = "#f39c12";
 
@@ -436,24 +443,38 @@
         }
 
         const paddingLeft = (nivel - 1) * 16 + 8;
+        const cod = act.codigo;
 
         tr.innerHTML = `
-          <td class="p-2 font-mono font-bold text-xs border-r border-gray-100">${act.codigo}</td>
-          <td class="p-2 border-r border-gray-100" style="padding-left: ${paddingLeft}px;">${act.descripcion}</td>
-          <td class="p-2 border-r border-gray-100 hidden md:table-cell text-xs text-gray-600">${act.responsable || '-'}</td>
-          <td class="p-2 border-r border-gray-100">
+          <td class="p-2 font-mono font-bold text-xs border-r border-gray-100">${cod}</td>
+          <td class="p-2 border-r border-gray-100 cell-editable" style="padding-left: ${paddingLeft}px;" ondblclick="editarDescripcion('${cod}')" title="Doble clic para editar descripción">
+            ${act.descripcion}
+          </td>
+          <td class="p-2 border-r border-gray-100 hidden md:table-cell text-xs cell-editable text-gray-600" ondblclick="editarResponsable('${cod}')" title="Doble clic para asignar responsable">
+            ${act.responsable || 'No asignado'}
+          </td>
+          <td class="p-2 border-r border-gray-100 cell-editable" ondblclick="editarEstado('${cod}')" title="Doble clic para modificar estado">
             <span class="px-2 py-0.5 rounded text-[11px] font-bold ${
               act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' :
               act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700'
             }">${act.estado}</span>
           </td>
-          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs">${act.fecha_inicio || '-'}</td>
-          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs">${act.fecha_fin || '-'}</td>
-          <td class="p-2 border-r border-gray-100 text-center font-bold text-xs">${act.dias}</td>
-          <td class="p-2 border-r border-gray-100 text-center font-bold text-xs">${act.avance}%</td>
+          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs cell-editable" ondblclick="editarFechaInicio('${cod}')" title="Doble clic para cambiar fecha de inicio">
+            ${act.fecha_inicio || '-'}
+          </td>
+          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs cell-editable" ondblclick="editarFechaFin('${cod}')" title="Doble clic para calcular fecha fin">
+            ${act.fecha_fin || '-'}
+          </td>
+          <td class="p-2 border-r border-gray-100 text-center font-bold text-xs cell-editable" ondblclick="editarDias('${cod}')" title="Doble clic para cambiar días">
+            ${act.dias}
+          </td>
+          <td class="p-2 border-r border-gray-100 text-center font-bold text-xs cell-editable" ondblclick="editarAvance('${cod}')" title="Doble clic para cambiar % avance">
+            ${act.avance}%
+          </td>
           <td class="p-2 border-r border-gray-100">${ganttHTML}</td>
-          <td class="p-2 text-center">
-            <button onclick="eliminarActividad('${act.codigo}')" class="text-red-500 hover:text-red-700 font-bold px-1.5 py-0.5">🗑️</button>
+          <td class="p-2 text-center space-x-1">
+            <button onclick="agregarSubtarea('${cod}')" class="text-blue-600 hover:text-blue-800 font-bold px-1" title="Agregar subtarea">+</button>
+            <button onclick="eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -473,6 +494,172 @@
       document.getElementById("kpi-ejecutado").innerText = `${actividadesGlobal.filter(a => a.estado === 'Ejecutado').length} Items`;
       document.getElementById("kpi-proceso").innerText = `${actividadesGlobal.filter(a => a.estado === 'En proceso').length} Items`;
       document.getElementById("kpi-pendiente").innerText = `${actividadesGlobal.filter(a => a.estado === 'Pendiente').length} Items`;
+    }
+
+    // =========================================================================
+    // LÓGICA DE EDICIÓN POR DOBLE CLIC (Fiel al código original de PyQt6)
+    // =========================================================================
+
+    // 1. EDITAR DESCRIPCIÓN
+    async function editarDescripcion(cod) {
+      const act = actividadesGlobal.find(a => a.codigo === cod);
+      const nueva = prompt("Modificar Descripción de la actividad:", act.descripcion);
+      if (nueva !== null && nueva.trim() !== "") {
+        act.descripcion = nueva.trim();
+        await guardarCambioDirecto(act);
+      }
+    }
+
+    // 2. EDITAR RESPONSABLE
+    async function editarResponsable(cod) {
+      const act = actividadesGlobal.find(a => a.codigo === cod);
+      const nombres = responsablesGlobal.map(r => r.nombre).join("\n- ");
+      const nuevo = prompt(`Asignar Responsable.\nEscriba el nombre exacto de la lista:\n- ${nombres}`, act.responsable);
+      if (nuevo !== null && nuevo.trim() !== "") {
+        act.responsable = nuevo.trim();
+        await guardarCambioDirecto(act);
+      }
+    }
+
+    // 3. EDITAR ESTADO (Con bloqueo si es Actividad Madre)
+    async function editarEstado(cod) {
+      if (tieneHijos(cod)) {
+        alert("🔒 Bloqueado: El Estado de esta actividad madre se calcula automáticamente del promedio de sus subtareas.");
+        return;
+      }
+      const act = actividadesGlobal.find(a => a.codigo === cod);
+      const op = prompt("Modificar Estado:\n1: Pendiente\n2: En proceso\n3: Ejecutado", act.estado === "Ejecutado" ? "3" : (act.estado === "En proceso" ? "2" : "1"));
+      
+      if (op === "1") {
+        act.estado = "Pendiente";
+        act.avance = 0;
+      } else if (op === "3") {
+        act.estado = "Ejecutado";
+        act.avance = 100;
+      } else if (op === "2") {
+        act.estado = "En proceso";
+        const av = prompt("Indique el porcentaje de avance (0 a 100):", act.avance);
+        if (av !== null && !isNaN(av)) {
+          const num = parseInt(av);
+          if (num >= 0 && num <= 100) {
+            act.avance = num;
+            if (num === 100) act.estado = "Ejecutado";
+            else if (num === 0) act.estado = "Pendiente";
+          }
+        }
+      }
+      await guardarCambioDirecto(act);
+    }
+
+    // 4. EDITAR FECHA INICIO (Bloqueado CPM si tiene hijos)
+    async function editarFechaInicio(cod) {
+      if (tieneHijos(cod)) {
+        alert("🔒 Bloqueado CPM: La Fecha de Inicio se calcula automáticamente con las fechas de sus componentes hijas.");
+        return;
+      }
+      const act = actividadesGlobal.find(a => a.codigo === cod);
+      const nuevaF = prompt("Digite Fecha de Inicio (DD/MM/AAAA):", act.fecha_inicio);
+      if (nuevaF && /^\d{2}\/\d{2}\/\d{4}$/.test(nuevaF.trim())) {
+        act.fecha_inicio = nuevaF.trim();
+        // Recalcular Fecha Fin conservando los días
+        const [d, m, y] = act.fecha_inicio.split("/").map(Number);
+        const dt = new Date(y, m - 1, d);
+        dt.setDate(dt.getDate() + (act.dias - 1));
+        act.fecha_fin = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+        await guardarCambioDirecto(act);
+      }
+    }
+
+    // 5. EDITAR FECHA FIN (Bloqueado CPM si tiene hijos)
+    async function editarFechaFin(cod) {
+      if (tieneHijos(cod)) {
+        alert("🔒 Bloqueado CPM: La Fecha de Fin se calcula automáticamente del término de sus desgloses.");
+        return;
+      }
+      const act = actividadesGlobal.find(a => a.codigo === cod);
+      const nuevaF = prompt("Digite Fecha de Fin (DD/MM/AAAA):", act.fecha_fin);
+      if (nuevaF && /^\d{2}\/\d{2}\/\d{4}$/.test(nuevaF.trim())) {
+        const [d1, m1, y1] = act.fecha_inicio.split("/").map(Number);
+        const [d2, m2, y2] = nuevaF.trim().split("/").map(Number);
+        const dt1 = new Date(y1, m1 - 1, d1);
+        const dt2 = new Date(y2, m2 - 1, d2);
+        const diff = Math.floor((dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
+        if (diff > 0) {
+          act.fecha_fin = nuevaF.trim();
+          act.dias = diff;
+          await guardarCambioDirecto(act);
+        } else {
+          alert("Inconsistencia temporal: La fecha de fin no puede ser anterior a la de inicio.");
+        }
+      }
+    }
+
+    // 6. EDITAR DÍAS DE DURACIÓN (Bloqueado CPM si tiene hijos)
+    async function editarDias(cod) {
+      if (tieneHijos(cod)) {
+        alert("🔒 Bloqueado CPM: Los Días se autocalculan midiendo la ventana de ejecución total de las subtareas.");
+        return;
+      }
+      const act = actividadesGlobal.find(a => a.codigo === cod);
+      const d = prompt("Consigne los Días de duración estimada:", act.dias);
+      if (d !== null && !isNaN(d) && parseInt(d) > 0) {
+        act.dias = parseInt(d);
+        const [d1, m1, y1] = act.fecha_inicio.split("/").map(Number);
+        const dt = new Date(y1, m1 - 1, d1);
+        dt.setDate(dt.getDate() + (act.dias - 1));
+        act.fecha_fin = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+        await guardarCambioDirecto(act);
+      }
+    }
+
+    // 7. EDITAR % AVANCE (Bloqueado si tiene hijos)
+    async function editarAvance(cod) {
+      if (tieneHijos(cod)) {
+        alert("🔒 Bloqueado: El % de Avance se calcula automáticamente por promedio de sus desgloses.");
+        return;
+      }
+      const act = actividadesGlobal.find(a => a.codigo === cod);
+      const av = prompt("Porcentaje de avance real (0 a 100):", act.avance);
+      if (av !== null && !isNaN(av)) {
+        const num = parseInt(av);
+        if (num >= 0 && num <= 100) {
+          act.avance = num;
+          act.estado = (num === 100) ? "Ejecutado" : (num === 0 ? "Pendiente" : "En proceso");
+          await guardarCambioDirecto(act);
+        } else {
+          alert("Valor Fuera de Rango: El porcentaje debe estar estrictamente entre 0 y 100%.");
+        }
+      }
+    }
+
+    // Función auxiliar para enviar actualización al backend
+    async function guardarCambioDirecto(act) {
+      const res = await fetch(`/actividades`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(act)
+      });
+      if (res.ok) {
+        cargarActividades();
+      } else {
+        alert("Error al actualizar datos.");
+      }
+    }
+
+    // --- AGREGAR SUBTAREA (+ Nivel siguiente) ---
+    function agregarSubtarea(codBase) {
+      const codLimpio = codBase.replace(/\.$/, "");
+      // Calcular siguiente código hijo
+      const hijosDirectos = actividadesGlobal.filter(a => {
+        const c = a.codigo.replace(/\.$/, "");
+        return c.startsWith(codLimpio + ".") && c.split(".").length === codLimpio.split(".").length + 1;
+      });
+      const sigNum = hijosDirectos.length + 1;
+      const nuevoCod = `${codLimpio}.${sigNum}`;
+      
+      abrirModalNuevaActividad();
+      document.getElementById("act-codigo").value = nuevoCod;
+      document.getElementById("modal-titulo").innerText = `Nueva Subtarea para [${codBase}]`;
     }
 
     // --- CALCULADORA BIDIRECCIONAL EN TIEMPO REAL ---
@@ -516,13 +703,19 @@
       });
     }
 
-    // --- MODALES Y ACCIONES ---
+    // --- MODALES GENERALES ---
     function abrirModalNuevaActividad(nivel = 1) {
       document.getElementById("form-actividad").reset();
       const anio = new Date().getFullYear();
       document.getElementById("act-fecha-inicio").value = `${anio}-01-01`;
       document.getElementById("act-fecha-fin").value = `${anio}-01-05`;
       document.getElementById("act-dias").value = 5;
+      
+      if (nivel === 1) {
+        const raices = actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
+        document.getElementById("act-codigo").value = `${raices.length + 1}.`;
+        document.getElementById("modal-titulo").innerText = "Nueva Actividad (Nivel 1)";
+      }
       document.getElementById("modal-actividad").classList.remove("hidden");
     }
 
@@ -564,7 +757,7 @@
     });
 
     async function eliminarActividad(cod) {
-      if (!confirm(`¿Eliminar la actividad ${cod} y todos sus desgloses jerárquicos?`)) return;
+      if (!confirm(`¿Está seguro de eliminar el código ${cod} y todas sus dependencias asociadas?`)) return;
       const res = await fetch(`/actividades/${cod}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
@@ -616,7 +809,6 @@
         tbody.innerHTML += `
           <tr>
             <td class="p-2 text-gray-500">${h.timestamp}</td>
-            <td class="p-2 font-bold">${h.usuario || 'Sistema'}</td>
             <td class="p-2 font-semibold text-[#0f2a4a]">${h.accion}</td>
             <td class="p-2">${h.detalle}</td>
           </tr>
