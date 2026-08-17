@@ -124,7 +124,13 @@
               <th class="p-2.5 font-bold border-r border-blue-900 hidden sm:table-cell w-24">Fin ✎</th>
               <th class="p-2.5 font-bold border-r border-blue-900 text-center w-16">Días ✎</th>
               <th class="p-2.5 font-bold border-r border-blue-900 text-center w-20">% Avance ✎</th>
-              <th class="p-2.5 font-bold min-w-[320px]">Línea de Tiempo (Gantt)</th>
+              <th class="p-2.5 font-bold min-w-[500px] border-l border-blue-800">
+                <div class="flex justify-between text-[11px] text-gray-200 border-b border-blue-800 pb-1 mb-1">
+                  <span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span>
+                  <span>Jul</span><span>Ago</span><span>Set</span><span>Oct</span><span>Nov</span><span>Dic</span>
+                </div>
+                <div class="text-[10px] text-teal-300 font-normal text-center">Cronograma Anual de Ejecución</div>
+              </th>
               <th class="p-2.5 font-bold text-center w-24">Acciones</th>
             </tr>
           </thead>
@@ -497,17 +503,30 @@
       const finAnio = new Date(anioActual, 11, 31).getTime();
       const totalDiasAnio = (finAnio - inicioAnio) / (1000 * 60 * 60 * 24) + 1;
 
+      // Posición de la Línea de Hoy
+      const ahora = new Date().getTime();
+      const pctHoy = Math.min(100, Math.max(0, ((ahora - inicioAnio) / (1000 * 60 * 60 * 24) / totalDiasAnio) * 100));
+
       actividadesGlobal.forEach(act => {
         const partes = act.codigo.replace(/\.$/, "").split(".");
         const nivel = partes.length;
-
         if (nivel > nivelFiltroActivo) return;
 
         const esNivel1 = (nivel === 1);
+        const esMadre = tieneHijos(act.codigo);
         const tr = document.createElement("tr");
         tr.className = esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50");
 
-        let ganttHTML = '<div class="gantt-rail"></div>';
+        // Construcción del Gantt Visual Avanzado
+        let ganttHTML = `
+          <div class="relative w-full h-6 bg-[#f1f2f6] rounded border border-gray-200 overflow-hidden" title="Sin fechas programadas">
+            <div class="absolute inset-0 flex justify-between pointer-events-none opacity-20 divide-x divide-gray-400">
+              ${Array(12).fill('<div class="flex-1"></div>').join('')}
+            </div>
+            <div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none" style="left: ${pctHoy}%;" title="Fecha actual"></div>
+          </div>
+        `;
+
         if (act.fecha_inicio && act.fecha_fin && act.fecha_inicio !== "Definir") {
           try {
             const [d1, m1, y1] = act.fecha_inicio.split("/").map(Number);
@@ -519,20 +538,48 @@
             const duracion = Math.max(1, (dtFin - dtIni) / (1000 * 60 * 60 * 24) + 1);
 
             const leftPct = Math.min(100, Math.max(0, (diasDesdeInicio / totalDiasAnio) * 100));
-            const widthPct = Math.min(100 - leftPct, Math.max(2, (duracion / totalDiasAnio) * 100));
+            const widthPct = Math.min(100 - leftPct, Math.max(1.5, (duracion / totalDiasAnio) * 100));
 
-            let barColor = "#bdc5c8";
-            if (act.estado === "Ejecutado") barColor = "#2ecc71";
-            else if (act.estado === "En proceso") barColor = "#f39c12";
+            let colorBase = "#bdc3c7"; // Pendiente (Gris)
+            let borde = "border border-gray-400";
 
-            let subAvanceHTML = "";
-            if (act.estado === "En proceso" && act.avance > 0) {
-              subAvanceHTML = `<div class="gantt-progress" style="width: ${act.avance}%;"></div>`;
+            if (act.estado === "Ejecutado") {
+              colorBase = "#2ecc71"; // Verde
+              borde = "border border-green-600 shadow-sm";
+            } else if (act.estado === "En proceso") {
+              colorBase = "#f1c40f"; // Amarillo fondo restante
+              borde = "border border-yellow-600 shadow-sm";
             }
 
+            // Sub-barra de progreso proporcional
+            let subAvanceHTML = "";
+            if (act.estado === "En proceso" && act.avance > 0) {
+              subAvanceHTML = `
+                <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l flex items-center justify-end pr-1 text-[9px] font-bold text-white shadow-inner" style="width: ${act.avance}%;">
+                  ${act.avance >= 25 ? act.avance + '%' : ''}
+                </div>
+              `;
+            }
+
+            // Estilo corchete si es Actividad Madre
+            const estiloBarra = esMadre 
+              ? `background-color: #0f2a4a; height: 10px; top: 7px; border-radius: 2px;` 
+              : `background-color: ${colorBase}; height: 16px; top: 4px; border-radius: 4px;`;
+
             ganttHTML = `
-              <div class="gantt-rail" title="Inicio: ${act.fecha_inicio} | Fin: ${act.fecha_fin} (${act.dias} días)">
-                <div class="gantt-bar" style="left: ${leftPct}%; width: ${widthPct}%; background-color: ${barColor};">
+              <div class="relative w-full h-6 bg-[#f1f2f6] rounded border border-gray-200 overflow-hidden" 
+                   title="${act.codigo}: ${act.descripcion}&#10;• Periodo: ${act.fecha_inicio} al ${act.fecha_fin}&#10;• Duración: ${act.dias} días&#10;• Avance: ${act.avance}% (${act.estado})&#10;• Responsable: ${act.responsable || 'No asignado'}">
+                
+                <!-- Cuadrícula de 12 Meses -->
+                <div class="absolute inset-0 flex justify-between pointer-events-none opacity-25 divide-x divide-gray-400">
+                  ${Array(12).fill('<div class="flex-1"></div>').join('')}
+                </div>
+
+                <!-- Línea de HOY -->
+                <div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none" style="left: ${pctHoy}%;"></div>
+
+                <!-- Barra de Actividad -->
+                <div class="absolute ${borde} shadow transition-all duration-200" style="left: ${leftPct}%; width: ${widthPct}%; ${estiloBarra}">
                   ${subAvanceHTML}
                 </div>
               </div>
@@ -545,31 +592,19 @@
 
         tr.innerHTML = `
           <td class="p-2 font-mono font-bold text-xs border-r border-gray-100">${cod}</td>
-          <td class="p-2 border-r border-gray-100 cell-editable" style="padding-left: ${paddingLeft}px;" ondblclick="editarDescripcion('${cod}')" title="Doble clic para editar descripción">
-            ${act.descripcion}
-          </td>
-          <td class="p-2 border-r border-gray-100 hidden md:table-cell text-xs cell-editable text-gray-600" ondblclick="editarResponsable('${cod}')" title="Doble clic para asignar responsable">
-            ${act.responsable || 'No asignado'}
-          </td>
-          <td class="p-2 border-r border-gray-100 cell-editable" ondblclick="editarEstado('${cod}')" title="Doble clic para modificar estado">
+          <td class="p-2 border-r border-gray-100 cell-editable" style="padding-left: ${paddingLeft}px;" ondblclick="editarDescripcion('${cod}')" title="Doble clic para editar">${act.descripcion}</td>
+          <td class="p-2 border-r border-gray-100 hidden md:table-cell text-xs cell-editable text-gray-600" ondblclick="editarResponsable('${cod}')">${act.responsable || 'No asignado'}</td>
+          <td class="p-2 border-r border-gray-100 cell-editable" ondblclick="editarEstado('${cod}')">
             <span class="px-2 py-0.5 rounded text-[11px] font-bold ${
               act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' :
               act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700'
             }">${act.estado}</span>
           </td>
-          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs cell-editable" ondblclick="editarFechaInicio('${cod}')" title="Doble clic para cambiar fecha de inicio">
-            ${act.fecha_inicio || '-'}
-          </td>
-          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs cell-editable" ondblclick="editarFechaFin('${cod}')" title="Doble clic para calcular término">
-            ${act.fecha_fin || '-'}
-          </td>
-          <td class="p-2 border-r border-gray-100 text-center font-bold text-xs cell-editable" ondblclick="editarDias('${cod}')" title="Doble clic para cambiar días">
-            ${act.dias}
-          </td>
-          <td class="p-2 border-r border-gray-100 text-center font-bold text-xs cell-editable" ondblclick="editarAvance('${cod}')" title="Doble clic para cambiar % avance">
-            ${act.avance}%
-          </td>
-          <td class="p-2 border-r border-gray-100">${ganttHTML}</td>
+          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs cell-editable" ondblclick="editarFechaInicio('${cod}')">${act.fecha_inicio || '-'}</td>
+          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs cell-editable" ondblclick="editarFechaFin('${cod}')">${act.fecha_fin || '-'}</td>
+          <td class="p-2 border-r border-gray-100 text-center font-bold text-xs cell-editable" ondblclick="editarDias('${cod}')">${act.dias}</td>
+          <td class="p-2 border-r border-gray-100 text-center font-bold text-xs cell-editable" ondblclick="editarAvance('${cod}')">${act.avance}%</td>
+          <td class="p-2 border-r border-gray-100 min-w-[500px]">${ganttHTML}</td>
           <td class="p-2 text-center space-x-1">
             <button onclick="agregarSubtarea('${cod}')" class="text-blue-600 hover:text-blue-800 font-bold px-1" title="Agregar subtarea">+</button>
             <button onclick="eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>
