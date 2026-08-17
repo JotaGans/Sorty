@@ -3,8 +3,7 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Depends, Request, status
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -37,9 +36,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configurar templates para servir el Frontend
-templates = Jinja2Templates(directory="templates")
 
 # --- BASE DE DATOS LOCAL / VOLUMEN RAILWAY ---
 DB_PATH = os.getenv("DATABASE_PATH", "imarpe_web.db")
@@ -178,9 +174,13 @@ def recalcular_tiempos_y_cascada(db: sqlite3.Connection):
     db.commit()
 
 # --- RUTA PRINCIPAL (FRONTEND) ---
-@app.get("/", response_class=HTMLResponse)
-def index_view(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+@app.get("/")
+def index_view():
+    if os.path.exists("templates/index.html"):
+        return FileResponse("templates/index.html")
+    elif os.path.exists("index.html"):
+        return FileResponse("index.html")
+    return HTMLResponse("<h2>Error: No se encontró index.html</h2>", status_code=404)
 
 # --- ENDPOINTS API ---
 @app.post("/token", response_model=Token)
