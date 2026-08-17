@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>IMARPE - Gestión de Proyectos Web</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
+
+  <!-- BARRA DE NAVEGACIÓN -->
+  <header class="bg-[#0f2a4a] text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <span class="font-bold text-2xl tracking-wider text-teal-400">IMARPE</span>
+        <span class="text-xs md:text-sm bg-blue-900 border border-blue-700 px-2 py-0.5 rounded text-gray-200">Gantt & CPM Cloud</span>
+      </div>
+      
+      <div id="user-pill" class="hidden flex items-center space-x-3">
+        <span id="user-name" class="text-sm font-semibold text-gray-200"></span>
+        <span id="user-role" class="text-xs bg-teal-600 px-2 py-0.5 rounded font-bold uppercase"></span>
+        <button onclick="cerrarSesion()" class="text-xs bg-red-600 hover:bg-red-700 px-2.5 py-1 rounded transition font-semibold">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- PANTALLA LOGIN -->
+  <main id="view-login" class="flex-1 flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-200">
+      <h2 class="text-2xl font-bold text-[#0f2a4a] text-center mb-6">Iniciar Sesión</h2>
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700">Usuario</label>
+          <input type="text" id="login-username" required class="w-full mt-1 p-2.5 border rounded-lg focus:ring-2 focus:ring-[#0f2a4a] outline-none" placeholder="admin">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700">Contraseña</label>
+          <input type="password" id="login-password" required class="w-full mt-1 p-2.5 border rounded-lg focus:ring-2 focus:ring-[#0f2a4a] outline-none" placeholder="admin123">
+        </div>
+        <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold py-3 rounded-lg transition duration-200 shadow">Ingresar</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- PANEL PRINCIPAL -->
+  <main id="view-dashboard" class="hidden flex-1 max-w-7xl w-full mx-auto p-3 md:p-6 space-y-4">
+    
+    <!-- TARJETAS DE INDICADORES (KPIs) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-teal-500">
+        <span class="text-xs font-bold text-gray-500 uppercase">Avance Global</span>
+        <p id="kpi-avance" class="text-2xl font-bold text-[#0f2a4a]">0%</p>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
+        <span class="text-xs font-bold text-gray-500 uppercase">Ejecutados</span>
+        <p id="kpi-ejecutado" class="text-2xl font-bold text-green-600">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-yellow-500">
+        <span class="text-xs font-bold text-gray-500 uppercase">En Proceso</span>
+        <p id="kpi-proceso" class="text-2xl font-bold text-yellow-600">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-red-500">
+        <span class="text-xs font-bold text-gray-500 uppercase">Pendientes</span>
+        <p id="kpi-pendiente" class="text-2xl font-bold text-red-600">0</p>
+      </div>
+    </div>
+
+    <!-- BOTONERA DE ACCIÓN -->
+    <div class="flex flex-wrap gap-2 justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+      <div class="flex flex-wrap gap-2">
+        <button onclick="abrirModalNuevaActividad()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow">
+          + Agregar Actividad
+        </button>
+        <button onclick="verRutaCritica()" class="bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow">
+          🔥 Calcular Ruta Crítica (CPM)
+        </button>
+      </div>
+      <button onclick="cargarActividades()" class="text-gray-600 hover:text-gray-900 text-sm font-semibold p-2">🔄 Actualizar</button>
+    </div>
+
+    <!-- TABLA RESPONSIVA -->
+    <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-[#0f2a4a] text-white">
+            <tr>
+              <th class="p-3">Código</th>
+              <th class="p-3">Descripción</th>
+              <th class="p-3 hidden md:table-cell">Responsable</th>
+              <th class="p-3">Estado</th>
+              <th class="p-3 text-center">Avance</th>
+              <th class="p-3 hidden sm:table-cell text-center">Días</th>
+              <th class="p-3 hidden md:table-cell">Predecesores</th>
+              <th class="p-3 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="lista-actividades" class="divide-y divide-gray-200">
+            <!-- Renderizado dinámico -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL RUTA CRÍTICA (FLOTANTE ENCIMA DE LA INTERFAZ) -->
+  <div id="modal-cpm" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col">
+      <div class="bg-red-600 text-white p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📍</span>
+          <h3 class="font-bold text-lg">Cálculo de Ruta Crítica (CPM)</h3>
+        </div>
+        <button onclick="cerrarModalCPM()" class="text-white hover:text-gray-200 text-2xl font-bold">&times;</button>
+      </div>
+      
+      <div class="p-5 overflow-y-auto space-y-4">
+        <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded">
+          <p class="text-sm font-semibold text-red-900">Duración Estimada del Proyecto: <span id="cpm-duracion" class="text-lg font-bold"></span> días</p>
+          <p class="text-xs text-red-700">Las actividades críticas (holgura = 0) no admiten holgura sin retrasar el fin del proyecto.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-gray-100 font-bold border-b">
+              <tr>
+                <th class="p-2">Código</th>
+                <th class="p-2">Actividad</th>
+                <th class="p-2 text-center">Días</th>
+                <th class="p-2 text-center">ES - EF</th>
+                <th class="p-2 text-center">LS - LF</th>
+                <th class="p-2 text-center">Holgura</th>
+                <th class="p-2 text-center">Condición</th>
+              </tr>
+            </thead>
+            <tbody id="cpm-tabla-body" class="divide-y divide-gray-100">
+              <!-- Datos CPM -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CREAR / EDITAR ACTIVIDAD -->
+  <div id="modal-actividad" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+        <h3 id="modal-titulo" class="font-bold">Nueva Actividad</h3>
+        <button onclick="cerrarModalActividad()" class="text-white text-2xl">&times;</button>
+      </div>
+      <form id="form-actividad" class="p-4 space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-600">Código WBS</label>
+            <input type="text" id="act-codigo" placeholder="Ej: 1.1" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-600">Duración (Días)</label>
+            <input type="number" id="act-dias" min="1" value="5" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-gray-600">Descripción</label>
+          <input type="text" id="act-desc" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-600">Responsable</label>
+            <input type="text" id="act-resp" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-600">Estado</label>
+            <select id="act-estado" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+              <option value="Pendiente">Pendiente</option>
+              <option value="En proceso">En proceso</option>
+              <option value="Ejecutado">Ejecutado</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-gray-600">% Avance</label>
+            <input type="number" id="act-avance" min="0" max="100" value="0" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-600">Predecesores (separados por coma)</label>
+            <input type="text" id="act-predecesores" placeholder="Ej: 1.1, 1.2" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-[#0f2a4a] text-white font-bold py-2.5 rounded-lg hover:bg-[#1b4f8a] transition">Guardar Actividad</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Las peticiones usan rutas relativas: funcionan en local y en Railway sin cambios
+    let token = localStorage.getItem("token");
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (token) {
+        mostrarDashboard();
+      } else {
+        mostrarLogin();
+      }
+    });
+
+    // --- AUTENTICACIÓN ---
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const user = document.getElementById("login-username").value;
+      const pass = document.getElementById("login-password").value;
+      
+      const formData = new URLSearchParams();
+      formData.append("username", user);
+      formData.append("password", pass);
+
+      try {
+        const res = await fetch(`/token`, { method: "POST", body: formData });
+        if (!res.ok) throw new Error("Credenciales incorrectas");
+        const data = await res.json();
+        
+        token = data.access_token;
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(data));
+        mostrarDashboard();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    function mostrarLogin() {
+      document.getElementById("view-login").classList.remove("hidden");
+      document.getElementById("view-dashboard").classList.add("hidden");
+      document.getElementById("user-pill").classList.add("hidden");
+    }
+
+    function mostrarDashboard() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      document.getElementById("user-name").innerText = user.nombre_completo || user.username;
+      document.getElementById("user-role").innerText = user.rol;
+      
+      document.getElementById("view-login").classList.add("hidden");
+      document.getElementById("view-dashboard").classList.remove("hidden");
+      document.getElementById("user-pill").classList.remove("hidden");
+      cargarActividades();
+    }
+
+    function cerrarSesion() {
+      localStorage.clear();
+      token = null;
+      mostrarLogin();
+    }
+
+    // --- CARGAR Y RENDERIZAR ACTIVIDADES ---
+    async function cargarActividades() {
+      try {
+        const res = await fetch(`/actividades`);
+        const actividades = await res.json();
+        renderizarTabla(actividades);
+        actualizarKPIs(actividades);
+      } catch (err) {
+        console.error("Error al cargar:", err);
+      }
+    }
+
+    function renderizarTabla(lista) {
+      const tbody = document.getElementById("lista-actividades");
+      tbody.innerHTML = "";
+
+      lista.forEach(act => {
+        const esPadre = !act.codigo.includes(".");
+        const tr = document.createElement("tr");
+        tr.className = esPadre ? "bg-blue-50/60 font-semibold" : "hover:bg-gray-50";
+
+        tr.innerHTML = `
+          <td class="p-3 font-mono text-xs ${esPadre ? 'font-bold text-[#0f2a4a]' : 'pl-6 text-gray-600'}">${act.codigo}</td>
+          <td class="p-3">${act.descripcion}</td>
+          <td class="p-3 hidden md:table-cell text-gray-600">${act.responsable || '-'}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 text-xs rounded-full font-bold ${
+              act.estado === 'Ejecutado' ? 'bg-green-100 text-green-700' :
+              act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-700'
+            }">${act.estado}</span>
+          </td>
+          <td class="p-3 text-center">
+            <div class="w-full bg-gray-200 rounded-full h-2.5 max-w-[80px] mx-auto overflow-hidden">
+              <div class="bg-[#0f2a4a] h-2.5 rounded-full" style="width: ${act.avance}%"></div>
+            </div>
+            <span class="text-xs text-gray-500 font-semibold">${act.avance}%</span>
+          </td>
+          <td class="p-3 hidden sm:table-cell text-center text-xs font-semibold">${act.dias}d</td>
+          <td class="p-3 hidden md:table-cell text-xs text-gray-500">${act.predecesores || '-'}</td>
+          <td class="p-3 text-center space-x-1">
+            <button onclick="eliminarActividad('${act.codigo}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-1">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function actualizarKPIs(lista) {
+      const raices = lista.filter(a => !a.codigo.includes("."));
+      const global = raices.length > 0 ? Math.round(raices.reduce((acc, a) => acc + a.avance, 0) / raices.length) : 0;
+      document.getElementById("kpi-avance").innerText = `${global}%`;
+      document.getElementById("kpi-ejecutado").innerText = lista.filter(a => a.estado === 'Ejecutado').length;
+      document.getElementById("kpi-proceso").innerText = lista.filter(a => a.estado === 'En proceso').length;
+      document.getElementById("kpi-pendiente").innerText = lista.filter(a => a.estado === 'Pendiente').length;
+    }
+
+    // --- FORMULARIO Y CRUD ---
+    function abrirModalNuevaActividad() {
+      document.getElementById("form-actividad").reset();
+      document.getElementById("modal-actividad").classList.remove("hidden");
+    }
+
+    function cerrarModalActividad() {
+      document.getElementById("modal-actividad").classList.add("hidden");
+    }
+
+    document.getElementById("form-actividad").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        codigo: document.getElementById("act-codigo").value,
+        descripcion: document.getElementById("act-desc").value,
+        dias: parseInt(document.getElementById("act-dias").value),
+        responsable: document.getElementById("act-resp").value,
+        estado: document.getElementById("act-estado").value,
+        avance: parseInt(document.getElementById("act-avance").value),
+        predecesores: document.getElementById("act-predecesores").value,
+        fecha_inicio: "01/01/2026",
+        fecha_fin: "05/01/2026"
+      };
+
+      const res = await fetch(`/actividades`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        cerrarModalActividad();
+        cargarActividades();
+      } else {
+        const err = await res.json();
+        alert(err.detail || "Error al guardar");
+      }
+    });
+
+    async function eliminarActividad(codigo) {
+      if (!confirm(`¿Eliminar la actividad ${codigo} y todas sus dependencias?`)) return;
+      const res = await fetch(`/actividades/${codigo}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        cargarActividades();
+      } else {
+        const err = await res.json();
+        alert(err.detail || "Error al eliminar");
+      }
+    }
+
+    // --- MODAL DE RUTA CRÍTICA (CPM) ---
+    async function verRutaCritica() {
+      try {
+        const res = await fetch(`/ruta-critica`);
+        const cpm = await res.json();
+        
+        document.getElementById("cpm-duracion").innerText = cpm.duracion_proyecto_dias;
+        const tbody = document.getElementById("cpm-tabla-body");
+        tbody.innerHTML = "";
+
+        Object.values(cpm.detalles).forEach(nodo => {
+          const tr = document.createElement("tr");
+          tr.className = nodo.es_critica ? "bg-red-50 font-semibold text-red-900" : "";
+          tr.innerHTML = `
+            <td class="p-2 font-mono font-bold">${nodo.codigo}</td>
+            <td class="p-2">${nodo.descripcion}</td>
+            <td class="p-2 text-center">${nodo.duracion}d</td>
+            <td class="p-2 text-center">${nodo.ES} - ${nodo.EF}</td>
+            <td class="p-2 text-center">${nodo.LS} - ${nodo.LF}</td>
+            <td class="p-2 text-center font-bold">${nodo.holgura}</td>
+            <td class="p-2 text-center">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${nodo.es_critica ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">
+                ${nodo.es_critica ? 'CRÍTICA' : 'Normal'}
+              </span>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById("modal-cpm").classList.remove("hidden");
+      } catch (err) {
+        alert("Error al calcular la ruta crítica.");
+      }
+    }
+
+    function cerrarModalCPM() {
+      document.getElementById("modal-cpm").classList.add("hidden");
+    }
+  </script>
+</body>
+</html>
