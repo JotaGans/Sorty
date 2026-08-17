@@ -334,24 +334,48 @@
     </div>
   </div>
 
-  <!-- 7. MODAL RESPONSABLES -->
-  <div id="modal-responsables" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[85vh] flex flex-col">
-      <div class="bg-[#2980b9] text-white p-4 flex justify-between items-center">
-        <h3 class="font-bold text-base">⚙️ Administrador de Responsables - IMARPE</h3>
-        <button onclick="cerrarResponsables()" class="text-white text-2xl font-bold">&times;</button>
+  <!-- MODAL ADMINISTRADOR DE RESPONSABLES -->
+  <div id="modal-responsables" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
+      
+      <!-- Encabezado -->
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <span class="text-lg">⚙️</span>
+          <h3 class="font-bold text-sm md:text-base">Administrador de Responsables - IMARPE</h3>
+        </div>
+        <button onclick="cerrarResponsables()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
       </div>
-      <div class="p-4 overflow-y-auto space-y-3">
-        <table class="w-full text-xs text-left">
-          <thead class="bg-gray-100 font-bold border-b">
-            <tr>
-              <th class="p-2">Apellidos y Nombres</th>
-              <th class="p-2">Cargo / Rol</th>
-              <th class="p-2">Correo Electrónico</th>
-            </tr>
-          </thead>
-          <tbody id="responsables-tabla-body" class="divide-y divide-gray-100"></tbody>
-        </table>
+
+      <!-- Cuerpo con tabla editable -->
+      <div class="p-4 overflow-y-auto space-y-3 flex-1">
+        <p class="text-xs text-gray-500 font-semibold">Haga doble clic sobre cualquier campo para editar nombre, cargo o correo en tiempo real:</p>
+        
+        <div class="bg-white rounded border border-gray-300 overflow-hidden">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-[#0f2a4a] text-white font-bold">
+              <tr>
+                <th class="p-2.5 border-r border-blue-900">Apellidos y Nombres ✎</th>
+                <th class="p-2.5 border-r border-blue-900">Cargo / Rol ✎</th>
+                <th class="p-2.5 border-r border-blue-900">Correo Electrónico ✎</th>
+                <th class="p-2.5 text-center w-16">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="responsables-tabla-body" class="divide-y divide-gray-200">
+              <!-- Renderizado dinámico -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Botonera Inferior Estilo PyQt6 -->
+      <div class="p-3 bg-gray-100 border-t border-gray-300 flex justify-between items-center">
+        <button onclick="crearNuevoResponsable()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold px-4 py-2 rounded transition shadow">
+          + Agregar Nuevo
+        </button>
+        <button onclick="cerrarResponsables()" class="bg-gray-400 hover:bg-gray-500 text-white text-xs font-bold px-4 py-2 rounded transition">
+          Cerrar
+        </button>
       </div>
     </div>
   </div>
@@ -1050,24 +1074,155 @@
       document.getElementById("modal-historial").classList.add("hidden");
     }
 
-    // --- RESPONSABLES ---
+    // --- GESTIÓN INTERACTIVA DE RESPONSABLES ---
     async function abrirResponsables() {
-      const tbody = document.getElementById("responsables-tabla-body");
-      tbody.innerHTML = "";
-      responsablesGlobal.forEach(r => {
-        tbody.innerHTML += `
-          <tr>
-            <td class="p-2 font-bold">${r.nombre}</td>
-            <td class="p-2">${r.cargo || '-'}</td>
-            <td class="p-2 text-blue-600">${r.correo || '-'}</td>
-          </tr>
-        `;
-      });
+      await cargarResponsables();
+      renderizarTablaResponsables();
       document.getElementById("modal-responsables").classList.remove("hidden");
     }
 
     function cerrarResponsables() {
       document.getElementById("modal-responsables").classList.add("hidden");
+      cargarActividades(); // Refrescar nombres en cascada en la tabla principal
+    }
+
+    function renderizarTablaResponsables() {
+      const tbody = document.getElementById("responsables-tabla-body");
+      tbody.innerHTML = "";
+
+      responsablesGlobal.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-blue-50/50 transition";
+        
+        tr.innerHTML = `
+          <td class="p-2.5 font-bold text-[#2c3e50] border-r border-gray-100 cell-editable" ondblclick="editarCampoResponsable('${r.nombre}', 'nombre', '${r.nombre}')" title="Doble clic para editar nombre">
+            ${r.nombre}
+          </td>
+          <td class="p-2.5 text-gray-700 border-r border-gray-100 cell-editable" ondblclick="editarCampoResponsable('${r.nombre}', 'cargo', '${r.cargo || ''}')" title="Doble clic para editar cargo">
+            ${r.cargo || '-'}
+          </td>
+          <td class="p-2.5 text-blue-600 border-r border-gray-100 cell-editable" ondblclick="editarCampoResponsable('${r.nombre}', 'correo', '${r.correo || ''}')" title="Doble clic para editar correo">
+            ${r.correo || '-'}
+          </td>
+          <td class="p-2.5 text-center">
+            <button onclick="eliminarResponsable('${r.nombre}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-1" title="Eliminar responsable">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 1. EDITAR CAMPO INDIVIDUAL (Nombre con cascada, Cargo o Correo)
+    function editarCampoResponsable(nombreActual, campo, valorActual) {
+      const labels = {
+        nombre: "Apellidos y Nombres",
+        cargo: "Cargo o Rol",
+        correo: "Correo Electrónico"
+      };
+
+      abrirInputCustom({
+        titulo: `Modificar ${labels[campo]}`,
+        mensaje: `Ingrese el nuevo valor para ${labels[campo]}:`,
+        tipo: "text",
+        valorActual: valorActual === '-' ? '' : valorActual,
+        onAceptar: async (nuevoValor) => {
+          if (campo === 'nombre' && (!nuevoValor || nuevoValor.trim() === '')) {
+            alert("El nombre no puede quedar vacío.");
+            return;
+          }
+
+          const resp = responsablesGlobal.find(r => r.nombre === nombreActual);
+          if (!resp) return;
+
+          const payload = {
+            nombre_original: nombreActual,
+            nombre_nuevo: campo === 'nombre' ? nuevoValor.trim() : resp.nombre,
+            cargo: campo === 'cargo' ? nuevoValor.trim() : (resp.cargo || ''),
+            correo: campo === 'correo' ? nuevoValor.trim() : (resp.correo || '')
+          };
+
+          const res = await fetch(`/responsables`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            await cargarResponsables();
+            renderizarTablaResponsables();
+          } else {
+            const err = await res.json();
+            alert(err.detail || "Error al actualizar");
+          }
+        }
+      });
+    }
+
+    // 2. CREAR NUEVO RESPONSABLE
+    function crearNuevoResponsable() {
+      abrirInputCustom({
+        titulo: "Nuevo Registro de Personal",
+        mensaje: "Ingrese Apellidos y Nombres:",
+        tipo: "text",
+        valorActual: "",
+        onAceptar: (nombre) => {
+          if (!nombre || !nombre.trim()) return;
+
+          abrirInputCustom({
+            titulo: "Nuevo Registro de Personal",
+            mensaje: "Ingrese Cargo o Rol:",
+            tipo: "text",
+            valorActual: "",
+            onAceptar: (cargo) => {
+              abrirInputCustom({
+                titulo: "Nuevo Registro de Personal",
+                mensaje: "Ingrese Correo Electrónico:",
+                tipo: "text",
+                valorActual: "",
+                onAceptar: async (correo) => {
+                  const payload = {
+                    nombre: nombre.trim(),
+                    cargo: (cargo || '').trim(),
+                    correo: (correo || '').trim()
+                  };
+
+                  const res = await fetch(`/responsables`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                  });
+
+                  if (res.ok) {
+                    await cargarResponsables();
+                    renderizarTablaResponsables();
+                  } else {
+                    const err = await res.json();
+                    alert(err.detail || "Error al registrar");
+                  }
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+
+    // 3. ELIMINAR RESPONSABLE
+    async function eliminarResponsable(nombre) {
+      if (!confirm(`¿Eliminar a ${nombre} de los registros?`)) return;
+
+      const res = await fetch(`/responsables/${encodeURIComponent(nombre)}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        await cargarResponsables();
+        renderizarTablaResponsables();
+      } else {
+        const err = await res.json();
+        alert(err.detail || "Error al eliminar");
+      }
     }
   </script>
 </body>
