@@ -42,18 +42,34 @@
       z-index: 25;
     }
 
-    /* Avatares */
+    /* Avatares Apilados */
     .avatar-circle {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 11px;
+      font-size: 10px;
       color: #ffffff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      margin-left: -6px;
+    }
+    .avatar-circle:first-child { margin-left: 0; }
+    .avatar-group { display: inline-flex; align-items: center; justify-content: center; }
+
+    /* Selector de Responsable con Flecha Custom Limpia */
+    .select-clean-arrow {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%234b5563' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.4rem center;
+      background-repeat: no-repeat;
+      background-size: 1.1em 1.1em;
+      padding-right: 1.8rem;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
     }
   </style>
 </head>
@@ -80,7 +96,7 @@
     </div>
   </div>
 
-  <!-- BLOQUE SUPERIOR FIJO (HEADER + KPIs + TOOLBAR COMPLETA) -->
+  <!-- BLOQUE SUPERIOR FIJO -->
   <div class="flex-shrink-0 z-40 bg-[#f5f6fa] shadow-sm">
     
     <!-- CINTA SUPERIOR AZUL CORPORATIVA IMARPE -->
@@ -123,16 +139,14 @@
         </div>
       </div>
 
-      <!-- BOTONERA DE CONTROL Y FILTROS PROFESIONALES (GanttPRO Style) -->
+      <!-- BOTONERA DE CONTROL Y FILTROS -->
       <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-2.5 rounded-lg shadow-sm border border-gray-200">
         
-        <!-- Grupo 1: Acciones Principales y Filtros -->
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="abrirModalNuevaActividad(1)" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-3.5 py-1.5 rounded transition shadow">
             + Actividad
           </button>
           
-          <!-- Filtro Nivel Jerárquico -->
           <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="bg-[#2c3e50] hover:bg-[#34495e] text-white text-xs md:text-sm font-bold px-3 py-1.5 rounded outline-none cursor-pointer">
             <option value="4">👁️ Ver Todo (Nivel 4)</option>
             <option value="1">Nivel 1: Actividades</option>
@@ -140,14 +154,14 @@
             <option value="3">Nivel 3: Subtareas</option>
           </select>
 
-          <!-- Búsqueda rápida en vivo -->
+          <!-- Búsqueda rápida -->
           <div class="relative">
             <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar actividad..." class="w-36 md:w-44 text-xs bg-gray-100 border border-gray-300 rounded px-2.5 py-1.5 outline-none focus:border-[#0f2a4a] font-semibold">
           </div>
 
-          <!-- Filtro por Responsable -->
-          <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="text-xs bg-gray-100 border border-gray-300 rounded px-2.5 py-1.5 outline-none font-semibold text-gray-700 max-w-[150px]">
-            <option value="">👤 Todos los Responsables</option>
+          <!-- SELECTOR DE RESPONSABLES CON FLECHA LIMPIA Y SIN DESBORDAMIENTO -->
+          <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="text-xs bg-gray-100 border border-gray-300 rounded py-1.5 pl-2.5 outline-none font-semibold text-gray-700 select-clean-arrow max-w-[170px]">
+            <option value="">👤 Todo el Personal</option>
           </select>
 
           <!-- Toggle Zoom (Semanas / Meses) -->
@@ -176,9 +190,8 @@
           </button>
         </div>
 
-        <!-- Grupo 2: Auditoría, CPM y Exportación -->
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="exportarExcelCSV()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs md:text-sm font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1" title="Exportar a Excel / CSV">
+          <button onclick="exportarExcelCSV()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs md:text-sm font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1">
             <span>📊 Excel</span>
           </button>
           <button onclick="verRutaCritica()" class="bg-[#c0392b] hover:bg-[#a93226] text-white text-xs md:text-sm font-bold px-3 py-1.5 rounded transition shadow">
@@ -205,8 +218,8 @@
             <th id="th-descripcion" class="p-2.5 font-bold border-r border-b border-blue-900/60 min-w-[260px] whitespace-nowrap">
               Descripción de Actividad <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            <th id="th-responsable" class="p-2.5 font-bold border-r border-b border-blue-900/60 min-w-[100px] text-center whitespace-nowrap">
-              Responsable <span class="text-[10px] text-teal-300 opacity-80">✎</span>
+            <th id="th-responsable" class="p-2.5 font-bold border-r border-b border-blue-900/60 min-w-[110px] text-center whitespace-nowrap">
+              Responsable(s) <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
             <th id="th-estado" class="p-2.5 font-bold border-r border-b border-blue-900/60 min-w-[110px] whitespace-nowrap">
               Estado <span class="text-[10px] text-teal-300 opacity-80">✎</span>
@@ -241,8 +254,28 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- MODALES DE GESTIÓN Y EDICIÓN FLOTANTES (z-[70])                           -->
+  <!-- MODAL: ASIGNACIÓN MÚLTIPLE DE RESPONSABLES                                -->
   <!-- ========================================================================= -->
+  <div id="modal-asignar-responsables" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
+      <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
+        <h3 class="font-bold text-sm">Asignar Responsable(s)</h3>
+        <button onclick="cerrarAsignarResponsables()" class="text-white text-xl font-bold hover:text-gray-300">&times;</button>
+      </div>
+      <div class="p-5 space-y-3">
+        <p class="text-xs text-gray-600 font-semibold">Marque uno o varios miembros para asignar a esta actividad:</p>
+        
+        <div id="lista-checkbox-responsables" class="max-h-60 overflow-y-auto space-y-2 bg-white p-3 rounded-lg border border-gray-200">
+          <!-- Renderizado dinámico de checkboxes -->
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2">
+          <button onclick="cerrarAsignarResponsables()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-[#2c3e50] text-xs font-bold rounded transition">Cancelar</button>
+          <button id="btn-guardar-multi-resp" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded transition shadow">Guardar Asignación</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL: GESTIÓN DE COLUMNAS -->
   <div id="modal-columnas" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
@@ -384,8 +417,8 @@
           <input type="text" id="act-desc" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
         </div>
         <div>
-          <label class="text-xs font-bold text-gray-700">Responsable Asignado</label>
-          <select id="act-resp" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]"></select>
+          <label class="text-xs font-bold text-gray-700">Responsable(s) Asignado(s)</label>
+          <input type="text" id="act-resp" placeholder="Ej: Salas Guerrero, Donayre Quintana" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
         </div>
         <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded border">
           <div>
@@ -468,13 +501,14 @@
     let nivelFiltroActivo = 4;
     
     // Zoom y semanas
-    let modoZoom = "semanas"; // "semanas" o "meses"
+    let modoZoom = "semanas";
     let semanasTotales = [];
     let semanaInicioIndex = 0;
     let indiceSemanaHoy = -1;
 
-    // Estado de Nodos Colapsados (Expand / Collapse)
+    // Estado de Nodos Colapsados
     let nodosColapsados = new Set();
+    let actividadMultiRespActual = null;
 
     // Visibilidad de columnas
     let visibilidadColumnas = JSON.parse(localStorage.getItem("visibilidad_columnas") || JSON.stringify({
@@ -503,46 +537,112 @@
       aplicarVisibilidadColumnas();
     });
 
-    // --- GENERADOR DE AVATARES CIRCULARES CON INICIALES Y TOOLTIP ---
-    function obtenerAvatarHTML(nombreResp) {
-      if (!nombreResp || nombreResp === "No asignado" || nombreResp === "-") {
-        return `<div class="w-7 h-7 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-[10px] font-bold mx-auto" title="Sin responsable asignado">?</div>`;
+    // --- GENERADOR DE AVATARES MÚLTIPLES APILADOS ---
+    function obtenerAvatarHTML(responsablesStr) {
+      if (!responsablesStr || responsablesStr === "No asignado" || responsablesStr === "-") {
+        return `<div class="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-[10px] font-bold mx-auto" title="Sin responsable asignado">?</div>`;
       }
       
-      const partes = nombreResp.trim().split(/[\s,]+/);
-      let iniciales = "";
-      if (partes.length >= 2) {
-        iniciales = (partes[0][0] + partes[1][0]).toUpperCase();
-      } else if (partes.length === 1) {
-        iniciales = partes[0].substring(0, 2).toUpperCase();
+      const listaNombres = responsablesStr.split(",").map(s => s.trim()).filter(Boolean);
+      if (listaNombres.length === 0) {
+        return `<div class="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-[10px] font-bold mx-auto" title="Sin responsable asignado">?</div>`;
       }
 
-      let hash = 0;
-      for (let i = 0; i < nombreResp.length; i++) {
-        hash = nombreResp.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const colorBg = coloresAvatar[Math.abs(hash) % coloresAvatar.length];
+      let avataresHTML = "";
+      const maxMostrar = 2;
+      const mostrar = listaNombres.slice(0, maxMostrar);
+      const restantes = listaNombres.length - maxMostrar;
 
-      const respObj = responsablesGlobal.find(r => r.nombre === nombreResp) || {};
-      const cargo = respObj.cargo ? `\nCargo: ${respObj.cargo}` : '';
-      const correo = respObj.correo ? `\nCorreo: ${respObj.correo}` : '';
+      let tooltipsDetalle = [];
+
+      mostrar.forEach(nom => {
+        const partes = nom.split(/[\s,]+/);
+        let iniciales = partes.length >= 2 ? (partes[0][0] + partes[1][0]).toUpperCase() : nom.substring(0, 2).toUpperCase();
+
+        let hash = 0;
+        for (let i = 0; i < nom.length; i++) {
+          hash = nom.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const colorBg = coloresAvatar[Math.abs(hash) % coloresAvatar.length];
+
+        const respObj = responsablesGlobal.find(r => r.nombre === nom) || {};
+        const cargo = respObj.cargo ? ` (${respObj.cargo})` : '';
+        tooltipsDetalle.push(`• ${nom}${cargo}`);
+
+        avataresHTML += `
+          <div class="avatar-circle" style="background-color: ${colorBg};">
+            ${iniciales}
+          </div>
+        `;
+      });
+
+      if (restantes > 0) {
+        for (let j = maxMostrar; j < listaNombres.length; j++) {
+          const respObj = responsablesGlobal.find(r => r.nombre === listaNombres[j]) || {};
+          const cargo = respObj.cargo ? ` (${respObj.cargo})` : '';
+          tooltipsDetalle.push(`• ${listaNombres[j]}${cargo}`);
+        }
+        avataresHTML += `
+          <div class="avatar-circle bg-gray-600 text-[9px] font-black">
+            +${restantes}
+          </div>
+        `;
+      }
+
+      const tooltipFinal = `Responsable(s):\n${tooltipsDetalle.join("\n")}`;
 
       return `
-        <div class="avatar-circle mx-auto cursor-pointer" style="background-color: ${colorBg};" 
-             title="Responsable: ${nombreResp}${cargo}${correo}">
-          ${iniciales}
+        <div class="avatar-group cursor-pointer" title="${tooltipFinal}">
+          ${avataresHTML}
         </div>
       `;
     }
 
-    // --- PLEGADO Y DESPLEGADO DE NODOS WBS (Expand / Collapse) ---
+    // --- MODAL DE MULTISELECCIÓN DE RESPONSABLES ---
+    function editarResponsable(cod) {
+      actividadMultiRespActual = actividadesGlobal.find(a => a.codigo === cod);
+      if (!actividadMultiRespActual) return;
+
+      const asignados = (actividadMultiRespActual.responsable || "")
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const contenedor = document.getElementById("lista-checkbox-responsables");
+      contenedor.innerHTML = "";
+
+      responsablesGlobal.forEach(r => {
+        const checked = asignados.includes(r.nombre) ? "checked" : "";
+        contenedor.innerHTML += `
+          <label class="flex items-center justify-between p-2 rounded hover:bg-gray-50 border border-gray-100 cursor-pointer">
+            <div class="flex items-center space-x-2">
+              <input type="checkbox" value="${r.nombre}" ${checked} class="chk-multi-resp rounded text-[#0f2a4a] focus:ring-0">
+              <span class="text-xs font-bold text-gray-800">${r.nombre}</span>
+            </div>
+            <span class="text-[11px] text-gray-500">${r.cargo || 'Personal'}</span>
+          </label>
+        `;
+      });
+
+      document.getElementById("btn-guardar-multi-resp").onclick = async () => {
+        const seleccionados = Array.from(document.querySelectorAll(".chk-multi-resp:checked")).map(cb => cb.value);
+        actividadMultiRespActual.responsable = seleccionados.length > 0 ? seleccionados.join(", ") : "No asignado";
+        cerrarAsignarResponsables();
+        await guardarCambioDirecto(actividadMultiRespActual);
+      };
+
+      document.getElementById("modal-asignar-responsables").classList.remove("hidden");
+    }
+
+    function cerrarAsignarResponsables() {
+      document.getElementById("modal-asignar-responsables").classList.add("hidden");
+    }
+
+    // --- PLEGADO Y DESPLEGADO DE NODOS WBS ---
     function alternarColapsoNodo(cod) {
       const codLimpio = cod.replace(/\.$/, "");
-      if (nodosColapsados.has(codLimpio)) {
-        nodosColapsados.delete(codLimpio);
-      } else {
-        nodosColapsados.add(codLimpio);
-      }
+      if (nodosColapsados.has(codLimpio)) nodosColapsados.delete(codLimpio);
+      else nodosColapsados.add(codLimpio);
       renderizarTabla();
     }
 
@@ -551,9 +651,7 @@
       let acumulado = "";
       for (let i = 0; i < partes.length - 1; i++) {
         acumulado += (i === 0 ? "" : ".") + partes[i];
-        if (nodosColapsados.has(acumulado)) {
-          return true;
-        }
+        if (nodosColapsados.has(acumulado)) return true;
       }
       return false;
     }
@@ -577,13 +675,12 @@
       actualizarVistaGantt();
     }
 
-    // --- EXPORTACIÓN EJECUTIVA (Excel / CSV) ---
+    // --- EXPORTACIÓN CSV/EXCEL ---
     function exportarExcelCSV() {
       let csv = "Codigo;Descripcion;Responsable;Estado;Fecha Inicio;Fecha Fin;Dias;% Avance;Predecesores\n";
       actividadesGlobal.forEach(a => {
         csv += `"${a.codigo}";"${a.descripcion}";"${a.responsable || ''}";"${a.estado}";"${a.fecha_inicio}";"${a.fecha_fin}";${a.dias};${a.avance}%;"${a.predecesores || ''}"\n`;
       });
-
       const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
@@ -634,7 +731,6 @@
           else el.classList.add("hidden");
         }
       };
-
       setCol("th-responsable", visibilidadColumnas.responsable);
       setCol("th-estado", visibilidadColumnas.estado);
       setCol("th-inicio", visibilidadColumnas.inicio);
@@ -665,9 +761,7 @@
         const fechaFinSem = new Date(curr.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
 
         const esSemanaActual = (ahora >= fechaIniSem && ahora <= fechaFinSem);
-        if (esSemanaActual) {
-          indiceSemanaHoy = nroSem - 1;
-        }
+        if (esSemanaActual) indiceSemanaHoy = nroSem - 1;
 
         semanasTotales.push({
           nro: nroSem,
@@ -705,9 +799,7 @@
     }
 
     function irASemanaActual() {
-      if (indiceSemanaHoy >= 0) {
-        fijarSemanaInicio(Math.max(1, indiceSemanaHoy - 1));
-      }
+      if (indiceSemanaHoy >= 0) fijarSemanaInicio(Math.max(1, indiceSemanaHoy - 1));
     }
 
     function actualizarVistaGantt() {
@@ -729,7 +821,6 @@
         return;
       }
 
-      // Vista Semanal
       const semanasVisibles = semanasTotales.slice(semanaInicioIndex);
       const gruposMes = [];
       let mesActual = null;
@@ -818,14 +909,10 @@
       const res = await fetch(`/responsables`);
       responsablesGlobal = await res.json();
       
-      const selModal = document.getElementById("act-resp");
       const selFiltro = document.getElementById("filtro-responsable-select");
-
-      selModal.innerHTML = '<option value="No asignado">No asignado</option>';
-      selFiltro.innerHTML = '<option value="">👤 Todos los Responsables</option>';
+      selFiltro.innerHTML = '<option value="">👤 Todo el Personal</option>';
 
       responsablesGlobal.forEach(r => {
-        selModal.innerHTML += `<option value="${r.nombre}">${r.nombre} (${r.cargo || 'Personal'})</option>`;
         selFiltro.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
       });
     }
@@ -849,7 +936,7 @@
       renderizarTabla();
     }
 
-    // --- RENDERIZADO DEL GANTT AVANZADO (AVATARES, EXPAND/COLLAPSE, HITOS Y BASELINE) ---
+    // --- RENDERIZADO DEL GANTT VISUAL ---
     function renderizarTabla() {
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
@@ -889,9 +976,8 @@
         if (nivel > nivelFiltroActivo) return;
         if (estaOcultoPorPadre(act.codigo)) return;
 
-        // Filtro por texto y responsable
         if (txtBusqueda && !act.descripcion.toLowerCase().includes(txtBusqueda) && !act.codigo.toLowerCase().includes(txtBusqueda)) return;
-        if (respFiltro && act.responsable !== respFiltro) return;
+        if (respFiltro && !(act.responsable || "").includes(respFiltro)) return;
 
         const esNivel1 = (nivel === 1);
         const esMadre = tieneHijos(act.codigo);
@@ -900,7 +986,6 @@
         const tr = document.createElement("tr");
         tr.className = esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50");
 
-        // Icono Expand / Collapse
         let iconoColapso = "";
         if (esMadre) {
           iconoColapso = `<button onclick="alternarColapsoNodo('${act.codigo}')" class="text-[10px] font-black text-[#0f2a4a] mr-1.5 w-4 h-4 rounded hover:bg-blue-200 transition">${estaColapsado ? '▶' : '▼'}</button>`;
@@ -929,14 +1014,11 @@
               const leftPct = Math.min(100, Math.max(0, ((startClamped - tInicioVisible) / duracionVisibleMs) * 100));
               const widthPct = Math.min(100 - leftPct, Math.max(1.2, ((endClamped - startClamped) / duracionVisibleMs) * 100));
 
-              // Detección de Hito (Milestone - Rombo si días <= 1)
               const esHito = (act.dias <= 1);
-
               let barraOElementoHTML = "";
+
               if (esHito) {
-                barraOElementoHTML = `
-                  <div class="milestone-diamond" style="left: ${leftPct}%;" title="HITO: ${act.descripcion} (${act.fecha_inicio})"></div>
-                `;
+                barraOElementoHTML = `<div class="milestone-diamond" style="left: ${leftPct}%;" title="HITO: ${act.descripcion} (${act.fecha_inicio})"></div>`;
               } else {
                 let colorBase = "#bdc3c7";
                 let borde = "border border-gray-400";
@@ -962,9 +1044,7 @@
                   : `background-color: ${colorBase}; height: 16px; top: 4px; border-radius: 4px;`;
 
                 barraOElementoHTML = `
-                  <!-- Línea Base / Baseline (Sombra de planificación) -->
                   <div class="absolute bg-gray-300/60 rounded h-[3px] bottom-0" style="left: ${leftPct}%; width: ${widthPct}%;"></div>
-                  <!-- Barra Principal -->
                   <div class="absolute ${borde} shadow transition-all duration-200" style="left: ${leftPct}%; width: ${widthPct}%; ${estiloBarra}">
                     ${subAvanceHTML}
                   </div>
@@ -973,7 +1053,7 @@
 
               ganttHTML = `
                 <div class="relative w-full h-6 bg-[#f1f2f6] rounded border border-gray-200 overflow-hidden" 
-                     title="${act.codigo}: ${act.descripcion}&#10;• Periodo: ${act.fecha_inicio} al ${act.fecha_fin}&#10;• Duración: ${act.dias} días&#10;• Avance: ${act.avance}% (${act.estado})&#10;• Predecesores: ${act.predecesores || 'Ninguno'}&#10;• Responsable: ${act.responsable || 'No asignado'}">
+                     title="${act.codigo}: ${act.descripcion}&#10;• Periodo: ${act.fecha_inicio} al ${act.fecha_fin}&#10;• Duración: ${act.dias} días&#10;• Avance: ${act.avance}% (${act.estado})&#10;• Responsable(s): ${act.responsable || 'No asignado'}">
                   <div class="absolute inset-0 flex pointer-events-none opacity-40">${divisionesHTML}</div>
                   ${hoyEstaVisible ? `<div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none shadow" style="left: ${pctHoy}%;"></div>` : ''}
                   ${barraOElementoHTML}
@@ -1033,7 +1113,7 @@
     }
 
     // =========================================================================
-    // MODALES Y EDICIÓN POR DOBLE CLIC
+    // MODALES Y EDICIÓN
     // =========================================================================
 
     function abrirInputCustom({ titulo, mensaje, tipo = 'text', valorActual = '', opciones = [], onAceptar }) {
@@ -1084,24 +1164,6 @@
             act.descripcion = nueva.trim();
             await guardarCambioDirecto(act);
           }
-        }
-      });
-    }
-
-    function editarResponsable(cod) {
-      const act = actividadesGlobal.find(a => a.codigo === cod);
-      const nombres = responsablesGlobal.map(r => r.nombre);
-      if (!nombres.includes("No asignado")) nombres.unshift("No asignado");
-
-      abrirInputCustom({
-        titulo: "Asignar Responsable",
-        mensaje: "Seleccione el personal responsable de la lista:",
-        tipo: "select",
-        valorActual: act.responsable || "No asignado",
-        opciones: nombres,
-        onAceptar: async (nuevo) => {
-          act.responsable = nuevo;
-          await guardarCambioDirecto(act);
         }
       });
     }
@@ -1380,7 +1442,7 @@
       const payload = {
         codigo: document.getElementById("act-codigo").value.trim(),
         descripcion: document.getElementById("act-desc").value.trim(),
-        responsable: document.getElementById("act-resp").value,
+        responsable: document.getElementById("act-resp").value.trim() || "No asignado",
         estado: document.getElementById("act-estado").value,
         avance: parseInt(document.getElementById("act-avance").value),
         fecha_inicio: `${d1}/${m1}/${y1}`,
