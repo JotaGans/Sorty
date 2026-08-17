@@ -8,14 +8,23 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from passlib.context import CryptContext
+import bcrypt
 from jose import JWTError, jwt
 
 SECRET_KEY = os.getenv("SECRET_KEY", "IMARPE_CLAVE_SUPER_SECRETA_PRODUCCION_2026")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 Horas de sesión
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def hash_password(password: str) -> str:
+    # Truncar a 72 bytes por estándar de bcrypt
+    pwd_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    pwd_bytes = plain_password.encode('utf-8')[:72]
+    hash_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(pwd_bytes, hash_bytes)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI(title="IMARPE Project Management API", version="2.0.0")
@@ -96,7 +105,7 @@ def init_db():
     # Crear usuario Admin inicial por defecto (admin / admin123)
     c.execute("SELECT * FROM usuarios WHERE username = 'admin'")
     if not c.fetchone():
-        hashed = pwd_context.hash("admin123")
+        hashed = hash_password("admin123")
         c.execute("INSERT INTO usuarios (username, password_hash, nombre_completo, rol) VALUES (?, ?, ?, ?)",
                   ("admin", hashed, "Administrador IMARPE", "ADMIN"))
     
@@ -177,7 +186,7 @@ def index_view(request: Request):
 @app.post("/token", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: sqlite3.Connection = Depends(get_db)):
     user = db.execute("SELECT * FROM usuarios WHERE username = ?", (form_data.username,)).fetchone()
-    if not user or not pwd_context.verify(form_data.password, user["password_hash"]):
+    if not user or not verify_password(form_data.password, user["password_hash"]):
         raise HTTPException(status_code=400, detail="Usuario o contraseña incorrectos")
     
     token = create_access_token({"sub": user["username"], "rol": user["rol"]})
