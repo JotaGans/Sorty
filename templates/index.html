@@ -110,7 +110,7 @@
       </div>
     </div>
 
-    <!-- TABLA ÁRBOL WBS + GANTT ESCALONADO CON DOBLE CLIC ACTIVO -->
+    <!-- TABLA ÁRBOL WBS + GANTT ESCALONADO -->
     <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs md:text-sm border-collapse" id="tabla-gantt-main">
@@ -136,7 +136,84 @@
     </div>
   </main>
 
-  <!-- MODAL RUTA CRÍTICA (CPM FLOTANTE) -->
+  <!-- ========================================================================= -->
+  <!-- MODALES DE EDICIÓN FLOTANTES (DISEÑO CORPORATIVO IMARPE PyQt6)            -->
+  <!-- ========================================================================= -->
+
+  <!-- 1. MODAL GENÉRICO DE ENTRADA (Equivalente a agenda_input_dialog_custom) -->
+  <div id="modal-input-custom" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
+      <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
+        <h3 id="mic-titulo" class="font-bold text-sm">Modificar Campo</h3>
+        <button onclick="cerrarInputCustom()" class="text-white text-xl font-bold hover:text-gray-300">&times;</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <p id="mic-mensaje" class="text-xs font-bold text-[#2c3e50]"></p>
+        
+        <!-- Campo de Texto -->
+        <input type="text" id="mic-input-text" class="hidden w-full p-2.5 bg-white border border-gray-300 rounded text-sm font-semibold text-[#2c3e50] outline-none focus:border-[#0f2a4a]">
+        
+        <!-- Campo Desplegable (Select) -->
+        <select id="mic-input-select" class="hidden w-full p-2.5 bg-white border border-gray-300 rounded text-sm font-semibold text-[#2c3e50] outline-none focus:border-[#0f2a4a]"></select>
+        
+        <!-- Campo Porcentaje / Número -->
+        <input type="number" id="mic-input-num" min="0" max="100" class="hidden w-full p-2.5 bg-white border border-gray-300 rounded text-sm font-bold text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
+
+        <div class="flex justify-end space-x-2 pt-2">
+          <button onclick="cerrarInputCustom()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-[#2c3e50] text-xs font-bold rounded transition">Cancelar</button>
+          <button id="mic-btn-guardar" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded transition shadow">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MODAL CALENDARIO CUSTOM (Equivalente a DialogoCalendarioCustom) -->
+  <div id="modal-fecha-custom" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-lg shadow-2xl w-full max-w-sm overflow-hidden border border-gray-300">
+      <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
+        <h3 id="mfc-titulo" class="font-bold text-sm">Fecha de Inicio</h3>
+        <button onclick="cerrarFechaCustom()" class="text-white text-xl font-bold hover:text-gray-300">&times;</button>
+      </div>
+      <div class="p-5 space-y-3">
+        <p class="text-xs font-bold text-[#2c3e50]">Seleccione o ingrese la nueva fecha:</p>
+        <input type="date" id="mfc-input-date" class="w-full p-2.5 bg-white border border-gray-300 rounded text-sm font-bold text-[#2c3e50] outline-none focus:border-[#0f2a4a]">
+        <div class="flex justify-end space-x-2 pt-2">
+          <button onclick="cerrarFechaCustom()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-[#2c3e50] text-xs font-bold rounded transition">Cancelar</button>
+          <button id="mfc-btn-guardar" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded transition shadow">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODAL FECHA FIN E INTERACTIVIDAD (Equivalente a DialogoFechaFinInteractiva) -->
+  <div id="modal-fin-interactiva" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
+      <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
+        <h3 class="font-bold text-sm">Definir Término de Componente</h3>
+        <button onclick="cerrarFinInteractiva()" class="text-white text-xl font-bold hover:text-gray-300">&times;</button>
+      </div>
+      <div class="p-5 space-y-3">
+        <p class="text-xs font-bold text-[#2c3e50]">Establezca la fecha de fin o la duración en días:</p>
+        
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 uppercase">Fecha de Fin:</label>
+          <input type="date" id="mfi-input-fin" class="w-full p-2 bg-white border border-gray-300 rounded text-sm font-bold text-[#2c3e50] outline-none focus:border-[#0f2a4a]">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 uppercase">Duración estimada (Días manual):</label>
+          <input type="number" id="mfi-input-dias" min="1" class="w-full p-2 bg-white border border-gray-300 rounded text-sm font-bold text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3">
+          <button onclick="cerrarFinInteractiva()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-[#2c3e50] text-xs font-bold rounded transition">Cancelar</button>
+          <button id="mfi-btn-guardar" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded transition shadow">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MODAL RUTA CRÍTICA (CPM FLOTANTE) -->
   <div id="modal-cpm" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col">
       <div class="bg-[#c0392b] text-white p-4 flex justify-between items-center">
@@ -171,7 +248,7 @@
     </div>
   </div>
 
-  <!-- MODAL FORMULARIO DE ACTIVIDAD (CREAR Y EDITAR) -->
+  <!-- 5. MODAL AGREGAR ACTIVIDAD -->
   <div id="modal-actividad" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
@@ -204,7 +281,6 @@
           <select id="act-resp" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]"></select>
         </div>
 
-        <!-- CALCULADORA BIDIRECCIONAL EN TIEMPO REAL -->
         <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded border">
           <div>
             <label class="text-xs font-bold text-gray-700">Fecha de Inicio</label>
@@ -236,7 +312,7 @@
     </div>
   </div>
 
-  <!-- MODAL HISTORIAL -->
+  <!-- 6. MODAL HISTORIAL -->
   <div id="modal-historial" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden max-h-[85vh] flex flex-col">
       <div class="bg-[#718093] text-white p-4 flex justify-between items-center">
@@ -258,7 +334,7 @@
     </div>
   </div>
 
-  <!-- MODAL RESPONSABLES -->
+  <!-- 7. MODAL RESPONSABLES -->
   <div id="modal-responsables" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[85vh] flex flex-col">
       <div class="bg-[#2980b9] text-white p-4 flex justify-between items-center">
@@ -293,6 +369,7 @@
         mostrarLogin();
       }
       configurarCalculadoraBidireccional();
+      configurarCalculadoraModalFin();
     });
 
     // --- AUTENTICACIÓN ---
@@ -337,7 +414,6 @@
       location.reload();
     }
 
-    // --- CARGA DE DATOS ---
     async function cargarDatosIniciales() {
       await cargarProyectoNombre();
       await cargarResponsables();
@@ -379,7 +455,6 @@
       actualizarKPIs();
     }
 
-    // Utilidad: Verificar si un código tiene hijos (es actividad madre)
     function tieneHijos(codigo) {
       const codLimpio = codigo.replace(/\.$/, "");
       return actividadesGlobal.some(a => {
@@ -408,7 +483,6 @@
         const tr = document.createElement("tr");
         tr.className = esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50");
 
-        // Gantt Escalonado con sub-avance naranja
         let ganttHTML = '<div class="gantt-rail"></div>';
         if (act.fecha_inicio && act.fecha_fin && act.fecha_inicio !== "Definir") {
           try {
@@ -462,7 +536,7 @@
           <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs cell-editable" ondblclick="editarFechaInicio('${cod}')" title="Doble clic para cambiar fecha de inicio">
             ${act.fecha_inicio || '-'}
           </td>
-          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs cell-editable" ondblclick="editarFechaFin('${cod}')" title="Doble clic para calcular fecha fin">
+          <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs cell-editable" ondblclick="editarFechaFin('${cod}')" title="Doble clic para calcular término">
             ${act.fecha_fin || '-'}
           </td>
           <td class="p-2 border-r border-gray-100 text-center font-bold text-xs cell-editable" ondblclick="editarDias('${cod}')" title="Doble clic para cambiar días">
@@ -497,142 +571,299 @@
     }
 
     // =========================================================================
-    // LÓGICA DE EDICIÓN POR DOBLE CLIC (Fiel al código original de PyQt6)
+    // MODALES ESTILIZADOS EN REEMPLAZO DE PROMPT / ALERT
     // =========================================================================
 
+    function abrirInputCustom({ titulo, mensaje, tipo = 'text', valorActual = '', opciones = [], onAceptar }) {
+      document.getElementById("mic-titulo").innerText = titulo;
+      document.getElementById("mic-mensaje").innerText = mensaje;
+
+      const txt = document.getElementById("mic-input-text");
+      const sel = document.getElementById("mic-input-select");
+      const num = document.getElementById("mic-input-num");
+
+      txt.classList.add("hidden");
+      sel.classList.add("hidden");
+      num.classList.add("hidden");
+
+      if (tipo === 'select') {
+        sel.innerHTML = "";
+        opciones.forEach(op => {
+          sel.innerHTML += `<option value="${op}">${op}</option>`;
+        });
+        sel.value = valorActual;
+        sel.classList.remove("hidden");
+      } else if (tipo === 'number') {
+        num.value = valorActual;
+        num.classList.remove("hidden");
+      } else {
+        txt.value = valorActual;
+        txt.classList.remove("hidden");
+      }
+
+      const btnGuardar = document.getElementById("mic-btn-guardar");
+      btnGuardar.onclick = () => {
+        let resultado = "";
+        if (tipo === 'select') resultado = sel.value;
+        else if (tipo === 'number') resultado = num.value;
+        else resultado = txt.value;
+
+        cerrarInputCustom();
+        if (onAceptar) onAceptar(resultado);
+      };
+
+      document.getElementById("modal-input-custom").classList.remove("hidden");
+    }
+
+    function cerrarInputCustom() {
+      document.getElementById("modal-input-custom").classList.add("hidden");
+    }
+
     // 1. EDITAR DESCRIPCIÓN
-    async function editarDescripcion(cod) {
+    function editarDescripcion(cod) {
       const act = actividadesGlobal.find(a => a.codigo === cod);
-      const nueva = prompt("Modificar Descripción de la actividad:", act.descripcion);
-      if (nueva !== null && nueva.trim() !== "") {
-        act.descripcion = nueva.trim();
-        await guardarCambioDirecto(act);
-      }
-    }
-
-    // 2. EDITAR RESPONSABLE
-    async function editarResponsable(cod) {
-      const act = actividadesGlobal.find(a => a.codigo === cod);
-      const nombres = responsablesGlobal.map(r => r.nombre).join("\n- ");
-      const nuevo = prompt(`Asignar Responsable.\nEscriba el nombre exacto de la lista:\n- ${nombres}`, act.responsable);
-      if (nuevo !== null && nuevo.trim() !== "") {
-        act.responsable = nuevo.trim();
-        await guardarCambioDirecto(act);
-      }
-    }
-
-    // 3. EDITAR ESTADO (Con bloqueo si es Actividad Madre)
-    async function editarEstado(cod) {
-      if (tieneHijos(cod)) {
-        alert("🔒 Bloqueado: El Estado de esta actividad madre se calcula automáticamente del promedio de sus subtareas.");
-        return;
-      }
-      const act = actividadesGlobal.find(a => a.codigo === cod);
-      const op = prompt("Modificar Estado:\n1: Pendiente\n2: En proceso\n3: Ejecutado", act.estado === "Ejecutado" ? "3" : (act.estado === "En proceso" ? "2" : "1"));
-      
-      if (op === "1") {
-        act.estado = "Pendiente";
-        act.avance = 0;
-      } else if (op === "3") {
-        act.estado = "Ejecutado";
-        act.avance = 100;
-      } else if (op === "2") {
-        act.estado = "En proceso";
-        const av = prompt("Indique el porcentaje de avance (0 a 100):", act.avance);
-        if (av !== null && !isNaN(av)) {
-          const num = parseInt(av);
-          if (num >= 0 && num <= 100) {
-            act.avance = num;
-            if (num === 100) act.estado = "Ejecutado";
-            else if (num === 0) act.estado = "Pendiente";
+      abrirInputCustom({
+        titulo: "Modificar Descripción",
+        mensaje: "Ingrese la nueva descripción:",
+        tipo: "text",
+        valorActual: act.descripcion,
+        onAceptar: async (nueva) => {
+          if (nueva && nueva.trim() !== "") {
+            act.descripcion = nueva.trim();
+            await guardarCambioDirecto(act);
           }
         }
-      }
-      await guardarCambioDirecto(act);
+      });
     }
 
-    // 4. EDITAR FECHA INICIO (Bloqueado CPM si tiene hijos)
-    async function editarFechaInicio(cod) {
+    // 2. EDITAR RESPONSABLE (Desplegable amigable)
+    function editarResponsable(cod) {
+      const act = actividadesGlobal.find(a => a.codigo === cod);
+      const nombres = responsablesGlobal.map(r => r.nombre);
+      if (!nombres.includes("No asignado")) nombres.unshift("No asignado");
+
+      abrirInputCustom({
+        titulo: "Asignar Responsable",
+        mensaje: "Seleccione el personal responsable de la lista:",
+        tipo: "select",
+        valorActual: act.responsable || "No asignado",
+        opciones: nombres,
+        onAceptar: async (nuevo) => {
+          act.responsable = nuevo;
+          await guardarCambioDirecto(act);
+        }
+      });
+    }
+
+    // 3. EDITAR ESTADO (Bloqueo de madres y sub-modal de avance)
+    function editarEstado(cod) {
       if (tieneHijos(cod)) {
-        alert("🔒 Bloqueado CPM: La Fecha de Inicio se calcula automáticamente con las fechas de sus componentes hijas.");
+        abrirInputCustom({
+          titulo: "Bloqueado",
+          mensaje: "El Estado se calcula automáticamente de sus subtareas.",
+          tipo: "text",
+          valorActual: act.estado,
+          onAceptar: () => {}
+        });
+        return;
+      }
+
+      const act = actividadesGlobal.find(a => a.codigo === cod);
+      abrirInputCustom({
+        titulo: "Modificar Estado",
+        mensaje: "Seleccione el estado de la actividad:",
+        tipo: "select",
+        valorActual: act.estado,
+        opciones: ["Pendiente", "En proceso", "Ejecutado"],
+        onAceptar: async (nuevoEstado) => {
+          if (nuevoEstado === "Ejecutado") {
+            act.estado = "Ejecutado";
+            act.avance = 100;
+            await guardarCambioDirecto(act);
+          } else if (nuevoEstado === "Pendiente") {
+            act.estado = "Pendiente";
+            act.avance = 0;
+            await guardarCambioDirecto(act);
+          } else if (nuevoEstado === "En proceso") {
+            abrirInputCustom({
+              titulo: "Porcentaje Requerido",
+              mensaje: "Digite un valor (0 a 100):",
+              tipo: "number",
+              valorActual: act.avance > 0 ? act.avance : 50,
+              onAceptar: async (pctStr) => {
+                const pct = parseInt(pctStr);
+                if (!isNaN(pct) && pct >= 0 && pct <= 100) {
+                  act.avance = pct;
+                  act.estado = (pct === 100) ? "Ejecutado" : (pct === 0 ? "Pendiente" : "En proceso");
+                  await guardarCambioDirecto(act);
+                }
+              }
+            });
+          }
+        }
+      });
+    }
+
+    // 4. EDITAR FECHA INICIO (Modal Calendario)
+    function editarFechaInicio(cod) {
+      if (tieneHijos(cod)) {
+        alert("🔒 Bloqueado CPM: La Fecha de Inicio se calcula automáticamente con las componentes hijas.");
         return;
       }
       const act = actividadesGlobal.find(a => a.codigo === cod);
-      const nuevaF = prompt("Digite Fecha de Inicio (DD/MM/AAAA):", act.fecha_inicio);
-      if (nuevaF && /^\d{2}\/\d{2}\/\d{4}$/.test(nuevaF.trim())) {
-        act.fecha_inicio = nuevaF.trim();
-        // Recalcular Fecha Fin conservando los días
-        const [d, m, y] = act.fecha_inicio.split("/").map(Number);
+      
+      let isoDate = "";
+      if (act.fecha_inicio && act.fecha_inicio !== "Definir") {
+        const [d, m, y] = act.fecha_inicio.split("/");
+        isoDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      } else {
+        isoDate = `${new Date().getFullYear()}-01-01`;
+      }
+
+      document.getElementById("mfc-input-date").value = isoDate;
+      document.getElementById("mfc-btn-guardar").onclick = async () => {
+        const val = document.getElementById("mfc-input-date").value;
+        if (val) {
+          const [y, m, d] = val.split("-");
+          act.fecha_inicio = `${d}/${m}/${y}`;
+
+          const dt = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+          dt.setDate(dt.getDate() + (act.dias - 1));
+          act.fecha_fin = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+
+          cerrarFechaCustom();
+          await guardarCambioDirecto(act);
+        }
+      };
+
+      document.getElementById("modal-fecha-custom").classList.remove("hidden");
+    }
+
+    function cerrarFechaCustom() {
+      document.getElementById("modal-fecha-custom").classList.add("hidden");
+    }
+
+    // 5. EDITAR FECHA FIN (Calculadora Bidireccional en Modal)
+    let modalActivoAct = null;
+    function editarFechaFin(cod) {
+      if (tieneHijos(cod)) {
+        alert("🔒 Bloqueado CPM: La Fecha de Fin se calcula automáticamente de sus desgloses.");
+        return;
+      }
+      modalActivoAct = actividadesGlobal.find(a => a.codigo === cod);
+
+      let isoFin = "";
+      if (modalActivoAct.fecha_fin && modalActivoAct.fecha_fin !== "Definir") {
+        const [d, m, y] = modalActivoAct.fecha_fin.split("/");
+        isoFin = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      } else {
+        isoFin = `${new Date().getFullYear()}-01-05`;
+      }
+
+      document.getElementById("mfi-input-fin").value = isoFin;
+      document.getElementById("mfi-input-dias").value = modalActivoAct.dias || 5;
+
+      document.getElementById("mfi-btn-guardar").onclick = async () => {
+        const valFin = document.getElementById("mfi-input-fin").value;
+        const valDias = parseInt(document.getElementById("mfi-input-dias").value);
+
+        if (valFin && valDias > 0) {
+          const [y, m, d] = valFin.split("-");
+          modalActivoAct.fecha_fin = `${d}/${m}/${y}`;
+          modalActivoAct.dias = valDias;
+
+          cerrarFinInteractiva();
+          await guardarCambioDirecto(modalActivoAct);
+        }
+      };
+
+      document.getElementById("modal-fin-interactiva").classList.remove("hidden");
+    }
+
+    function cerrarFinInteractiva() {
+      document.getElementById("modal-fin-interactiva").classList.add("hidden");
+    }
+
+    function configurarCalculadoraModalFin() {
+      let bloqueando = false;
+      const fin = document.getElementById("mfi-input-fin");
+      const dias = document.getElementById("mfi-input-dias");
+
+      dias.addEventListener("input", () => {
+        if (bloqueando || !modalActivoAct || !dias.value) return;
+        const [d, m, y] = modalActivoAct.fecha_inicio.split("/").map(Number);
         const dt = new Date(y, m - 1, d);
-        dt.setDate(dt.getDate() + (act.dias - 1));
-        act.fecha_fin = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
-        await guardarCambioDirecto(act);
-      }
-    }
+        dt.setDate(dt.getDate() + (parseInt(dias.value) - 1));
 
-    // 5. EDITAR FECHA FIN (Bloqueado CPM si tiene hijos)
-    async function editarFechaFin(cod) {
-      if (tieneHijos(cod)) {
-        alert("🔒 Bloqueado CPM: La Fecha de Fin se calcula automáticamente del término de sus desgloses.");
-        return;
-      }
-      const act = actividadesGlobal.find(a => a.codigo === cod);
-      const nuevaF = prompt("Digite Fecha de Fin (DD/MM/AAAA):", act.fecha_fin);
-      if (nuevaF && /^\d{2}\/\d{2}\/\d{4}$/.test(nuevaF.trim())) {
-        const [d1, m1, y1] = act.fecha_inicio.split("/").map(Number);
-        const [d2, m2, y2] = nuevaF.trim().split("/").map(Number);
+        bloqueando = true;
+        fin.value = dt.toISOString().split("T")[0];
+        bloqueando = false;
+      });
+
+      fin.addEventListener("input", () => {
+        if (bloqueando || !modalActivoAct || !fin.value) return;
+        const [d1, m1, y1] = modalActivoAct.fecha_inicio.split("/").map(Number);
         const dt1 = new Date(y1, m1 - 1, d1);
-        const dt2 = new Date(y2, m2 - 1, d2);
+        const dt2 = new Date(fin.value + "T00:00:00");
         const diff = Math.floor((dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
+
         if (diff > 0) {
-          act.fecha_fin = nuevaF.trim();
-          act.dias = diff;
-          await guardarCambioDirecto(act);
-        } else {
-          alert("Inconsistencia temporal: La fecha de fin no puede ser anterior a la de inicio.");
+          bloqueando = true;
+          dias.value = diff;
+          bloqueando = false;
         }
-      }
+      });
     }
 
-    // 6. EDITAR DÍAS DE DURACIÓN (Bloqueado CPM si tiene hijos)
-    async function editarDias(cod) {
+    // 6. EDITAR DÍAS
+    function editarDias(cod) {
       if (tieneHijos(cod)) {
-        alert("🔒 Bloqueado CPM: Los Días se autocalculan midiendo la ventana de ejecución total de las subtareas.");
+        alert("🔒 Bloqueado CPM: Los Días se autocalculan midiendo la ventana de ejecución total.");
         return;
       }
       const act = actividadesGlobal.find(a => a.codigo === cod);
-      const d = prompt("Consigne los Días de duración estimada:", act.dias);
-      if (d !== null && !isNaN(d) && parseInt(d) > 0) {
-        act.dias = parseInt(d);
-        const [d1, m1, y1] = act.fecha_inicio.split("/").map(Number);
-        const dt = new Date(y1, m1 - 1, d1);
-        dt.setDate(dt.getDate() + (act.dias - 1));
-        act.fecha_fin = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
-        await guardarCambioDirecto(act);
-      }
+      abrirInputCustom({
+        titulo: "Modificar Duración",
+        mensaje: "Consigne los Días de duración estimada:",
+        tipo: "number",
+        valorActual: act.dias,
+        onAceptar: async (diasStr) => {
+          const d = parseInt(diasStr);
+          if (!isNaN(d) && d > 0) {
+            act.dias = d;
+            const [d1, m1, y1] = act.fecha_inicio.split("/").map(Number);
+            const dt = new Date(y1, m1 - 1, d1);
+            dt.setDate(dt.getDate() + (act.dias - 1));
+            act.fecha_fin = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+            await guardarCambioDirecto(act);
+          }
+        }
+      });
     }
 
-    // 7. EDITAR % AVANCE (Bloqueado si tiene hijos)
-    async function editarAvance(cod) {
+    // 7. EDITAR % AVANCE
+    function editarAvance(cod) {
       if (tieneHijos(cod)) {
-        alert("🔒 Bloqueado: El % de Avance se calcula automáticamente por promedio de sus desgloses.");
+        alert("🔒 Bloqueado: El % de Avance se calcula automáticamente por promedio.");
         return;
       }
       const act = actividadesGlobal.find(a => a.codigo === cod);
-      const av = prompt("Porcentaje de avance real (0 a 100):", act.avance);
-      if (av !== null && !isNaN(av)) {
-        const num = parseInt(av);
-        if (num >= 0 && num <= 100) {
-          act.avance = num;
-          act.estado = (num === 100) ? "Ejecutado" : (num === 0 ? "Pendiente" : "En proceso");
-          await guardarCambioDirecto(act);
-        } else {
-          alert("Valor Fuera de Rango: El porcentaje debe estar estrictamente entre 0 y 100%.");
+      abrirInputCustom({
+        titulo: "Porcentaje Requerido",
+        mensaje: "Porcentaje de avance real (0 a 100):",
+        tipo: "number",
+        valorActual: act.avance,
+        onAceptar: async (avStr) => {
+          const num = parseInt(avStr);
+          if (!isNaN(num) && num >= 0 && num <= 100) {
+            act.avance = num;
+            act.estado = (num === 100) ? "Ejecutado" : (num === 0 ? "Pendiente" : "En proceso");
+            await guardarCambioDirecto(act);
+          }
         }
-      }
+      });
     }
 
-    // Función auxiliar para enviar actualización al backend
     async function guardarCambioDirecto(act) {
       const res = await fetch(`/actividades`, {
         method: "POST",
@@ -642,14 +873,13 @@
       if (res.ok) {
         cargarActividades();
       } else {
-        alert("Error al actualizar datos.");
+        alert("Error al actualizar.");
       }
     }
 
-    // --- AGREGAR SUBTAREA (+ Nivel siguiente) ---
+    // --- AGREGAR SUBTAREA ---
     function agregarSubtarea(codBase) {
       const codLimpio = codBase.replace(/\.$/, "");
-      // Calcular siguiente código hijo
       const hijosDirectos = actividadesGlobal.filter(a => {
         const c = a.codigo.replace(/\.$/, "");
         return c.startsWith(codLimpio + ".") && c.split(".").length === codLimpio.split(".").length + 1;
@@ -662,7 +892,7 @@
       document.getElementById("modal-titulo").innerText = `Nueva Subtarea para [${codBase}]`;
     }
 
-    // --- CALCULADORA BIDIRECCIONAL EN TIEMPO REAL ---
+    // --- CALCULADORA BIDIRECCIONAL FORMULARIO GENERAL ---
     function configurarCalculadoraBidireccional() {
       let bloqueando = false;
       const fIni = document.getElementById("act-fecha-inicio");
@@ -703,7 +933,6 @@
       });
     }
 
-    // --- MODALES GENERALES ---
     function abrirModalNuevaActividad(nivel = 1) {
       document.getElementById("form-actividad").reset();
       const anio = new Date().getFullYear();
