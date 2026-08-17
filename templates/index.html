@@ -7,9 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f5f6fa; }
-    .gantt-rail { background-color: #f1f2f6; border-radius: 4px; height: 14px; position: relative; width: 100%; min-width: 220px; overflow: hidden; }
-    .gantt-bar { height: 14px; border-radius: 4px; position: absolute; top: 0; }
-    .gantt-progress { height: 14px; border-radius: 4px; position: absolute; top: 0; left: 0; background-color: #d35400; }
     .tree-row-l1 { background-color: #e8f4f8 !important; font-weight: bold; color: #2c3e50; }
     .tree-row-l4 { font-style: italic; color: #576574; }
     .cell-editable { cursor: pointer; transition: background 0.15s ease; }
@@ -41,7 +38,7 @@
 
   <!-- CINTA SUPERIOR AZUL CORPORATIVA IMARPE -->
   <header class="bg-[#0f2a4a] text-white shadow-md">
-    <div class="max-w-[1550px] mx-auto px-4 md:px-8 h-[80px] flex items-center justify-between">
+    <div class="max-w-[1650px] mx-auto px-4 md:px-8 h-[80px] flex items-center justify-between">
       <div class="flex items-center space-x-4">
         <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-12 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
       </div>
@@ -59,9 +56,9 @@
   </header>
 
   <!-- CONTENEDOR PRINCIPAL -->
-  <main id="view-dashboard" class="flex-1 max-w-[1550px] w-full mx-auto p-4 md:p-6 space-y-4">
+  <main id="view-dashboard" class="flex-1 max-w-[1650px] w-full mx-auto p-4 md:p-6 space-y-4">
     
-    <!-- TARJETAS DE INDICADORES (KPIs PyQt6) -->
+    <!-- TARJETAS DE INDICADORES (KPIs) -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="bg-[#1abc9c] text-white p-4 rounded-lg shadow">
         <span class="text-xs font-bold uppercase tracking-wider">AVANCE GLOBAL</span>
@@ -81,7 +78,7 @@
       </div>
     </div>
 
-    <!-- BOTONERA DE CONTROL (Estilo v8.6) -->
+    <!-- BOTONERA DE CONTROL -->
     <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-3 rounded-lg shadow-sm border border-gray-200">
       <div class="flex flex-wrap items-center gap-2">
         <button onclick="abrirModalNuevaActividad(1)" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-4 py-2 rounded transition shadow">
@@ -110,28 +107,31 @@
       </div>
     </div>
 
-    <!-- TABLA ÁRBOL WBS + GANTT ESCALONADO -->
+    <!-- TABLA ÁRBOL WBS + GANTT CON CALENDARIO MENSUAL -->
     <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs md:text-sm border-collapse" id="tabla-gantt-main">
           <thead class="bg-[#0f2a4a] text-white select-none">
             <tr>
-              <th class="p-2.5 font-bold border-r border-blue-900 w-28">Código</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 min-w-[240px]">Descripción de Actividad ✎</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 hidden md:table-cell w-48">Responsable asignado ✎</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 w-28">Estado ✎</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 w-24">Código</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 min-w-[220px]">Descripción de Actividad ✎</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 hidden md:table-cell w-44">Responsable asignado ✎</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 w-24">Estado ✎</th>
               <th class="p-2.5 font-bold border-r border-blue-900 hidden sm:table-cell w-24">Inicio ✎</th>
               <th class="p-2.5 font-bold border-r border-blue-900 hidden sm:table-cell w-24">Fin ✎</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 text-center w-16">Días ✎</th>
-              <th class="p-2.5 font-bold border-r border-blue-900 text-center w-20">% Avance ✎</th>
-              <th class="p-2.5 font-bold min-w-[500px] border-l border-blue-800">
-                <div class="flex justify-between text-[11px] text-gray-200 border-b border-blue-800 pb-1 mb-1">
-                  <span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span>
-                  <span>Jul</span><span>Ago</span><span>Set</span><span>Oct</span><span>Nov</span><span>Dic</span>
+              <th class="p-2.5 font-bold border-r border-blue-900 text-center w-14">Días ✎</th>
+              <th class="p-2.5 font-bold border-r border-blue-900 text-center w-16">% Avance ✎</th>
+              
+              <!-- CABECERA DEL GANTT CON LOS 12 MESES -->
+              <th class="p-2 font-bold min-w-[550px] border-r border-blue-900">
+                <div class="grid grid-cols-12 text-center text-[10px] text-gray-200 border-b border-blue-800 pb-1 mb-1 font-semibold">
+                  <div>Ene</div><div>Feb</div><div>Mar</div><div>Abr</div><div>May</div><div>Jun</div>
+                  <div>Jul</div><div>Ago</div><div>Set</div><div>Oct</div><div>Nov</div><div>Dic</div>
                 </div>
-                <div class="text-[10px] text-teal-300 font-normal text-center">Cronograma Anual de Ejecución</div>
+                <div class="text-[9px] text-teal-300 font-normal text-center tracking-wide">CRONOGRAMA DE EJECUCIÓN (Línea roja = Fecha actual)</div>
               </th>
-              <th class="p-2.5 font-bold text-center w-24">Acciones</th>
+              
+              <th class="p-2.5 font-bold text-center w-20">Acciones</th>
             </tr>
           </thead>
           <tbody id="lista-actividades" class="divide-y divide-gray-200 select-none">
@@ -143,10 +143,10 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- MODALES DE EDICIÓN FLOTANTES (DISEÑO CORPORATIVO IMARPE PyQt6)            -->
+  <!-- MODALES DE EDICIÓN FLOTANTES (z-[70] PRIORIDAD ALTA)                      -->
   <!-- ========================================================================= -->
 
-  <!-- 1. MODAL GENÉRICO DE ENTRADA (Equivalente a agenda_input_dialog_custom) -->
+  <!-- 1. MODAL GENÉRICO DE ENTRADA -->
   <div id="modal-input-custom" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
       <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
@@ -156,13 +156,8 @@
       <div class="p-5 space-y-4">
         <p id="mic-mensaje" class="text-xs font-bold text-[#2c3e50]"></p>
         
-        <!-- Campo de Texto -->
         <input type="text" id="mic-input-text" class="hidden w-full p-2.5 bg-white border border-gray-300 rounded text-sm font-semibold text-[#2c3e50] outline-none focus:border-[#0f2a4a]">
-        
-        <!-- Campo Desplegable (Select) -->
         <select id="mic-input-select" class="hidden w-full p-2.5 bg-white border border-gray-300 rounded text-sm font-semibold text-[#2c3e50] outline-none focus:border-[#0f2a4a]"></select>
-        
-        <!-- Campo Porcentaje / Número -->
         <input type="number" id="mic-input-num" min="0" max="100" class="hidden w-full p-2.5 bg-white border border-gray-300 rounded text-sm font-bold text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
 
         <div class="flex justify-end space-x-2 pt-2">
@@ -173,7 +168,7 @@
     </div>
   </div>
 
-  <!-- 2. MODAL CALENDARIO CUSTOM (Equivalente a DialogoCalendarioCustom) -->
+  <!-- 2. MODAL CALENDARIO -->
   <div id="modal-fecha-custom" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-lg shadow-2xl w-full max-w-sm overflow-hidden border border-gray-300">
       <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
@@ -191,7 +186,7 @@
     </div>
   </div>
 
-  <!-- 3. MODAL FECHA FIN E INTERACTIVIDAD (Equivalente a DialogoFechaFinInteractiva) -->
+  <!-- 3. MODAL FECHA FIN INTERACTIVA -->
   <div id="modal-fin-interactiva" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
       <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
@@ -219,7 +214,7 @@
     </div>
   </div>
 
-  <!-- 4. MODAL RUTA CRÍTICA (CPM FLOTANTE) -->
+  <!-- 4. MODAL RUTA CRÍTICA (CPM) -->
   <div id="modal-cpm" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col">
       <div class="bg-[#c0392b] text-white p-4 flex justify-between items-center">
@@ -340,11 +335,9 @@
     </div>
   </div>
 
-  <!-- MODAL ADMINISTRADOR DE RESPONSABLES -->
+  <!-- 7. MODAL RESPONSABLES -->
   <div id="modal-responsables" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
-      
-      <!-- Encabezado -->
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
         <div class="flex items-center space-x-2">
           <span class="text-lg">⚙️</span>
@@ -353,7 +346,6 @@
         <button onclick="cerrarResponsables()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
       </div>
 
-      <!-- Cuerpo con tabla editable -->
       <div class="p-4 overflow-y-auto space-y-3 flex-1">
         <p class="text-xs text-gray-500 font-semibold">Haga doble clic sobre cualquier campo para editar nombre, cargo o correo en tiempo real:</p>
         
@@ -367,14 +359,11 @@
                 <th class="p-2.5 text-center w-16">Acción</th>
               </tr>
             </thead>
-            <tbody id="responsables-tabla-body" class="divide-y divide-gray-200">
-              <!-- Renderizado dinámico -->
-            </tbody>
+            <tbody id="responsables-tabla-body" class="divide-y divide-gray-200"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- Botonera Inferior Estilo PyQt6 -->
       <div class="p-3 bg-gray-100 border-t border-gray-300 flex justify-between items-center">
         <button onclick="crearNuevoResponsable()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold px-4 py-2 rounded transition shadow">
           + Agregar Nuevo
@@ -493,7 +482,7 @@
       });
     }
 
-    // --- RENDERIZADO DEL GANTT Y TABLA ÁRBOL ---
+    // --- RENDERIZADO DEL GANTT VISUAL AVANZADO CON CUADRÍCULA Y LÍNEA ROJA DE HOY ---
     function renderizarTabla() {
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
@@ -503,7 +492,6 @@
       const finAnio = new Date(anioActual, 11, 31).getTime();
       const totalDiasAnio = (finAnio - inicioAnio) / (1000 * 60 * 60 * 24) + 1;
 
-      // Posición de la Línea de Hoy
       const ahora = new Date().getTime();
       const pctHoy = Math.min(100, Math.max(0, ((ahora - inicioAnio) / (1000 * 60 * 60 * 24) / totalDiasAnio) * 100));
 
@@ -517,13 +505,12 @@
         const tr = document.createElement("tr");
         tr.className = esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50");
 
-        // Construcción del Gantt Visual Avanzado
         let ganttHTML = `
           <div class="relative w-full h-6 bg-[#f1f2f6] rounded border border-gray-200 overflow-hidden" title="Sin fechas programadas">
-            <div class="absolute inset-0 flex justify-between pointer-events-none opacity-20 divide-x divide-gray-400">
-              ${Array(12).fill('<div class="flex-1"></div>').join('')}
+            <div class="absolute inset-0 grid grid-cols-12 pointer-events-none opacity-20 divide-x divide-gray-400">
+              ${Array(12).fill('<div></div>').join('')}
             </div>
-            <div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none" style="left: ${pctHoy}%;" title="Fecha actual"></div>
+            <div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none" style="left: ${pctHoy}%;" title="Fecha actual (Hoy)"></div>
           </div>
         `;
 
@@ -540,18 +527,17 @@
             const leftPct = Math.min(100, Math.max(0, (diasDesdeInicio / totalDiasAnio) * 100));
             const widthPct = Math.min(100 - leftPct, Math.max(1.5, (duracion / totalDiasAnio) * 100));
 
-            let colorBase = "#bdc3c7"; // Pendiente (Gris)
+            let colorBase = "#bdc3c7";
             let borde = "border border-gray-400";
 
             if (act.estado === "Ejecutado") {
-              colorBase = "#2ecc71"; // Verde
-              borde = "border border-green-600 shadow-sm";
+              colorBase = "#2ecc71";
+              borde = "border border-green-600";
             } else if (act.estado === "En proceso") {
-              colorBase = "#f1c40f"; // Amarillo fondo restante
-              borde = "border border-yellow-600 shadow-sm";
+              colorBase = "#f1c40f";
+              borde = "border border-yellow-600";
             }
 
-            // Sub-barra de progreso proporcional
             let subAvanceHTML = "";
             if (act.estado === "En proceso" && act.avance > 0) {
               subAvanceHTML = `
@@ -561,7 +547,6 @@
               `;
             }
 
-            // Estilo corchete si es Actividad Madre
             const estiloBarra = esMadre 
               ? `background-color: #0f2a4a; height: 10px; top: 7px; border-radius: 2px;` 
               : `background-color: ${colorBase}; height: 16px; top: 4px; border-radius: 4px;`;
@@ -570,15 +555,15 @@
               <div class="relative w-full h-6 bg-[#f1f2f6] rounded border border-gray-200 overflow-hidden" 
                    title="${act.codigo}: ${act.descripcion}&#10;• Periodo: ${act.fecha_inicio} al ${act.fecha_fin}&#10;• Duración: ${act.dias} días&#10;• Avance: ${act.avance}% (${act.estado})&#10;• Responsable: ${act.responsable || 'No asignado'}">
                 
-                <!-- Cuadrícula de 12 Meses -->
-                <div class="absolute inset-0 flex justify-between pointer-events-none opacity-25 divide-x divide-gray-400">
-                  ${Array(12).fill('<div class="flex-1"></div>').join('')}
+                <!-- Cuadrícula 12 meses -->
+                <div class="absolute inset-0 grid grid-cols-12 pointer-events-none opacity-20 divide-x divide-gray-400">
+                  ${Array(12).fill('<div></div>').join('')}
                 </div>
 
-                <!-- Línea de HOY -->
-                <div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none" style="left: ${pctHoy}%;"></div>
+                <!-- Línea roja Hoy -->
+                <div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none shadow" style="left: ${pctHoy}%;" title="Fecha actual (Hoy)"></div>
 
-                <!-- Barra de Actividad -->
+                <!-- Barra Cronograma -->
                 <div class="absolute ${borde} shadow transition-all duration-200" style="left: ${leftPct}%; width: ${widthPct}%; ${estiloBarra}">
                   ${subAvanceHTML}
                 </div>
@@ -604,7 +589,7 @@
           <td class="p-2 border-r border-gray-100 hidden sm:table-cell text-xs cell-editable" ondblclick="editarFechaFin('${cod}')">${act.fecha_fin || '-'}</td>
           <td class="p-2 border-r border-gray-100 text-center font-bold text-xs cell-editable" ondblclick="editarDias('${cod}')">${act.dias}</td>
           <td class="p-2 border-r border-gray-100 text-center font-bold text-xs cell-editable" ondblclick="editarAvance('${cod}')">${act.avance}%</td>
-          <td class="p-2 border-r border-gray-100 min-w-[500px]">${ganttHTML}</td>
+          <td class="p-2 border-r border-gray-100 min-w-[550px]">${ganttHTML}</td>
           <td class="p-2 text-center space-x-1">
             <button onclick="agregarSubtarea('${cod}')" class="text-blue-600 hover:text-blue-800 font-bold px-1" title="Agregar subtarea">+</button>
             <button onclick="eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>
@@ -678,7 +663,6 @@
       document.getElementById("modal-input-custom").classList.add("hidden");
     }
 
-    // 1. EDITAR DESCRIPCIÓN
     function editarDescripcion(cod) {
       const act = actividadesGlobal.find(a => a.codigo === cod);
       abrirInputCustom({
@@ -695,7 +679,6 @@
       });
     }
 
-    // 2. EDITAR RESPONSABLE (Desplegable amigable)
     function editarResponsable(cod) {
       const act = actividadesGlobal.find(a => a.codigo === cod);
       const nombres = responsablesGlobal.map(r => r.nombre);
@@ -714,7 +697,6 @@
       });
     }
 
-    // 3. EDITAR ESTADO (Bloqueo de madres y sub-modal de avance)
     function editarEstado(cod) {
       if (tieneHijos(cod)) {
         abrirInputCustom({
@@ -763,7 +745,6 @@
       });
     }
 
-    // 4. EDITAR FECHA INICIO (Modal Calendario)
     function editarFechaInicio(cod) {
       if (tieneHijos(cod)) {
         alert("🔒 Bloqueado CPM: La Fecha de Inicio se calcula automáticamente con las componentes hijas.");
@@ -802,7 +783,6 @@
       document.getElementById("modal-fecha-custom").classList.add("hidden");
     }
 
-    // 5. EDITAR FECHA FIN (Calculadora Bidireccional en Modal)
     let modalActivoAct = null;
     function editarFechaFin(cod) {
       if (tieneHijos(cod)) {
@@ -874,7 +854,6 @@
       });
     }
 
-    // 6. EDITAR DÍAS
     function editarDias(cod) {
       if (tieneHijos(cod)) {
         alert("🔒 Bloqueado CPM: Los Días se autocalculan midiendo la ventana de ejecución total.");
@@ -900,7 +879,6 @@
       });
     }
 
-    // 7. EDITAR % AVANCE
     function editarAvance(cod) {
       if (tieneHijos(cod)) {
         alert("🔒 Bloqueado: El % de Avance se calcula automáticamente por promedio.");
@@ -936,7 +914,6 @@
       }
     }
 
-    // --- AGREGAR SUBTAREA ---
     function agregarSubtarea(codBase) {
       const codLimpio = codBase.replace(/\.$/, "");
       const hijosDirectos = actividadesGlobal.filter(a => {
@@ -951,7 +928,6 @@
       document.getElementById("modal-titulo").innerText = `Nueva Subtarea para [${codBase}]`;
     }
 
-    // --- CALCULADORA BIDIRECCIONAL FORMULARIO GENERAL ---
     function configurarCalculadoraBidireccional() {
       let bloqueando = false;
       const fIni = document.getElementById("act-fecha-inicio");
@@ -975,7 +951,7 @@
         if (bloqueando || !fIni.value || !fFin.value) return;
         const d1 = new Date(fIni.value + "T00:00:00");
         const d2 = new Date(fFin.value + "T00:00:00");
-        const diff = Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+        const diff = Math.floor((dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
         if (diff > 0) {
           bloqueando = true;
           txtDias.value = diff;
@@ -1109,7 +1085,7 @@
       document.getElementById("modal-historial").classList.add("hidden");
     }
 
-    // --- GESTIÓN INTERACTIVA DE RESPONSABLES ---
+    // --- GESTIÓN DE RESPONSABLES ---
     async function abrirResponsables() {
       await cargarResponsables();
       renderizarTablaResponsables();
@@ -1118,7 +1094,7 @@
 
     function cerrarResponsables() {
       document.getElementById("modal-responsables").classList.add("hidden");
-      cargarActividades(); // Refrescar nombres en cascada en la tabla principal
+      cargarActividades();
     }
 
     function renderizarTablaResponsables() {
@@ -1147,7 +1123,6 @@
       });
     }
 
-    // 1. EDITAR CAMPO INDIVIDUAL (Nombre con cascada, Cargo o Correo)
     function editarCampoResponsable(nombreActual, campo, valorActual) {
       const labels = {
         nombre: "Apellidos y Nombres",
@@ -1193,7 +1168,6 @@
       });
     }
 
-    // 2. CREAR NUEVO RESPONSABLE
     function crearNuevoResponsable() {
       abrirInputCustom({
         titulo: "Nuevo Registro de Personal",
@@ -1242,7 +1216,6 @@
       });
     }
 
-    // 3. ELIMINAR RESPONSABLE
     async function eliminarResponsable(nombre) {
       if (!confirm(`¿Eliminar a ${nombre} de los registros?`)) return;
 
