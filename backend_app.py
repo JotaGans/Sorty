@@ -236,41 +236,49 @@ def listar_actividades(db: sqlite3.Connection = Depends(get_db)):
 
 @app.post("/actividades")
 def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    cod_limpio = act.codigo.strip()
-    desc_limpia = act.descripcion.strip()
-    resp_limpio = (act.responsable or "No asignado").strip()
-    estado_limpio = (act.estado or "Pendiente").strip()
-    avance_val = int(act.avance or 0)
-    f_ini = (act.fecha_inicio or "").strip()
-    f_fin = (act.fecha_fin or "").strip()
+    cod = str(act.codigo).strip()
+    desc = str(act.descripcion).strip()
+    resp = str(act.responsable or "No asignado").strip()
+    est = str(act.estado or "Pendiente").strip()
+    av = int(act.avance or 0)
+    f_ini = str(act.fecha_inicio or "").strip()
+    f_fin = str(act.fecha_fin or "").strip()
     dias_val = int(act.dias or 1)
-    pred_limpio = (act.predecesores or "").strip()
+    pred = str(act.predecesores or "").strip()
 
-    existe = db.execute("SELECT id FROM actividades WHERE codigo = ?", (cod_limpio,)).fetchone()
+    # 1. Comprobar si ya existe el registro en la base de datos
+    existe = db.execute("SELECT id FROM actividades WHERE codigo = ?", (cod,)).fetchone()
+
     if existe:
         db.execute("""
             UPDATE actividades 
             SET descripcion = ?, responsable = ?, estado = ?, avance = ?, 
                 fecha_inicio = ?, fecha_fin = ?, dias = ?, predecesores = ?
             WHERE codigo = ?
-        """, (desc_limpia, resp_limpio, estado_limpio, avance_val, f_ini, f_fin, dias_val, pred_limpio, cod_limpio))
+        """, (desc, resp, est, av, f_ini, f_fin, dias_val, pred, cod))
         accion = "Modificación"
-        detalle = f"[{user['username']}] Actualizó [{cod_limpio}]: {desc_limpia}"
     else:
         db.execute("""
             INSERT INTO actividades (codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (cod_limpio, desc_limpia, resp_limpio, estado_limpio, avance_val, f_ini, f_fin, dias_val, pred_limpio))
+        """, (cod, desc, resp, est, av, f_ini, f_fin, dias_val, pred))
         accion = "Alta"
-        detalle = f"[{user['username']}] Creó [{cod_limpio}]: {desc_limpia}"
 
+    # 2. Registro en historial sin riesgo de bloqueo
     try:
-        db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)", (accion, detalle))
+        db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)",
+                   (accion, f"[{user.get('username', 'usuario')}] [{cod}] {desc}"))
     except Exception:
         pass
 
     db.commit()
-    recalcular_tiempos_y_cascada(db)
+    
+    # 3. Recalcular cascada WBS
+    try:
+        recalcular_tiempos_y_cascada(db)
+    except Exception as e:
+        print(f"Aviso en recálculo: {e}")
+
     return {"mensaje": "Actividad guardada correctamente"}
 
 @app.delete("/actividades/{codigo}")
