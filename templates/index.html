@@ -93,7 +93,27 @@
     }
   </style>
 </head>
-<body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none">
+<body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none" onclick="cerrarMenuContextual()">
+
+  <!-- MENÚ CONTEXTUAL CLIC DERECHO FLOTANTE -->
+  <div id="menu-contextual" class="hidden fixed bg-white rounded-lg shadow-2xl border border-gray-200 py-1.5 z-[100] text-xs font-semibold text-gray-700 min-w-[220px]">
+    <div id="mc-header-info" class="px-3 py-1.5 text-[11px] font-bold text-[#0f2a4a] bg-gray-100 border-b border-gray-200 mb-1 truncate">
+      Actividad
+    </div>
+    <button id="mc-btn-hijo" onclick="ejecutarAccionContextual('agregar_hijo')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2">
+      <span class="text-blue-600 font-bold">+</span>
+      <span id="mc-txt-hijo">Agregar Subtarea</span>
+    </button>
+    <button onclick="ejecutarAccionContextual('asignar_resp')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2">
+      <span>👥</span>
+      <span>Asignar Responsables</span>
+    </button>
+    <div class="border-t border-gray-100 my-1"></div>
+    <button onclick="ejecutarAccionContextual('eliminar')" class="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center space-x-2 font-bold">
+      <span>🗑️</span>
+      <span>Eliminar Actividad</span>
+    </button>
+  </div>
 
   <!-- VISTA DE INICIO DE SESIÓN -->
   <div id="view-login" class="fixed inset-0 bg-[#0f2a4a] flex items-center justify-center p-4 z-50">
@@ -122,17 +142,14 @@
     <!-- CINTA SUPERIOR AZUL CORPORATIVA IMARPE -->
     <header class="bg-[#0f2a4a] text-white shadow-md">
       <div class="max-w-[1920px] mx-auto px-4 md:px-8 h-[65px] flex items-center justify-between">
-        <!-- Logo a la izquierda -->
         <div class="flex items-center space-x-4 min-w-[180px]">
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
         
-        <!-- Título del Proyecto Centrado Dinámicamente -->
         <div class="flex-1 max-w-3xl px-4 text-center mx-auto">
           <input type="text" id="txt-nombre-proyecto" class="w-full bg-transparent text-white font-bold text-lg md:text-xl text-center border-b border-transparent focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide" value="SISTEMA DE GESTION ANTISOBORNO (SGAS)">
         </div>
         
-        <!-- Usuario y Salir a la derecha -->
         <div id="user-info" class="flex items-center space-x-3 border-l border-blue-800 pl-4 min-w-[180px] justify-end">
           <div class="text-right hidden sm:block">
             <p id="user-display" class="text-xs font-bold text-gray-200">Usuario</p>
@@ -147,20 +164,20 @@
     <div class="max-w-[1920px] w-full mx-auto px-4 md:px-6 pt-3 pb-2 space-y-2.5">
       <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="bg-[#1abc9c] text-white px-4 py-2 rounded-lg shadow flex items-center justify-between">
-          <span class="text-[14px] font-black uppercase tracking-wider">AVANCE GLOBAL</span>
-          <p id="kpi-avance" class="text-xl font-black">0%</p>
+          <span class="text-[13px] font-black uppercase tracking-wider">AVANCE GLOBAL</span>
+          <p id="kpi-avance" class="text-2xl font-black">0%</p>
         </div>
         <div class="bg-[#2ecc71] text-white px-4 py-2 rounded-lg shadow flex items-center justify-between">
-          <span class="text-[14px] font-black uppercase tracking-wider">EJECUTADO</span>
-          <p id="kpi-ejecutado" class="text-xl font-black">0 Items</p>
+          <span class="text-[13px] font-black uppercase tracking-wider">EJECUTADO</span>
+          <p id="kpi-ejecutado" class="text-2xl font-black">0 Items</p>
         </div>
         <div class="bg-[#f1c40f] text-[#2c3e50] px-4 py-2 rounded-lg shadow flex items-center justify-between">
-          <span class="text-[14px] font-black uppercase tracking-wider">EN PROCESO</span>
-          <p id="kpi-proceso" class="text-xl font-black">0 Items</p>
+          <span class="text-[13px] font-black uppercase tracking-wider">EN PROCESO</span>
+          <p id="kpi-proceso" class="text-2xl font-black">0 Items</p>
         </div>
         <div class="bg-[#e74c3c] text-white px-4 py-2 rounded-lg shadow flex items-center justify-between">
-          <span class="text-[14px] font-black uppercase tracking-wider">PENDIENTE</span>
-          <p id="kpi-pendiente" class="text-xl font-black">0 Items</p>
+          <span class="text-[13px] font-black uppercase tracking-wider">PENDIENTE</span>
+          <p id="kpi-pendiente" class="text-2xl font-black">0 Items</p>
         </div>
       </div>
 
@@ -168,8 +185,9 @@
       <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-2.5 rounded-lg shadow-sm border border-gray-200">
         
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="abrirModalNuevaActividad(1)" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-3.5 py-1.5 rounded transition shadow">
-            + Actividad
+          <button onclick="abrirModalCreacionInteractiva()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-3.5 py-1.5 rounded transition shadow flex items-center space-x-1">
+            <span>+</span>
+            <span>Actividad</span>
           </button>
           
           <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="bg-[#2c3e50] hover:bg-[#34495e] text-white text-xs md:text-sm font-bold px-3 py-1.5 rounded outline-none cursor-pointer">
@@ -277,6 +295,87 @@
       </table>
     </div>
   </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CREACIÓN DE ACTIVIDAD JERÁRQUICA INTELIGENTE                      -->
+  <!-- ========================================================================= -->
+  <div id="modal-actividad" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+        <h3 id="modal-titulo" class="font-bold text-sm">Registro de Nueva Actividad</h3>
+        <button onclick="cerrarModalActividad()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
+      </div>
+      <form id="form-actividad" class="p-5 space-y-3.5">
+        
+        <!-- Selector de Ubicación Jerárquica -->
+        <div id="bloque-seleccion-padre" class="bg-blue-50/70 p-3 rounded-lg border border-blue-200/80 space-y-2">
+          <label class="text-xs font-bold text-[#0f2a4a] flex items-center justify-between">
+            <span>Jerarquía / Dependencia Padre:</span>
+            <span class="text-[11px] font-normal text-blue-700">WBS Automático</span>
+          </label>
+          <select id="act-padre-select" onchange="alCambiarPadreJerarquico(this.value)" class="w-full p-2 bg-white border border-gray-300 rounded text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+            <!-- Se llena dinámicamente con las actividades creadas -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Código WBS (Automático)</label>
+            <input type="text" id="act-codigo" readonly required class="w-full mt-1 border border-gray-300 bg-gray-100 p-2 rounded text-xs font-black text-[#0f2a4a] outline-none cursor-not-allowed" title="Código calculado automáticamente para mantener el orden jerárquico">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Estado</label>
+            <select id="act-estado" class="w-full mt-1 border border-gray-300 bg-white p-2 rounded text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+              <option value="Pendiente">Pendiente</option>
+              <option value="En proceso">En proceso</option>
+              <option value="Ejecutado">Ejecutado</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 uppercase">Descripción de Actividad</label>
+          <input type="text" id="act-desc" required placeholder="Nombre descriptivo de la actividad o entregable" class="w-full mt-1 border border-gray-300 bg-white p-2 rounded text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 uppercase">Responsable(s) Asignado(s)</label>
+          <input type="text" id="act-resp" placeholder="Seleccione o edite tras crear la actividad" class="w-full mt-1 border border-gray-300 bg-white p-2 rounded text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
+          <div>
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Fecha de Inicio</label>
+            <input type="date" id="act-fecha-inicio" required class="w-full mt-1 border border-gray-300 bg-white p-1.5 rounded text-xs font-bold outline-none">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Fecha de Fin (Auto)</label>
+            <input type="date" id="act-fecha-fin" required class="w-full mt-1 border border-gray-300 bg-white p-1.5 rounded text-xs font-bold outline-none">
+          </div>
+          <div class="col-span-2">
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Duración estimada (Días manual)</label>
+            <input type="number" id="act-dias" min="1" value="5" required class="w-full mt-1 border border-gray-300 bg-white p-1.5 rounded text-xs font-black text-[#0f2a4a] outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] font-bold text-gray-600 uppercase">% Avance (0 a 100)</label>
+            <input type="number" id="act-avance" min="0" max="100" value="0" class="w-full mt-1 border border-gray-300 bg-white p-2 rounded text-xs font-bold outline-none">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Predecesores (CPM)</label>
+            <input type="text" id="act-predecesores" placeholder="Ej: 1.1, 1.2" class="w-full mt-1 border border-gray-300 bg-white p-2 rounded text-xs font-semibold outline-none">
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-gray-200">
+          <button type="button" onclick="cerrarModalActividad()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-[#2c3e50] text-xs font-bold rounded transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded transition shadow">Guardar Registro</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- MODAL: ASIGNACIÓN MÚLTIPLE DE RESPONSABLES -->
   <div id="modal-asignar-responsables" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
@@ -411,65 +510,6 @@
     </div>
   </div>
 
-  <!-- MODAL AGREGAR ACTIVIDAD -->
-  <div id="modal-actividad" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
-      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
-        <h3 id="modal-titulo" class="font-bold">Registro de Actividad</h3>
-        <button onclick="cerrarModalActividad()" class="text-white text-2xl">&times;</button>
-      </div>
-      <form id="form-actividad" class="p-5 space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs font-bold text-gray-700">Código WBS</label>
-            <input type="text" id="act-codigo" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a] font-bold">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-gray-700">Estado</label>
-            <select id="act-estado" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
-              <option value="Pendiente">Pendiente</option>
-              <option value="En proceso">En proceso</option>
-              <option value="Ejecutado">Ejecutado</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label class="text-xs font-bold text-gray-700">Descripción de Actividad</label>
-          <input type="text" id="act-desc" required class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
-        </div>
-        <div>
-          <label class="text-xs font-bold text-gray-700">Responsable(s) Asignado(s)</label>
-          <input type="text" id="act-resp" placeholder="Ej: Salas Guerrero, Jesús Gianfranco; Donayre Quintana, Luis Iván" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
-        </div>
-        <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded border">
-          <div>
-            <label class="text-xs font-bold text-gray-700">Fecha de Inicio</label>
-            <input type="date" id="act-fecha-inicio" required class="w-full border p-1.5 rounded text-xs outline-none">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-gray-700">Fecha de Fin (Auto)</label>
-            <input type="date" id="act-fecha-fin" required class="w-full border p-1.5 rounded text-xs outline-none">
-          </div>
-          <div class="col-span-2">
-            <label class="text-xs font-bold text-gray-700">Duración estimada (Días manual)</label>
-            <input type="number" id="act-dias" min="1" value="5" required class="w-full border p-1.5 rounded text-xs outline-none font-bold text-[#0f2a4a]">
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs font-bold text-gray-700">% Avance (0 a 100)</label>
-            <input type="number" id="act-avance" min="0" max="100" value="0" class="w-full border p-2 rounded text-sm outline-none">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-gray-700">Predecesores (CPM)</label>
-            <input type="text" id="act-predecesores" placeholder="Ej: 1.1, 1.2" class="w-full border p-2 rounded text-sm outline-none">
-          </div>
-        </div>
-        <button type="submit" class="w-full bg-[#0f2a4a] text-white font-bold py-2.5 rounded hover:bg-[#1b4f8a] transition mt-2">Guardar Registro</button>
-      </form>
-    </div>
-  </div>
-
   <!-- MODAL HISTORIAL -->
   <div id="modal-historial" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden max-h-[85vh] flex flex-col">
@@ -528,6 +568,7 @@
 
     let nodosColapsados = new Set();
     let actividadMultiRespActual = null;
+    let actividadContextualSeleccionada = null;
 
     let visibilidadColumnas = JSON.parse(localStorage.getItem("visibilidad_columnas") || JSON.stringify({
       responsable: true,
@@ -555,6 +596,194 @@
       aplicarVisibilidadColumnas();
     });
 
+    // --- MENÚ CONTEXTUAL AL HACER CLIC DERECHO ---
+    function abrirMenuContextual(event, cod) {
+      event.preventDefault();
+      event.stopPropagation();
+      actividadContextualSeleccionada = actividadesGlobal.find(a => a.codigo === cod);
+      if (!actividadContextualSeleccionada) return;
+
+      const partes = cod.replace(/\.$/, "").split(".");
+      const nivel = partes.length;
+      const nombresNivel = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Detalle Operativo (Nivel 4)"];
+      
+      const menu = document.getElementById("menu-contextual");
+      document.getElementById("mc-header-info").innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
+      
+      const btnHijo = document.getElementById("mc-btn-hijo");
+      if (nivel >= 4) {
+        btnHijo.classList.add("hidden");
+      } else {
+        btnHijo.classList.remove("hidden");
+        document.getElementById("mc-txt-hijo").innerText = `Agregar ${nombresNivel[nivel]}`;
+      }
+
+      // Posicionamiento inteligente del menú flotante
+      let posX = event.clientX;
+      let posY = event.clientY;
+      if (posX + 230 > window.innerWidth) posX = window.innerWidth - 235;
+      if (posY + 160 > window.innerHeight) posY = window.innerHeight - 165;
+
+      menu.style.left = `${posX}px`;
+      menu.style.top = `${posY}px`;
+      menu.classList.remove("hidden");
+    }
+
+    function cerrarMenuContextual() {
+      const menu = document.getElementById("menu-contextual");
+      if (menu) menu.classList.add("hidden");
+    }
+
+    function ejecutarAccionContextual(accion) {
+      if (!actividadContextualSeleccionada) return;
+      const cod = actividadContextualSeleccionada.codigo;
+      cerrarMenuContextual();
+
+      if (accion === 'agregar_hijo') {
+        agregarSubtareaJerarquica(cod);
+      } else if (accion === 'asignar_resp') {
+        editarResponsable(cod);
+      } else if (accion === 'eliminar') {
+        eliminarActividad(cod);
+      }
+    }
+
+    // --- GENERADOR CORRELATIVO AUTOMÁTICO WBS ---
+    function calcularSiguienteCorrelativo(codigoPadre) {
+      if (!codigoPadre || codigoPadre === "RAIZ") {
+        // Nivel 1: contar actividades raíz existentes
+        const raices = actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
+        let maxNum = 0;
+        raices.forEach(r => {
+          const n = parseInt(r.codigo.replace(/\.$/, ""));
+          if (!isNaN(n) && n > maxNum) maxNum = n;
+        });
+        return `${maxNum + 1}.`;
+      }
+
+      const codLimpio = codigoPadre.replace(/\.$/, "");
+      const nivelPadre = codLimpio.split(".").length;
+      
+      // Buscar hijos directos inmediatos
+      const hijosDirectos = actividadesGlobal.filter(a => {
+        const c = a.codigo.replace(/\.$/, "");
+        return c.startsWith(codLimpio + ".") && c.split(".").length === nivelPadre + 1;
+      });
+
+      let maxNum = 0;
+      hijosDirectos.forEach(h => {
+        const partes = h.codigo.replace(/\.$/, "").split(".");
+        const ult = parseInt(partes[partes.length - 1]);
+        if (!isNaN(ult) && ult > maxNum) maxNum = ult;
+      });
+
+      return `${codLimpio}.${maxNum + 1}`;
+    }
+
+    // --- MODAL DE CREACIÓN CON SELECTOR EN CASCADA ---
+    function abrirModalCreacionInteractiva(codigoPadreFijo = null) {
+      document.getElementById("form-actividad").reset();
+      const anio = new Date().getFullYear();
+      document.getElementById("act-fecha-inicio").value = `${anio}-01-01`;
+      document.getElementById("act-fecha-fin").value = `${anio}-01-05`;
+      document.getElementById("act-dias").value = 5;
+
+      const selPadre = document.getElementById("act-padre-select");
+      selPadre.innerHTML = '<option value="RAIZ">🌟 [Nivel 1] Nueva Actividad Raíz Principal</option>';
+
+      actividadesGlobal.forEach(a => {
+        const partes = a.codigo.replace(/\.$/, "").split(".");
+        const nivel = partes.length;
+        if (nivel < 4) {
+          const sangria = "— ".repeat(nivel - 1);
+          selPadre.innerHTML += `<option value="${a.codigo}">${sangria}[${a.codigo}] ${a.descripcion} (Nivel ${nivel})</option>`;
+        }
+      });
+
+      if (codigoPadreFijo) {
+        selPadre.value = codigoPadreFijo;
+        document.getElementById("modal-titulo").innerText = `Nueva Subtarea para [${codigoPadreFijo}]`;
+      } else {
+        selPadre.value = "RAIZ";
+        document.getElementById("modal-titulo").innerText = "Registro de Nueva Actividad (WBS)";
+      }
+
+      alCambiarPadreJerarquico(selPadre.value);
+      document.getElementById("modal-actividad").classList.remove("hidden");
+    }
+
+    function alCambiarPadreJerarquico(valPadre) {
+      const nuevoCodigo = calcularSiguienteCorrelativo(valPadre);
+      document.getElementById("act-codigo").value = nuevoCodigo;
+    }
+
+    function agregarSubtareaJerarquica(codPadre) {
+      abrirModalCreacionInteractiva(codPadre);
+    }
+
+    function cerrarModalActividad() { 
+      document.getElementById("modal-actividad").classList.add("hidden"); 
+    }
+
+    document.getElementById("form-actividad").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const [y1, m1, d1] = document.getElementById("act-fecha-inicio").value.split("-");
+      const [y2, m2, d2] = document.getElementById("act-fecha-fin").value.split("-");
+
+      const payload = {
+        codigo: document.getElementById("act-codigo").value.trim(),
+        descripcion: document.getElementById("act-desc").value.trim(),
+        responsable: document.getElementById("act-resp").value.trim() || "No asignado",
+        estado: document.getElementById("act-estado").value,
+        avance: parseInt(document.getElementById("act-avance").value) || 0,
+        fecha_inicio: `${d1}/${m1}/${y1}`,
+        fecha_fin: `${d2}/${m2}/${y2}`,
+        dias: parseInt(document.getElementById("act-dias").value) || 1,
+        predecesores: document.getElementById("act-predecesores").value.trim()
+      };
+
+      const res = await fetch(`/actividades`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        cerrarModalActividad();
+        await cargarActividades();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Error al registrar actividad.");
+      }
+    });
+
+    // --- ELIMINACIÓN CON ADVERTENCIA DE ACTIVIDADES HIJAS ---
+    async function eliminarActividad(cod) {
+      const codLimpio = cod.replace(/\.$/, "");
+      const hijas = actividadesGlobal.filter(a => {
+        const c = a.codigo.replace(/\.$/, "");
+        return c.startsWith(codLimpio + ".") && c !== codLimpio;
+      });
+
+      let mensajeConfirmacion = `¿Está seguro de eliminar la actividad [${cod}]?`;
+      if (hijas.length > 0) {
+        mensajeConfirmacion = `⚠️ ATENCIÓN: La actividad [${cod}] contiene ${hijas.length} actividad(es) subordinada(s).\n\nSi continúa, se eliminarán todas las actividades hijas en cascada.\n\n¿Desea proceder con la eliminación total?`;
+      }
+
+      if (!confirm(mensajeConfirmacion)) return;
+
+      const res = await fetch(`/actividades/${cod}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        await cargarActividades();
+      } else {
+        alert("No tiene permisos para eliminar actividades.");
+      }
+    }
+
+    // --- PARSEO DE RESPONSABLES ---
     function obtenerListaResponsablesAsignados(responsablesStr) {
       if (!responsablesStr || responsablesStr === "No asignado" || responsablesStr === "-") return [];
       if (responsablesStr.includes(";")) {
@@ -888,7 +1117,7 @@
       });
     }
 
-    // --- AUTENTICACIÓN CON AUTO-LIMPIEZA DE SESIÓN ---
+    // --- AUTENTICACIÓN DIRECTA ---
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const user = document.getElementById("login-username").value.trim();
@@ -918,7 +1147,7 @@
         
         document.getElementById("view-login").classList.add("hidden");
         document.getElementById("user-display").innerText = data.nombre_completo || data.username;
-        document.getElementById("role-display").innerText = data.rol || "Usuario";
+        document.getElementById("role-display").innerText = data.rol || "ADMINISTRADOR";
         
         await cargarDatosIniciales();
       } catch (err) {
@@ -1009,7 +1238,7 @@
       renderizarTabla();
     }
 
-    // --- RENDERIZADO DEL GANTT VISUAL (ESTILO GANTTPRO CON AVATARES AL FINAL) ---
+    // --- RENDERIZADO DEL GANTT VISUAL (CON CLIC DERECHO HABILITADO) ---
     function renderizarTabla() {
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
@@ -1058,6 +1287,9 @@
 
         const tr = document.createElement("tr");
         tr.className = esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50");
+        
+        // Asignar evento de Clic Derecho a toda la fila
+        tr.oncontextmenu = (e) => abrirMenuContextual(e, act.codigo);
 
         let iconoColapso = "";
         if (esMadre) {
@@ -1179,7 +1411,7 @@
           <td class="p-2.5 font-mono font-bold text-xs border-r border-b border-gray-200 whitespace-nowrap">
             ${iconoColapso}${cod}
           </td>
-          <td class="p-2.5 border-r border-b border-gray-200 cell-editable" style="padding-left: ${paddingLeft}px;" ondblclick="editarDescripcion('${cod}')" title="Doble clic para editar">
+          <td class="p-2.5 border-r border-b border-gray-200 cell-editable" style="padding-left: ${paddingLeft}px;" ondblclick="editarDescripcion('${cod}')" title="Doble clic para editar / Clic derecho para opciones">
             ${act.descripcion}
           </td>
           ${tdResp}
@@ -1190,7 +1422,7 @@
           ${tdAvance}
           ${tdGantt}
           <td class="p-2 text-center border-b border-gray-200 space-x-1 whitespace-nowrap">
-            <button onclick="agregarSubtarea('${cod}')" class="text-blue-600 hover:text-blue-800 font-bold px-1" title="Agregar subtarea">+</button>
+            <button onclick="agregarSubtareaJerarquica('${cod}')" class="text-blue-600 hover:text-blue-800 font-bold px-1" title="Agregar subtarea jerárquica">+</button>
             <button onclick="eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>
           </td>
         `;
@@ -1447,7 +1679,6 @@
       });
     }
 
-    // --- GUARDADO SIN ERRORES NI CIERRES DE SESIÓN INVOLUNTARIOS ---
     async function guardarCambioDirecto(act) {
       if (!token) {
         cerrarSesion();
@@ -1477,34 +1708,18 @@
         });
 
         if (res.ok) {
-          // Recarga datos desde el servidor y redibuja de inmediato sin necesidad de otros clics
           await cargarActividades();
         } else if (res.status === 401) {
           alert("La sesión expiró. Inicie sesión nuevamente.");
           cerrarSesion();
         } else {
           const err = await res.json().catch(() => ({}));
-          console.error("Detalle del error en backend:", err);
-          alert(err.detail || `Error del servidor (${res.status}) al guardar.`);
+          console.error("Detalle del error:", err);
+          alert(err.detail || `Error (${res.status}) al guardar.`);
         }
       } catch (error) {
-        console.error("Error de red:", error);
-        alert("Error de conexión con el servidor.");
+        console.error("Error de conexión:", error);
       }
-    }
-
-    function agregarSubtarea(codBase) {
-      const codLimpio = codBase.replace(/\.$/, "");
-      const hijosDirectos = actividadesGlobal.filter(a => {
-        const c = a.codigo.replace(/\.$/, "");
-        return c.startsWith(codLimpio + ".") && c.split(".").length === codLimpio.split(".").length + 1;
-      });
-      const sigNum = hijosDirectos.length + 1;
-      const nuevoCod = `${codLimpio}.${sigNum}`;
-      
-      abrirModalNuevaActividad();
-      document.getElementById("act-codigo").value = nuevoCod;
-      document.getElementById("modal-titulo").innerText = `Nueva Subtarea para [${codBase}]`;
     }
 
     function configurarCalculadoraBidireccional() {
@@ -1545,65 +1760,6 @@
         fFin.value = sumarDias(fIni.value, d);
         bloqueando = false;
       });
-    }
-
-    function abrirModalNuevaActividad(nivel = 1) {
-      document.getElementById("form-actividad").reset();
-      const anio = new Date().getFullYear();
-      document.getElementById("act-fecha-inicio").value = `${anio}-01-01`;
-      document.getElementById("act-fecha-fin").value = `${anio}-01-05`;
-      document.getElementById("act-dias").value = 5;
-      
-      if (nivel === 1) {
-        const raices = actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
-        document.getElementById("act-codigo").value = `${raices.length + 1}.`;
-        document.getElementById("modal-titulo").innerText = "Nueva Actividad (Nivel 1)";
-      }
-      document.getElementById("modal-actividad").classList.remove("hidden");
-    }
-
-    function cerrarModalActividad() { document.getElementById("modal-actividad").classList.add("hidden"); }
-
-    document.getElementById("form-actividad").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const [y1, m1, d1] = document.getElementById("act-fecha-inicio").value.split("-");
-      const [y2, m2, d2] = document.getElementById("act-fecha-fin").value.split("-");
-
-      const payload = {
-        codigo: document.getElementById("act-codigo").value.trim(),
-        descripcion: document.getElementById("act-desc").value.trim(),
-        responsable: document.getElementById("act-resp").value.trim() || "No asignado",
-        estado: document.getElementById("act-estado").value,
-        avance: parseInt(document.getElementById("act-avance").value),
-        fecha_inicio: `${d1}/${m1}/${y1}`,
-        fecha_fin: `${d2}/${m2}/${y2}`,
-        dias: parseInt(document.getElementById("act-dias").value),
-        predecesores: document.getElementById("act-predecesores").value.trim()
-      };
-
-      const res = await fetch(`/actividades`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        cerrarModalActividad();
-        cargarActividades();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        alert(err.detail || "Error al registrar actividad.");
-      }
-    });
-
-    async function eliminarActividad(cod) {
-      if (!confirm(`¿Está seguro de eliminar el código ${cod} y todas sus dependencias asociadas?`)) return;
-      const res = await fetch(`/actividades/${cod}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) cargarActividades();
-      else alert("No tiene permisos para eliminar.");
     }
 
     async function verRutaCritica() {
