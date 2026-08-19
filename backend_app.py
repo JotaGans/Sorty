@@ -157,44 +157,48 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: sqlite3.Connection
         raise HTTPException(status_code=401, detail="Usuario inexistente")
     return dict(user)
 
-# --- RECALCULO DE TIEMPOS Y CASCADA WBS ---
+# --- RECALCULO DE TIEMPOS Y CASCADA WBS (A PRUEBA DE FALLOS) ---
+def parsear_fecha_segura(fecha_str):
+    if not fecha_str or str(fecha_str).strip() in ["Definir", "None", "", "null"]:
+        return None
+    s = str(fecha_str).strip()
+    for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            pass
+    return None
+
 def recalcular_tiempos_y_cascada(db: sqlite3.Connection):
-    filas = db.execute("SELECT codigo FROM actividades ORDER BY length(codigo) DESC").fetchall()
-    for row in filas:
-        cod = row["codigo"]
-        hijos = db.execute(f"SELECT avance, fecha_inicio, fecha_fin FROM actividades WHERE codigo LIKE '{cod}.%' AND length(codigo) <= {len(cod) + 4}").fetchall()
-        if hijos:
-            suma_avances = sum([h["avance"] for h in hijos if h["avance"] is not None])
-            promedio = int(suma_avances / len(hijos)) if hijos else 0
-            
-            fechas_ini, fechas_fin = [], []
-            for h in hijos:
-                f_ini_val = h["fecha_inicio"]
-                f_fin_val = h["fecha_fin"]
-                if f_ini_val and str(f_ini_val).strip() not in ["Definir", "None", ""]:
-                    for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
-                        try:
-                            fechas_ini.append(datetime.strptime(str(f_ini_val).strip(), fmt))
-                            break
-                        except ValueError:
-                            pass
-                if f_fin_val and str(f_fin_val).strip() not in ["Definir", "None", ""]:
-                    for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
-                        try:
-                            fechas_fin.append(datetime.strptime(str(f_fin_val).strip(), fmt))
-                            break
-                        except ValueError:
-                            pass
-            
-            anio = datetime.now().year
-            f_ini_str = min(fechas_ini).strftime("%d/%m/%Y") if fechas_ini else f"01/01/{anio}"
-            f_fin_str = max(fechas_fin).strftime("%d/%m/%Y") if fechas_fin else f"05/01/{anio}"
-            dias_calc = (max(fechas_fin) - min(fechas_ini)).days + 1 if fechas_ini and fechas_fin else 5
-            
-            estado = "Ejecutado" if promedio == 100 else ("En proceso" if promedio > 0 else "Pendiente")
-            db.execute("UPDATE actividades SET avance=?, estado=?, fecha_inicio=?, fecha_fin=?, dias=? WHERE codigo=?",
-                       (promedio, estado, f_ini_str, f_fin_str, dias_calc, cod))
-    db.commit()
+    try:
+        filas = db.execute("SELECT codigo FROM actividades ORDER BY length(codigo) DESC").fetchall()
+        for row in filas:
+            cod = row["codigo"]
+            hijos = db.execute(f"SELECT avance, fecha_inicio, fecha_fin FROM actividades WHERE codigo LIKE '{cod}.%' AND length(codigo) <= {len(cod) + 4}").fetchall()
+            if hijos:
+                suma_avances = sum([h["avance"] for h in hijos if h["avance"] is not None])
+                promedio = int(suma_avances / len(hijos)) if hijos else 0
+                
+                fechas_ini, fechas_fin = [], []
+                for h in hijos:
+                    dt_ini = parsear_fecha_segura(h["fecha_inicio"])
+                    dt_fin = parsear_fecha_segura(h["fecha_fin"])
+                    if dt_ini:
+                        fechas_ini.append(dt_ini)
+                    if dt_fin:
+                        fechas_fin.append(dt_fin)
+                
+                anio = datetime.now().year
+                f_ini_str = min(fechas_ini).strftime("%d/%m/%Y") if fechas_ini else f"01/01/{anio}"
+                f_fin_str = max(fechas_fin).strftime("%d/%m/%Y") if fechas_fin else f"05/01/{anio}"
+                dias_calc = (max(fechas_fin) - min(fechas_ini)).days + 1 if fechas_ini and fechas_fin else 5
+                
+                estado = "Ejecutado" if promedio == 100 else ("En proceso" if promedio > 0 else "Pendiente")
+                db.execute("UPDATE actividades SET avance=?, estado=?, fecha_inicio=?, fecha_fin=?, dias=? WHERE codigo=?",
+                           (promedio, estado, f_ini_str, f_fin_str, dias_calc, cod))
+        db.commit()
+    except Exception as e:
+        print(f"Aviso en recálculo: {e}")
 
 @app.get("/")
 def index_view():
@@ -236,50 +240,47 @@ def listar_actividades(db: sqlite3.Connection = Depends(get_db)):
 
 @app.post("/actividades")
 def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    cod = str(act.codigo).strip()
-    desc = str(act.descripcion).strip()
-    resp = str(act.responsable or "No asignado").strip()
-    est = str(act.estado or "Pendiente").strip()
-    av = int(act.avance or 0)
-    f_ini = str(act.fecha_inicio or "").strip()
-    f_fin = str(act.fecha_fin or "").strip()
-    dias_val = int(act.dias or 1)
-    pred = str(act.predecesores or "").strip()
-
-    # 1. Comprobar si ya existe el registro en la base de datos
-    existe = db.execute("SELECT id FROM actividades WHERE codigo = ?", (cod,)).fetchone()
-
-    if existe:
-        db.execute("""
-            UPDATE actividades 
-            SET descripcion = ?, responsable = ?, estado = ?, avance = ?, 
-                fecha_inicio = ?, fecha_fin = ?, dias = ?, predecesores = ?
-            WHERE codigo = ?
-        """, (desc, resp, est, av, f_ini, f_fin, dias_val, pred, cod))
-        accion = "Modificación"
-    else:
-        db.execute("""
-            INSERT INTO actividades (codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (cod, desc, resp, est, av, f_ini, f_fin, dias_val, pred))
-        accion = "Alta"
-
-    # 2. Registro en historial sin riesgo de bloqueo
     try:
-        db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)",
-                   (accion, f"[{user.get('username', 'usuario')}] [{cod}] {desc}"))
-    except Exception:
-        pass
+        cod = str(act.codigo).strip()
+        desc = str(act.descripcion).strip()
+        resp = str(act.responsable or "No asignado").strip()
+        est = str(act.estado or "Pendiente").strip()
+        av = int(act.avance if act.avance is not None else 0)
+        f_ini = str(act.fecha_inicio or "").strip()
+        f_fin = str(act.fecha_fin or "").strip()
+        dias_val = int(act.dias if act.dias is not None else 1)
+        pred = str(act.predecesores or "").strip()
 
-    db.commit()
-    
-    # 3. Recalcular cascada WBS
-    try:
+        existe = db.execute("SELECT id FROM actividades WHERE codigo = ?", (cod,)).fetchone()
+
+        if existe:
+            db.execute("""
+                UPDATE actividades 
+                SET descripcion = ?, responsable = ?, estado = ?, avance = ?, 
+                    fecha_inicio = ?, fecha_fin = ?, dias = ?, predecesores = ?
+                WHERE codigo = ?
+            """, (desc, resp, est, av, f_ini, f_fin, dias_val, pred, cod))
+            accion = "Modificación"
+        else:
+            db.execute("""
+                INSERT INTO actividades (codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (cod, desc, resp, est, av, f_ini, f_fin, dias_val, pred))
+            accion = "Alta"
+
+        try:
+            db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)",
+                       (accion, f"[{user.get('username', 'usuario')}] [{cod}] {desc}"))
+        except Exception:
+            pass
+
+        db.commit()
         recalcular_tiempos_y_cascada(db)
+        return {"mensaje": "Actividad guardada correctamente"}
     except Exception as e:
-        print(f"Aviso en recálculo: {e}")
-
-    return {"mensaje": "Actividad guardada correctamente"}
+        db.rollback()
+        print(f"Error grave en guardar_actividad: {e}")
+        raise HTTPException(status_code=500, detail=f"Error en base de datos: {str(e)}")
 
 @app.delete("/actividades/{codigo}")
 def eliminar_actividad(codigo: str, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
