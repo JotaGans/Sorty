@@ -18,7 +18,7 @@
     .spin-btn:active { background: #b0b0b0; }
     
     /* Resaltado de la semana actual */
-    .col-semana-actual { background-color: rgba(22, 160, 133, 0.15) !important; }
+    .col-semana-actual { background-color: rgba(22, 160, 133, 0.12) !important; }
     .header-semana-actual { background-color: #16a085 !important; color: #ffffff !important; font-weight: bold; }
 
     /* Cabecera Sticky Fija */
@@ -40,25 +40,45 @@
       position: absolute;
       top: 5px;
       z-index: 25;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
 
-    /* Avatares Apilados */
+    /* Avatares Circulares */
     .avatar-circle {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 10px;
+      font-size: 9px;
       color: #ffffff;
       border: 2px solid #ffffff;
       box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-      margin-left: -6px;
+      margin-left: -5px;
+      flex-shrink: 0;
     }
     .avatar-circle:first-child { margin-left: 0; }
     .avatar-group { display: inline-flex; align-items: center; justify-content: center; }
+
+    /* Mini avatar flotante en el Gantt */
+    .gantt-avatar-circle {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 7.5px;
+      color: #ffffff;
+      border: 1.5px solid #ffffff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+      margin-left: -4px;
+      flex-shrink: 0;
+    }
+    .gantt-avatar-circle:first-child { margin-left: 0; }
 
     /* Selector de Responsable con Flecha Custom Limpia */
     .select-clean-arrow {
@@ -266,7 +286,7 @@
         <p class="text-xs text-gray-600 font-semibold">Marque uno o varios miembros para asignar a esta actividad:</p>
         
         <div id="lista-checkbox-responsables" class="max-h-60 overflow-y-auto space-y-2 bg-white p-3 rounded-lg border border-gray-200">
-          <!-- Checkboxes generados dinámicamente con selección exacta -->
+          <!-- Checkboxes generados dinámicamente -->
         </div>
 
         <div class="flex justify-end space-x-2 pt-2">
@@ -541,12 +561,10 @@
     function obtenerListaResponsablesAsignados(responsablesStr) {
       if (!responsablesStr || responsablesStr === "No asignado" || responsablesStr === "-") return [];
       
-      // 1. Si contiene punto y coma (;), separar directamente por ';'
       if (responsablesStr.includes(";")) {
         return responsablesStr.split(";").map(s => s.trim()).filter(Boolean);
       }
       
-      // 2. Si viene con comas de registros previos, buscar coincidencia con nombres conocidos
       const nombresEncontrados = [];
       responsablesGlobal.forEach(r => {
         if (r.nombre && responsablesStr.includes(r.nombre.trim())) {
@@ -558,7 +576,6 @@
         return nombresEncontrados;
       }
       
-      // 3. Fallback a texto limpio
       return [responsablesStr.trim()];
     }
 
@@ -611,6 +628,44 @@
 
       const tooltipFinal = `Responsable(s):\n${tooltipsDetalle.join("\n")}`;
       return `<div class="avatar-group cursor-pointer" title="${tooltipFinal}">${avataresHTML}</div>`;
+    }
+
+    // --- GENERADOR DE MINI-AVATARES FLOTANTES AL FINAL DE LA BARRA GANTT ---
+    function obtenerMiniAvataresGanttHTML(responsablesStr) {
+      const listaNombres = obtenerListaResponsablesAsignados(responsablesStr);
+      if (listaNombres.length === 0) return "";
+
+      let avataresHTML = "";
+      const maxMostrar = 2;
+      const mostrar = listaNombres.slice(0, maxMostrar);
+      const restantes = listaNombres.length - maxMostrar;
+
+      mostrar.forEach(nom => {
+        let iniciales = "";
+        if (nom.includes(",")) {
+          const partes = nom.split(",");
+          const apellido = partes[0].trim().split(" ")[0];
+          const nombre = partes[1] ? partes[1].trim().split(" ")[0] : "";
+          iniciales = (apellido[0] + (nombre ? nombre[0] : "")).toUpperCase();
+        } else {
+          const partes = nom.split(" ");
+          iniciales = (partes[0][0] + (partes[1] ? partes[1][0] : "")).toUpperCase();
+        }
+
+        let hash = 0;
+        for (let i = 0; i < nom.length; i++) {
+          hash = nom.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const colorBg = coloresAvatar[Math.abs(hash) % coloresAvatar.length];
+
+        avataresHTML += `<div class="gantt-avatar-circle" style="background-color: ${colorBg};">${iniciales}</div>`;
+      });
+
+      if (restantes > 0) {
+        avataresHTML += `<div class="gantt-avatar-circle bg-gray-700 text-[7px] font-black">+${restantes}</div>`;
+      }
+
+      return `<div class="inline-flex items-center ml-1.5 align-middle select-none">${avataresHTML}</div>`;
     }
 
     // --- MODAL DE MULTISELECCIÓN CON SELECCIÓN EXACTA ---
@@ -946,7 +1001,7 @@
       renderizarTabla();
     }
 
-    // --- RENDERIZADO DEL GANTT VISUAL ---
+    // --- RENDERIZADO DEL GANTT VISUAL (ESTILO GANTTPRO CON AVATARES AL FINAL) ---
     function renderizarTabla() {
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
@@ -961,7 +1016,7 @@
         tInicioVisible = new Date(anioActual, 0, 1).getTime();
         tFinVisible = new Date(anioActual, 11, 31, 23, 59, 59).getTime();
         duracionVisibleMs = tFinVisible - tInicioVisible;
-        divisionesHTML = Array(12).fill('<div class="flex-1 border-r border-gray-300/40"></div>').join("");
+        divisionesHTML = Array(12).fill('<div class="flex-1 border-r border-slate-200/50"></div>').join("");
       } else {
         const semanasVisibles = semanasTotales.slice(semanaInicioIndex);
         if (semanasVisibles.length === 0) return;
@@ -970,7 +1025,7 @@
         duracionVisibleMs = tFinVisible - tInicioVisible;
         divisionesHTML = semanasVisibles.map(s => {
           const claseColHoy = s.esHoy ? "col-semana-actual" : "";
-          return `<div class="flex-1 border-r border-gray-300/40 ${claseColHoy}"></div>`;
+          return `<div class="flex-1 border-r border-slate-200/50 ${claseColHoy}"></div>`;
         }).join("");
       }
 
@@ -1004,9 +1059,9 @@
         }
 
         let ganttHTML = `
-          <div class="relative w-full h-6 bg-[#f1f2f6] rounded border border-gray-200 overflow-hidden" title="Sin fechas programadas">
-            <div class="absolute inset-0 flex pointer-events-none opacity-40">${divisionesHTML}</div>
-            ${hoyEstaVisible ? `<div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none" style="left: ${pctHoy}%;"></div>` : ''}
+          <div class="relative w-full h-7 bg-[#f8fafc] rounded border border-slate-200/80 overflow-hidden" title="Sin fechas programadas">
+            <div class="absolute inset-0 flex pointer-events-none opacity-60">${divisionesHTML}</div>
+            ${hoyEstaVisible ? `<div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none shadow" style="left: ${pctHoy}%;"></div>` : ''}
           </div>
         `;
 
@@ -1026,45 +1081,82 @@
 
               const esHito = (act.dias <= 1);
               let barraOElementoHTML = "";
+              const miniAvataresHTML = obtenerMiniAvataresGanttHTML(act.responsable);
 
               if (esHito) {
-                barraOElementoHTML = `<div class="milestone-diamond" style="left: ${leftPct}%;" title="HITO: ${act.descripcion} (${act.fecha_inicio})"></div>`;
+                barraOElementoHTML = `
+                  <div class="milestone-diamond" style="left: ${leftPct}%;" title="HITO: ${act.descripcion} (${act.fecha_inicio})"></div>
+                  <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct}% + 18px);">
+                    ${miniAvataresHTML}
+                  </div>
+                `;
+              } else if (esMadre) {
+                // Barra Resumen (Estilo GanttPRO: corchete azul marino)
+                barraOElementoHTML = `
+                  <div class="absolute top-1.5 bottom-1.5 z-10 transition-all duration-200 pointer-events-none" style="left: ${leftPct}%; width: ${widthPct}%;">
+                    <div class="w-full h-full bg-[#0f2a4a] rounded-sm shadow relative">
+                      <!-- Remates triangulares en extremos de la barra madre -->
+                      <div class="absolute left-0 -bottom-1 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#0f2a4a]"></div>
+                      <div class="absolute right-0 -bottom-1 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#0f2a4a]"></div>
+                      <div class="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white px-1 overflow-hidden whitespace-nowrap">
+                        ${act.avance}%
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Avatares flotantes al término de la barra -->
+                  <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct + widthPct}% + 4px);">
+                    ${miniAvataresHTML}
+                  </div>
+                `;
               } else {
-                let colorBase = "#bdc3c7";
-                let borde = "border border-gray-400";
+                // Tareas Operativas (Estilo GanttPRO redondeado y con avance)
+                let colorFondoRestante = "#e2e8f0"; // Pendiente gris moderno
+                let colorBorde = "border-slate-300";
+
                 if (act.estado === "Ejecutado") {
-                  colorBase = "#2ecc71";
-                  borde = "border border-green-600";
+                  colorFondoRestante = "#2ecc71"; // Verde esmeralda
+                  colorBorde = "border-green-600";
                 } else if (act.estado === "En proceso") {
-                  colorBase = "#f1c40f";
-                  borde = "border border-yellow-600";
+                  colorFondoRestante = "#fef08a"; // Amarillo suave de fondo restante
+                  colorBorde = "border-yellow-500";
                 }
 
                 let subAvanceHTML = "";
                 if (act.estado === "En proceso" && act.avance > 0) {
                   subAvanceHTML = `
-                    <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l flex items-center justify-end pr-1 text-[9px] font-bold text-white shadow-inner" style="width: ${act.avance}%;">
-                      ${act.avance >= 25 ? act.avance + '%' : ''}
+                    <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l-md flex items-center justify-center text-[9px] font-extrabold text-white shadow-inner" style="width: ${act.avance}%;">
+                      ${act.avance >= 20 ? act.avance + '%' : ''}
+                    </div>
+                  `;
+                } else if (act.estado === "Ejecutado") {
+                  subAvanceHTML = `
+                    <div class="w-full h-full flex items-center justify-center text-[9px] font-extrabold text-white">
+                      100%
                     </div>
                   `;
                 }
 
-                const estiloBarra = esMadre 
-                  ? `background-color: #0f2a4a; height: 10px; top: 7px; border-radius: 2px;` 
-                  : `background-color: ${colorBase}; height: 16px; top: 4px; border-radius: 4px;`;
-
                 barraOElementoHTML = `
-                  <div class="absolute bg-gray-300/60 rounded h-[3px] bottom-0" style="left: ${leftPct}%; width: ${widthPct}%;"></div>
-                  <div class="absolute ${borde} shadow transition-all duration-200" style="left: ${leftPct}%; width: ${widthPct}%; ${estiloBarra}">
+                  <!-- Línea Base / Baseline -->
+                  <div class="absolute bg-slate-300/70 rounded h-[2px] bottom-0.5" style="left: ${leftPct}%; width: ${widthPct}%;"></div>
+                  
+                  <!-- Barra Principal Operativa -->
+                  <div class="absolute top-1 bottom-1 z-10 rounded-md border ${colorBorde} shadow-sm transition-all duration-200 overflow-hidden" 
+                       style="left: ${leftPct}%; width: ${widthPct}%; background-color: ${colorFondoRestante};">
                     ${subAvanceHTML}
+                  </div>
+
+                  <!-- Avatares flotantes al término de la barra -->
+                  <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct + widthPct}% + 4px);">
+                    ${miniAvataresHTML}
                   </div>
                 `;
               }
 
               ganttHTML = `
-                <div class="relative w-full h-6 bg-[#f1f2f6] rounded border border-gray-200 overflow-hidden" 
+                <div class="relative w-full h-7 bg-[#f8fafc] rounded border border-slate-200/80 overflow-hidden" 
                      title="${act.codigo}: ${act.descripcion}&#10;• Periodo: ${act.fecha_inicio} al ${act.fecha_fin}&#10;• Duración: ${act.dias} días&#10;• Avance: ${act.avance}% (${act.estado})&#10;• Responsable(s): ${act.responsable || 'No asignado'}">
-                  <div class="absolute inset-0 flex pointer-events-none opacity-40">${divisionesHTML}</div>
+                  <div class="absolute inset-0 flex pointer-events-none opacity-60">${divisionesHTML}</div>
                   ${hoyEstaVisible ? `<div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none shadow" style="left: ${pctHoy}%;"></div>` : ''}
                   ${barraOElementoHTML}
                 </div>
