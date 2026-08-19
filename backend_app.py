@@ -104,8 +104,8 @@ class ActividadModel(BaseModel):
     responsable: Optional[str] = "No asignado"
     estado: Optional[str] = "Pendiente"
     avance: Optional[int] = 0
-    fecha_inicio: Optional[str] = None
-    fecha_fin: Optional[str] = None
+    fecha_inicio: Optional[str] = ""
+    fecha_fin: Optional[str] = ""
     dias: Optional[int] = 1
     predecesores: Optional[str] = ""
 
@@ -207,26 +207,54 @@ def listar_actividades(db: sqlite3.Connection = Depends(get_db)):
     return [dict(r) for r in rows]
 
 @app.post("/actividades")
-def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    db.execute("""
-        INSERT INTO actividades (codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(codigo) DO UPDATE SET
-            descripcion=excluded.descripcion,
-            responsable=excluded.responsable,
-            estado=excluded.estado,
-            avance=excluded.avance,
-            fecha_inicio=excluded.fecha_inicio,
-            fecha_fin=excluded.fecha_fin,
-            dias=excluded.dias,
-            predecesores=excluded.predecesores
-    """, (act.codigo, act.descripcion, act.responsable, act.estado, act.avance, act.fecha_inicio, act.fecha_fin, act.dias, act.predecesores))
-    
-    db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)",
-               ("Guardar Actividad", f"[{user['username']}] [{act.codigo}] {act.descripcion}"))
+def guardar_o_actualizar_actividad(
+    act: ActividadModel, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
+    cod_limpio = act.codigo.strip()
+    desc_limpia = act.descripcion.strip()
+    resp_limpio = (act.responsable or "No asignado").strip()
+    estado_limpio = (act.estado or "Pendiente").strip()
+    avance_val = int(act.avance or 0)
+    f_ini = (act.fecha_inicio or "").strip()
+    f_fin = (act.fecha_fin or "").strip()
+    dias_val = int(act.dias or 1)
+    pred_limpio = (act.predecesores or "").strip()
+
+    # 1. Verificar si el registro ya existe en SQLite
+    existe = db.execute("SELECT id FROM actividades WHERE codigo = ?", (cod_limpio,)).fetchone()
+
+    if existe:
+        # 2. Si existe: ACTUALIZAR (UPDATE)
+        db.execute("""
+            UPDATE actividades 
+            SET descripcion = ?, responsable = ?, estado = ?, avance = ?, 
+                fecha_inicio = ?, fecha_fin = ?, dias = ?, predecesores = ?
+            WHERE codigo = ?
+        """, (desc_limpia, resp_limpio, estado_limpio, avance_val, f_ini, f_fin, dias_val, pred_limpio, cod_limpio))
+        
+        accion_historial = "Modificación de Actividad"
+        detalle_historial = f"[{user.get('username', 'usuario')}] Actualizó [{cod_limpio}]: {desc_limpia}"
+    else:
+        # 3. Si no existe: INSERTAR (INSERT)
+        db.execute("""
+            INSERT INTO actividades (codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (cod_limpio, desc_limpia, resp_limpio, estado_limpio, avance_val, f_ini, f_fin, dias_val, pred_limpio))
+        
+        accion_historial = "Alta de Actividad"
+        detalle_historial = f"[{user.get('username', 'usuario')}] Creó [{cod_limpio}]: {desc_limpia}"
+
+    # 4. Registrar en historial y confirmar
+    try:
+        db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)", (accion_historial, detalle_historial))
+    except Exception:
+        pass  # Si la tabla historial tiene otra estructura, no bloquea el guardado
+
     db.commit()
-    recalcular_tiempos_y_cascada(db)
-    return {"mensaje": "Actividad guardada"}
+
+    return {"mensaje": "Actividad guardada correctamente", "codigo": cod_limpio}
 
 @app.delete("/actividades/{codigo}")
 def eliminar_actividad(codigo: str, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):

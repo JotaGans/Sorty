@@ -1441,47 +1441,6 @@
 
     // --- FUNCIÓN ROBUSTA PARA GUARDAR CAMBIOS SIN ERROR DE VALIDACIÓN ---
     async function guardarCambioDirecto(act) {
-      if (!token) {
-        cerrarSesion();
-        return;
-      }
-
-      const payload = {
-        codigo: String(act.codigo).trim(),
-        descripcion: String(act.descripcion || '').trim(),
-        responsable: String(act.responsable || 'No asignado').trim(),
-        estado: String(act.estado || 'Pendiente').trim(),
-        avance: parseInt(act.avance) || 0,
-        fecha_inicio: String(act.fecha_inicio || '').trim(),
-        fecha_fin: String(act.fecha_fin || '').trim(),
-        dias: parseInt(act.dias) || 1,
-        predecesores: String(act.predecesores || '').trim()
-      };
-
-      try {
-        const res = await fetch(`/actividades`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json", 
-            "Authorization": `Bearer ${token}` 
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-          await cargarActividades();
-        } else if (res.status === 401) {
-          alert("Tu sesión ha caducado. Por favor, ingresa nuevamente.");
-          cerrarSesion();
-        } else {
-          const err = await res.json().catch(() => ({}));
-          console.error("Detalle del error:", err);
-          alert(err.detail || "Error al actualizar.");
-        }
-      } catch (error) {
-        console.error("Error de conexión:", error);
-      }
-    }
 
     function agregarSubtarea(codBase) {
       const codLimpio = codBase.replace(/\.$/, "");
