@@ -12,6 +12,9 @@
     .cell-editable { cursor: pointer; transition: background 0.15s ease; }
     .cell-editable:hover { background-color: #d6e4f0 !important; }
     
+    /* Fila Seleccionada */
+    .row-selected { background-color: #e2eafc !important; border-left: 4px solid #0f2a4a !important; }
+    
     /* Control SpinButton */
     .spin-btn { background: #e0e0e0; transition: background 0.1s; }
     .spin-btn:hover { background: #cfcfcf; }
@@ -80,7 +83,7 @@
     }
     .gantt-avatar-circle:first-child { margin-left: 0; }
 
-    /* Selector de Responsable con Flecha Custom Limpia */
+    /* Selector con Flecha Limpia */
     .select-clean-arrow {
       background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%234b5563' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
       background-position: right 0.4rem center;
@@ -185,8 +188,8 @@
       <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-2.5 rounded-lg shadow-sm border border-gray-200">
         
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="abrirModalCreacionInteractiva()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-3.5 py-1.5 rounded transition shadow flex items-center space-x-1">
-            <span>+</span>
+          <button onclick="botonSuperiorNuevaActividad()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-3.5 py-1.5 rounded transition shadow flex items-center space-x-1.5">
+            <span class="text-base leading-none">+</span>
             <span>Actividad</span>
           </button>
           
@@ -297,83 +300,109 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: CREACIÓN DE ACTIVIDAD JERÁRQUICA INTELIGENTE                      -->
+  <!-- MODAL: CREACIÓN GUIADA Y DINÁMICA (PASO A PASO - UX AMIGABLE)            -->
   <!-- ========================================================================= -->
-  <div id="modal-actividad" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
-    <div class="bg-[#f8f9fa] rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300">
+  <div id="modal-wizard-creacion" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300 transition-all">
+      
+      <!-- Cabecera del Asistente -->
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
-        <h3 id="modal-titulo" class="font-bold text-sm">Registro de Nueva Actividad</h3>
-        <button onclick="cerrarModalActividad()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
+        <div>
+          <h3 id="wz-titulo" class="font-bold text-sm">Nueva Subtarea</h3>
+          <p id="wz-subtitulo" class="text-[11px] text-teal-300 font-medium">Ubicación: [1] Planificación</p>
+        </div>
+        <button onclick="cerrarWizardCreacion()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
       </div>
-      <form id="form-actividad" class="p-5 space-y-3.5">
+
+      <!-- Barra de Pasos / Indicador Visual -->
+      <div class="bg-gray-200 flex h-1.5">
+        <div id="wz-progreso-barra" class="bg-teal-500 transition-all duration-300" style="width: 33.33%;"></div>
+      </div>
+
+      <div class="p-6">
         
-        <!-- Selector de Ubicación Jerárquica -->
-        <div id="bloque-seleccion-padre" class="bg-blue-50/70 p-3 rounded-lg border border-blue-200/80 space-y-2">
-          <label class="text-xs font-bold text-[#0f2a4a] flex items-center justify-between">
-            <span>Jerarquía / Dependencia Padre:</span>
-            <span class="text-[11px] font-normal text-blue-700">WBS Automático</span>
-          </label>
-          <select id="act-padre-select" onchange="alCambiarPadreJerarquico(this.value)" class="w-full p-2 bg-white border border-gray-300 rounded text-xs font-semibold outline-none focus:border-[#0f2a4a]">
-            <!-- Se llena dinámicamente con las actividades creadas -->
-          </select>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-[11px] font-bold text-gray-600 uppercase">Código WBS (Automático)</label>
-            <input type="text" id="act-codigo" readonly required class="w-full mt-1 border border-gray-300 bg-gray-100 p-2 rounded text-xs font-black text-[#0f2a4a] outline-none cursor-not-allowed" title="Código calculado automáticamente para mantener el orden jerárquico">
+        <!-- PASO 1: DESCRIPCIÓN -->
+        <div id="wz-paso-1" class="space-y-4">
+          <div class="flex items-center space-x-2 text-xs font-bold text-[#0f2a4a]">
+            <span class="w-6 h-6 rounded-full bg-[#0f2a4a] text-white flex items-center justify-center text-xs">1</span>
+            <span>¿Qué actividad o entregable deseas crear?</span>
           </div>
           <div>
-            <label class="text-[11px] font-bold text-gray-600 uppercase">Estado</label>
-            <select id="act-estado" class="w-full mt-1 border border-gray-300 bg-white p-2 rounded text-xs font-semibold outline-none focus:border-[#0f2a4a]">
-              <option value="Pendiente">Pendiente</option>
-              <option value="En proceso">En proceso</option>
-              <option value="Ejecutado">Ejecutado</option>
-            </select>
+            <label class="text-[11px] font-bold text-gray-500 uppercase">Descripción de la actividad:</label>
+            <input type="text" id="wz-input-desc" placeholder="Ej: Elaboración del informe de auditoría preliminar..." 
+                   class="w-full mt-1.5 p-3 bg-white border border-gray-300 rounded-lg text-sm font-semibold outline-none focus:border-[#0f2a4a] shadow-sm"
+                   onkeydown="if(event.key==='Enter') irAPasoWizard(2)">
+          </div>
+          <div class="bg-blue-50 p-2.5 rounded-lg border border-blue-100 text-[11px] text-blue-900 font-medium flex items-center justify-between">
+            <span>Código WBS calculado:</span>
+            <span id="wz-codigo-preview" class="font-mono font-black text-xs text-[#0f2a4a] bg-white px-2 py-0.5 rounded border">1.1</span>
           </div>
         </div>
 
-        <div>
-          <label class="text-[11px] font-bold text-gray-600 uppercase">Descripción de Actividad</label>
-          <input type="text" id="act-desc" required placeholder="Nombre descriptivo de la actividad o entregable" class="w-full mt-1 border border-gray-300 bg-white p-2 rounded text-xs font-semibold outline-none focus:border-[#0f2a4a]">
-        </div>
-
-        <div>
-          <label class="text-[11px] font-bold text-gray-600 uppercase">Responsable(s) Asignado(s)</label>
-          <input type="text" id="act-resp" placeholder="Seleccione o edite tras crear la actividad" class="w-full mt-1 border border-gray-300 bg-white p-2 rounded text-xs font-semibold outline-none focus:border-[#0f2a4a]">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
-          <div>
-            <label class="text-[11px] font-bold text-gray-600 uppercase">Fecha de Inicio</label>
-            <input type="date" id="act-fecha-inicio" required class="w-full mt-1 border border-gray-300 bg-white p-1.5 rounded text-xs font-bold outline-none">
+        <!-- PASO 2: FECHAS Y DURACIÓN -->
+        <div id="wz-paso-2" class="hidden space-y-4">
+          <div class="flex items-center space-x-2 text-xs font-bold text-[#0f2a4a]">
+            <span class="w-6 h-6 rounded-full bg-[#0f2a4a] text-white flex items-center justify-center text-xs">2</span>
+            <span>Programación de Fechas y Duración</span>
           </div>
-          <div>
-            <label class="text-[11px] font-bold text-gray-600 uppercase">Fecha de Fin (Auto)</label>
-            <input type="date" id="act-fecha-fin" required class="w-full mt-1 border border-gray-300 bg-white p-1.5 rounded text-xs font-bold outline-none">
-          </div>
-          <div class="col-span-2">
-            <label class="text-[11px] font-bold text-gray-600 uppercase">Duración estimada (Días manual)</label>
-            <input type="number" id="act-dias" min="1" value="5" required class="w-full mt-1 border border-gray-300 bg-white p-1.5 rounded text-xs font-black text-[#0f2a4a] outline-none">
+          <div class="grid grid-cols-2 gap-3 bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm">
+            <div>
+              <label class="text-[11px] font-bold text-gray-600 uppercase">Fecha de Inicio:</label>
+              <input type="date" id="wz-input-ini" class="w-full mt-1 p-2 bg-gray-50 border border-gray-300 rounded text-xs font-bold outline-none">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-gray-600 uppercase">Días Estimados:</label>
+              <input type="number" id="wz-input-dias" min="1" value="5" class="w-full mt-1 p-2 bg-gray-50 border border-gray-300 rounded text-xs font-black text-[#0f2a4a] outline-none">
+            </div>
+            <div class="col-span-2 pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+              <span class="text-gray-500 font-semibold">Término proyectado:</span>
+              <span id="wz-fecha-fin-preview" class="font-bold text-teal-700">05/01/2026</span>
+            </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-[11px] font-bold text-gray-600 uppercase">% Avance (0 a 100)</label>
-            <input type="number" id="act-avance" min="0" max="100" value="0" class="w-full mt-1 border border-gray-300 bg-white p-2 rounded text-xs font-bold outline-none">
+        <!-- PASO 3: RESPONSABLES Y ESTADO -->
+        <div id="wz-paso-3" class="hidden space-y-4">
+          <div class="flex items-center space-x-2 text-xs font-bold text-[#0f2a4a]">
+            <span class="w-6 h-6 rounded-full bg-[#0f2a4a] text-white flex items-center justify-center text-xs">3</span>
+            <span>Asignación de Personal y Estado Inicial</span>
           </div>
           <div>
-            <label class="text-[11px] font-bold text-gray-600 uppercase">Predecesores (CPM)</label>
-            <input type="text" id="act-predecesores" placeholder="Ej: 1.1, 1.2" class="w-full mt-1 border border-gray-300 bg-white p-2 rounded text-xs font-semibold outline-none">
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Personal Responsable:</label>
+            <div id="wz-lista-responsables" class="max-h-36 overflow-y-auto space-y-1.5 bg-white p-2.5 rounded-lg border border-gray-200 mt-1 shadow-sm"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] font-bold text-gray-600 uppercase">Estado:</label>
+              <select id="wz-input-estado" class="w-full mt-1 p-2 bg-white border border-gray-300 rounded text-xs font-bold outline-none">
+                <option value="Pendiente">Pendiente</option>
+                <option value="En proceso">En proceso</option>
+                <option value="Ejecutado">Ejecutado</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-gray-600 uppercase">Predecesores (CPM):</label>
+              <input type="text" id="wz-input-pred" placeholder="Ej: 1.1, 1.2" class="w-full mt-1 p-2 bg-white border border-gray-300 rounded text-xs font-semibold outline-none">
+            </div>
           </div>
         </div>
 
-        <div class="flex justify-end space-x-2 pt-2 border-t border-gray-200">
-          <button type="button" onclick="cerrarModalActividad()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-[#2c3e50] text-xs font-bold rounded transition">Cancelar</button>
-          <button type="submit" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded transition shadow">Guardar Registro</button>
+        <!-- Botones de Navegación del Asistente -->
+        <div class="flex justify-between items-center pt-5 mt-5 border-t border-gray-200">
+          <button id="wz-btn-anterior" onclick="retrocederPasoWizard()" class="invisible px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">
+            ← Anterior
+          </button>
+          <div class="flex space-x-2">
+            <button onclick="cerrarWizardCreacion()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">
+              Cancelar
+            </button>
+            <button id="wz-btn-siguiente" onclick="avanzarPasoWizard()" class="px-6 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded-lg transition shadow">
+              Siguiente →
+            </button>
+          </div>
         </div>
-      </form>
+
+      </div>
     </div>
   </div>
 
@@ -386,9 +415,7 @@
       </div>
       <div class="p-5 space-y-3">
         <p class="text-xs text-gray-600 font-semibold">Marque uno o varios miembros para asignar a esta actividad:</p>
-        
         <div id="lista-checkbox-responsables" class="max-h-60 overflow-y-auto space-y-2 bg-white p-3 rounded-lg border border-gray-200"></div>
-
         <div class="flex justify-end space-x-2 pt-2">
           <button onclick="cerrarAsignarResponsables()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-[#2c3e50] text-xs font-bold rounded transition">Cancelar</button>
           <button id="btn-guardar-multi-resp" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded transition shadow">Guardar Asignación</button>
@@ -569,6 +596,12 @@
     let nodosColapsados = new Set();
     let actividadMultiRespActual = null;
     let actividadContextualSeleccionada = null;
+    let codigoFilaSeleccionada = null;
+
+    // Estado del Wizard Asistente
+    let wizardPasoActual = 1;
+    let wizardCodigoPadre = null;
+    let wizardCodigoGenerado = "";
 
     let visibilidadColumnas = JSON.parse(localStorage.getItem("visibilidad_columnas") || JSON.stringify({
       responsable: true,
@@ -589,17 +622,36 @@
       } else {
         mostrarLogin();
       }
-      configurarCalculadoraBidireccional();
       configurarCalculadoraModalFin();
+      configurarCalculadoraWizard();
       construirCalendarioAnual();
       sincronizarCheckboxesColumnas();
       aplicarVisibilidadColumnas();
     });
 
-    // --- MENÚ CONTEXTUAL AL HACER CLIC DERECHO ---
+    // --- SELECCIÓN DIRECTA DE FILA ---
+    function seleccionarFila(cod) {
+      codigoFilaSeleccionada = cod;
+      document.querySelectorAll("#lista-actividades tr").forEach(tr => {
+        tr.classList.remove("row-selected");
+      });
+      const el = document.getElementById(`fila-act-${cod.replace(/\./g, '_')}`);
+      if (el) el.classList.add("row-selected");
+    }
+
+    function botonSuperiorNuevaActividad() {
+      if (codigoFilaSeleccionada) {
+        abrirWizardCreacion(codigoFilaSeleccionada);
+      } else {
+        abrirWizardCreacion(null);
+      }
+    }
+
+    // --- MENÚ CONTEXTUAL (CLIC DERECHO INTELIGENTE) ---
     function abrirMenuContextual(event, cod) {
       event.preventDefault();
       event.stopPropagation();
+      seleccionarFila(cod);
       actividadContextualSeleccionada = actividadesGlobal.find(a => a.codigo === cod);
       if (!actividadContextualSeleccionada) return;
 
@@ -618,7 +670,6 @@
         document.getElementById("mc-txt-hijo").innerText = `Agregar ${nombresNivel[nivel]}`;
       }
 
-      // Posicionamiento inteligente del menú flotante
       let posX = event.clientX;
       let posY = event.clientY;
       if (posX + 230 > window.innerWidth) posX = window.innerWidth - 235;
@@ -640,7 +691,7 @@
       cerrarMenuContextual();
 
       if (accion === 'agregar_hijo') {
-        agregarSubtareaJerarquica(cod);
+        abrirWizardCreacion(cod);
       } else if (accion === 'asignar_resp') {
         editarResponsable(cod);
       } else if (accion === 'eliminar') {
@@ -648,10 +699,9 @@
       }
     }
 
-    // --- GENERADOR CORRELATIVO AUTOMÁTICO WBS ---
+    // --- CÁLCULO AUTOMÁTICO DE CORRELATIVO WBS ---
     function calcularSiguienteCorrelativo(codigoPadre) {
-      if (!codigoPadre || codigoPadre === "RAIZ") {
-        // Nivel 1: contar actividades raíz existentes
+      if (!codigoPadre) {
         const raices = actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
         let maxNum = 0;
         raices.forEach(r => {
@@ -664,7 +714,6 @@
       const codLimpio = codigoPadre.replace(/\.$/, "");
       const nivelPadre = codLimpio.split(".").length;
       
-      // Buscar hijos directos inmediatos
       const hijosDirectos = actividadesGlobal.filter(a => {
         const c = a.codigo.replace(/\.$/, "");
         return c.startsWith(codLimpio + ".") && c.split(".").length === nivelPadre + 1;
@@ -680,84 +729,174 @@
       return `${codLimpio}.${maxNum + 1}`;
     }
 
-    // --- MODAL DE CREACIÓN CON SELECTOR EN CASCADA ---
-    function abrirModalCreacionInteractiva(codigoPadreFijo = null) {
-      document.getElementById("form-actividad").reset();
+    // --- ASISTENTE INTERACTIVO (WIZARD PASO A PASO) ---
+    function abrirWizardCreacion(codigoPadre = null) {
+      wizardCodigoPadre = codigoPadre;
+      wizardCodigoGenerado = calcularSiguienteCorrelativo(codigoPadre);
+      
       const anio = new Date().getFullYear();
-      document.getElementById("act-fecha-inicio").value = `${anio}-01-01`;
-      document.getElementById("act-fecha-fin").value = `${anio}-01-05`;
-      document.getElementById("act-dias").value = 5;
+      document.getElementById("wz-input-desc").value = "";
+      document.getElementById("wz-input-ini").value = `${anio}-01-01`;
+      document.getElementById("wz-input-dias").value = 5;
+      document.getElementById("wz-input-estado").value = "Pendiente";
+      document.getElementById("wz-input-pred").value = "";
+      document.getElementById("wz-codigo-preview").innerText = wizardCodigoGenerado;
 
-      const selPadre = document.getElementById("act-padre-select");
-      selPadre.innerHTML = '<option value="RAIZ">🌟 [Nivel 1] Nueva Actividad Raíz Principal</option>';
-
-      actividadesGlobal.forEach(a => {
-        const partes = a.codigo.replace(/\.$/, "").split(".");
-        const nivel = partes.length;
-        if (nivel < 4) {
-          const sangria = "— ".repeat(nivel - 1);
-          selPadre.innerHTML += `<option value="${a.codigo}">${sangria}[${a.codigo}] ${a.descripcion} (Nivel ${nivel})</option>`;
-        }
-      });
-
-      if (codigoPadreFijo) {
-        selPadre.value = codigoPadreFijo;
-        document.getElementById("modal-titulo").innerText = `Nueva Subtarea para [${codigoPadreFijo}]`;
+      if (codigoPadre) {
+        const madre = actividadesGlobal.find(a => a.codigo === codigoPadre);
+        document.getElementById("wz-titulo").innerText = `Nueva Subtarea para [${codigoPadre}]`;
+        document.getElementById("wz-subtitulo").innerText = `Dependencia: ${madre ? madre.descripcion : codigoPadre}`;
       } else {
-        selPadre.value = "RAIZ";
-        document.getElementById("modal-titulo").innerText = "Registro de Nueva Actividad (WBS)";
+        document.getElementById("wz-titulo").innerText = "Nueva Actividad Raíz (Nivel 1)";
+        document.getElementById("wz-subtitulo").innerText = "Creando actividad principal independiente";
       }
 
-      alCambiarPadreJerarquico(selPadre.value);
-      document.getElementById("modal-actividad").classList.remove("hidden");
+      // Renderizar checkboxes de responsables en el paso 3
+      const contResp = document.getElementById("wz-lista-responsables");
+      contResp.innerHTML = "";
+      responsablesGlobal.forEach(r => {
+        contResp.innerHTML += `
+          <label class="flex items-center justify-between p-1.5 rounded hover:bg-gray-50 border border-gray-100 cursor-pointer text-xs">
+            <div class="flex items-center space-x-2">
+              <input type="checkbox" value="${r.nombre}" class="wz-chk-resp rounded text-[#0f2a4a] focus:ring-0">
+              <span class="font-semibold text-gray-800">${r.nombre}</span>
+            </div>
+            <span class="text-[10px] text-gray-500">${r.cargo || ''}</span>
+          </label>
+        `;
+      });
+
+      actualizarFechaFinWizard();
+      irAPasoWizard(1);
+      document.getElementById("modal-wizard-creacion").classList.remove("hidden");
+      setTimeout(() => document.getElementById("wz-input-desc").focus(), 100);
     }
 
-    function alCambiarPadreJerarquico(valPadre) {
-      const nuevoCodigo = calcularSiguienteCorrelativo(valPadre);
-      document.getElementById("act-codigo").value = nuevoCodigo;
+    function cerrarWizardCreacion() {
+      document.getElementById("modal-wizard-creacion").classList.add("hidden");
     }
 
-    function agregarSubtareaJerarquica(codPadre) {
-      abrirModalCreacionInteractiva(codPadre);
+    function irAPasoWizard(paso) {
+      wizardPasoActual = paso;
+      document.getElementById("wz-paso-1").classList.add("hidden");
+      document.getElementById("wz-paso-2").classList.add("hidden");
+      document.getElementById("wz-paso-3").classList.add("hidden");
+
+      document.getElementById(`wz-paso-${paso}`).classList.remove("hidden");
+
+      const barra = document.getElementById("wz-progreso-barra");
+      const btnAnt = document.getElementById("wz-btn-anterior");
+      const btnSig = document.getElementById("wz-btn-siguiente");
+
+      if (paso === 1) {
+        barra.style.width = "33.33%";
+        btnAnt.classList.add("invisible");
+        btnSig.innerText = "Siguiente →";
+      } else if (paso === 2) {
+        barra.style.width = "66.66%";
+        btnAnt.classList.remove("invisible");
+        btnSig.innerText = "Siguiente →";
+      } else if (paso === 3) {
+        barra.style.width = "100%";
+        btnAnt.classList.remove("invisible");
+        btnSig.innerText = "✓ Guardar Registro";
+      }
     }
 
-    function cerrarModalActividad() { 
-      document.getElementById("modal-actividad").classList.add("hidden"); 
+    function avanzarPasoWizard() {
+      if (wizardPasoActual === 1) {
+        const desc = document.getElementById("wz-input-desc").value.trim();
+        if (!desc) {
+          alert("Por favor consigna una descripción para continuar.");
+          document.getElementById("wz-input-desc").focus();
+          return;
+        }
+        irAPasoWizard(2);
+      } else if (wizardPasoActual === 2) {
+        const dias = parseInt(document.getElementById("wz-input-dias").value);
+        if (isNaN(dias) || dias < 1) {
+          alert("Ingresa una cantidad de días válida.");
+          return;
+        }
+        irAPasoWizard(3);
+      } else if (wizardPasoActual === 3) {
+        guardarActividadDesdeWizard();
+      }
     }
 
-    document.getElementById("form-actividad").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const [y1, m1, d1] = document.getElementById("act-fecha-inicio").value.split("-");
-      const [y2, m2, d2] = document.getElementById("act-fecha-fin").value.split("-");
+    function retrocederPasoWizard() {
+      if (wizardPasoActual > 1) {
+        irAPasoWizard(wizardPasoActual - 1);
+      }
+    }
+
+    function configurarCalculadoraWizard() {
+      const fIni = document.getElementById("wz-input-ini");
+      const dias = document.getElementById("wz-input-dias");
+
+      fIni.addEventListener("input", actualizarFechaFinWizard);
+      dias.addEventListener("input", actualizarFechaFinWizard);
+    }
+
+    function actualizarFechaFinWizard() {
+      const fIniVal = document.getElementById("wz-input-ini").value;
+      const diasVal = parseInt(document.getElementById("wz-input-dias").value) || 1;
+      if (fIniVal) {
+        const dt = new Date(fIniVal + "T00:00:00");
+        dt.setDate(dt.getDate() + (diasVal - 1));
+        const d = String(dt.getDate()).padStart(2, '0');
+        const m = String(dt.getMonth() + 1).padStart(2, '0');
+        const y = dt.getFullYear();
+        document.getElementById("wz-fecha-fin-preview").innerText = `${d}/${m}/${y}`;
+      }
+    }
+
+    async function guardarActividadDesdeWizard() {
+      const [y1, m1, d1] = document.getElementById("wz-input-ini").value.split("-");
+      const dias = parseInt(document.getElementById("wz-input-dias").value) || 1;
+      
+      const dtFin = new Date(parseInt(y1), parseInt(m1) - 1, parseInt(d1));
+      dtFin.setDate(dtFin.getDate() + (dias - 1));
+      const fFinStr = `${String(dtFin.getDate()).padStart(2, '0')}/${String(dtFin.getMonth() + 1).padStart(2, '0')}/${dtFin.getFullYear()}`;
+
+      const respsMarcados = Array.from(document.querySelectorAll(".wz-chk-resp:checked")).map(cb => cb.value);
+      const respFinal = respsMarcados.length > 0 ? respsMarcados.join("; ") : "No asignado";
+
+      const estado = document.getElementById("wz-input-estado").value;
+      const avance = estado === 'Ejecutado' ? 100 : (estado === 'Pendiente' ? 0 : 50);
 
       const payload = {
-        codigo: document.getElementById("act-codigo").value.trim(),
-        descripcion: document.getElementById("act-desc").value.trim(),
-        responsable: document.getElementById("act-resp").value.trim() || "No asignado",
-        estado: document.getElementById("act-estado").value,
-        avance: parseInt(document.getElementById("act-avance").value) || 0,
+        codigo: wizardCodigoGenerado,
+        descripcion: document.getElementById("wz-input-desc").value.trim(),
+        responsable: respFinal,
+        estado: estado,
+        avance: avance,
         fecha_inicio: `${d1}/${m1}/${y1}`,
-        fecha_fin: `${d2}/${m2}/${y2}`,
-        dias: parseInt(document.getElementById("act-dias").value) || 1,
-        predecesores: document.getElementById("act-predecesores").value.trim()
+        fecha_fin: fFinStr,
+        dias: dias,
+        predecesores: document.getElementById("wz-input-pred").value.trim()
       };
 
-      const res = await fetch(`/actividades`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
+      try {
+        const res = await fetch(`/actividades`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify(payload)
+        });
 
-      if (res.ok) {
-        cerrarModalActividad();
-        await cargarActividades();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        alert(err.detail || "Error al registrar actividad.");
+        if (res.ok) {
+          cerrarWizardCreacion();
+          await cargarActividades();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al registrar actividad.");
+        }
+      } catch (e) {
+        alert("Error de conexión al guardar.");
       }
-    });
+    }
 
-    // --- ELIMINACIÓN CON ADVERTENCIA DE ACTIVIDADES HIJAS ---
+    // --- ELIMINACIÓN INTELIGENTE EN CASCADA ---
     async function eliminarActividad(cod) {
       const codLimpio = cod.replace(/\.$/, "");
       const hijas = actividadesGlobal.filter(a => {
@@ -777,6 +916,7 @@
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
+        codigoFilaSeleccionada = null;
         await cargarActividades();
       } else {
         alert("No tiene permisos para eliminar actividades.");
@@ -1117,7 +1257,7 @@
       });
     }
 
-    // --- AUTENTICACIÓN DIRECTA ---
+    // --- AUTENTICACIÓN ---
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const user = document.getElementById("login-username").value.trim();
@@ -1238,7 +1378,7 @@
       renderizarTabla();
     }
 
-    // --- RENDERIZADO DEL GANTT VISUAL (CON CLIC DERECHO HABILITADO) ---
+    // --- RENDERIZADO DEL GANTT VISUAL (CON SELECCIÓN DE FILA Y CLIC DERECHO) ---
     function renderizarTabla() {
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
@@ -1284,16 +1424,19 @@
         const esNivel1 = (nivel === 1);
         const esMadre = tieneHijos(act.codigo);
         const estaColapsado = nodosColapsados.has(codLimpio);
+        const estaSeleccionada = (codigoFilaSeleccionada === act.codigo);
 
         const tr = document.createElement("tr");
-        tr.className = esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50");
+        tr.id = `fila-act-${act.codigo.replace(/\./g, '_')}`;
+        tr.className = `${esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50")} ${estaSeleccionada ? 'row-selected' : ''} cursor-pointer transition-colors`;
         
-        // Asignar evento de Clic Derecho a toda la fila
+        // Selección por Clic Izquierdo y Menú por Clic Derecho
+        tr.onclick = () => seleccionarFila(act.codigo);
         tr.oncontextmenu = (e) => abrirMenuContextual(e, act.codigo);
 
         let iconoColapso = "";
         if (esMadre) {
-          iconoColapso = `<button onclick="alternarColapsoNodo('${act.codigo}')" class="text-[10px] font-black text-[#0f2a4a] mr-1.5 w-4 h-4 rounded hover:bg-blue-200 transition">${estaColapsado ? '▶' : '▼'}</button>`;
+          iconoColapso = `<button onclick="event.stopPropagation(); alternarColapsoNodo('${act.codigo}')" class="text-[10px] font-black text-[#0f2a4a] mr-1.5 w-4 h-4 rounded hover:bg-blue-200 transition">${estaColapsado ? '▶' : '▼'}</button>`;
         } else {
           iconoColapso = `<span class="inline-block w-4 mr-1.5"></span>`;
         }
@@ -1422,8 +1565,8 @@
           ${tdAvance}
           ${tdGantt}
           <td class="p-2 text-center border-b border-gray-200 space-x-1 whitespace-nowrap">
-            <button onclick="agregarSubtareaJerarquica('${cod}')" class="text-blue-600 hover:text-blue-800 font-bold px-1" title="Agregar subtarea jerárquica">+</button>
-            <button onclick="eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>
+            <button onclick="event.stopPropagation(); abrirWizardCreacion('${cod}')" class="text-blue-600 hover:text-blue-800 font-bold px-1 text-sm" title="Agregar subtarea jerárquica">+</button>
+            <button onclick="event.stopPropagation(); eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -1720,46 +1863,6 @@
       } catch (error) {
         console.error("Error de conexión:", error);
       }
-    }
-
-    function configurarCalculadoraBidireccional() {
-      let bloqueando = false;
-      const fIni = document.getElementById("act-fecha-inicio");
-      const fFin = document.getElementById("act-fecha-fin");
-      const txtDias = document.getElementById("act-dias");
-
-      function sumarDias(strF, dias) {
-        const d = new Date(strF + "T00:00:00");
-        d.setDate(d.getDate() + (dias - 1));
-        return d.toISOString().split("T")[0];
-      }
-
-      txtDias.addEventListener("input", () => {
-        if (bloqueando || !fIni.value || !txtDias.value) return;
-        bloqueando = true;
-        fFin.value = sumarDias(fIni.value, parseInt(txtDias.value));
-        bloqueando = false;
-      });
-
-      fFin.addEventListener("input", () => {
-        if (bloqueando || !fIni.value || !fFin.value) return;
-        const d1 = new Date(fIni.value + "T00:00:00");
-        const d2 = new Date(fFin.value + "T00:00:00");
-        const diff = Math.floor((dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
-        if (diff > 0) {
-          bloqueando = true;
-          txtDias.value = diff;
-          bloqueando = false;
-        }
-      });
-
-      fIni.addEventListener("input", () => {
-        if (bloqueando || !fIni.value) return;
-        bloqueando = true;
-        const d = parseInt(txtDias.value) || 5;
-        fFin.value = sumarDias(fIni.value, d);
-        bloqueando = false;
-      });
     }
 
     async function verRutaCritica() {
