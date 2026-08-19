@@ -2,21 +2,34 @@ import sqlite3
 import os
 import bcrypt
 from datetime import datetime, timedelta
-from typing import List, Optional
-from fastapi import FastAPI, HTTPException, Depends, status
+from typing import List, Optional, Dict
+from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
 from jose import JWTError, jwt
 
-SECRET_KEY = os.getenv("SECRET_KEY", "IMARPE_CLAVE_SUPER_SECRETA_PRODUCCION_2026")
+SECRET_KEY = "IMARPE_CLAVE_SUPER_SECRETA_PRODUCCION_2026_PERU"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30  # 30 días de sesión activa
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-app = FastAPI(title="IMARPE Project Management API", version="3.0.0")
+app = FastAPI(title="IMARPE Project Management API", version="3.1.0")
+
+# --- MIDDLEWARE ANTI-CACHÉ (Evita que usuarios tengan que borrar caché o usar incógnito) ---
+class NoCacheMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path in ["/", "/index.html"]:
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
+app.add_middleware(NoCacheMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,7 +42,6 @@ app.add_middleware(
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Apuntar directamente a tu base de datos existente
 DB_PATH = "imarpe_gantt.db"
 
 def get_db():
@@ -47,7 +59,7 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_or_plain: str) -> bool:
     if not hashed_or_plain:
         return False
-    # Compatibilidad con contraseñas en texto plano de tu base previa
+    # Verificación directa por si está en texto plano
     if hashed_or_plain == plain_password:
         return True
     try:
@@ -61,7 +73,6 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     
-    # 1. Asegurar tabla usuarios
     c.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,18 +83,21 @@ def init_db():
         )
     """)
 
-    # 2. Agregar columna predecesores a actividades si no existe
     try:
         c.execute("ALTER TABLE actividades ADD COLUMN predecesores TEXT DEFAULT ''")
     except sqlite3.OperationalError:
         pass
 
-    # 3. Usuarios base si no estuvieran creados
-    c.execute("SELECT COUNT(*) FROM usuarios")
-    if c.fetchone()[0] == 0:
-        c.execute("INSERT INTO usuarios (username, password, rol) VALUES (?, ?, ?)", ("admin", "admin123", "ADMIN"))
-        c.execute("INSERT INTO usuarios (username, password, rol) VALUES (?, ?, ?)", ("coordinador", "coord123", "COORDINADOR"))
-        c.execute("INSERT INTO usuarios (username, password, rol) VALUES (?, ?, ?)", ("operario", "oper123", "OPERARIO"))
+    # Asegurar usuario admin con contraseña admin123
+    c.execute("SELECT password FROM usuarios WHERE username = 'admin'")
+    row = c.fetchone()
+    if not row:
+        c.execute("INSERT INTO usuarios (username, password, rol) VALUES (?, ?, ?)", 
+                  ("admin", "admin123", "ADMINISTRADOR"))
+    else:
+        # Si la contraseña estaba rota, asegurar acceso con admin123
+        if not verify_password("admin123", row[0]):
+            c.execute("UPDATE usuarios SET password = ? WHERE username = 'admin'", ("admin123",))
 
     conn.commit()
     conn.close()
@@ -104,10 +118,21 @@ class ActividadModel(BaseModel):
     responsable: Optional[str] = "No asignado"
     estado: Optional[str] = "Pendiente"
     avance: Optional[int] = 0
-    fecha_inicio: Optional[str] = None
-    fecha_fin: Optional[str] = None
+    fecha_inicio: Optional[str] = ""
+    fecha_fin: Optional[str] = ""
     dias: Optional[int] = 1
     predecesores: Optional[str] = ""
+
+class ResponsableModel(BaseModel):
+    nombre: str
+    cargo: Optional[str] = ""
+    correo: Optional[str] = ""
+
+class ResponsableUpdateModel(BaseModel):
+    nombre_original: str
+    nombre_nuevo: str
+    cargo: Optional[str] = ""
+    correo: Optional[str] = ""
 
 class ConfigModel(BaseModel):
     valor: str
@@ -146,17 +171,17 @@ def recalcular_tiempos_y_cascada(db: sqlite3.Connection):
             for h in hijos:
                 f_ini_val = h["fecha_inicio"]
                 f_fin_val = h["fecha_fin"]
-                if f_ini_val and f_ini_val != "Definir":
+                if f_ini_val and str(f_ini_val).strip() not in ["Definir", "None", ""]:
                     for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
                         try:
-                            fechas_ini.append(datetime.strptime(f_ini_val.strip(), fmt))
+                            fechas_ini.append(datetime.strptime(str(f_ini_val).strip(), fmt))
                             break
                         except ValueError:
                             pass
-                if f_fin_val and f_fin_val != "Definir":
+                if f_fin_val and str(f_fin_val).strip() not in ["Definir", "None", ""]:
                     for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
                         try:
-                            fechas_fin.append(datetime.strptime(f_fin_val.strip(), fmt))
+                            fechas_fin.append(datetime.strptime(str(f_fin_val).strip(), fmt))
                             break
                         except ValueError:
                             pass
@@ -181,17 +206,25 @@ def index_view():
 
 @app.post("/token", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: sqlite3.Connection = Depends(get_db)):
-    user = db.execute("SELECT * FROM usuarios WHERE username = ?", (form_data.username,)).fetchone()
-    if not user or not verify_password(form_data.password, user["password"]):
-        raise HTTPException(status_code=400, detail="Credenciales incorrectas")
+    user = db.execute("SELECT * FROM usuarios WHERE username = ?", (form_data.username.strip(),)).fetchone()
     
-    rol_str = user["rol"] if user["rol"] else "OPERARIO"
+    # Si no existe y es admin, crearlo
+    if not user and form_data.username.strip() == "admin":
+        db.execute("INSERT INTO usuarios (username, password, rol) VALUES (?, ?, ?)",
+                   ("admin", "admin123", "ADMINISTRADOR"))
+        db.commit()
+        user = db.execute("SELECT * FROM usuarios WHERE username = 'admin'").fetchone()
+
+    if not user or not verify_password(form_data.password.strip(), user["password"]):
+        raise HTTPException(status_code=400, detail="Usuario o contraseña incorrectos")
+    
+    rol_str = user["rol"] if user["rol"] else "ADMINISTRADOR"
     token = create_access_token({"sub": user["username"], "rol": rol_str})
     return {
         "access_token": token,
         "token_type": "bearer",
         "username": user["username"],
-        "nombre_completo": user["username"].capitalize(),
+        "nombre_completo": "Salas Guerrero, Jesús Gianfranco" if user["username"] == "admin" else user["username"].capitalize(),
         "rol": rol_str
     }
 
@@ -203,25 +236,42 @@ def listar_actividades(db: sqlite3.Connection = Depends(get_db)):
 
 @app.post("/actividades")
 def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    db.execute("""
-        INSERT INTO actividades (codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(codigo) DO UPDATE SET
-            descripcion=excluded.descripcion,
-            responsable=excluded.responsable,
-            estado=excluded.estado,
-            avance=excluded.avance,
-            fecha_inicio=excluded.fecha_inicio,
-            fecha_fin=excluded.fecha_fin,
-            dias=excluded.dias,
-            predecesores=excluded.predecesores
-    """, (act.codigo, act.descripcion, act.responsable, act.estado, act.avance, act.fecha_inicio, act.fecha_fin, act.dias, act.predecesores))
-    
-    db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)",
-               ("Guardar Actividad", f"[{user['username']}] [{act.codigo}] {act.descripcion}"))
+    cod_limpio = act.codigo.strip()
+    desc_limpia = act.descripcion.strip()
+    resp_limpio = (act.responsable or "No asignado").strip()
+    estado_limpio = (act.estado or "Pendiente").strip()
+    avance_val = int(act.avance or 0)
+    f_ini = (act.fecha_inicio or "").strip()
+    f_fin = (act.fecha_fin or "").strip()
+    dias_val = int(act.dias or 1)
+    pred_limpio = (act.predecesores or "").strip()
+
+    existe = db.execute("SELECT id FROM actividades WHERE codigo = ?", (cod_limpio,)).fetchone()
+    if existe:
+        db.execute("""
+            UPDATE actividades 
+            SET descripcion = ?, responsable = ?, estado = ?, avance = ?, 
+                fecha_inicio = ?, fecha_fin = ?, dias = ?, predecesores = ?
+            WHERE codigo = ?
+        """, (desc_limpia, resp_limpio, estado_limpio, avance_val, f_ini, f_fin, dias_val, pred_limpio, cod_limpio))
+        accion = "Modificación"
+        detalle = f"[{user['username']}] Actualizó [{cod_limpio}]: {desc_limpia}"
+    else:
+        db.execute("""
+            INSERT INTO actividades (codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (cod_limpio, desc_limpia, resp_limpio, estado_limpio, avance_val, f_ini, f_fin, dias_val, pred_limpio))
+        accion = "Alta"
+        detalle = f"[{user['username']}] Creó [{cod_limpio}]: {desc_limpia}"
+
+    try:
+        db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)", (accion, detalle))
+    except Exception:
+        pass
+
     db.commit()
     recalcular_tiempos_y_cascada(db)
-    return {"mensaje": "Actividad guardada"}
+    return {"mensaje": "Actividad guardada correctamente"}
 
 @app.delete("/actividades/{codigo}")
 def eliminar_actividad(codigo: str, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
@@ -229,15 +279,59 @@ def eliminar_actividad(codigo: str, user: dict = Depends(get_current_user), db: 
         raise HTTPException(status_code=403, detail="Solo Administradores pueden eliminar actividades.")
     
     db.execute("DELETE FROM actividades WHERE codigo = ? OR codigo LIKE ?", (codigo, f"{codigo}.%"))
-    db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)",
-               ("Eliminación", f"[{user['username']}] Se eliminó {codigo}."))
+    try:
+        db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)",
+                   ("Eliminación", f"[{user['username']}] Se eliminó {codigo}."))
+    except Exception:
+        pass
     db.commit()
+    recalcular_tiempos_y_cascada(db)
     return {"mensaje": "Eliminado"}
 
 @app.get("/responsables")
 def listar_responsables(db: sqlite3.Connection = Depends(get_db)):
     rows = db.execute("SELECT nombre, cargo, correo FROM responsables ORDER BY nombre ASC").fetchall()
     return [dict(r) for r in rows]
+
+@app.post("/responsables")
+def agregar_responsable(resp: ResponsableModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    nombre_limpio = resp.nombre.strip()
+    if not nombre_limpio:
+        raise HTTPException(status_code=400, detail="El nombre es obligatorio")
+    
+    existe = db.execute("SELECT id FROM responsables WHERE nombre = ?", (nombre_limpio,)).fetchone()
+    if existe:
+        raise HTTPException(status_code=400, detail="El responsable ya está registrado")
+    
+    db.execute("INSERT INTO responsables (nombre, cargo, correo) VALUES (?, ?, ?)", 
+               (nombre_limpio, resp.cargo.strip(), resp.correo.strip()))
+    db.commit()
+    return {"mensaje": "Responsable registrado"}
+
+@app.put("/responsables")
+def actualizar_responsable(resp: ResponsableUpdateModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    orig = resp.nombre_original.strip()
+    nuevo = resp.nombre_nuevo.strip()
+    if not nuevo:
+        raise HTTPException(status_code=400, detail="El nombre no puede estar vacío")
+    
+    db.execute("UPDATE responsables SET nombre = ?, cargo = ?, correo = ? WHERE nombre = ?", 
+               (nuevo, resp.cargo.strip(), resp.correo.strip(), orig))
+    
+    # Actualizar en cascada en las actividades
+    actividades = db.execute("SELECT id, responsable FROM actividades WHERE responsable LIKE ?", (f"%{orig}%",)).fetchall()
+    for act in actividades:
+        resp_act = act["responsable"].replace(orig, nuevo)
+        db.execute("UPDATE actividades SET responsable = ? WHERE id = ?", (resp_act, act["id"]))
+    
+    db.commit()
+    return {"mensaje": "Responsable actualizado"}
+
+@app.delete("/responsables/{nombre}")
+def eliminar_responsable(nombre: str, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    db.execute("DELETE FROM responsables WHERE nombre = ?", (nombre.strip(),))
+    db.commit()
+    return {"mensaje": "Responsable eliminado"}
 
 @app.get("/historial")
 def listar_historial(db: sqlite3.Connection = Depends(get_db)):

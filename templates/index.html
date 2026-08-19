@@ -18,7 +18,7 @@
     .spin-btn:active { background: #b0b0b0; }
     
     /* Resaltado de la semana actual */
-    .col-semana-actual { background-color: rgba(22, 160, 133, 0.15) !important; }
+    .col-semana-actual { background-color: rgba(22, 160, 133, 0.12) !important; }
     .header-semana-actual { background-color: #16a085 !important; color: #ffffff !important; font-weight: bold; }
 
     /* Cabecera Sticky Fija */
@@ -40,25 +40,45 @@
       position: absolute;
       top: 5px;
       z-index: 25;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
 
-    /* Avatares Apilados */
+    /* Avatares Circulares */
     .avatar-circle {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 10px;
+      font-size: 9px;
       color: #ffffff;
       border: 2px solid #ffffff;
       box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-      margin-left: -6px;
+      margin-left: -5px;
+      flex-shrink: 0;
     }
     .avatar-circle:first-child { margin-left: 0; }
     .avatar-group { display: inline-flex; align-items: center; justify-content: center; }
+
+    /* Mini avatar flotante en el Gantt */
+    .gantt-avatar-circle {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 7.5px;
+      color: #ffffff;
+      border: 1.5px solid #ffffff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+      margin-left: -4px;
+      flex-shrink: 0;
+    }
+    .gantt-avatar-circle:first-child { margin-left: 0; }
 
     /* Selector de Responsable con Flecha Custom Limpia */
     .select-clean-arrow {
@@ -85,7 +105,7 @@
       <form id="login-form" class="space-y-4">
         <div>
           <label class="block text-xs font-bold uppercase text-gray-600">Usuario</label>
-          <input type="text" id="login-username" required class="w-full mt-1 p-2.5 border border-gray-300 rounded focus:border-[#0f2a4a] outline-none font-semibold" placeholder="admin / coordinador / operario">
+          <input type="text" id="login-username" required class="w-full mt-1 p-2.5 border border-gray-300 rounded focus:border-[#0f2a4a] outline-none font-semibold" placeholder="admin">
         </div>
         <div>
           <label class="block text-xs font-bold uppercase text-gray-600">Contraseña</label>
@@ -253,9 +273,7 @@
     </div>
   </main>
 
-  <!-- ========================================================================= -->
-  <!-- MODAL: ASIGNACIÓN MÚLTIPLE DE RESPONSABLES                                -->
-  <!-- ========================================================================= -->
+  <!-- MODAL: ASIGNACIÓN MÚLTIPLE DE RESPONSABLES -->
   <div id="modal-asignar-responsables" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
       <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
@@ -265,9 +283,7 @@
       <div class="p-5 space-y-3">
         <p class="text-xs text-gray-600 font-semibold">Marque uno o varios miembros para asignar a esta actividad:</p>
         
-        <div id="lista-checkbox-responsables" class="max-h-60 overflow-y-auto space-y-2 bg-white p-3 rounded-lg border border-gray-200">
-          <!-- Checkboxes generados dinámicamente con selección exacta -->
-        </div>
+        <div id="lista-checkbox-responsables" class="max-h-60 overflow-y-auto space-y-2 bg-white p-3 rounded-lg border border-gray-200"></div>
 
         <div class="flex justify-end space-x-2 pt-2">
           <button onclick="cerrarAsignarResponsables()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-[#2c3e50] text-xs font-bold rounded transition">Cancelar</button>
@@ -500,17 +516,14 @@
     let responsablesGlobal = [];
     let nivelFiltroActivo = 4;
     
-    // Zoom y semanas
     let modoZoom = "semanas";
     let semanasTotales = [];
     let semanaInicioIndex = 0;
     let indiceSemanaHoy = -1;
 
-    // Estado de Nodos Colapsados
     let nodosColapsados = new Set();
     let actividadMultiRespActual = null;
 
-    // Visibilidad de columnas
     let visibilidadColumnas = JSON.parse(localStorage.getItem("visibilidad_columnas") || JSON.stringify({
       responsable: true,
       estado: true,
@@ -537,32 +550,21 @@
       aplicarVisibilidadColumnas();
     });
 
-    // --- FUNCIÓN ROBUSTA PARA PARSEAR RESPONSABLES ASIGNADOS ---
     function obtenerListaResponsablesAsignados(responsablesStr) {
       if (!responsablesStr || responsablesStr === "No asignado" || responsablesStr === "-") return [];
-      
-      // 1. Si contiene punto y coma (;), separar directamente por ';'
       if (responsablesStr.includes(";")) {
         return responsablesStr.split(";").map(s => s.trim()).filter(Boolean);
       }
-      
-      // 2. Si viene con comas de registros previos, buscar coincidencia con nombres conocidos
       const nombresEncontrados = [];
       responsablesGlobal.forEach(r => {
         if (r.nombre && responsablesStr.includes(r.nombre.trim())) {
           nombresEncontrados.push(r.nombre.trim());
         }
       });
-      
-      if (nombresEncontrados.length > 0) {
-        return nombresEncontrados;
-      }
-      
-      // 3. Fallback a texto limpio
+      if (nombresEncontrados.length > 0) return nombresEncontrados;
       return [responsablesStr.trim()];
     }
 
-    // --- GENERADOR DE AVATARES INTELIGENTE ---
     function obtenerAvatarHTML(responsablesStr) {
       const listaNombres = obtenerListaResponsablesAsignados(responsablesStr);
       if (listaNombres.length === 0) {
@@ -588,9 +590,7 @@
         }
 
         let hash = 0;
-        for (let i = 0; i < nom.length; i++) {
-          hash = nom.charCodeAt(i) + ((hash << 5) - hash);
-        }
+        for (let i = 0; i < nom.length; i++) hash = nom.charCodeAt(i) + ((hash << 5) - hash);
         const colorBg = coloresAvatar[Math.abs(hash) % coloresAvatar.length];
 
         const respObj = responsablesGlobal.find(r => r.nombre === nom) || {};
@@ -613,13 +613,46 @@
       return `<div class="avatar-group cursor-pointer" title="${tooltipFinal}">${avataresHTML}</div>`;
     }
 
-    // --- MODAL DE MULTISELECCIÓN CON SELECCIÓN EXACTA ---
+    function obtenerMiniAvataresGanttHTML(responsablesStr) {
+      const listaNombres = obtenerListaResponsablesAsignados(responsablesStr);
+      if (listaNombres.length === 0) return "";
+
+      let avataresHTML = "";
+      const maxMostrar = 2;
+      const mostrar = listaNombres.slice(0, maxMostrar);
+      const restantes = listaNombres.length - maxMostrar;
+
+      mostrar.forEach(nom => {
+        let iniciales = "";
+        if (nom.includes(",")) {
+          const partes = nom.split(",");
+          const apellido = partes[0].trim().split(" ")[0];
+          const nombre = partes[1] ? partes[1].trim().split(" ")[0] : "";
+          iniciales = (apellido[0] + (nombre ? nombre[0] : "")).toUpperCase();
+        } else {
+          const partes = nom.split(" ");
+          iniciales = (partes[0][0] + (partes[1] ? partes[1][0] : "")).toUpperCase();
+        }
+
+        let hash = 0;
+        for (let i = 0; i < nom.length; i++) hash = nom.charCodeAt(i) + ((hash << 5) - hash);
+        const colorBg = coloresAvatar[Math.abs(hash) % coloresAvatar.length];
+
+        avataresHTML += `<div class="gantt-avatar-circle" style="background-color: ${colorBg};">${iniciales}</div>`;
+      });
+
+      if (restantes > 0) {
+        avataresHTML += `<div class="gantt-avatar-circle bg-gray-700 text-[7px] font-black">+${restantes}</div>`;
+      }
+
+      return `<div class="inline-flex items-center ml-1.5 align-middle select-none">${avataresHTML}</div>`;
+    }
+
     function editarResponsable(cod) {
       actividadMultiRespActual = actividadesGlobal.find(a => a.codigo === cod);
       if (!actividadMultiRespActual) return;
 
       const asignados = obtenerListaResponsablesAsignados(actividadMultiRespActual.responsable);
-
       const contenedor = document.getElementById("lista-checkbox-responsables");
       contenedor.innerHTML = "";
 
@@ -650,7 +683,6 @@
       document.getElementById("modal-asignar-responsables").classList.add("hidden");
     }
 
-    // --- PLEGADO Y DESPLEGADO DE NODOS WBS ---
     function alternarColapsoNodo(cod) {
       const codLimpio = cod.replace(/\.$/, "");
       if (nodosColapsados.has(codLimpio)) nodosColapsados.delete(codLimpio);
@@ -668,7 +700,6 @@
       return false;
     }
 
-    // --- ZOOM TEMPORAL ---
     function cambiarZoom(modo) {
       modoZoom = modo;
       const btnSem = document.getElementById("btn-zoom-semanas");
@@ -687,7 +718,6 @@
       actualizarVistaGantt();
     }
 
-    // --- EXPORTACIÓN CSV/EXCEL ---
     function exportarExcelCSV() {
       let csv = "Codigo;Descripcion;Responsable;Estado;Fecha Inicio;Fecha Fin;Dias;% Avance;Predecesores\n";
       actividadesGlobal.forEach(a => {
@@ -700,7 +730,6 @@
       link.click();
     }
 
-    // --- GESTIÓN DE VISIBILIDAD DE COLUMNAS ---
     function abrirModalColumnas() {
       sincronizarCheckboxesColumnas();
       document.getElementById("modal-columnas").classList.remove("hidden");
@@ -750,15 +779,12 @@
       setCol("th-gantt", visibilidadColumnas.gantt);
     }
 
-    // --- CALENDARIO ANUAL ---
     function construirCalendarioAnual() {
       const anio = new Date().getFullYear();
       semanasTotales = [];
 
       let curr = new Date(anio, 0, 1);
-      while (curr.getDay() !== 1) {
-        curr.setDate(curr.getDate() - 1);
-      }
+      while (curr.getDay() !== 1) curr.setDate(curr.getDate() - 1);
 
       const finAnio = new Date(anio, 11, 31);
       const ahora = new Date();
@@ -789,7 +815,6 @@
       }
     }
 
-    // --- CONTROLES SPINBUTTON ---
     function cambiarSemanaInicio(delta) {
       const input = document.getElementById("input-semana-inicio");
       let val = parseInt(input.value) + delta;
@@ -858,37 +883,62 @@
       });
     }
 
-    // --- AUTENTICACIÓN ---
+    // --- AUTENTICACIÓN CON AUTO-LIMPIEZA DE SESIÓN ---
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const user = document.getElementById("login-username").value;
-      const pass = document.getElementById("login-password").value;
+      const user = document.getElementById("login-username").value.trim();
+      const pass = document.getElementById("login-password").value.trim();
+      
       const formData = new URLSearchParams();
       formData.append("username", user);
       formData.append("password", pass);
 
       try {
-        const res = await fetch(`/token`, { method: "POST", body: formData });
-        if (!res.ok) throw new Error("Credenciales inválidas");
+        const res = await fetch(`/token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: formData
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          alert(errData.detail || "Usuario o contraseña incorrectos.");
+          return;
+        }
+
         const data = await res.json();
         token = data.access_token;
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(data));
-        mostrarDashboard();
+        
+        document.getElementById("view-login").classList.add("hidden");
+        document.getElementById("user-display").innerText = data.nombre_completo || data.username;
+        document.getElementById("role-display").innerText = data.rol || "Usuario";
+        
+        await cargarDatosIniciales();
       } catch (err) {
-        alert(err.message);
+        console.error("Error en login:", err);
+        alert("Error de conexión con el servidor. Intente nuevamente.");
       }
     });
 
-    function mostrarLogin() { document.getElementById("view-login").classList.remove("hidden"); }
+    function mostrarLogin() { 
+      document.getElementById("view-login").classList.remove("hidden"); 
+    }
+
     function mostrarDashboard() {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
-      document.getElementById("user-display").innerText = user.nombre_completo || user.username;
-      document.getElementById("role-display").innerText = user.rol;
+      document.getElementById("user-display").innerText = user.nombre_completo || user.username || "Usuario";
+      document.getElementById("role-display").innerText = user.rol || "ADMINISTRADOR";
       document.getElementById("view-login").classList.add("hidden");
       cargarDatosIniciales();
     }
-    function cerrarSesion() { localStorage.clear(); token = null; location.reload(); }
+
+    function cerrarSesion() { 
+      localStorage.clear(); 
+      token = null; 
+      mostrarLogin();
+    }
 
     async function cargarDatosIniciales() {
       await cargarProyectoNombre();
@@ -916,22 +966,30 @@
     });
 
     async function cargarResponsables() {
-      const res = await fetch(`/responsables`);
-      responsablesGlobal = await res.json();
-      
-      const selFiltro = document.getElementById("filtro-responsable-select");
-      selFiltro.innerHTML = '<option value="">👤 Todo el Personal</option>';
-
-      responsablesGlobal.forEach(r => {
-        selFiltro.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
-      });
+      try {
+        const res = await fetch(`/responsables`);
+        if (res.ok) {
+          responsablesGlobal = await res.json();
+          const selFiltro = document.getElementById("filtro-responsable-select");
+          selFiltro.innerHTML = '<option value="">👤 Todo el Personal</option>';
+          responsablesGlobal.forEach(r => {
+            selFiltro.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
+          });
+        }
+      } catch(e) {}
     }
 
     async function cargarActividades() {
-      const res = await fetch(`/actividades`);
-      actividadesGlobal = await res.json();
-      renderizarTabla();
-      actualizarKPIs();
+      try {
+        const res = await fetch(`/actividades`);
+        if (res.ok) {
+          actividadesGlobal = await res.json();
+          renderizarTabla();
+          actualizarKPIs();
+        } else if (res.status === 401) {
+          cerrarSesion();
+        }
+      } catch(e) {}
     }
 
     function tieneHijos(codigo) {
@@ -946,7 +1004,7 @@
       renderizarTabla();
     }
 
-    // --- RENDERIZADO DEL GANTT VISUAL ---
+    // --- RENDERIZADO DEL GANTT VISUAL (ESTILO GANTTPRO CON AVATARES AL FINAL) ---
     function renderizarTabla() {
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
@@ -961,7 +1019,7 @@
         tInicioVisible = new Date(anioActual, 0, 1).getTime();
         tFinVisible = new Date(anioActual, 11, 31, 23, 59, 59).getTime();
         duracionVisibleMs = tFinVisible - tInicioVisible;
-        divisionesHTML = Array(12).fill('<div class="flex-1 border-r border-gray-300/40"></div>').join("");
+        divisionesHTML = Array(12).fill('<div class="flex-1 border-r border-slate-200/50"></div>').join("");
       } else {
         const semanasVisibles = semanasTotales.slice(semanaInicioIndex);
         if (semanasVisibles.length === 0) return;
@@ -970,7 +1028,7 @@
         duracionVisibleMs = tFinVisible - tInicioVisible;
         divisionesHTML = semanasVisibles.map(s => {
           const claseColHoy = s.esHoy ? "col-semana-actual" : "";
-          return `<div class="flex-1 border-r border-gray-300/40 ${claseColHoy}"></div>`;
+          return `<div class="flex-1 border-r border-slate-200/50 ${claseColHoy}"></div>`;
         }).join("");
       }
 
@@ -1004,9 +1062,9 @@
         }
 
         let ganttHTML = `
-          <div class="relative w-full h-6 bg-[#f1f2f6] rounded border border-gray-200 overflow-hidden" title="Sin fechas programadas">
-            <div class="absolute inset-0 flex pointer-events-none opacity-40">${divisionesHTML}</div>
-            ${hoyEstaVisible ? `<div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none" style="left: ${pctHoy}%;"></div>` : ''}
+          <div class="relative w-full h-7 bg-[#f8fafc] rounded border border-slate-200/80 overflow-hidden" title="Sin fechas programadas">
+            <div class="absolute inset-0 flex pointer-events-none opacity-60">${divisionesHTML}</div>
+            ${hoyEstaVisible ? `<div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none shadow" style="left: ${pctHoy}%;"></div>` : ''}
           </div>
         `;
 
@@ -1026,45 +1084,73 @@
 
               const esHito = (act.dias <= 1);
               let barraOElementoHTML = "";
+              const miniAvataresHTML = obtenerMiniAvataresGanttHTML(act.responsable);
 
               if (esHito) {
-                barraOElementoHTML = `<div class="milestone-diamond" style="left: ${leftPct}%;" title="HITO: ${act.descripcion} (${act.fecha_inicio})"></div>`;
+                barraOElementoHTML = `
+                  <div class="milestone-diamond" style="left: ${leftPct}%;" title="HITO: ${act.descripcion} (${act.fecha_inicio})"></div>
+                  <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct}% + 18px);">
+                    ${miniAvataresHTML}
+                  </div>
+                `;
+              } else if (esMadre) {
+                barraOElementoHTML = `
+                  <div class="absolute top-1.5 bottom-1.5 z-10 transition-all duration-200 pointer-events-none" style="left: ${leftPct}%; width: ${widthPct}%;">
+                    <div class="w-full h-full bg-[#0f2a4a] rounded-sm shadow relative">
+                      <div class="absolute left-0 -bottom-1 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#0f2a4a]"></div>
+                      <div class="absolute right-0 -bottom-1 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#0f2a4a]"></div>
+                      <div class="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white px-1 overflow-hidden whitespace-nowrap">
+                        ${act.avance}%
+                      </div>
+                    </div>
+                  </div>
+                  <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct + widthPct}% + 4px);">
+                    ${miniAvataresHTML}
+                  </div>
+                `;
               } else {
-                let colorBase = "#bdc3c7";
-                let borde = "border border-gray-400";
+                let colorFondoRestante = "#e2e8f0";
+                let colorBorde = "border-slate-300";
+
                 if (act.estado === "Ejecutado") {
-                  colorBase = "#2ecc71";
-                  borde = "border border-green-600";
+                  colorFondoRestante = "#2ecc71";
+                  colorBorde = "border-green-600";
                 } else if (act.estado === "En proceso") {
-                  colorBase = "#f1c40f";
-                  borde = "border border-yellow-600";
+                  colorFondoRestante = "#fef08a";
+                  colorBorde = "border-yellow-500";
                 }
 
                 let subAvanceHTML = "";
                 if (act.estado === "En proceso" && act.avance > 0) {
                   subAvanceHTML = `
-                    <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l flex items-center justify-end pr-1 text-[9px] font-bold text-white shadow-inner" style="width: ${act.avance}%;">
-                      ${act.avance >= 25 ? act.avance + '%' : ''}
+                    <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l-md flex items-center justify-center text-[9px] font-extrabold text-white shadow-inner" style="width: ${act.avance}%;">
+                      ${act.avance >= 20 ? act.avance + '%' : ''}
+                    </div>
+                  `;
+                } else if (act.estado === "Ejecutado") {
+                  subAvanceHTML = `
+                    <div class="w-full h-full flex items-center justify-center text-[9px] font-extrabold text-white">
+                      100%
                     </div>
                   `;
                 }
 
-                const estiloBarra = esMadre 
-                  ? `background-color: #0f2a4a; height: 10px; top: 7px; border-radius: 2px;` 
-                  : `background-color: ${colorBase}; height: 16px; top: 4px; border-radius: 4px;`;
-
                 barraOElementoHTML = `
-                  <div class="absolute bg-gray-300/60 rounded h-[3px] bottom-0" style="left: ${leftPct}%; width: ${widthPct}%;"></div>
-                  <div class="absolute ${borde} shadow transition-all duration-200" style="left: ${leftPct}%; width: ${widthPct}%; ${estiloBarra}">
+                  <div class="absolute bg-slate-300/70 rounded h-[2px] bottom-0.5" style="left: ${leftPct}%; width: ${widthPct}%;"></div>
+                  <div class="absolute top-1 bottom-1 z-10 rounded-md border ${colorBorde} shadow-sm transition-all duration-200 overflow-hidden" 
+                       style="left: ${leftPct}%; width: ${widthPct}%; background-color: ${colorFondoRestante};">
                     ${subAvanceHTML}
+                  </div>
+                  <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct + widthPct}% + 4px);">
+                    ${miniAvataresHTML}
                   </div>
                 `;
               }
 
               ganttHTML = `
-                <div class="relative w-full h-6 bg-[#f1f2f6] rounded border border-gray-200 overflow-hidden" 
+                <div class="relative w-full h-7 bg-[#f8fafc] rounded border border-slate-200/80 overflow-hidden" 
                      title="${act.codigo}: ${act.descripcion}&#10;• Periodo: ${act.fecha_inicio} al ${act.fecha_fin}&#10;• Duración: ${act.dias} días&#10;• Avance: ${act.avance}% (${act.estado})&#10;• Responsable(s): ${act.responsable || 'No asignado'}">
-                  <div class="absolute inset-0 flex pointer-events-none opacity-40">${divisionesHTML}</div>
+                  <div class="absolute inset-0 flex pointer-events-none opacity-60">${divisionesHTML}</div>
                   ${hoyEstaVisible ? `<div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none shadow" style="left: ${pctHoy}%;"></div>` : ''}
                   ${barraOElementoHTML}
                 </div>
@@ -1121,10 +1207,6 @@
       document.getElementById("kpi-proceso").innerText = `${actividadesGlobal.filter(a => a.estado === 'En proceso').length} Items`;
       document.getElementById("kpi-pendiente").innerText = `${actividadesGlobal.filter(a => a.estado === 'Pendiente').length} Items`;
     }
-
-    // =========================================================================
-    // MODALES Y EDICIÓN
-    // =========================================================================
 
     function abrirInputCustom({ titulo, mensaje, tipo = 'text', valorActual = '', opciones = [], onAceptar }) {
       document.getElementById("mic-titulo").innerText = titulo;
@@ -1360,16 +1442,47 @@
       });
     }
 
+    // --- GUARDADO SIN ERRORES NI CIERRES DE SESIÓN INVOLUNTARIOS ---
     async function guardarCambioDirecto(act) {
-      const res = await fetch(`/actividades`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify(act)
-      });
-      if (res.ok) {
-        cargarActividades();
-      } else {
-        alert("Error al actualizar.");
+      if (!token) {
+        cerrarSesion();
+        return;
+      }
+
+      const payload = {
+        codigo: String(act.codigo).trim(),
+        descripcion: String(act.descripcion || '').trim(),
+        responsable: String(act.responsable || 'No asignado').trim(),
+        estado: String(act.estado || 'Pendiente').trim(),
+        avance: parseInt(act.avance) || 0,
+        fecha_inicio: String(act.fecha_inicio || '').trim(),
+        fecha_fin: String(act.fecha_fin || '').trim(),
+        dias: parseInt(act.dias) || 1,
+        predecesores: String(act.predecesores || '').trim()
+      };
+
+      try {
+        const res = await fetch(`/actividades`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${token}` 
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          await cargarActividades();
+        } else if (res.status === 401) {
+          alert("Tu sesión ha caducado. Inicia sesión nuevamente.");
+          cerrarSesion();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          console.error("Detalle del error:", err);
+          alert(err.detail || "Error al actualizar.");
+        }
+      } catch (error) {
+        console.error("Error de conexión:", error);
       }
     }
 
@@ -1471,8 +1584,8 @@
         cerrarModalActividad();
         cargarActividades();
       } else {
-        const err = await res.json();
-        alert(err.detail || "Error al registrar");
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Error al registrar actividad.");
       }
     });
 
@@ -1486,7 +1599,6 @@
       else alert("No tiene permisos para eliminar.");
     }
 
-    // --- RUTA CRÍTICA (CPM) ---
     async function verRutaCritica() {
       const res = await fetch(`/ruta-critica`);
       const cpm = await res.json();
@@ -1517,7 +1629,6 @@
 
     function cerrarModalCPM() { document.getElementById("modal-cpm").classList.add("hidden"); }
 
-    // --- HISTORIAL ---
     async function abrirHistorial() {
       const res = await fetch(`/historial`);
       const data = await res.json();
@@ -1537,7 +1648,6 @@
 
     function cerrarHistorial() { document.getElementById("modal-historial").classList.add("hidden"); }
 
-    // --- GESTIÓN DE RESPONSABLES ---
     async function abrirResponsables() {
       await cargarResponsables();
       renderizarTablaResponsables();
@@ -1600,8 +1710,8 @@
             await cargarResponsables();
             renderizarTablaResponsables();
           } else {
-            const err = await res.json();
-            alert(err.detail || "Error al actualizar");
+            const err = await res.json().catch(() => ({}));
+            alert(err.detail || "Error al actualizar.");
           }
         }
       });
@@ -1641,7 +1751,7 @@
                     await cargarResponsables();
                     renderizarTablaResponsables();
                   } else {
-                    const err = await res.json();
+                    const err = await res.json().catch(() => ({}));
                     alert(err.detail || "Error al registrar");
                   }
                 }
@@ -1662,7 +1772,7 @@
         await cargarResponsables();
         renderizarTablaResponsables();
       } else {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         alert(err.detail || "Error al eliminar");
       }
     }
