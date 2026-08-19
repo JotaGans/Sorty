@@ -159,7 +159,7 @@
             <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar actividad..." class="w-36 md:w-44 text-xs bg-gray-100 border border-gray-300 rounded px-2.5 py-1.5 outline-none focus:border-[#0f2a4a] font-semibold">
           </div>
 
-          <!-- SELECTOR DE RESPONSABLES CON FLECHA LIMPIA -->
+          <!-- Selector de Personal con flecha limpia -->
           <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="text-xs bg-gray-100 border border-gray-300 rounded py-1.5 pl-2.5 outline-none font-semibold text-gray-700 select-clean-arrow max-w-[170px]">
             <option value="">👤 Todo el Personal</option>
           </select>
@@ -266,7 +266,7 @@
         <p class="text-xs text-gray-600 font-semibold">Marque uno o varios miembros para asignar a esta actividad:</p>
         
         <div id="lista-checkbox-responsables" class="max-h-60 overflow-y-auto space-y-2 bg-white p-3 rounded-lg border border-gray-200">
-          <!-- Renderizado dinámico con checkboxes correctamente marcados -->
+          <!-- Checkboxes generados dinámicamente con selección exacta -->
         </div>
 
         <div class="flex justify-end space-x-2 pt-2">
@@ -418,7 +418,7 @@
         </div>
         <div>
           <label class="text-xs font-bold text-gray-700">Responsable(s) Asignado(s)</label>
-          <input type="text" id="act-resp" placeholder="Ej: Salas Guerrero, Jesús Gianfranco" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
+          <input type="text" id="act-resp" placeholder="Ej: Salas Guerrero, Jesús Gianfranco; Donayre Quintana, Luis Iván" class="w-full border p-2 rounded text-sm outline-none focus:border-[#0f2a4a]">
         </div>
         <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded border">
           <div>
@@ -537,14 +537,34 @@
       aplicarVisibilidadColumnas();
     });
 
-    // --- GENERADOR DE AVATARES INTELIGENTE (Ignora comas en nombres) ---
-    function obtenerAvatarHTML(responsablesStr) {
-      if (!responsablesStr || responsablesStr === "No asignado" || responsablesStr === "-") {
-        return `<div class="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-[10px] font-bold mx-auto" title="Sin responsable asignado">?</div>`;
+    // --- FUNCIÓN ROBUSTA PARA PARSEAR RESPONSABLES ASIGNADOS ---
+    function obtenerListaResponsablesAsignados(responsablesStr) {
+      if (!responsablesStr || responsablesStr === "No asignado" || responsablesStr === "-") return [];
+      
+      // 1. Si contiene punto y coma (;), separar directamente por ';'
+      if (responsablesStr.includes(";")) {
+        return responsablesStr.split(";").map(s => s.trim()).filter(Boolean);
       }
       
-      // Separar por punto y coma (;) para admitir formato "Apellido1 Apellido2, Nombre1 Nombre2; ..."
-      const listaNombres = responsablesStr.split(";").map(s => s.trim()).filter(Boolean);
+      // 2. Si viene con comas de registros previos, buscar coincidencia con nombres conocidos
+      const nombresEncontrados = [];
+      responsablesGlobal.forEach(r => {
+        if (r.nombre && responsablesStr.includes(r.nombre.trim())) {
+          nombresEncontrados.push(r.nombre.trim());
+        }
+      });
+      
+      if (nombresEncontrados.length > 0) {
+        return nombresEncontrados;
+      }
+      
+      // 3. Fallback a texto limpio
+      return [responsablesStr.trim()];
+    }
+
+    // --- GENERADOR DE AVATARES INTELIGENTE ---
+    function obtenerAvatarHTML(responsablesStr) {
+      const listaNombres = obtenerListaResponsablesAsignados(responsablesStr);
       if (listaNombres.length === 0) {
         return `<div class="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-[10px] font-bold mx-auto" title="Sin responsable asignado">?</div>`;
       }
@@ -590,26 +610,20 @@
       }
 
       const tooltipFinal = `Responsable(s):\n${tooltipsDetalle.join("\n")}`;
-
       return `<div class="avatar-group cursor-pointer" title="${tooltipFinal}">${avataresHTML}</div>`;
     }
 
-    // --- MODAL DE MULTISELECCIÓN DE RESPONSABLES ---
+    // --- MODAL DE MULTISELECCIÓN CON SELECCIÓN EXACTA ---
     function editarResponsable(cod) {
       actividadMultiRespActual = actividadesGlobal.find(a => a.codigo === cod);
       if (!actividadMultiRespActual) return;
 
-      // Obtener lista actual separada por punto y coma o coma antigua
-      const asignados = (actividadMultiRespActual.responsable || "")
-        .split(/[,;]/)
-        .map(s => s.trim())
-        .filter(Boolean);
+      const asignados = obtenerListaResponsablesAsignados(actividadMultiRespActual.responsable);
 
       const contenedor = document.getElementById("lista-checkbox-responsables");
       contenedor.innerHTML = "";
 
       responsablesGlobal.forEach(r => {
-        // Verificar coincidencia exacta con el nombre completo
         const isChecked = asignados.includes(r.nombre.trim()) ? "checked" : "";
         contenedor.innerHTML += `
           <label class="flex items-center justify-between p-2 rounded hover:bg-gray-50 border border-gray-100 cursor-pointer">
@@ -624,7 +638,6 @@
 
       document.getElementById("btn-guardar-multi-resp").onclick = async () => {
         const seleccionados = Array.from(document.querySelectorAll(".chk-multi-resp:checked")).map(cb => cb.value);
-        // Unir usando punto y coma (;) para preservar las comas de los nombres completos
         actividadMultiRespActual.responsable = seleccionados.length > 0 ? seleccionados.join("; ") : "No asignado";
         cerrarAsignarResponsables();
         await guardarCambioDirecto(actividadMultiRespActual);
@@ -1397,7 +1410,7 @@
         if (bloqueando || !fIni.value || !fFin.value) return;
         const d1 = new Date(fIni.value + "T00:00:00");
         const d2 = new Date(fFin.value + "T00:00:00");
-        const diff = Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+        const diff = Math.floor((dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
         if (diff > 0) {
           bloqueando = true;
           txtDias.value = diff;
