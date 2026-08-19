@@ -1441,6 +1441,11 @@
 
     // --- FUNCIÓN ROBUSTA PARA GUARDAR CAMBIOS SIN ERROR DE VALIDACIÓN ---
     async function guardarCambioDirecto(act) {
+      if (!token) {
+        cerrarSesion();
+        return;
+      }
+
       const payload = {
         codigo: String(act.codigo).trim(),
         descripcion: String(act.descripcion || '').trim(),
@@ -1465,10 +1470,13 @@
 
         if (res.ok) {
           await cargarActividades();
+        } else if (res.status === 401) {
+          alert("Tu sesión ha caducado. Por favor, ingresa nuevamente.");
+          cerrarSesion();
         } else {
           const err = await res.json().catch(() => ({}));
           console.error("Detalle del error:", err);
-          alert(err.detail || "No se pudo guardar la modificación.");
+          alert(err.detail || "Error al actualizar.");
         }
       } catch (error) {
         console.error("Error de conexión:", error);

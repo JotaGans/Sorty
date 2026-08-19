@@ -11,9 +11,9 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from jose import JWTError, jwt
 
-SECRET_KEY = os.getenv("SECRET_KEY", "IMARPE_CLAVE_SUPER_SECRETA_PRODUCCION_2026")
+SECRET_KEY = "IMARPE_GANTT_SECURE_SECRET_KEY_2026_MASTER_PUBLIC_MGMT"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30  # 30 Días de sesión continua
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 app = FastAPI(title="IMARPE Project Management API", version="3.0.0")
@@ -119,17 +119,22 @@ def create_access_token(data: dict):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: sqlite3.Connection = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Sesión expirada",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
-        if not username:
-            raise HTTPException(status_code=401, detail="Token no válido")
+        if username is None:
+            raise credentials_exception
     except JWTError:
-        raise HTTPException(status_code=401, detail="Sesión expirada")
-    
-    user = db.execute("SELECT * FROM usuarios WHERE username = ?", (username,)).fetchone()
-    if not user:
-        raise HTTPException(status_code=401, detail="Usuario inexistente")
+        raise credentials_exception
+
+    user = db.execute("SELECT id, username, rol, nombre_completo FROM usuarios WHERE username = ?", (username,)).fetchone()
+    if user is None:
+        raise credentials_exception
     return dict(user)
 
 # --- RECALCULO DE TIEMPOS Y CASCADA WBS ---
