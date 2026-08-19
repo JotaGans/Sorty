@@ -912,22 +912,40 @@
     // --- AUTENTICACIÓN ---
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const user = document.getElementById("login-username").value;
-      const pass = document.getElementById("login-password").value;
+      const user = document.getElementById("login-username").value.trim();
+      const pass = document.getElementById("login-password").value.trim();
+      
       const formData = new URLSearchParams();
       formData.append("username", user);
       formData.append("password", pass);
 
       try {
-        const res = await fetch(`/token`, { method: "POST", body: formData });
-        if (!res.ok) throw new Error("Credenciales inválidas");
+        const res = await fetch(`/token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: formData
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          alert(errData.detail || "Usuario o contraseña incorrectos.");
+          return;
+        }
+
         const data = await res.json();
         token = data.access_token;
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(data));
-        mostrarDashboard();
+        
+        // Ocultar modal de login y mostrar dashboard inmediatamente
+        document.getElementById("view-login").classList.add("hidden");
+        document.getElementById("user-display").innerText = data.nombre_completo || data.username;
+        document.getElementById("role-display").innerText = data.rol || "Usuario";
+        
+        await cargarDatosIniciales();
       } catch (err) {
-        alert(err.message);
+        console.error("Error en login:", err);
+        alert("Error de conexión con el servidor. Intente nuevamente.");
       }
     });
 
