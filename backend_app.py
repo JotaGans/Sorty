@@ -251,7 +251,8 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         dias_val = int(act.dias if act.dias is not None else 1)
         pred = str(act.predecesores or "").strip()
 
-        existe = db.execute("SELECT id FROM actividades WHERE codigo = ?", (cod,)).fetchone()
+        # Verificamos si existe por la columna 'codigo' que sí existe
+        existe = db.execute("SELECT codigo FROM actividades WHERE codigo = ?", (cod,)).fetchone()
 
         if existe:
             db.execute("""
