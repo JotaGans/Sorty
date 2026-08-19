@@ -122,13 +122,18 @@
     <!-- CINTA SUPERIOR AZUL CORPORATIVA IMARPE -->
     <header class="bg-[#0f2a4a] text-white shadow-md">
       <div class="max-w-[1920px] mx-auto px-4 md:px-8 h-[65px] flex items-center justify-between">
-        <div class="flex items-center space-x-4">
+        <!-- Logo a la izquierda -->
+        <div class="flex items-center space-x-4 min-w-[180px]">
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
-        <div class="flex-1 max-w-2xl px-4 text-right">
-          <input type="text" id="txt-nombre-proyecto" class="w-full bg-transparent text-white font-bold text-lg md:text-xl text-right border-b border-transparent focus:border-teal-400 outline-none px-2 py-0.5 transition" value="SISTEMA DE GESTION ANTISOBORNO (SGAS)">
+        
+        <!-- Título del Proyecto Centrado Dinámicamente -->
+        <div class="flex-1 max-w-3xl px-4 text-center mx-auto">
+          <input type="text" id="txt-nombre-proyecto" class="w-full bg-transparent text-white font-bold text-lg md:text-xl text-center border-b border-transparent focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide" value="SISTEMA DE GESTION ANTISOBORNO (SGAS)">
         </div>
-        <div id="user-info" class="flex items-center space-x-3 border-l border-blue-800 pl-4">
+        
+        <!-- Usuario y Salir a la derecha -->
+        <div id="user-info" class="flex items-center space-x-3 border-l border-blue-800 pl-4 min-w-[180px] justify-end">
           <div class="text-right hidden sm:block">
             <p id="user-display" class="text-xs font-bold text-gray-200">Usuario</p>
             <p id="role-display" class="text-[10px] text-teal-300 uppercase font-semibold">Rol</p>
@@ -138,9 +143,9 @@
       </div>
     </header>
 
-    <!-- TARJETAS DE INDICADORES (KPIs) -->
+    <!-- TARJETAS DE INDICADORES (KPIs) COMPACTADAS AL CENTRO -->
     <div class="max-w-[1920px] w-full mx-auto px-4 md:px-6 pt-3 pb-2 space-y-2.5">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="bg-[#1abc9c] text-white px-4 py-2 rounded-lg shadow flex items-center justify-between">
           <span class="text-xs font-bold uppercase tracking-wider">AVANCE GLOBAL</span>
           <p id="kpi-avance" class="text-2xl font-black">0%</p>
