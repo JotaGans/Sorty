@@ -11,12 +11,12 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from jose import JWTError, jwt
 
-SECRET_KEY = "IMARPE_GANTT_SECURE_SECRET_KEY_2026_MASTER_PUBLIC_MGMT"
+SECRET_KEY = os.getenv("SECRET_KEY", "IMARPE_CLAVE_SUPER_SECRETA_PRODUCCION_2026")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30  # 30 Días de sesión continua
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-app = FastAPI(title="IMARPE Project Management API", version="3.0.0")
+app = FastAPI(title="IMARPE Project Management API", version="2.5.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,11 +26,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Carpeta de estáticos para el imagotipo
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Apuntar directamente a tu base de datos existente
-DB_PATH = "imarpe_gantt.db"
+DB_PATH = "imarpe_web.db"
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -44,47 +44,82 @@ def hash_password(password: str) -> str:
     pwd_bytes = password.encode('utf-8')[:72]
     return bcrypt.hashpw(pwd_bytes, bcrypt.gensalt()).decode('utf-8')
 
-def verify_password(plain_password: str, hashed_or_plain: str) -> bool:
-    if not hashed_or_plain:
-        return False
-    # Compatibilidad con contraseñas en texto plano de tu base previa
-    if hashed_or_plain == plain_password:
-        return True
-    try:
-        pwd_bytes = plain_password.encode('utf-8')[:72]
-        hash_bytes = hashed_or_plain.encode('utf-8')
-        return bcrypt.checkpw(pwd_bytes, hash_bytes)
-    except Exception:
-        return False
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    pwd_bytes = plain_password.encode('utf-8')[:72]
+    hash_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(pwd_bytes, hash_bytes)
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     
-    # 1. Asegurar tabla usuarios
+    # 1. Usuarios y Roles reales
     c.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT,
-            rol TEXT,
-            avatar_path TEXT
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            nombre_completo TEXT NOT NULL,
+            rol TEXT CHECK(rol IN ('ADMIN', 'COORDINADOR', 'OPERARIO', 'GESTOR')) DEFAULT 'OPERARIO'
+        )
+    """)
+    
+    # 2. Actividades
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS actividades (
+            codigo TEXT PRIMARY KEY,
+            descripcion TEXT NOT NULL,
+            responsable TEXT,
+            estado TEXT DEFAULT 'Pendiente',
+            avance INTEGER DEFAULT 0,
+            fecha_inicio TEXT,
+            fecha_fin TEXT,
+            dias INTEGER DEFAULT 1,
+            predecesores TEXT DEFAULT ''
+        )
+    """)
+    
+    # 3. Responsables
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS responsables (
+            nombre TEXT PRIMARY KEY,
+            cargo TEXT,
+            correo TEXT
+        )
+    """)
+    
+    # 4. Configuración
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS configuracion (
+            clave TEXT PRIMARY KEY,
+            valor TEXT
+        )
+    """)
+    
+    # 5. Historial
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS historial (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            usuario TEXT,
+            accion TEXT,
+            detalle TEXT
         )
     """)
 
-    # 2. Agregar columna predecesores a actividades si no existe
-    try:
-        c.execute("ALTER TABLE actividades ADD COLUMN predecesores TEXT DEFAULT ''")
-    except sqlite3.OperationalError:
-        pass
-
-    # 3. Usuarios base si no estuvieran creados
+    # Sembrar usuarios por defecto si no existen
     c.execute("SELECT COUNT(*) FROM usuarios")
     if c.fetchone()[0] == 0:
-        c.execute("INSERT INTO usuarios (username, password, rol) VALUES (?, ?, ?)", ("admin", "admin123", "ADMIN"))
-        c.execute("INSERT INTO usuarios (username, password, rol) VALUES (?, ?, ?)", ("coordinador", "coord123", "COORDINADOR"))
-        c.execute("INSERT INTO usuarios (username, password, rol) VALUES (?, ?, ?)", ("operario", "oper123", "OPERARIO"))
+        c.execute("INSERT INTO usuarios (username, password_hash, nombre_completo, rol) VALUES (?, ?, ?, ?)",
+                  ("admin", hash_password("admin123"), "Administrador General", "ADMIN"))
+        c.execute("INSERT INTO usuarios (username, password_hash, nombre_completo, rol) VALUES (?, ?, ?, ?)",
+                  ("coordinador", hash_password("coord123"), "Coordinador de Proyecto", "COORDINADOR"))
+        c.execute("INSERT INTO usuarios (username, password_hash, nombre_completo, rol) VALUES (?, ?, ?, ?)",
+                  ("operario", hash_password("oper123"), "Operario IMARPE", "OPERARIO"))
 
+    # Configuración de nombre de proyecto inicial
+    c.execute("INSERT OR IGNORE INTO configuracion (clave, valor) VALUES ('nombre_proyecto', 'SISTEMA DE GESTION ANTISOBORNO (SGAS)')")
+    
     conn.commit()
     conn.close()
 
@@ -104,14 +139,15 @@ class ActividadModel(BaseModel):
     responsable: Optional[str] = "No asignado"
     estado: Optional[str] = "Pendiente"
     avance: Optional[int] = 0
-    fecha_inicio: Optional[str] = ""
-    fecha_fin: Optional[str] = ""
+    fecha_inicio: Optional[str] = None
+    fecha_fin: Optional[str] = None
     dias: Optional[int] = 1
     predecesores: Optional[str] = ""
 
 class ConfigModel(BaseModel):
     valor: str
 
+# --- SEGURIDAD ---
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -119,52 +155,35 @@ def create_access_token(data: dict):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: sqlite3.Connection = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Sesión expirada",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
+        if not username: raise HTTPException(status_code=401, detail="Token no válido")
     except JWTError:
-        raise credentials_exception
-
-    user = db.execute("SELECT id, username, rol, nombre_completo FROM usuarios WHERE username = ?", (username,)).fetchone()
-    if user is None:
-        raise credentials_exception
+        raise HTTPException(status_code=401, detail="Sesión expirada")
+    
+    user = db.execute("SELECT * FROM usuarios WHERE username = ?", (username,)).fetchone()
+    if not user: raise HTTPException(status_code=401, detail="Usuario inexistente")
     return dict(user)
 
-# --- RECALCULO DE TIEMPOS Y CASCADA WBS ---
+# --- RECALCULO WBS ---
 def recalcular_tiempos_y_cascada(db: sqlite3.Connection):
     filas = db.execute("SELECT codigo FROM actividades ORDER BY length(codigo) DESC").fetchall()
     for row in filas:
         cod = row["codigo"]
         hijos = db.execute(f"SELECT avance, fecha_inicio, fecha_fin FROM actividades WHERE codigo LIKE '{cod}.%' AND length(codigo) <= {len(cod) + 4}").fetchall()
         if hijos:
-            suma_avances = sum([h["avance"] for h in hijos if h["avance"] is not None])
-            promedio = int(suma_avances / len(hijos)) if hijos else 0
+            suma_avances = sum([h["avance"] for h in hijos])
+            promedio = int(suma_avances / len(hijos))
             
             fechas_ini, fechas_fin = [], []
             for h in hijos:
-                f_ini_val = h["fecha_inicio"]
-                f_fin_val = h["fecha_fin"]
-                if f_ini_val and f_ini_val != "Definir":
-                    for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
-                        try:
-                            fechas_ini.append(datetime.strptime(f_ini_val.strip(), fmt))
-                            break
-                        except ValueError:
-                            pass
-                if f_fin_val and f_fin_val != "Definir":
-                    for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
-                        try:
-                            fechas_fin.append(datetime.strptime(f_fin_val.strip(), fmt))
-                            break
-                        except ValueError:
-                            pass
+                if h["fecha_inicio"] and h["fecha_inicio"] != "Definir":
+                    try: fechas_ini.append(datetime.strptime(h["fecha_inicio"], "%d/%m/%Y"))
+                    except: pass
+                if h["fecha_fin"] and h["fecha_fin"] != "Definir":
+                    try: fechas_fin.append(datetime.strptime(h["fecha_fin"], "%d/%m/%Y"))
+                    except: pass
             
             anio = datetime.now().year
             f_ini_str = min(fechas_ini).strftime("%d/%m/%Y") if fechas_ini else f"01/01/{anio}"
@@ -176,6 +195,7 @@ def recalcular_tiempos_y_cascada(db: sqlite3.Connection):
                        (promedio, estado, f_ini_str, f_fin_str, dias_calc, cod))
     db.commit()
 
+# --- VISTA PRINCIPAL ---
 @app.get("/")
 def index_view():
     if os.path.exists("templates/index.html"):
@@ -184,20 +204,20 @@ def index_view():
         return FileResponse("index.html")
     return HTMLResponse("<h2>index.html no encontrado</h2>", status_code=404)
 
+# --- API ENDPOINTS ---
 @app.post("/token", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: sqlite3.Connection = Depends(get_db)):
     user = db.execute("SELECT * FROM usuarios WHERE username = ?", (form_data.username,)).fetchone()
-    if not user or not verify_password(form_data.password, user["password"]):
+    if not user or not verify_password(form_data.password, user["password_hash"]):
         raise HTTPException(status_code=400, detail="Credenciales incorrectas")
     
-    rol_str = user["rol"] if user["rol"] else "OPERARIO"
-    token = create_access_token({"sub": user["username"], "rol": rol_str})
+    token = create_access_token({"sub": user["username"], "rol": user["rol"]})
     return {
         "access_token": token,
         "token_type": "bearer",
         "username": user["username"],
-        "nombre_completo": user["username"].capitalize(),
-        "rol": rol_str
+        "nombre_completo": user["nombre_completo"],
+        "rol": user["rol"]
     }
 
 @app.get("/actividades")
@@ -207,74 +227,46 @@ def listar_actividades(db: sqlite3.Connection = Depends(get_db)):
     return [dict(r) for r in rows]
 
 @app.post("/actividades")
-def guardar_o_actualizar_actividad(
-    act: ActividadModel, 
-    user: dict = Depends(get_current_user), 
-    db: sqlite3.Connection = Depends(get_db)
-):
-    cod_limpio = act.codigo.strip()
-    desc_limpia = act.descripcion.strip()
-    resp_limpio = (act.responsable or "No asignado").strip()
-    estado_limpio = (act.estado or "Pendiente").strip()
-    avance_val = int(act.avance or 0)
-    f_ini = (act.fecha_inicio or "").strip()
-    f_fin = (act.fecha_fin or "").strip()
-    dias_val = int(act.dias or 1)
-    pred_limpio = (act.predecesores or "").strip()
-
-    # 1. Verificar si el registro ya existe en SQLite
-    existe = db.execute("SELECT id FROM actividades WHERE codigo = ?", (cod_limpio,)).fetchone()
-
-    if existe:
-        # 2. Si existe: ACTUALIZAR (UPDATE)
-        db.execute("""
-            UPDATE actividades 
-            SET descripcion = ?, responsable = ?, estado = ?, avance = ?, 
-                fecha_inicio = ?, fecha_fin = ?, dias = ?, predecesores = ?
-            WHERE codigo = ?
-        """, (desc_limpia, resp_limpio, estado_limpio, avance_val, f_ini, f_fin, dias_val, pred_limpio, cod_limpio))
-        
-        accion_historial = "Modificación de Actividad"
-        detalle_historial = f"[{user.get('username', 'usuario')}] Actualizó [{cod_limpio}]: {desc_limpia}"
-    else:
-        # 3. Si no existe: INSERTAR (INSERT)
-        db.execute("""
-            INSERT INTO actividades (codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (cod_limpio, desc_limpia, resp_limpio, estado_limpio, avance_val, f_ini, f_fin, dias_val, pred_limpio))
-        
-        accion_historial = "Alta de Actividad"
-        detalle_historial = f"[{user.get('username', 'usuario')}] Creó [{cod_limpio}]: {desc_limpia}"
-
-    # 4. Registrar en historial y confirmar
-    try:
-        db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)", (accion_historial, detalle_historial))
-    except Exception:
-        pass  # Si la tabla historial tiene otra estructura, no bloquea el guardado
-
+def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    db.execute("""
+        INSERT INTO actividades (codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(codigo) DO UPDATE SET
+            descripcion=excluded.descripcion,
+            responsable=excluded.responsable,
+            estado=excluded.estado,
+            avance=excluded.avance,
+            fecha_inicio=excluded.fecha_inicio,
+            fecha_fin=excluded.fecha_fin,
+            dias=excluded.dias,
+            predecesores=excluded.predecesores
+    """, (act.codigo, act.descripcion, act.responsable, act.estado, act.avance, act.fecha_inicio, act.fecha_fin, act.dias, act.predecesores))
+    
+    db.execute("INSERT INTO historial (usuario, accion, detalle) VALUES (?, ?, ?)",
+               (user["username"], "Guardar Actividad", f"[{act.codigo}] {act.descripcion}"))
     db.commit()
-
-    return {"mensaje": "Actividad guardada correctamente", "codigo": cod_limpio}
+    recalcular_tiempos_y_cascada(db)
+    return {"mensaje": "Actividad guardada"}
 
 @app.delete("/actividades/{codigo}")
 def eliminar_actividad(codigo: str, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    if str(user["rol"]).upper() not in ["ADMIN", "ADMINISTRADOR"]:
+    if user["rol"] != "ADMIN":
         raise HTTPException(status_code=403, detail="Solo Administradores pueden eliminar actividades.")
     
     db.execute("DELETE FROM actividades WHERE codigo = ? OR codigo LIKE ?", (codigo, f"{codigo}.%"))
-    db.execute("INSERT INTO historial (accion, detalle) VALUES (?, ?)",
-               ("Eliminación", f"[{user['username']}] Se eliminó {codigo}."))
+    db.execute("INSERT INTO historial (usuario, accion, detalle) VALUES (?, ?, ?)",
+               (user["username"], "Eliminación", f"Se eliminó {codigo} y dependencias."))
     db.commit()
     return {"mensaje": "Eliminado"}
 
 @app.get("/responsables")
 def listar_responsables(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT nombre, cargo, correo FROM responsables ORDER BY nombre ASC").fetchall()
+    rows = db.execute("SELECT * FROM responsables ORDER BY nombre ASC").fetchall()
     return [dict(r) for r in rows]
 
 @app.get("/historial")
 def listar_historial(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT timestamp, accion, detalle FROM historial ORDER BY timestamp DESC LIMIT 100").fetchall()
+    rows = db.execute("SELECT * FROM historial ORDER BY timestamp DESC LIMIT 100").fetchall()
     return [dict(r) for r in rows]
 
 @app.get("/configuracion/{clave}")
@@ -294,7 +286,7 @@ def calcular_cpm(db: sqlite3.Connection = Depends(get_db)):
     todas = [dict(r) for r in db.execute("SELECT * FROM actividades ORDER BY codigo ASC").fetchall()]
     codigos_con_hijos = set()
     for a in todas:
-        partes = a["codigo"].replace(".", "").split(".")
+        partes = a["codigo"].split(".")
         if len(partes) > 1:
             codigos_con_hijos.add(".".join(partes[:-1]))
             
@@ -304,10 +296,10 @@ def calcular_cpm(db: sqlite3.Connection = Depends(get_db)):
 
     data_map = {}
     for h in hojas:
-        preds = [p.strip() for p in (h.get("predecesores") or "").split(",") if p.strip()]
+        preds = [p.strip() for p in (h["predecesores"] or "").split(",") if p.strip()]
         data_map[h["codigo"]] = {
             "descripcion": h["descripcion"],
-            "duracion": max(1, h["dias"] if h["dias"] else 1),
+            "duracion": max(1, h["dias"]),
             "predecesores": preds
         }
 
