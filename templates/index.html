@@ -529,21 +529,22 @@
         </span>
       </div>
 
-      <div class="p-5 overflow-y-auto flex-1 bg-white">
-        <div class="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-          <table class="w-full text-xs text-left border-collapse">
-            <thead class="bg-[#0f2a4a] text-white sticky top-0 z-20">
+      <!-- Contenedor con Scroll Interno y Cabecera Fija -->
+      <div class="p-5 flex-1 overflow-hidden flex flex-col min-h-0 bg-[#f8f9fa]">
+        <div class="flex-1 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white relative">
+          <table class="w-full text-xs text-left border-separate border-spacing-0">
+            <thead class="sticky top-0 z-30 shadow-sm">
               <tr>
-                <th class="p-2.5 font-bold border-b border-blue-900">Código</th>
-                <th class="p-2.5 font-bold border-b border-blue-900">Actividad</th>
-                <th class="p-2.5 font-bold border-b border-blue-900 text-center">Duración</th>
-                <th class="p-2.5 font-bold border-b border-blue-900 text-center">ES - EF</th>
-                <th class="p-2.5 font-bold border-b border-blue-900 text-center">LS - LF</th>
-                <th class="p-2.5 font-bold border-b border-blue-900 text-center">Holgura</th>
-                <th class="p-2.5 font-bold border-b border-blue-900 text-center">Condición</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white sticky top-0">Código</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white sticky top-0">Actividad</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 text-center bg-[#0f2a4a] text-white sticky top-0">Duración</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 text-center bg-[#0f2a4a] text-white sticky top-0">ES - EF</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 text-center bg-[#0f2a4a] text-white sticky top-0">LS - LF</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 text-center bg-[#0f2a4a] text-white sticky top-0">Holgura</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 text-center bg-[#0f2a4a] text-white sticky top-0">Condición</th>
               </tr>
             </thead>
-            <tbody id="cpm-tabla-body" class="divide-y divide-gray-100 text-gray-700 font-medium"></tbody>
+            <tbody id="cpm-tabla-body" class="divide-y divide-gray-100 text-gray-700 font-medium bg-white"></tbody>
           </table>
         </div>
       </div>
@@ -565,17 +566,18 @@
         <button onclick="cerrarHistorial()" class="text-white text-2xl font-bold hover:text-gray-200 transition leading-none">&times;</button>
       </div>
       
-      <div class="p-5 overflow-y-auto flex-1 bg-white">
-        <div class="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-          <table class="w-full text-xs text-left border-collapse">
-            <thead class="bg-[#0f2a4a] text-white sticky top-0 z-20">
+      <!-- Contenedor con Scroll Interno y Cabecera Fija -->
+      <div class="p-5 flex-1 overflow-hidden flex flex-col min-h-0 bg-[#f8f9fa]">
+        <div class="flex-1 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white relative">
+          <table class="w-full text-xs text-left border-separate border-spacing-0">
+            <thead class="sticky top-0 z-30 shadow-sm">
               <tr>
-                <th class="p-2.5 font-bold border-b border-blue-900 w-36 whitespace-nowrap">Fecha y Hora</th>
-                <th class="p-2.5 font-bold border-b border-blue-900 w-36 whitespace-nowrap">Acción</th>
-                <th class="p-2.5 font-bold border-b border-blue-900">Detalle</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white w-36 whitespace-nowrap sticky top-0">Fecha y Hora</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white w-36 whitespace-nowrap sticky top-0">Acción</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white sticky top-0">Detalle</th>
               </tr>
             </thead>
-            <tbody id="historial-tabla-body" class="divide-y divide-gray-100 text-gray-700 font-medium"></tbody>
+            <tbody id="historial-tabla-body" class="divide-y divide-gray-100 text-gray-700 font-medium bg-white"></tbody>
           </table>
         </div>
       </div>
