@@ -42,7 +42,9 @@ app.add_middleware(
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-DB_PATH = "imarpe_gantt.db"
+# Carpeta persistente /data en Railway o raíz en local
+DATA_DIR = "/data" if os.path.exists("/data") else "."
+DB_PATH = os.path.join(DATA_DIR, "imarpe_gantt.db")
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -70,6 +72,15 @@ def verify_password(plain_password: str, hashed_or_plain: str) -> bool:
         return False
 
 def init_db():
+    # Si estamos en Railway (/data) y el volumen es nuevo,
+    # copiamos la base de datos original del repositorio para no empezar en blanco
+    if os.path.exists("/data") and not os.path.exists(DB_PATH) and os.path.exists("imarpe_gantt.db"):
+        import shutil
+        try:
+            shutil.copy("imarpe_gantt.db", DB_PATH)
+        except Exception as e:
+            print(f"Aviso al copiar BD inicial: {e}")
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     
@@ -88,14 +99,12 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
-    # Asegurar usuario admin con contraseña admin123
     c.execute("SELECT password FROM usuarios WHERE username = 'admin'")
     row = c.fetchone()
     if not row:
         c.execute("INSERT INTO usuarios (username, password, rol) VALUES (?, ?, ?)", 
                   ("admin", "admin123", "ADMINISTRADOR"))
     else:
-        # Si la contraseña estaba rota, asegurar acceso con admin123
         if not verify_password("admin123", row[0]):
             c.execute("UPDATE usuarios SET password = ? WHERE username = 'admin'", ("admin123",))
 
