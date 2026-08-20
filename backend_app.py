@@ -39,8 +39,11 @@ def hash_password(password: str) -> str:
     return (salt + pwdhash).decode('ascii')
 
 def verify_password(stored_password: str, provided_password: str) -> bool:
-    if stored_password == "admin123":
-        return provided_password == "admin123"
+    if not stored_password:
+        return False
+    # Compatibilidad con texto plano previo
+    if stored_password == provided_password:
+        return True
     try:
         salt = stored_password[:64]
         stored_hash = stored_password[64:]
@@ -50,56 +53,7 @@ def verify_password(stored_password: str, provided_password: str) -> bool:
     except Exception:
         return False
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-    finally:
-        conn.close()
-
-# --- MODELOS PYDANTIC ---
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-    username: str
-    rol: str
-    user_id: int
-
-class UsuarioAltaModel(BaseModel):
-    username: str
-    password: str
-    nombre_completo: str
-    rol: str  # 'ADMIN_TI' | 'OPERADOR'
-
-class ProyectoCrearModel(BaseModel):
-    nombre: str
-    descripcion: Optional[str] = ""
-
-class ActividadModel(BaseModel):
-    proyecto_id: int
-    codigo: str
-    descripcion: str
-    responsable: Optional[str] = "No asignado"
-    estado: Optional[str] = "Pendiente"
-    avance: Optional[int] = 0
-    fecha_inicio: Optional[str] = ""
-    fecha_fin: Optional[str] = ""
-    dias: Optional[int] = 1
-    predecesores: Optional[str] = ""
-
-class ResponsableModel(BaseModel):
-    nombre: str
-    cargo: Optional[str] = ""
-    correo: Optional[str] = ""
-
-# --- INICIALIZACIÓN Y MIGRACIÓN DE BD ---
+# Reemplaza la función init_db() por esta versión autorreparadora:
 def init_db():
     if os.path.exists("/data") and not os.path.exists(DB_PATH) and os.path.exists("imarpe_gantt.db"):
         import shutil
@@ -109,9 +63,10 @@ def init_db():
             pass
 
     conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    # 1. Tabla de Usuarios
+    # 1. Asegurar tabla usuarios
     c.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -123,7 +78,33 @@ def init_db():
         )
     """)
 
-    # 2. Tabla de Proyectos
+    # Migrar columnas en usuarios si no existían
+    for col, definition in [("nombre_completo", "TEXT"), ("rol", "TEXT DEFAULT 'OPERADOR'"), ("estado", "TEXT DEFAULT 'ACTIVO'")]:
+        try:
+            c.execute(f"ALTER TABLE usuarios ADD COLUMN {col} {definition}")
+        except sqlite3.OperationalError:
+            pass
+
+    # 2. Asegurar o restablecer la cuenta Administrador TI semilla
+    hashed_admin_pass = hash_password("admin123")
+    c.execute("SELECT id FROM usuarios WHERE username = 'admin'")
+    admin_row = c.fetchone()
+    
+    if not admin_row:
+        c.execute("""
+            INSERT INTO usuarios (username, password, nombre_completo, rol, estado)
+            VALUES ('admin', ?, 'Administrador TI IMARPE', 'ADMIN_TI', 'ACTIVO')
+        """, (hashed_admin_pass,))
+        admin_id = c.lastrowid
+    else:
+        admin_id = admin_row[0]
+        c.execute("""
+            UPDATE usuarios 
+            SET password = ?, rol = 'ADMIN_TI', estado = 'ACTIVO', nombre_completo = 'Administrador TI IMARPE'
+            WHERE username = 'admin'
+        """, (hashed_admin_pass,))
+
+    # 3. Tablas relacionales del sistema
     c.execute("""
         CREATE TABLE IF NOT EXISTS proyectos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,19 +116,15 @@ def init_db():
         )
     """)
 
-    # 3. Asignaciones y Gestores de Proyecto
     c.execute("""
         CREATE TABLE IF NOT EXISTS proyecto_usuarios (
             proyecto_id INTEGER,
             usuario_id INTEGER,
             es_gestor BOOLEAN DEFAULT 0,
-            PRIMARY KEY (proyecto_id, usuario_id),
-            FOREIGN KEY(proyecto_id) REFERENCES proyectos(id),
-            FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
+            PRIMARY KEY (proyecto_id, usuario_id)
         )
     """)
 
-    # 4. Tabla de Actividades
     c.execute("""
         CREATE TABLE IF NOT EXISTS actividades (
             proyecto_id INTEGER DEFAULT 1,
@@ -164,13 +141,11 @@ def init_db():
         )
     """)
 
-    # Migración de columnas si la tabla ya existía
     try:
         c.execute("ALTER TABLE actividades ADD COLUMN proyecto_id INTEGER DEFAULT 1")
     except sqlite3.OperationalError:
         pass
 
-    # 5. Tablas auxiliares
     c.execute("""
         CREATE TABLE IF NOT EXISTS responsables (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -179,6 +154,7 @@ def init_db():
             correo TEXT
         )
     """)
+
     c.execute("""
         CREATE TABLE IF NOT EXISTS historial (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,21 +165,12 @@ def init_db():
         )
     """)
 
-    # Crear Admin TI por defecto si no existe
-    c.execute("SELECT id FROM usuarios WHERE username = 'admin'")
-    admin_user = c.fetchone()
-    if not admin_user:
-        hashed = hash_password("admin123")
-        c.execute("INSERT INTO usuarios (username, password, nombre_completo, rol) VALUES (?, ?, ?, ?)",
-                  ("admin", hashed, "Administrador TI IMARPE", "ADMIN_TI"))
-        admin_id = c.lastrowid
-    else:
-        admin_id = admin_user[0]
-
-    # Crear Proyecto Semilla por defecto si no hay proyectos
+    # 4. Asegurar Proyecto Semilla
     c.execute("SELECT id FROM proyectos WHERE id = 1")
     if not c.fetchone():
         c.execute("INSERT INTO proyectos (id, nombre, creador_id) VALUES (1, 'GESTIÓN DE CONVENIOS', ?)", (admin_id,))
+        c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
+    else:
         c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
 
     conn.commit()
