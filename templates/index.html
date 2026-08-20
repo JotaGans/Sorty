@@ -139,40 +139,55 @@
     </div>
   </div>
 
-  <!-- ================= VISTA: HUB DE PROYECTOS ================= -->
-  <div id="view-hub" class="hidden fixed inset-0 bg-[#f5f6fa] z-40 flex flex-col overflow-y-auto">
+  <!-- ================= VISTA: HUB DE PROYECTOS OPTIMIZADO ================= -->
+  <div id="view-hub" class="hidden fixed inset-0 bg-[#f4f7f6] z-40 flex flex-col overflow-y-auto">
+    <!-- Barra Superior Corporativa -->
     <header class="bg-[#0f2a4a] text-white shadow-md flex-shrink-0">
-      <div class="max-w-[1920px] mx-auto px-6 h-[65px] flex items-center justify-between">
+      <div class="max-w-6xl mx-auto px-6 h-[65px] flex items-center justify-between">
         <div class="flex items-center space-x-4">
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
-        <div class="flex items-center space-x-3">
-          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-black px-3 py-1.5 rounded transition shadow">
-            🛡️ Gestión TI: Alta de Usuarios
+        <div class="flex items-center space-x-4">
+          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-black px-3.5 py-1.5 rounded-lg transition shadow flex items-center space-x-1.5">
+            <span>🛡️</span>
+            <span>Gestión TI: Alta de Usuarios</span>
           </button>
-          <div class="text-right">
-            <p id="user-display-hub" class="text-xs font-bold text-gray-200">Usuario</p>
-            <p id="role-display-hub" class="text-[10px] text-teal-300 uppercase font-semibold">Rol</p>
+          <div class="text-right border-l border-blue-900/60 pl-3">
+            <p id="user-display-hub" class="text-xs font-bold text-gray-100">Usuario</p>
+            <p id="role-display-hub" class="text-[10px] text-cyan-300 uppercase font-semibold">Rol</p>
           </div>
-          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-2.5 py-1 rounded font-bold transition">Salir</button>
+          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow">Salir</button>
         </div>
       </div>
     </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+    <!-- Contenido Principal Centrado -->
+    <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8 flex flex-col justify-start">
+      
+      <!-- Hero Banner Ejecutivo con Resumen del Usuario -->
+      <div class="bg-white rounded-2xl p-6 mb-8 border border-gray-200/80 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div>
-          <h2 class="text-2xl font-bold text-[#0f2a4a]">Mis Proyectos y Programas</h2>
-          <p class="text-xs text-gray-500 font-semibold mt-1">Seleccione un proyecto para gestionar sus actividades o cree uno nuevo.</p>
+          <span class="text-[11px] font-black text-teal-600 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">Portal de Gestión Institucional</span>
+          <h2 class="text-2xl md:text-3xl font-extrabold text-[#0f2a4a] mt-2 tracking-tight">Mis Proyectos y Programas</h2>
+          <p class="text-xs text-gray-500 font-medium mt-1">Seleccione un espacio de trabajo para registrar avances o supervisar la ruta de actividades.</p>
         </div>
-        <button onclick="abrirModalNuevoProyecto()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow transition flex items-center space-x-2 self-start md:self-auto">
-          <span class="text-base font-bold leading-none">+</span>
-          <span>Nuevo Proyecto / Programa</span>
-        </button>
+
+        <!-- Mini Métricas Agregadas -->
+        <div class="flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-end">
+          <div class="bg-slate-50 border border-slate-200/70 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
+            <span class="block text-[10px] font-black text-slate-500 uppercase">En Panel</span>
+            <span id="hub-kpi-total-proy" class="text-lg font-black text-[#0f2a4a]">0</span>
+          </div>
+          <div class="bg-teal-50 border border-teal-200/70 rounded-xl px-4 py-2.5 text-center min-w-[110px]">
+            <span class="block text-[10px] font-black text-teal-700 uppercase">Avance Prom.</span>
+            <span id="hub-kpi-prom-avance" class="text-lg font-black text-teal-800">0%</span>
+          </div>
+        </div>
       </div>
 
+      <!-- Cuadrícula Dinámica con Tarjetas Balanceadas -->
       <div id="grid-proyectos-hub" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Renderizado dinámico de tarjetas -->
+        <!-- Renderizado dinámico vía JavaScript -->
       </div>
     </main>
   </div>
@@ -914,62 +929,74 @@
         if (!res.ok) throw new Error("Error al cargar proyectos");
         const proyectos = await res.json();
 
+        // Actualizar KPIs del Hero Banner
+        document.getElementById("hub-kpi-total-proy").innerText = proyectos.length;
+        const sumaAvance = proyectos.reduce((acc, p) => acc + (p.avance_global || 0), 0);
+        const promAvance = proyectos.length > 0 ? Math.round(sumaAvance / proyectos.length) : 0;
+        document.getElementById("hub-kpi-prom-avance").innerText = `${promAvance}%`;
+
         const grid = document.getElementById("grid-proyectos-hub");
         grid.innerHTML = "";
 
-        if (proyectos.length === 0) {
-          grid.innerHTML = `
-            <div class="col-span-full bg-white p-10 rounded-2xl border border-dashed border-gray-300 text-center">
-              <p class="font-bold text-gray-600">No tienes proyectos asignados actualmente.</p>
-              <p class="text-xs text-gray-400 mt-1">Crea uno nuevo con el botón superior para comenzar.</p>
-            </div>
-          `;
-          return;
-        }
-
+        // 1. Renderizado de Proyectos Existentes
         proyectos.forEach(p => {
           const card = document.createElement("div");
-          card.className = "bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col justify-between";
+          card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50";
           card.innerHTML = `
             <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="text-[10px] font-black px-2.5 py-1 rounded-lg uppercase ${p.es_gestor ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
-                  ${p.es_gestor ? '👑 Gestor' : '👤 Responsable Asignado'}
+              <div class="flex items-center justify-between mb-3.5">
+                <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider ${p.es_gestor ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-blue-50 text-blue-800 border border-blue-200/80'}">
+                  ${p.es_gestor ? '👑 Gestor' : '👤 Responsable'}
                 </span>
-                <span class="text-xs font-bold text-teal-600">${p.avance_global}% Avance</span>
+                <span class="text-xs font-black text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">${p.avance_global}% Avance</span>
               </div>
-              <h3 class="font-black text-lg text-[#0f2a4a] leading-snug">${p.nombre}</h3>
-              <p class="text-xs text-gray-500 mt-1 line-clamp-2">${p.descripcion || 'Sin descripción adicional.'}</p>
+              <h3 class="font-extrabold text-base text-[#0f2a4a] leading-snug min-h-[44px] flex items-center">${p.nombre}</h3>
+              <p class="text-xs text-gray-500 mt-2 line-clamp-2 min-h-[32px]">${p.descripcion || 'Sin descripción adicional registrada.'}</p>
               
-              <div class="w-full bg-gray-100 rounded-full h-2 mt-4 overflow-hidden">
-                <div class="bg-teal-500 h-2 rounded-full" style="width: ${p.avance_global}%"></div>
+              <div class="w-full bg-gray-100 rounded-full h-2 mt-4 overflow-hidden shadow-inner">
+                <div class="bg-teal-500 h-2 rounded-full transition-all duration-500" style="width: ${p.avance_global}%"></div>
               </div>
 
-              <div class="grid grid-cols-3 gap-2 mt-4 text-center">
-                <div class="bg-emerald-50 p-2 rounded-xl border border-emerald-100">
-                  <span class="block text-[10px] font-bold text-emerald-700 uppercase">Ejecutado</span>
+              <div class="grid grid-cols-3 gap-2 mt-5 text-center">
+                <div class="bg-emerald-50/80 p-2 rounded-xl border border-emerald-100">
+                  <span class="block text-[9px] font-black text-emerald-700 uppercase">Ejecutado</span>
                   <span class="text-xs font-black text-emerald-900">${p.ejecutadas}</span>
                 </div>
-                <div class="bg-amber-50 p-2 rounded-xl border border-amber-100">
-                  <span class="block text-[10px] font-bold text-amber-700 uppercase">Proceso</span>
+                <div class="bg-amber-50/80 p-2 rounded-xl border border-amber-100">
+                  <span class="block text-[9px] font-black text-amber-700 uppercase">Proceso</span>
                   <span class="text-xs font-black text-amber-900">${p.en_proceso}</span>
                 </div>
-                <div class="bg-rose-50 p-2 rounded-xl border border-rose-100">
-                  <span class="block text-[10px] font-bold text-rose-700 uppercase">Pendiente</span>
+                <div class="bg-rose-50/80 p-2 rounded-xl border border-rose-100">
+                  <span class="block text-[9px] font-black text-rose-700 uppercase">Pendiente</span>
                   <span class="text-xs font-black text-rose-900">${p.pendientes}</span>
                 </div>
               </div>
             </div>
 
-            <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.es_gestor})" class="w-full mt-5 py-2.5 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2">
+            <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.es_gestor})" class="w-full mt-6 py-2.5 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2">
               <span>Ingresar al Proyecto</span>
-              <span>→</span>
+              <span class="text-sm">→</span>
             </button>
           `;
           grid.appendChild(card);
         });
+
+        // 2. Tarjeta Interactiva Integrada "+ Nuevo Proyecto"
+        const cardNuevo = document.createElement("div");
+        cardNuevo.onclick = abrirModalNuevoProyecto;
+        cardNuevo.className = "bg-slate-50/60 hover:bg-white rounded-2xl p-6 border-2 border-dashed border-slate-300 hover:border-teal-500 transition-all cursor-pointer flex flex-col items-center justify-center text-center group min-h-[290px] shadow-sm hover:shadow-md";
+        cardNuevo.innerHTML = `
+          <div class="w-12 h-12 rounded-full bg-teal-50 group-hover:bg-teal-600 text-teal-600 group-hover:text-white flex items-center justify-center text-xl font-black mb-3 transition shadow-sm">
+            +
+          </div>
+          <h4 class="text-sm font-black text-gray-700 group-hover:text-[#0f2a4a] transition">Nuevo Proyecto / Programa</h4>
+          <p class="text-[11px] text-gray-400 mt-1 max-w-[200px]">Cree una nueva estructura WBS con cronograma y ruta crítica independiente.</p>
+          <span class="mt-4 text-[11px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-lg border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition">Comenzar</span>
+        `;
+        grid.appendChild(cardNuevo);
+
       } catch (err) {
-        console.error(err);
+        console.error("Error al cargar Hub:", err);
       }
     }
 
