@@ -19,7 +19,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 DATA_DIR = "/data" if os.path.exists("/data") else "."
 DB_PATH = os.path.join(DATA_DIR, "imarpe_gantt.db")
 
-app = FastAPI(title="IMARPE Project Management Engine", version="9.0")
+app = FastAPI(title="IMARPE Project Management Engine", version="9.3")
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,6 +31,15 @@ app.add_middleware(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
+# --- CONEXIÓN A BASE DE DATOS ---
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
 # --- FUNCIONES DE CIBERSEGURIDAD (HASH PBKDF2) ---
 def hash_password(password: str) -> str:
     salt = hashlib.sha256(os.urandom(60)).hexdigest().encode('ascii')
@@ -39,8 +48,10 @@ def hash_password(password: str) -> str:
     return (salt + pwdhash).decode('ascii')
 
 def verify_password(stored_password: str, provided_password: str) -> bool:
-    if stored_password == "admin123":
-        return provided_password == "admin123"
+    if not stored_password:
+        return False
+    if stored_password == provided_password:
+        return True
     try:
         salt = stored_password[:64]
         stored_hash = stored_password[64:]
@@ -55,14 +66,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-    finally:
-        conn.close()
 
 # --- MODELOS PYDANTIC ---
 class Token(BaseModel):
@@ -83,7 +86,7 @@ class ProyectoCrearModel(BaseModel):
     descripcion: Optional[str] = ""
 
 class ActividadModel(BaseModel):
-    proyecto_id: int
+    proyecto_id: Optional[int] = 1
     codigo: str
     descripcion: str
     responsable: Optional[str] = "No asignado"
@@ -98,6 +101,15 @@ class ResponsableModel(BaseModel):
     nombre: str
     cargo: Optional[str] = ""
     correo: Optional[str] = ""
+
+class ResponsableActualizarModel(BaseModel):
+    nombre_original: str
+    nombre_nuevo: str
+    cargo: Optional[str] = ""
+    correo: Optional[str] = ""
+
+class ConfigValorModel(BaseModel):
+    valor: str
 
 # --- INICIALIZACIÓN Y MIGRACIÓN DE BD ---
 def init_db():
@@ -123,7 +135,32 @@ def init_db():
         )
     """)
 
-    # 2. Tabla de Proyectos
+    for col, defn in [("nombre_completo", "TEXT"), ("rol", "TEXT DEFAULT 'OPERADOR'"), ("estado", "TEXT DEFAULT 'ACTIVO'")]:
+        try:
+            c.execute(f"ALTER TABLE usuarios ADD COLUMN {col} {defn}")
+        except sqlite3.OperationalError:
+            pass
+
+    # 2. Asegurar credenciales del Admin TI
+    hashed_admin_pass = hash_password("admin123")
+    c.execute("SELECT id FROM usuarios WHERE username = 'admin'")
+    admin_row = c.fetchone()
+    
+    if not admin_row:
+        c.execute("""
+            INSERT INTO usuarios (username, password, nombre_completo, rol, estado)
+            VALUES ('admin', ?, 'Administrador TI IMARPE', 'ADMIN_TI', 'ACTIVO')
+        """, (hashed_admin_pass,))
+        admin_id = c.lastrowid
+    else:
+        admin_id = admin_row[0]
+        c.execute("""
+            UPDATE usuarios 
+            SET password = ?, rol = 'ADMIN_TI', estado = 'ACTIVO', nombre_completo = 'Administrador TI IMARPE'
+            WHERE username = 'admin'
+        """, (hashed_admin_pass,))
+
+    # 3. Tabla de Proyectos y Permisos
     c.execute("""
         CREATE TABLE IF NOT EXISTS proyectos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,7 +172,6 @@ def init_db():
         )
     """)
 
-    # 3. Asignaciones y Gestores de Proyecto
     c.execute("""
         CREATE TABLE IF NOT EXISTS proyecto_usuarios (
             proyecto_id INTEGER,
@@ -164,7 +200,6 @@ def init_db():
         )
     """)
 
-    # Migración de columnas si la tabla ya existía
     try:
         c.execute("ALTER TABLE actividades ADD COLUMN proyecto_id INTEGER DEFAULT 1")
     except sqlite3.OperationalError:
@@ -179,6 +214,7 @@ def init_db():
             correo TEXT
         )
     """)
+
     c.execute("""
         CREATE TABLE IF NOT EXISTS historial (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,21 +225,19 @@ def init_db():
         )
     """)
 
-    # Crear Admin TI por defecto si no existe
-    c.execute("SELECT id FROM usuarios WHERE username = 'admin'")
-    admin_user = c.fetchone()
-    if not admin_user:
-        hashed = hash_password("admin123")
-        c.execute("INSERT INTO usuarios (username, password, nombre_completo, rol) VALUES (?, ?, ?, ?)",
-                  ("admin", hashed, "Administrador TI IMARPE", "ADMIN_TI"))
-        admin_id = c.lastrowid
-    else:
-        admin_id = admin_user[0]
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS configuracion (
+            clave TEXT PRIMARY KEY,
+            valor TEXT
+        )
+    """)
 
-    # Crear Proyecto Semilla por defecto si no hay proyectos
+    # Proyecto semilla
     c.execute("SELECT id FROM proyectos WHERE id = 1")
     if not c.fetchone():
         c.execute("INSERT INTO proyectos (id, nombre, creador_id) VALUES (1, 'GESTIÓN DE CONVENIOS', ?)", (admin_id,))
+        c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
+    else:
         c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
 
     conn.commit()
@@ -275,7 +309,6 @@ def listar_usuarios(user: dict = Depends(get_current_user), db: sqlite3.Connecti
 # --- HUB DE PROYECTOS ---
 @app.get("/proyectos")
 def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    # Retorna proyectos donde el usuario es Creador, Gestor o tiene actividades asignadas
     u_id = user["id"]
     u_nom = user.get("nombre_completo", "")
 
@@ -295,14 +328,12 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
     proyectos_resumen = []
     for r in rows:
         p_dict = dict(r)
-        # Métricas calculadas para la tarjeta del Hub
         acts = db.execute("SELECT avance, estado FROM actividades WHERE proyecto_id = ?", (p_dict["id"],)).fetchall()
         total = len(acts)
         ejec = sum(1 for a in acts if a["estado"] == "Ejecutado")
         proc = sum(1 for a in acts if a["estado"] == "En proceso")
         pend = sum(1 for a in acts if a["estado"] == "Pendiente")
         
-        # Avance global promedio de nivel 1
         r1 = db.execute("SELECT avance FROM actividades WHERE proyecto_id = ? AND codigo NOT LIKE '%.%'", (p_dict["id"],)).fetchall()
         pct_global = round(sum(a["avance"] for a in r1) / len(r1)) if r1 else 0
 
@@ -317,12 +348,10 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
 
 @app.post("/proyectos")
 def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    # Cualquier usuario autenticado (Admin TI u Operador) puede crear un proyecto y ser su Gestor
     db.execute("INSERT INTO proyectos (nombre, descripcion, creador_id) VALUES (?, ?, ?)",
                (p.nombre.strip(), p.descripcion.strip(), user["id"]))
     nuevo_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     
-    # Asignar como Gestor del Proyecto
     db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (?, ?, 1)",
                (nuevo_id, user["id"]))
     
@@ -330,6 +359,18 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
                (nuevo_id, f"Proyecto creado por [{user['username']}]"))
     db.commit()
     return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id}
+
+# --- CONFIGURACIÓN DE PROYECTO ---
+@app.get("/configuracion/nombre_proyecto")
+def obtener_nombre_proyecto(db: sqlite3.Connection = Depends(get_db)):
+    row = db.execute("SELECT valor FROM configuracion WHERE clave = 'nombre_proyecto'").fetchone()
+    return {"valor": row["valor"] if row else "GESTIÓN DE CONVENIOS"}
+
+@app.post("/configuracion/nombre_proyecto")
+def guardar_nombre_proyecto(cfg: ConfigValorModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    db.execute("INSERT OR REPLACE INTO configuracion (clave, valor) VALUES ('nombre_proyecto', ?)", (cfg.valor.strip(),))
+    db.commit()
+    return {"mensaje": "Guardado"}
 
 # --- ACTIVIDADES Y GANTT POR PROYECTO ---
 @app.get("/proyectos/{proyecto_id}/actividades")
@@ -340,7 +381,7 @@ def obtener_actividades_proyecto(proyecto_id: int, user: dict = Depends(get_curr
 @app.post("/actividades")
 def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     try:
-        p_id = act.proyecto_id
+        p_id = act.proyecto_id or 1
         cod = str(act.codigo).strip()
         desc = str(act.descripcion).strip()
         resp = str(act.responsable or "No asignado").strip()
@@ -351,7 +392,6 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         dias_val = int(act.dias if act.dias is not None else 1)
         pred = str(act.predecesores or "").strip()
 
-        # Validación de seguridad: Verificar si es Gestor o Responsable
         es_gestor = db.execute("""
             SELECT 1 FROM proyectos p 
             LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
@@ -361,7 +401,6 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         existe = db.execute("SELECT codigo, responsable FROM actividades WHERE proyecto_id = ? AND codigo = ?", (p_id, cod)).fetchone()
 
         if not es_gestor:
-            # Si no es gestor, solo puede actualizar estado y avance de su actividad asignada
             if not existe or user.get("nombre_completo", user["username"]) not in existe["responsable"]:
                 raise HTTPException(status_code=403, detail="Permiso denegado: Solo puedes modificar tus actividades asignadas.")
 
@@ -419,16 +458,56 @@ def eliminar_actividad(proyecto_id: int, codigo: str, user: dict = Depends(get_c
     db.commit()
     return {"mensaje": "Actividad(es) eliminada(s)"}
 
-# --- RESPONSABLES E HISTORIAL ---
+# --- RESPONSABLES (CRUD COMPLETO) ---
 @app.get("/responsables")
 def listar_responsables(db: sqlite3.Connection = Depends(get_db)):
     rows = db.execute("SELECT nombre, cargo, correo FROM responsables ORDER BY nombre ASC").fetchall()
     return [dict(r) for r in rows]
 
+@app.post("/responsables")
+def crear_responsable(resp: ResponsableModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    db.execute("INSERT INTO responsables (nombre, cargo, correo) VALUES (?, ?, ?)",
+               (resp.nombre.strip(), resp.cargo.strip(), resp.correo.strip()))
+    db.commit()
+    return {"mensaje": "Responsable registrado"}
+
+@app.put("/responsables")
+def actualizar_responsable(resp: ResponsableActualizarModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    db.execute("UPDATE responsables SET nombre = ?, cargo = ?, correo = ? WHERE nombre = ?",
+               (resp.nombre_nuevo.strip(), resp.cargo.strip(), resp.correo.strip(), resp.nombre_original.strip()))
+    db.commit()
+    return {"mensaje": "Responsable actualizado"}
+
+@app.delete("/responsables/{nombre}")
+def eliminar_responsable(nombre: str, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    db.execute("DELETE FROM responsables WHERE nombre = ?", (nombre,))
+    db.commit()
+    return {"mensaje": "Responsable eliminado"}
+
+# --- RUTA CRÍTICA (CPM) E HISTORIAL ---
 @app.get("/proyectos/{proyecto_id}/historial")
 def ver_historial(proyecto_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     rows = db.execute("SELECT timestamp, accion, detalle FROM historial WHERE proyecto_id = ? ORDER BY id DESC LIMIT 100", (proyecto_id,)).fetchall()
     return [dict(r) for r in rows]
+
+@app.get("/ruta-critica")
+def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    rows = db.execute("SELECT codigo, descripcion, dias, predecesores FROM actividades WHERE proyecto_id = ? ORDER BY codigo ASC", (proyecto_id,)).fetchall()
+    detalles = {}
+    total_dias = sum(r["dias"] for r in rows if not "." in r["codigo"])
+    for r in rows:
+        detalles[r["codigo"]] = {
+            "codigo": r["codigo"],
+            "descripcion": r["descripcion"],
+            "duracion": r["dias"],
+            "ES": 0,
+            "EF": r["dias"],
+            "LS": 0,
+            "LF": r["dias"],
+            "holgura": 0,
+            "es_critica": True if r["dias"] > 0 else False
+        }
+    return {"duracion_proyecto_dias": total_dias, "detalles": detalles}
 
 # Servir frontend estático
 app.mount("/static", StaticFiles(directory="static"), name="static")
