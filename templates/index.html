@@ -150,7 +150,10 @@
         </div>
         
         <div class="flex-1 max-w-3xl px-4 text-center mx-auto">
-          <input type="text" id="txt-nombre-proyecto" class="w-full bg-transparent text-white font-bold text-lg md:text-xl text-center border-b border-transparent focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide" value="SISTEMA DE GESTION ANTISOBORNO (SGAS)">
+          <input type="text" id="txt-nombre-proyecto" 
+                 placeholder="NOMBRE DEL PROYECTO"
+                 class="w-full bg-transparent text-white font-bold text-lg md:text-xl text-center border-b border-transparent focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide" 
+                 value="">
         </div>
         
         <div id="user-info" class="flex items-center space-x-3 border-l border-blue-800 pl-4 min-w-[180px] justify-end">
@@ -1401,20 +1404,33 @@
     }
 
     async function cargarProyectoNombre() {
+      // 1. Carga instantánea desde memoria local para eliminar parpadeos (0ms)
+      const nombreCache = localStorage.getItem("nombre_proyecto_cache");
+      if (nombreCache) {
+        document.getElementById("txt-nombre-proyecto").value = nombreCache;
+      }
+
+      // 2. Sincronización con la base de datos persistente
       try {
         const res = await fetch(`/configuracion/nombre_proyecto`);
         if (res.ok) {
           const d = await res.json();
-          if (d.valor) document.getElementById("txt-nombre-proyecto").value = d.valor;
+          if (d.valor) {
+            document.getElementById("txt-nombre-proyecto").value = d.valor;
+            localStorage.setItem("nombre_proyecto_cache", d.valor);
+          }
         }
-      } catch(e){}
+      } catch(e) {}
     }
 
     document.getElementById("txt-nombre-proyecto").addEventListener("change", async (e) => {
+      const nuevoNombre = e.target.value.trim();
+      localStorage.setItem("nombre_proyecto_cache", nuevoNombre);
+      
       await fetch(`/configuracion/nombre_proyecto`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ valor: e.target.value })
+        body: JSON.stringify({ valor: nuevoNombre })
       });
     });
 
