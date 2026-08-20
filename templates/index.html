@@ -300,12 +300,11 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: CREACIÓN GUIADA Y DINÁMICA (PASO A PASO - UX AMIGABLE)            -->
+  <!-- MODAL: CREACIÓN GUIADA Y DINÁMICA (PASO A PASO)                          -->
   <!-- ========================================================================= -->
   <div id="modal-wizard-creacion" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300 transition-all">
       
-      <!-- Cabecera del Asistente -->
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
         <div>
           <h3 id="wz-titulo" class="font-bold text-sm">Nueva Subtarea</h3>
@@ -314,14 +313,12 @@
         <button onclick="cerrarWizardCreacion()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
       </div>
 
-      <!-- Barra de Pasos / Indicador Visual -->
       <div class="bg-gray-200 flex h-1.5">
         <div id="wz-progreso-barra" class="bg-teal-500 transition-all duration-300" style="width: 33.33%;"></div>
       </div>
 
       <div class="p-6">
-        
-        <!-- PASO 1: DESCRIPCIÓN -->
+        <!-- PASO 1 -->
         <div id="wz-paso-1" class="space-y-4">
           <div class="flex items-center space-x-2 text-xs font-bold text-[#0f2a4a]">
             <span class="w-6 h-6 rounded-full bg-[#0f2a4a] text-white flex items-center justify-center text-xs">1</span>
@@ -339,7 +336,7 @@
           </div>
         </div>
 
-        <!-- PASO 2: FECHAS Y DURACIÓN -->
+        <!-- PASO 2 -->
         <div id="wz-paso-2" class="hidden space-y-4">
           <div class="flex items-center space-x-2 text-xs font-bold text-[#0f2a4a]">
             <span class="w-6 h-6 rounded-full bg-[#0f2a4a] text-white flex items-center justify-center text-xs">2</span>
@@ -361,7 +358,7 @@
           </div>
         </div>
 
-        <!-- PASO 3: RESPONSABLES Y ESTADO -->
+        <!-- PASO 3 -->
         <div id="wz-paso-3" class="hidden space-y-4">
           <div class="flex items-center space-x-2 text-xs font-bold text-[#0f2a4a]">
             <span class="w-6 h-6 rounded-full bg-[#0f2a4a] text-white flex items-center justify-center text-xs">3</span>
@@ -387,7 +384,7 @@
           </div>
         </div>
 
-        <!-- Botones de Navegación del Asistente -->
+        <!-- Botones de Navegación -->
         <div class="flex justify-between items-center pt-5 mt-5 border-t border-gray-200">
           <button id="wz-btn-anterior" onclick="retrocederPasoWizard()" class="invisible px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">
             ← Anterior
@@ -472,7 +469,7 @@
     </div>
   </div>
 
-  <!-- MODAL CALENDARIO -->
+  <!-- MODAL CALENDARIO (FECHA INICIO) -->
   <div id="modal-fecha-custom" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-lg shadow-2xl w-full max-w-sm overflow-hidden border border-gray-300">
       <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
@@ -480,7 +477,7 @@
         <button onclick="cerrarFechaCustom()" class="text-white text-xl font-bold hover:text-gray-300">&times;</button>
       </div>
       <div class="p-5 space-y-3">
-        <p class="text-xs font-bold text-[#2c3e50]">Seleccione o ingrese la nueva fecha:</p>
+        <p class="text-xs font-bold text-[#2c3e50]">Seleccione la nueva fecha de inicio:</p>
         <input type="date" id="mfc-input-date" class="w-full p-2.5 bg-white border border-gray-300 rounded text-sm font-bold text-[#2c3e50] outline-none focus:border-[#0f2a4a]">
         <div class="flex justify-end space-x-2 pt-2">
           <button onclick="cerrarFechaCustom()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-[#2c3e50] text-xs font-bold rounded transition">Cancelar</button>
@@ -494,7 +491,7 @@
   <div id="modal-fin-interactiva" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
       <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
-        <h3 class="font-bold text-sm">Definir Término de Componente</h3>
+        <h3 class="font-bold text-sm">Definir Término de Actividad</h3>
         <button onclick="cerrarFinInteractiva()" class="text-white text-xl font-bold hover:text-gray-300">&times;</button>
       </div>
       <div class="p-5 space-y-3">
@@ -598,7 +595,6 @@
     let actividadContextualSeleccionada = null;
     let codigoFilaSeleccionada = null;
 
-    // Estado del Wizard Asistente
     let wizardPasoActual = 1;
     let wizardCodigoPadre = null;
     let wizardCodigoGenerado = "";
@@ -616,6 +612,57 @@
     const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"];
     const coloresAvatar = ['#2980b9', '#27ae60', '#8e44ad', '#d35400', '#16a085', '#c0392b', '#2c3e50', '#7f8c8d'];
 
+    // =========================================================================
+    // UTILIDADES UNIVERSALES DE PARSEO DE FECHAS (PREVIENE NaN/NaN/NaN)
+    // =========================================================================
+
+    // Convierte cualquier formato a un objeto Date real
+    function parsearFechaUniversal(fechaStr) {
+      if (!fechaStr || typeof fechaStr !== 'string') return null;
+      const s = fechaStr.trim();
+      if (s === "Definir" || s === "None" || s === "" || s === "null" || s.includes("NaN")) return null;
+
+      if (s.includes("/")) {
+        const p = s.split("/");
+        if (p.length === 3) {
+          const d = parseInt(p[0]), m = parseInt(p[1]), y = parseInt(p[2]);
+          if (!isNaN(d) && !isNaN(m) && !isNaN(y)) return new Date(y, m - 1, d);
+        }
+      } else if (s.includes("-")) {
+        const p = s.split("-");
+        if (p.length === 3) {
+          if (p[0].length === 4) { // Formato AAAA-MM-DD
+            const y = parseInt(p[0]), m = parseInt(p[1]), d = parseInt(p[2]);
+            if (!isNaN(d) && !isNaN(m) && !isNaN(y)) return new Date(y, m - 1, d);
+          } else { // Formato DD-MM-AAAA
+            const d = parseInt(p[0]), m = parseInt(p[1]), y = parseInt(p[2]);
+            if (!isNaN(d) && !isNaN(m) && !isNaN(y)) return new Date(y, m - 1, d);
+          }
+        }
+      }
+      return null;
+    }
+
+    // Devuelve siempre formato visual DD/MM/AAAA
+    function formatearFechaLatina(fechaStr) {
+      const dt = parsearFechaUniversal(fechaStr);
+      if (!dt || isNaN(dt.getTime())) return "01/01/2026";
+      const d = String(dt.getDate()).padStart(2, '0');
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const y = dt.getFullYear();
+      return `${d}/${m}/${y}`;
+    }
+
+    // Devuelve formato para inputs de tipo date: AAAA-MM-DD
+    function formatearFechaISO(fechaStr) {
+      const dt = parsearFechaUniversal(fechaStr);
+      if (!dt || isNaN(dt.getTime())) return "2026-01-01";
+      const d = String(dt.getDate()).padStart(2, '0');
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const y = dt.getFullYear();
+      return `${y}-${m}-${d}`;
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       if (token) {
         mostrarDashboard();
@@ -629,7 +676,6 @@
       aplicarVisibilidadColumnas();
     });
 
-    // --- SELECCIÓN DIRECTA DE FILA ---
     function seleccionarFila(cod) {
       codigoFilaSeleccionada = cod;
       document.querySelectorAll("#lista-actividades tr").forEach(tr => {
@@ -647,7 +693,6 @@
       }
     }
 
-    // --- MENÚ CONTEXTUAL (CLIC DERECHO INTELIGENTE) ---
     function abrirMenuContextual(event, cod) {
       event.preventDefault();
       event.stopPropagation();
@@ -657,7 +702,7 @@
 
       const partes = cod.replace(/\.$/, "").split(".");
       const nivel = partes.length;
-      const nombresNivel = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
+      const nombresNivel = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Detalle Operativo (Nivel 4)"];
       
       const menu = document.getElementById("menu-contextual");
       document.getElementById("mc-header-info").innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
@@ -699,7 +744,6 @@
       }
     }
 
-    // --- CÁLCULO AUTOMÁTICO DE CORRELATIVO WBS ---
     function calcularSiguienteCorrelativo(codigoPadre) {
       if (!codigoPadre) {
         const raices = actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
@@ -729,7 +773,6 @@
       return `${codLimpio}.${maxNum + 1}`;
     }
 
-    // --- ASISTENTE INTERACTIVO (WIZARD PASO A PASO) ---
     function abrirWizardCreacion(codigoPadre = null) {
       wizardCodigoPadre = codigoPadre;
       wizardCodigoGenerado = calcularSiguienteCorrelativo(codigoPadre);
@@ -751,7 +794,6 @@
         document.getElementById("wz-subtitulo").innerText = "Creando actividad principal independiente";
       }
 
-      // Renderizar checkboxes de responsables en el paso 3
       const contResp = document.getElementById("wz-lista-responsables");
       contResp.innerHTML = "";
       responsablesGlobal.forEach(r => {
@@ -852,11 +894,14 @@
     }
 
     async function guardarActividadDesdeWizard() {
-      const [y1, m1, d1] = document.getElementById("wz-input-ini").value.split("-");
+      const fIniRaw = document.getElementById("wz-input-ini").value;
       const dias = parseInt(document.getElementById("wz-input-dias").value) || 1;
       
-      const dtFin = new Date(parseInt(y1), parseInt(m1) - 1, parseInt(d1));
+      const dtIni = parsearFechaUniversal(fIniRaw) || new Date();
+      const dtFin = new Date(dtIni);
       dtFin.setDate(dtFin.getDate() + (dias - 1));
+
+      const fIniStr = formatearFechaLatina(fIniRaw);
       const fFinStr = `${String(dtFin.getDate()).padStart(2, '0')}/${String(dtFin.getMonth() + 1).padStart(2, '0')}/${dtFin.getFullYear()}`;
 
       const respsMarcados = Array.from(document.querySelectorAll(".wz-chk-resp:checked")).map(cb => cb.value);
@@ -871,7 +916,7 @@
         responsable: respFinal,
         estado: estado,
         avance: avance,
-        fecha_inicio: `${d1}/${m1}/${y1}`,
+        fecha_inicio: fIniStr,
         fecha_fin: fFinStr,
         dias: dias,
         predecesores: document.getElementById("wz-input-pred").value.trim()
@@ -896,7 +941,6 @@
       }
     }
 
-    // --- ELIMINACIÓN INTELIGENTE EN CASCADA ---
     async function eliminarActividad(cod) {
       const codLimpio = cod.replace(/\.$/, "");
       const hijas = actividadesGlobal.filter(a => {
@@ -923,7 +967,6 @@
       }
     }
 
-    // --- PARSEO DE RESPONSABLES ---
     function obtenerListaResponsablesAsignados(responsablesStr) {
       if (!responsablesStr || responsablesStr === "No asignado" || responsablesStr === "-") return [];
       if (responsablesStr.includes(";")) {
@@ -1095,7 +1138,7 @@
     function exportarExcelCSV() {
       let csv = "Codigo;Descripcion;Responsable;Estado;Fecha Inicio;Fecha Fin;Dias;% Avance;Predecesores\n";
       actividadesGlobal.forEach(a => {
-        csv += `"${a.codigo}";"${a.descripcion}";"${a.responsable || ''}";"${a.estado}";"${a.fecha_inicio}";"${a.fecha_fin}";${a.dias};${a.avance}%;"${a.predecesores || ''}"\n`;
+        csv += `"${a.codigo}";"${a.descripcion}";"${a.responsable || ''}";"${a.estado}";"${formatearFechaLatina(a.fecha_inicio)}";"${formatearFechaLatina(a.fecha_fin)}";${a.dias};${a.avance}%;"${a.predecesores || ''}"\n`;
       });
       const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
@@ -1378,7 +1421,7 @@
       renderizarTabla();
     }
 
-    // --- RENDERIZADO DEL GANTT VISUAL (CON SELECCIÓN DE FILA Y CLIC DERECHO) ---
+    // --- RENDERIZADO DEL GANTT VISUAL (FECHAS NORMALIZADAS) ---
     function renderizarTabla() {
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
@@ -1426,11 +1469,16 @@
         const estaColapsado = nodosColapsados.has(codLimpio);
         const estaSeleccionada = (codigoFilaSeleccionada === act.codigo);
 
+        const dtIniObj = parsearFechaUniversal(act.fecha_inicio);
+        const dtFinObj = parsearFechaUniversal(act.fecha_fin);
+
+        const fechaIniVisual = formatearFechaLatina(act.fecha_inicio);
+        const fechaFinVisual = formatearFechaLatina(act.fecha_fin);
+
         const tr = document.createElement("tr");
         tr.id = `fila-act-${act.codigo.replace(/\./g, '_')}`;
         tr.className = `${esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50")} ${estaSeleccionada ? 'row-selected' : ''} cursor-pointer transition-colors`;
         
-        // Selección por Clic Izquierdo y Menú por Clic Derecho
         tr.onclick = () => seleccionarFila(act.codigo);
         tr.oncontextmenu = (e) => abrirMenuContextual(e, act.codigo);
 
@@ -1448,12 +1496,10 @@
           </div>
         `;
 
-        if (act.fecha_inicio && act.fecha_fin && act.fecha_inicio !== "Definir") {
+        if (dtIniObj && dtFinObj) {
           try {
-            const [d1, m1, y1] = act.fecha_inicio.split("/").map(Number);
-            const [d2, m2, y2] = act.fecha_fin.split("/").map(Number);
-            const dtIni = new Date(y1, m1 - 1, d1).getTime();
-            const dtFin = new Date(y2, m2 - 1, d2, 23, 59, 59).getTime();
+            const dtIni = dtIniObj.getTime();
+            const dtFin = new Date(dtFinObj.getFullYear(), dtFinObj.getMonth(), dtFinObj.getDate(), 23, 59, 59).getTime();
 
             if (dtFin >= tInicioVisible && dtIni <= tFinVisible) {
               const startClamped = Math.max(dtIni, tInicioVisible);
@@ -1468,7 +1514,7 @@
 
               if (esHito) {
                 barraOElementoHTML = `
-                  <div class="milestone-diamond" style="left: ${leftPct}%;" title="HITO: ${act.descripcion} (${act.fecha_inicio})"></div>
+                  <div class="milestone-diamond" style="left: ${leftPct}%;" title="HITO: ${act.descripcion} (${fechaIniVisual})"></div>
                   <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct}% + 18px);">
                     ${miniAvataresHTML}
                   </div>
@@ -1529,7 +1575,7 @@
 
               ganttHTML = `
                 <div class="relative w-full h-7 bg-[#f8fafc] rounded border border-slate-200/80 overflow-hidden" 
-                     title="${act.codigo}: ${act.descripcion}&#10;• Periodo: ${act.fecha_inicio} al ${act.fecha_fin}&#10;• Duración: ${act.dias} días&#10;• Avance: ${act.avance}% (${act.estado})&#10;• Responsable(s): ${act.responsable || 'No asignado'}">
+                     title="${act.codigo}: ${act.descripcion}&#10;• Periodo: ${fechaIniVisual} al ${fechaFinVisual}&#10;• Duración: ${act.dias} días&#10;• Avance: ${act.avance}% (${act.estado})&#10;• Responsable(s): ${act.responsable || 'No asignado'}">
                   <div class="absolute inset-0 flex pointer-events-none opacity-60">${divisionesHTML}</div>
                   ${hoyEstaVisible ? `<div class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none shadow" style="left: ${pctHoy}%;"></div>` : ''}
                   ${barraOElementoHTML}
@@ -1544,8 +1590,8 @@
 
         const tdResp = visibilidadColumnas.responsable ? `<td class="p-2 border-r border-b border-gray-200 text-center whitespace-nowrap cell-editable" ondblclick="editarResponsable('${cod}')">${obtenerAvatarHTML(act.responsable)}</td>` : '';
         const tdEst = visibilidadColumnas.estado ? `<td class="p-2.5 border-r border-b border-gray-200 cell-editable whitespace-nowrap" ondblclick="editarEstado('${cod}')"><span class="px-2 py-0.5 rounded text-[11px] font-bold ${act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' : (act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700')}">${act.estado}</span></td>` : '';
-        const tdIni = visibilidadColumnas.inicio ? `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs cell-editable whitespace-nowrap" ondblclick="editarFechaInicio('${cod}')">${act.fecha_inicio || '-'}</td>` : '';
-        const tdFin = visibilidadColumnas.fin ? `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs cell-editable whitespace-nowrap" ondblclick="editarFechaFin('${cod}')">${act.fecha_fin || '-'}</td>` : '';
+        const tdIni = visibilidadColumnas.inicio ? `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs cell-editable whitespace-nowrap font-medium" ondblclick="editarFechaInicio('${cod}')">${fechaIniVisual}</td>` : '';
+        const tdFin = visibilidadColumnas.fin ? `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs cell-editable whitespace-nowrap font-medium" ondblclick="editarFechaFin('${cod}')">${fechaFinVisual}</td>` : '';
         const tdDias = visibilidadColumnas.dias ? `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs cell-editable whitespace-nowrap" ondblclick="editarDias('${cod}')">${act.dias}</td>` : '';
         const tdAvance = visibilidadColumnas.avance ? `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs cell-editable whitespace-nowrap" ondblclick="editarAvance('${cod}')">${act.avance}%</td>` : '';
         const tdGantt = visibilidadColumnas.gantt ? `<td class="p-1 border-r border-b border-gray-200 min-w-[850px]">${ganttHTML}</td>` : '';
@@ -1688,27 +1734,26 @@
       });
     }
 
+    // --- EDICIÓN SEGURA DE FECHA DE INICIO (SIN NaN) ---
     function editarFechaInicio(cod) {
       if (tieneHijos(cod)) {
         alert("🔒 Bloqueado CPM: La Fecha de Inicio se calcula automáticamente con las componentes hijas.");
         return;
       }
       const act = actividadesGlobal.find(a => a.codigo === cod);
-      let isoDate = (act.fecha_inicio && act.fecha_inicio !== "Definir") 
-        ? `${act.fecha_inicio.split("/")[2]}-${act.fecha_inicio.split("/")[1].padStart(2,'0')}-${act.fecha_inicio.split("/")[0].padStart(2,'0')}`
-        : `${new Date().getFullYear()}-01-01`;
-
-      document.getElementById("mfc-input-date").value = isoDate;
+      document.getElementById("mfc-input-date").value = formatearFechaISO(act.fecha_inicio);
+      
       document.getElementById("mfc-btn-guardar").onclick = async () => {
-        const val = document.getElementById("mfc-input-date").value;
-        if (val) {
-          const [y, m, d] = val.split("-");
-          act.fecha_inicio = `${d}/${m}/${y}`;
-          const dt = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-          dt.setDate(dt.getDate() + (act.dias - 1));
-          act.fecha_fin = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
-          cerrarFechaCustom();
-          await guardarCambioDirecto(act);
+        const valISO = document.getElementById("mfc-input-date").value;
+        if (valISO) {
+          const dt = parsearFechaUniversal(valISO);
+          if (dt) {
+            act.fecha_inicio = formatearFechaLatina(valISO);
+            dt.setDate(dt.getDate() + ((parseInt(act.dias) || 1) - 1));
+            act.fecha_fin = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+            cerrarFechaCustom();
+            await guardarCambioDirecto(act);
+          }
         }
       };
       document.getElementById("modal-fecha-custom").classList.remove("hidden");
@@ -1716,6 +1761,7 @@
 
     function cerrarFechaCustom() { document.getElementById("modal-fecha-custom").classList.add("hidden"); }
 
+    // --- EDICIÓN SEGURA DE FECHA FIN (SIN NaN) ---
     let modalActivoAct = null;
     function editarFechaFin(cod) {
       if (tieneHijos(cod)) {
@@ -1723,19 +1769,14 @@
         return;
       }
       modalActivoAct = actividadesGlobal.find(a => a.codigo === cod);
-      let isoFin = (modalActivoAct.fecha_fin && modalActivoAct.fecha_fin !== "Definir")
-        ? `${modalActivoAct.fecha_fin.split("/")[2]}-${modalActivoAct.fecha_fin.split("/")[1].padStart(2,'0')}-${modalActivoAct.fecha_fin.split("/")[0].padStart(2,'0')}`
-        : `${new Date().getFullYear()}-01-05`;
-
-      document.getElementById("mfi-input-fin").value = isoFin;
+      document.getElementById("mfi-input-fin").value = formatearFechaISO(modalActivoAct.fecha_fin);
       document.getElementById("mfi-input-dias").value = modalActivoAct.dias || 5;
 
       document.getElementById("mfi-btn-guardar").onclick = async () => {
         const valFin = document.getElementById("mfi-input-fin").value;
         const valDias = parseInt(document.getElementById("mfi-input-dias").value);
         if (valFin && valDias > 0) {
-          const [y, m, d] = valFin.split("-");
-          modalActivoAct.fecha_fin = `${d}/${m}/${y}`;
+          modalActivoAct.fecha_fin = formatearFechaLatina(valFin);
           modalActivoAct.dias = valDias;
           cerrarFinInteractiva();
           await guardarCambioDirecto(modalActivoAct);
@@ -1753,19 +1794,18 @@
 
       dias.addEventListener("input", () => {
         if (bloqueando || !modalActivoAct || !dias.value) return;
-        const [d, m, y] = modalActivoAct.fecha_inicio.split("/").map(Number);
-        const dt = new Date(y, m - 1, d);
+        const dtIni = parsearFechaUniversal(modalActivoAct.fecha_inicio) || new Date();
+        const dt = new Date(dtIni);
         dt.setDate(dt.getDate() + (parseInt(dias.value) - 1));
         bloqueando = true;
-        fin.value = dt.toISOString().split("T")[0];
+        fin.value = formatearFechaISO(dt.toISOString().split("T")[0]);
         bloqueando = false;
       });
 
       fin.addEventListener("input", () => {
         if (bloqueando || !modalActivoAct || !fin.value) return;
-        const [d1, m1, y1] = modalActivoAct.fecha_inicio.split("/").map(Number);
-        const dt1 = new Date(y1, m1 - 1, d1);
-        const dt2 = new Date(fin.value + "T00:00:00");
+        const dt1 = parsearFechaUniversal(modalActivoAct.fecha_inicio) || new Date();
+        const dt2 = parsearFechaUniversal(fin.value) || new Date();
         const diff = Math.floor((dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
         if (diff > 0) {
           bloqueando = true;
@@ -1775,6 +1815,7 @@
       });
     }
 
+    // --- EDICIÓN SEGURA DE DÍAS (SIN NaN) ---
     function editarDias(cod) {
       if (tieneHijos(cod)) {
         alert("🔒 Bloqueado CPM: Los Días se autocalculan midiendo la ventana de ejecución total.");
@@ -1790,10 +1831,11 @@
           const d = parseInt(diasStr);
           if (!isNaN(d) && d > 0) {
             act.dias = d;
-            const [d1, m1, y1] = act.fecha_inicio.split("/").map(Number);
-            const dt = new Date(y1, m1 - 1, d1);
-            dt.setDate(dt.getDate() + (act.dias - 1));
-            act.fecha_fin = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+            const dtIni = parsearFechaUniversal(act.fecha_inicio) || new Date();
+            const dtFin = new Date(dtIni);
+            dtFin.setDate(dtFin.getDate() + (d - 1));
+            act.fecha_inicio = formatearFechaLatina(act.fecha_inicio);
+            act.fecha_fin = `${String(dtFin.getDate()).padStart(2, '0')}/${String(dtFin.getMonth() + 1).padStart(2, '0')}/${dtFin.getFullYear()}`;
             await guardarCambioDirecto(act);
           }
         }
@@ -1822,11 +1864,15 @@
       });
     }
 
+    // --- GUARDADO SIN ERRORES Y CON FECHAS NORMALIZADAS ---
     async function guardarCambioDirecto(act) {
       if (!token) {
         cerrarSesion();
         return;
       }
+
+      const fIniLimpia = formatearFechaLatina(act.fecha_inicio);
+      const fFinLimpia = formatearFechaLatina(act.fecha_fin);
 
       const payload = {
         codigo: String(act.codigo).trim(),
@@ -1834,8 +1880,8 @@
         responsable: String(act.responsable || 'No asignado').trim(),
         estado: String(act.estado || 'Pendiente').trim(),
         avance: parseInt(act.avance) || 0,
-        fecha_inicio: String(act.fecha_inicio || '').trim(),
-        fecha_fin: String(act.fecha_fin || '').trim(),
+        fecha_inicio: fIniLimpia,
+        fecha_fin: fFinLimpia,
         dias: parseInt(act.dias) || 1,
         predecesores: String(act.predecesores || '').trim()
       };
