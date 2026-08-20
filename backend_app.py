@@ -123,7 +123,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # 1. Tabla de Usuarios
+    # 1. Tabla Usuarios
     c.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,7 +141,7 @@ def init_db():
         except sqlite3.OperationalError:
             pass
 
-    # 2. Asegurar credenciales del Admin TI
+    # 2. Asegurar Admin TI
     hashed_admin_pass = hash_password("admin123")
     c.execute("SELECT id FROM usuarios WHERE username = 'admin'")
     admin_row = c.fetchone()
@@ -160,7 +160,7 @@ def init_db():
             WHERE username = 'admin'
         """, (hashed_admin_pass,))
 
-    # 3. Tabla de Proyectos y Permisos
+    # 3. Tabla Proyectos y migraciones
     c.execute("""
         CREATE TABLE IF NOT EXISTS proyectos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -172,18 +172,26 @@ def init_db():
         )
     """)
 
+    try:
+        c.execute("ALTER TABLE proyectos ADD COLUMN descripcion TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE proyectos ADD COLUMN creador_id INTEGER")
+    except sqlite3.OperationalError:
+        pass
+
+    # 4. Tabla Permisos Proyecto
     c.execute("""
         CREATE TABLE IF NOT EXISTS proyecto_usuarios (
             proyecto_id INTEGER,
             usuario_id INTEGER,
             es_gestor BOOLEAN DEFAULT 0,
-            PRIMARY KEY (proyecto_id, usuario_id),
-            FOREIGN KEY(proyecto_id) REFERENCES proyectos(id),
-            FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
+            PRIMARY KEY (proyecto_id, usuario_id)
         )
     """)
 
-    # 4. Tabla de Actividades
+    # 5. Tabla Actividades
     c.execute("""
         CREATE TABLE IF NOT EXISTS actividades (
             proyecto_id INTEGER DEFAULT 1,
@@ -205,16 +213,7 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
-    # 5. Tablas auxiliares
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS responsables (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT UNIQUE,
-            cargo TEXT,
-            correo TEXT
-        )
-    """)
-
+    # 6. Historial y migración de proyecto_id
     c.execute("""
         CREATE TABLE IF NOT EXISTS historial (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -225,6 +224,21 @@ def init_db():
         )
     """)
 
+    try:
+        c.execute("ALTER TABLE historial ADD COLUMN proyecto_id INTEGER DEFAULT 1")
+    except sqlite3.OperationalError:
+        pass
+
+    # 7. Tablas auxiliares
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS responsables (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT UNIQUE,
+            cargo TEXT,
+            correo TEXT
+        )
+    """)
+
     c.execute("""
         CREATE TABLE IF NOT EXISTS configuracion (
             clave TEXT PRIMARY KEY,
@@ -232,7 +246,7 @@ def init_db():
         )
     """)
 
-    # Proyecto semilla
+    # Asegurar Proyecto Semilla (ID: 1)
     c.execute("SELECT id FROM proyectos WHERE id = 1")
     if not c.fetchone():
         c.execute("INSERT INTO proyectos (id, nombre, creador_id) VALUES (1, 'GESTIÓN DE CONVENIOS', ?)", (admin_id,))

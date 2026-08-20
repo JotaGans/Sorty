@@ -978,18 +978,33 @@
 
     async function guardarNuevoProyecto(e) {
       e.preventDefault();
-      const nombre = document.getElementById("input-nuevo-proy-nombre").value;
-      const descripcion = document.getElementById("input-nuevo-proy-desc").value;
+      const nombre = document.getElementById("input-nuevo-proy-nombre").value.trim();
+      const descripcion = document.getElementById("input-nuevo-proy-desc").value.trim();
+
+      if (!nombre) {
+        alert("Por favor ingresa un nombre para el proyecto.");
+        return;
+      }
 
       try {
         const res = await fetch("/proyectos", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${token}` 
+          },
           body: JSON.stringify({ nombre, descripcion })
         });
-        if (!res.ok) throw new Error("Error al crear el proyecto");
+        
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || "No se pudo crear el proyecto en el servidor.");
+        }
+
+        document.getElementById("input-nuevo-proy-nombre").value = "";
+        document.getElementById("input-nuevo-proy-desc").value = "";
         cerrarModalNuevoProyecto();
-        cargarHubProyectos();
+        await cargarHubProyectos();
       } catch (err) {
         alert(err.message);
       }
