@@ -511,42 +511,77 @@
     </div>
   </div>
 
-  <!-- MODAL HISTORIAL -->
-  <div id="modal-historial" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden max-h-[85vh] flex flex-col border border-gray-200">
-      <div class="bg-[#718093] text-white p-4 flex justify-between items-center flex-shrink-0">
-        <h3 class="font-bold text-base">📜 Historial de Cambios - Auditoría</h3>
-        <button onclick="cerrarHistorial()" class="text-white text-2xl font-bold hover:text-gray-200">&times;</button>
+  <!-- MODAL RUTA CRÍTICA (CPM) -->
+  <div id="modal-cpm" class="hidden fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
+      <div class="bg-[#c0392b] text-white p-4 flex justify-between items-center flex-shrink-0 shadow-sm">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📍</span>
+          <h3 class="font-bold text-base tracking-wide">Ruta Crítica (CPM)</h3>
+        </div>
+        <button onclick="cerrarModalCPM()" class="text-white text-2xl font-bold hover:text-gray-200 transition leading-none">&times;</button>
       </div>
-      <div class="overflow-y-auto flex-1 p-4 pt-0">
-        <table class="w-full text-xs text-left border-separate border-spacing-0">
-          <thead class="bg-[#0f2a4a] text-white sticky top-0 z-20">
-            <tr>
-              <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white w-36">Fecha y Hora</th>
-              <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white w-36">Acción</th>
-              <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white">Detalle</th>
-            </tr>
-          </thead>
-          <tbody id="historial-tabla-body" class="divide-y divide-gray-100 bg-white"></tbody>
-        </table>
+      
+      <div class="px-5 py-3 bg-red-50/80 border-b border-red-100 flex items-center justify-between flex-shrink-0">
+        <span class="text-xs font-bold uppercase text-red-900 tracking-wider">Duración Total del Proyecto:</span>
+        <span class="text-sm font-black text-red-700 bg-white px-3 py-1 rounded-lg border border-red-200 shadow-sm">
+          <span id="cpm-duracion">0</span> días
+        </span>
+      </div>
+
+      <div class="p-5 overflow-y-auto flex-1 bg-white">
+        <div class="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <table class="w-full text-xs text-left border-collapse">
+            <thead class="bg-[#0f2a4a] text-white sticky top-0 z-20">
+              <tr>
+                <th class="p-2.5 font-bold border-b border-blue-900">Código</th>
+                <th class="p-2.5 font-bold border-b border-blue-900">Actividad</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 text-center">Duración</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 text-center">ES - EF</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 text-center">LS - LF</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 text-center">Holgura</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 text-center">Condición</th>
+              </tr>
+            </thead>
+            <tbody id="cpm-tabla-body" class="divide-y divide-gray-100 text-gray-700 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end flex-shrink-0">
+        <button onclick="cerrarModalCPM()" class="px-5 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition">Cerrar</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL HISTORIAL -->
-  <div id="modal-historial" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden max-h-[85vh] flex flex-col">
-      <div class="bg-[#718093] text-white p-4 flex justify-between items-center">
-        <h3 class="font-bold text-base">📜 Historial de Cambios - Auditoría</h3>
-        <button onclick="cerrarHistorial()" class="text-white text-2xl font-bold">&times;</button>
+  <div id="modal-historial" class="hidden fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
+      <div class="bg-[#718093] text-white p-4 flex justify-between items-center flex-shrink-0 shadow-sm">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📜</span>
+          <h3 class="font-bold text-base tracking-wide">Historial de Cambios - Auditoría</h3>
+        </div>
+        <button onclick="cerrarHistorial()" class="text-white text-2xl font-bold hover:text-gray-200 transition leading-none">&times;</button>
       </div>
-      <div class="p-4 overflow-y-auto">
-        <table class="w-full text-xs text-left">
-          <thead class="bg-gray-100 font-bold border-b">
-            <tr><th class="p-2">Fecha y Hora</th><th class="p-2">Acción</th><th class="p-2">Detalle</th></tr>
-          </thead>
-          <tbody id="historial-tabla-body" class="divide-y divide-gray-100"></tbody>
-        </table>
+      
+      <div class="p-5 overflow-y-auto flex-1 bg-white">
+        <div class="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <table class="w-full text-xs text-left border-collapse">
+            <thead class="bg-[#0f2a4a] text-white sticky top-0 z-20">
+              <tr>
+                <th class="p-2.5 font-bold border-b border-blue-900 w-36 whitespace-nowrap">Fecha y Hora</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 w-36 whitespace-nowrap">Acción</th>
+                <th class="p-2.5 font-bold border-b border-blue-900">Detalle</th>
+              </tr>
+            </thead>
+            <tbody id="historial-tabla-body" class="divide-y divide-gray-100 text-gray-700 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end flex-shrink-0">
+        <button onclick="cerrarHistorial()" class="px-5 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1910,54 +1945,87 @@
       }
     }
 
+    // --- RUTA CRÍTICA (CPM) ROBUSTA ---
     async function verRutaCritica() {
-      const res = await fetch(`/ruta-critica`);
-      const cpm = await res.json();
-      document.getElementById("cpm-duracion").innerText = cpm.duracion_proyecto_dias;
-      const tbody = document.getElementById("cpm-tabla-body");
-      tbody.innerHTML = "";
+      try {
+        const res = await fetch(`/ruta-critica`);
+        if (!res.ok) throw new Error("Error al calcular CPM");
+        const cpm = await res.json();
+        
+        const spanDuracion = document.getElementById("cpm-duracion");
+        if (spanDuracion) spanDuracion.innerText = cpm.duracion_proyecto_dias || 0;
+        
+        const tbody = document.getElementById("cpm-tabla-body");
+        tbody.innerHTML = "";
 
-      Object.values(cpm.detalles).forEach(n => {
-        const tr = document.createElement("tr");
-        tr.className = n.es_critica ? "bg-red-50 font-bold text-red-900" : "";
-        tr.innerHTML = `
-          <td class="p-2 font-mono">${n.codigo}</td>
-          <td class="p-2">${n.descripcion}</td>
-          <td class="p-2 text-center">${n.duracion}d</td>
-          <td class="p-2 text-center">${n.ES} - ${n.EF}</td>
-          <td class="p-2 text-center">${n.LS} - ${n.LF}</td>
-          <td class="p-2 text-center">${n.holgura}</td>
-          <td class="p-2 text-center">
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${n.es_critica ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">
-              ${n.es_critica ? 'CRÍTICA' : 'Normal'}
-            </span>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-      document.getElementById("modal-cpm").classList.remove("hidden");
+        if (cpm.detalles && Object.keys(cpm.detalles).length > 0) {
+          Object.values(cpm.detalles).forEach(n => {
+            const tr = document.createElement("tr");
+            tr.className = n.es_critica ? "bg-red-50/80 font-bold text-red-900" : "hover:bg-gray-50";
+            tr.innerHTML = `
+              <td class="p-2.5 font-mono font-bold">${n.codigo}</td>
+              <td class="p-2.5">${n.descripcion}</td>
+              <td class="p-2.5 text-center">${n.duracion}d</td>
+              <td class="p-2.5 text-center font-mono">${n.ES} - ${n.EF}</td>
+              <td class="p-2.5 text-center font-mono">${n.LS} - ${n.LF}</td>
+              <td class="p-2.5 text-center font-bold">${n.holgura}</td>
+              <td class="p-2.5 text-center">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black ${n.es_critica ? 'bg-red-600 text-white shadow-sm' : 'bg-gray-200 text-gray-700'}">
+                  ${n.es_critica ? 'CRÍTICA' : 'Normal'}
+                </span>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } else {
+          tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500 font-semibold">No hay actividades suficientes para calcular la ruta crítica.</td></tr>`;
+        }
+
+        document.getElementById("modal-cpm").classList.remove("hidden");
+      } catch (err) {
+        console.error("Error CPM:", err);
+        alert("No se pudo cargar la Ruta Crítica en este momento.");
+      }
     }
 
-    function cerrarModalCPM() { document.getElementById("modal-cpm").classList.add("hidden"); }
+    function cerrarModalCPM() { 
+      document.getElementById("modal-cpm").classList.add("hidden"); 
+    }
 
+    // --- HISTORIAL CON ESTILIZADO DE ACCIONES ---
     async function abrirHistorial() {
-      const res = await fetch(`/historial`);
-      const data = await res.json();
-      const tbody = document.getElementById("historial-tabla-body");
-      tbody.innerHTML = "";
-      data.forEach(h => {
-        tbody.innerHTML += `
-          <tr>
-            <td class="p-2 text-gray-500">${h.timestamp}</td>
-            <td class="p-2 font-semibold text-[#0f2a4a]">${h.accion}</td>
-            <td class="p-2">${h.detalle}</td>
-          </tr>
-        `;
-      });
-      document.getElementById("modal-historial").classList.remove("hidden");
+      try {
+        const res = await fetch(`/historial`);
+        if (!res.ok) throw new Error("Error al obtener historial");
+        const data = await res.json();
+        
+        const tbody = document.getElementById("historial-tabla-body");
+        tbody.innerHTML = "";
+
+        if (data && data.length > 0) {
+          data.forEach(h => {
+            tbody.innerHTML += `
+              <tr class="hover:bg-gray-50 transition">
+                <td class="p-2.5 text-gray-500 font-mono text-[11px] whitespace-nowrap">${h.timestamp || '-'}</td>
+                <td class="p-2.5 font-bold text-[#0f2a4a] whitespace-nowrap">${h.accion || '-'}</td>
+                <td class="p-2.5 text-gray-800">${h.detalle || '-'}</td>
+              </tr>
+            `;
+          });
+        } else {
+          tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-500 font-semibold">Sin registros de auditoría disponibles.</td></tr>`;
+        }
+
+        document.getElementById("modal-historial").classList.remove("hidden");
+      } catch (err) {
+        console.error("Error Historial:", err);
+        alert("No se pudo cargar el Historial.");
+      }
     }
 
-    function cerrarHistorial() { document.getElementById("modal-historial").classList.add("hidden"); }
+    function cerrarHistorial() { 
+      document.getElementById("modal-historial").classList.add("hidden"); 
+    }
 
     async function abrirResponsables() {
       await cargarResponsables();
