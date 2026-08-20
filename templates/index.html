@@ -511,24 +511,23 @@
     </div>
   </div>
 
-  <!-- MODAL RUTA CRÍTICA (CPM) -->
-  <div id="modal-cpm" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col">
-      <div class="bg-[#c0392b] text-white p-4 flex justify-between items-center">
-        <h3 class="font-bold text-lg">📍 Ruta Crítica (CPM)</h3>
-        <button onclick="cerrarModalCPM()" class="text-white text-2xl font-bold">&times;</button>
+  <!-- MODAL HISTORIAL -->
+  <div id="modal-historial" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden max-h-[85vh] flex flex-col border border-gray-200">
+      <div class="bg-[#718093] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <h3 class="font-bold text-base">📜 Historial de Cambios - Auditoría</h3>
+        <button onclick="cerrarHistorial()" class="text-white text-2xl font-bold hover:text-gray-200">&times;</button>
       </div>
-      <div class="p-5 overflow-y-auto space-y-4">
-        <p class="text-sm font-semibold text-red-900">Duración del Proyecto: <span id="cpm-duracion" class="text-xl font-bold">0</span> días</p>
-        <table class="w-full text-xs text-left">
-          <thead class="bg-gray-100 font-bold border-b">
+      <div class="overflow-y-auto flex-1 p-4 pt-0">
+        <table class="w-full text-xs text-left border-separate border-spacing-0">
+          <thead class="bg-[#0f2a4a] text-white sticky top-0 z-20">
             <tr>
-              <th class="p-2">Código</th><th class="p-2">Actividad</th><th class="p-2 text-center">Duración</th>
-              <th class="p-2 text-center">ES - EF</th><th class="p-2 text-center">LS - LF</th>
-              <th class="p-2 text-center">Holgura</th><th class="p-2 text-center">Condición</th>
+              <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white w-36">Fecha y Hora</th>
+              <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white w-36">Acción</th>
+              <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white">Detalle</th>
             </tr>
           </thead>
-          <tbody id="cpm-tabla-body" class="divide-y divide-gray-100"></tbody>
+          <tbody id="historial-tabla-body" class="divide-y divide-gray-100 bg-white"></tbody>
         </table>
       </div>
     </div>
