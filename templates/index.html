@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>IMARPE Gantt v8.6 - Sistema de Gestión</title>
+  <title>IMARPE - Sistema de Gestión de Proyectos y Programas</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f5f6fa; }
@@ -107,12 +107,12 @@
       <span class="text-blue-600 font-bold">+</span>
       <span id="mc-txt-hijo">Agregar Subtarea</span>
     </button>
-    <button onclick="ejecutarAccionContextual('asignar_resp')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2">
+    <button id="mc-btn-resp" onclick="ejecutarAccionContextual('asignar_resp')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2">
       <span>👥</span>
       <span>Asignar Responsables</span>
     </button>
     <div class="border-t border-gray-100 my-1"></div>
-    <button onclick="ejecutarAccionContextual('eliminar')" class="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center space-x-2 font-bold">
+    <button id="mc-btn-eliminar" onclick="ejecutarAccionContextual('eliminar')" class="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center space-x-2 font-bold">
       <span>🗑️</span>
       <span>Eliminar Actividad</span>
     </button>
@@ -123,7 +123,7 @@
     <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-200">
       <div class="text-center mb-6">
         <h2 class="text-2xl font-bold text-[#0f2a4a]">SISTEMA IMARPE</h2>
-        <p class="text-xs text-gray-500 font-semibold mt-1">Control de Gestión, Programas y Gantt</p>
+        <p class="text-xs text-gray-500 font-semibold mt-1">Control de Gestión, Programas y Proyectos</p>
       </div>
       <form id="login-form" class="space-y-4">
         <div>
@@ -139,21 +139,65 @@
     </div>
   </div>
 
+  <!-- ================= VISTA: HUB DE PROYECTOS ================= -->
+  <div id="view-hub" class="hidden fixed inset-0 bg-[#f5f6fa] z-40 flex flex-col overflow-y-auto">
+    <header class="bg-[#0f2a4a] text-white shadow-md flex-shrink-0">
+      <div class="max-w-[1920px] mx-auto px-6 h-[65px] flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
+        </div>
+        <div class="flex items-center space-x-3">
+          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-black px-3 py-1.5 rounded transition shadow">
+            🛡️ Gestión TI: Alta de Usuarios
+          </button>
+          <div class="text-right">
+            <p id="user-display-hub" class="text-xs font-bold text-gray-200">Usuario</p>
+            <p id="role-display-hub" class="text-[10px] text-teal-300 uppercase font-semibold">Rol</p>
+          </div>
+          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-2.5 py-1 rounded font-bold transition">Salir</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div>
+          <h2 class="text-2xl font-bold text-[#0f2a4a]">Mis Proyectos y Programas</h2>
+          <p class="text-xs text-gray-500 font-semibold mt-1">Seleccione un proyecto para gestionar sus actividades o cree uno nuevo.</p>
+        </div>
+        <button onclick="abrirModalNuevoProyecto()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow transition flex items-center space-x-2 self-start md:self-auto">
+          <span class="text-base font-bold leading-none">+</span>
+          <span>Nuevo Proyecto / Programa</span>
+        </button>
+      </div>
+
+      <div id="grid-proyectos-hub" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Renderizado dinámico de tarjetas -->
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= VISTA: GANTT Y CONTROL DE PROYECTO ================= -->
   <!-- BLOQUE SUPERIOR FIJO -->
-  <div class="flex-shrink-0 z-40 bg-[#f5f6fa] shadow-sm">
+  <div id="bloque-superior-gantt" class="flex-shrink-0 z-30 bg-[#f5f6fa] shadow-sm">
     
     <!-- CINTA SUPERIOR AZUL CORPORATIVA IMARPE -->
     <header class="bg-[#0f2a4a] text-white shadow-md">
       <div class="max-w-[1920px] mx-auto px-4 md:px-8 h-[65px] flex items-center justify-between">
-        <div class="flex items-center space-x-4 min-w-[180px]">
-          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
+        <div class="flex items-center space-x-3 min-w-[200px]">
+          <button onclick="volverAlHub()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-2.5 py-1.5 rounded transition border border-white/20 flex items-center space-x-1" title="Volver al Hub de Proyectos">
+            <span>←</span>
+            <span>Mis Proyectos</span>
+          </button>
+          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-9 object-contain" onerror="this.outerHTML='<span class=\'text-xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
         
-        <div class="flex-1 max-w-3xl px-4 text-center mx-auto">
+        <div class="flex-1 max-w-2xl px-4 text-center mx-auto flex items-center justify-center space-x-2">
           <input type="text" id="txt-nombre-proyecto" 
                  placeholder="NOMBRE DEL PROYECTO"
                  class="w-full bg-transparent text-white font-bold text-lg md:text-xl text-center border-b border-transparent focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide" 
                  value="">
+          <span id="badge-rol-gantt" class="text-[9px] font-black uppercase px-2 py-0.5 rounded shadow whitespace-nowrap bg-teal-800 text-teal-200">Rol</span>
         </div>
         
         <div id="user-info" class="flex items-center space-x-3 border-l border-blue-800 pl-4 min-w-[180px] justify-end">
@@ -191,7 +235,7 @@
       <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-2.5 rounded-lg shadow-sm border border-gray-200">
         
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="botonSuperiorNuevaActividad()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-3.5 py-1.5 rounded transition shadow flex items-center space-x-1.5">
+          <button id="btn-nueva-act-gantt" onclick="botonSuperiorNuevaActividad()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-3.5 py-1.5 rounded transition shadow flex items-center space-x-1.5">
             <span class="text-base leading-none">+</span>
             <span>Actividad</span>
           </button>
@@ -246,10 +290,10 @@
           <button onclick="verRutaCritica()" class="bg-[#c0392b] hover:bg-[#a93226] text-white text-xs md:text-sm font-bold px-3 py-1.5 rounded transition shadow">
             🔥 CPM
           </button>
-          <button onclick="abrirHistorial()" class="bg-[#718093] hover:bg-[#576574] text-white text-xs md:text-sm font-bold px-2.5 py-1.5 rounded transition">
+          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="bg-[#718093] hover:bg-[#576574] text-white text-xs md:text-sm font-bold px-2.5 py-1.5 rounded transition">
             📜 Historial
           </button>
-          <button onclick="abrirResponsables()" class="bg-[#2980b9] hover:bg-[#1f618d] text-white text-xs md:text-sm font-bold px-2.5 py-1.5 rounded transition">
+          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="bg-[#2980b9] hover:bg-[#1f618d] text-white text-xs md:text-sm font-bold px-2.5 py-1.5 rounded transition">
             ⚙️ Personal
           </button>
         </div>
@@ -302,12 +346,92 @@
     </div>
   </main>
 
-  <!-- ========================================================================= -->
-  <!-- MODAL: CREACIÓN GUIADA Y DINÁMICA (PASO A PASO)                          -->
-  <!-- ========================================================================= -->
+  <!-- ================= MODALES AUXILIARES ================= -->
+
+  <!-- MODAL: NUEVO PROYECTO / PROGRAMA -->
+  <div id="modal-nuevo-proyecto" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
+      <div class="bg-teal-700 text-white p-4 flex justify-between items-center">
+        <h3 class="font-bold text-sm">Nuevo Proyecto o Programa</h3>
+        <button onclick="cerrarModalNuevoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
+      </div>
+      <form onsubmit="guardarNuevoProyecto(event)" class="p-6 space-y-4">
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 uppercase">Nombre del Proyecto / Programa:</label>
+          <input type="text" id="input-nuevo-proy-nombre" required placeholder="Ej. SISTEMA DE GESTION AMBIENTAL" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded text-sm font-semibold outline-none focus:border-teal-600">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 uppercase">Descripción / Alcance:</label>
+          <textarea id="input-nuevo-proy-desc" rows="3" placeholder="Detalles u objetivos del proyecto..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded text-xs font-semibold outline-none focus:border-teal-600"></textarea>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2 border-t border-gray-200">
+          <button type="button" onclick="cerrarModalNuevoProyecto()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded shadow">Crear y Gestionar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADMINISTRADOR TI (ALTA DE USUARIOS) -->
+  <div id="modal-admin-ti" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
+      <div class="bg-amber-500 text-slate-900 p-4 flex justify-between items-center flex-shrink-0">
+        <h3 class="font-black text-sm">🛡️ Administración de Identidades y Cuentas (TI)</h3>
+        <button onclick="cerrarModalAdminTI()" class="text-slate-900 text-2xl font-black hover:opacity-70">&times;</button>
+      </div>
+      <div class="p-6 overflow-y-auto space-y-6">
+        <form onsubmit="darAltaUsuario(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+          <h4 class="text-xs font-black uppercase text-gray-700 tracking-wider">Alta de Nuevo Trabajador</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Nombre Completo</label>
+              <input type="text" id="ti-input-nombre" required placeholder="Ej. Salas Guerrero, Jesús" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Usuario (Login)</label>
+              <input type="text" id="ti-input-user" required placeholder="Ej. jsalas" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Contraseña Inicial</label>
+              <input type="password" id="ti-input-pass" required placeholder="••••••••" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Rol Global</label>
+              <select id="ti-input-rol" class="w-full p-2 border border-gray-300 rounded font-bold outline-none">
+                <option value="OPERADOR">OPERADOR (Gestor / Responsable de Proyectos)</option>
+                <option value="ADMIN_TI">ADMINISTRADOR TI (Gestión de Identidades)</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2 rounded transition shadow">Dar de Alta Trabajador</button>
+        </form>
+
+        <div>
+          <h4 class="text-xs font-black uppercase text-gray-700 tracking-wider mb-2">Cuentas Registradas</h4>
+          <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-gray-100 border-b border-gray-200">
+                <tr>
+                  <th class="p-2.5 font-bold">Nombre Completo</th>
+                  <th class="p-2.5 font-bold">Usuario</th>
+                  <th class="p-2.5 font-bold">Rol</th>
+                  <th class="p-2.5 font-bold text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody id="ti-tabla-usuarios" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
+        <button onclick="cerrarModalAdminTI()" class="px-5 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREACIÓN GUIADA Y DINÁMICA (PASO A PASO) -->
   <div id="modal-wizard-creacion" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300 transition-all">
-      
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
         <div>
           <h3 id="wz-titulo" class="font-bold text-sm">Nueva Subtarea</h3>
@@ -620,6 +744,10 @@
 
   <script>
     let token = localStorage.getItem("token");
+    let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+    let proyectoActualId = null;
+    let proyectoEsGestor = false;
+
     let actividadesGlobal = [];
     let responsablesGlobal = [];
     let nivelFiltroActivo = 4;
@@ -655,7 +783,6 @@
     // UTILIDADES UNIVERSALES DE PARSEO DE FECHAS (PREVIENE NaN/NaN/NaN)
     // =========================================================================
 
-    // Convierte cualquier formato a un objeto Date real
     function parsearFechaUniversal(fechaStr) {
       if (!fechaStr || typeof fechaStr !== 'string') return null;
       const s = fechaStr.trim();
@@ -670,10 +797,10 @@
       } else if (s.includes("-")) {
         const p = s.split("-");
         if (p.length === 3) {
-          if (p[0].length === 4) { // Formato AAAA-MM-DD
+          if (p[0].length === 4) {
             const y = parseInt(p[0]), m = parseInt(p[1]), d = parseInt(p[2]);
             if (!isNaN(d) && !isNaN(m) && !isNaN(y)) return new Date(y, m - 1, d);
-          } else { // Formato DD-MM-AAAA
+          } else {
             const d = parseInt(p[0]), m = parseInt(p[1]), y = parseInt(p[2]);
             if (!isNaN(d) && !isNaN(m) && !isNaN(y)) return new Date(y, m - 1, d);
           }
@@ -682,7 +809,6 @@
       return null;
     }
 
-    // Devuelve siempre formato visual DD/MM/AAAA
     function formatearFechaLatina(fechaStr) {
       const dt = parsearFechaUniversal(fechaStr);
       if (!dt || isNaN(dt.getTime())) return "01/01/2026";
@@ -692,7 +818,6 @@
       return `${d}/${m}/${y}`;
     }
 
-    // Devuelve formato para inputs de tipo date: AAAA-MM-DD
     function formatearFechaISO(fechaStr) {
       const dt = parsearFechaUniversal(fechaStr);
       if (!dt || isNaN(dt.getTime())) return "2026-01-01";
@@ -703,8 +828,9 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      if (token) {
-        mostrarDashboard();
+      if (token && currentUser.username) {
+        document.getElementById("view-login").classList.add("hidden");
+        cargarHubProyectos();
       } else {
         mostrarLogin();
       }
@@ -714,6 +840,234 @@
       sincronizarCheckboxesColumnas();
       aplicarVisibilidadColumnas();
     });
+
+    // --- AUTENTICACIÓN ---
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const user = document.getElementById("login-username").value.trim();
+      const pass = document.getElementById("login-password").value.trim();
+      
+      const formData = new URLSearchParams();
+      formData.append("username", user);
+      formData.append("password", pass);
+
+      try {
+        const res = await fetch(`/token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: formData
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          alert(errData.detail || "Usuario o contraseña incorrectos.");
+          return;
+        }
+
+        const data = await res.json();
+        token = data.access_token;
+        currentUser = { username: data.username, rol: data.rol, id: data.user_id };
+        localStorage.setItem("token", token);
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        
+        document.getElementById("view-login").classList.add("hidden");
+        cargarHubProyectos();
+      } catch (err) {
+        console.error("Error en login:", err);
+        alert("Error de conexión con el servidor. Intente nuevamente.");
+      }
+    });
+
+    function mostrarLogin() { 
+      document.getElementById("view-login").classList.remove("hidden");
+      document.getElementById("view-hub").classList.add("hidden");
+    }
+
+    function cerrarSesion() { 
+      localStorage.clear(); 
+      token = null; 
+      currentUser = {};
+      location.reload();
+    }
+
+    // =========================================================================
+    // HUB DE PROYECTOS Y PROGRAMAS
+    // =========================================================================
+
+    async function cargarHubProyectos() {
+      document.getElementById("view-login").classList.add("hidden");
+      document.getElementById("view-hub").classList.remove("hidden");
+
+      document.getElementById("user-display-hub").innerText = currentUser.username || "Usuario";
+      document.getElementById("role-display-hub").innerText = currentUser.rol === "ADMIN_TI" ? "ADMINISTRADOR TI" : "OPERADOR";
+
+      if (currentUser.rol === "ADMIN_TI") {
+        document.getElementById("btn-admin-ti-hub").classList.remove("hidden");
+      } else {
+        document.getElementById("btn-admin-ti-hub").classList.add("hidden");
+      }
+
+      try {
+        const res = await fetch(`/proyectos`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Error al cargar proyectos");
+        const proyectos = await res.json();
+
+        const grid = document.getElementById("grid-proyectos-hub");
+        grid.innerHTML = "";
+
+        if (proyectos.length === 0) {
+          grid.innerHTML = `
+            <div class="col-span-full bg-white p-10 rounded-2xl border border-dashed border-gray-300 text-center">
+              <p class="font-bold text-gray-600">No tienes proyectos asignados actualmente.</p>
+              <p class="text-xs text-gray-400 mt-1">Crea uno nuevo con el botón superior para comenzar.</p>
+            </div>
+          `;
+          return;
+        }
+
+        proyectos.forEach(p => {
+          const card = document.createElement("div");
+          card.className = "bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col justify-between";
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-black px-2.5 py-1 rounded-lg uppercase ${p.es_gestor ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
+                  ${p.es_gestor ? '👑 Gestor' : '👤 Responsable Asignado'}
+                </span>
+                <span class="text-xs font-bold text-teal-600">${p.avance_global}% Avance</span>
+              </div>
+              <h3 class="font-black text-lg text-[#0f2a4a] leading-snug">${p.nombre}</h3>
+              <p class="text-xs text-gray-500 mt-1 line-clamp-2">${p.descripcion || 'Sin descripción adicional.'}</p>
+              
+              <div class="w-full bg-gray-100 rounded-full h-2 mt-4 overflow-hidden">
+                <div class="bg-teal-500 h-2 rounded-full" style="width: ${p.avance_global}%"></div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+                <div class="bg-emerald-50 p-2 rounded-xl border border-emerald-100">
+                  <span class="block text-[10px] font-bold text-emerald-700 uppercase">Ejecutado</span>
+                  <span class="text-xs font-black text-emerald-900">${p.ejecutadas}</span>
+                </div>
+                <div class="bg-amber-50 p-2 rounded-xl border border-amber-100">
+                  <span class="block text-[10px] font-bold text-amber-700 uppercase">Proceso</span>
+                  <span class="text-xs font-black text-amber-900">${p.en_proceso}</span>
+                </div>
+                <div class="bg-rose-50 p-2 rounded-xl border border-rose-100">
+                  <span class="block text-[10px] font-bold text-rose-700 uppercase">Pendiente</span>
+                  <span class="text-xs font-black text-rose-900">${p.pendientes}</span>
+                </div>
+              </div>
+            </div>
+
+            <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.es_gestor})" class="w-full mt-5 py-2.5 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2">
+              <span>Ingresar al Proyecto</span>
+              <span>→</span>
+            </button>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function abrirModalNuevoProyecto() { document.getElementById("modal-nuevo-proyecto").classList.remove("hidden"); }
+    function cerrarModalNuevoProyecto() { document.getElementById("modal-nuevo-proyecto").classList.add("hidden"); }
+
+    async function guardarNuevoProyecto(e) {
+      e.preventDefault();
+      const nombre = document.getElementById("input-nuevo-proy-nombre").value;
+      const descripcion = document.getElementById("input-nuevo-proy-desc").value;
+
+      try {
+        const res = await fetch("/proyectos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ nombre, descripcion })
+        });
+        if (!res.ok) throw new Error("Error al crear el proyecto");
+        cerrarModalNuevoProyecto();
+        cargarHubProyectos();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function ingresarAlProyecto(id, nombre, esGestor) {
+      proyectoActualId = id;
+      proyectoEsGestor = (esGestor === 1 || esGestor === true);
+
+      document.getElementById("txt-nombre-proyecto").value = nombre;
+      document.getElementById("txt-nombre-proyecto").disabled = !proyectoEsGestor;
+
+      const badge = document.getElementById("badge-rol-gantt");
+      badge.innerText = proyectoEsGestor ? "👑 Gestor de Proyecto" : "👤 Responsable Asignado";
+      badge.className = `text-[9px] font-black uppercase px-2 py-0.5 rounded shadow whitespace-nowrap ${proyectoEsGestor ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}`;
+
+      document.getElementById("user-display").innerText = currentUser.username || "Usuario";
+      document.getElementById("role-display").innerText = currentUser.rol === "ADMIN_TI" ? "ADMINISTRADOR TI" : "OPERADOR";
+
+      // Aplicar restricciones visuales de rol
+      if (!proyectoEsGestor) {
+        document.getElementById("btn-nueva-act-gantt").classList.add("hidden");
+        document.getElementById("btn-historial-gantt").classList.add("hidden");
+        document.getElementById("btn-personal-gantt").classList.add("hidden");
+      } else {
+        document.getElementById("btn-nueva-act-gantt").classList.remove("hidden");
+        document.getElementById("btn-historial-gantt").classList.remove("hidden");
+        document.getElementById("btn-personal-gantt").classList.remove("hidden");
+      }
+
+      document.getElementById("view-hub").classList.add("hidden");
+      await cargarDatosIniciales();
+    }
+
+    function volverAlHub() {
+      document.getElementById("view-hub").classList.remove("hidden");
+      cargarHubProyectos();
+    }
+
+    // =========================================================================
+    // GESTIÓN DEL PROYECTO SELECCIONADO (GANTT Y ACTIVIDADES)
+    // =========================================================================
+
+    async function cargarDatosIniciales() {
+      await cargarResponsables();
+      await cargarActividades();
+      actualizarVistaGantt();
+    }
+
+    async function cargarResponsables() {
+      try {
+        const res = await fetch(`/responsables`);
+        if (res.ok) {
+          responsablesGlobal = await res.json();
+          const selFiltro = document.getElementById("filtro-responsable-select");
+          selFiltro.innerHTML = '<option value="">👤 Todo el Personal</option>';
+          responsablesGlobal.forEach(r => {
+            selFiltro.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
+          });
+        }
+      } catch(e) {}
+    }
+
+    async function cargarActividades() {
+      if (!proyectoActualId) return;
+      try {
+        const res = await fetch(`/proyectos/${proyectoActualId}/actividades`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          actividadesGlobal = await res.json();
+          renderizarTabla();
+          actualizarKPIs();
+        } else if (res.status === 401) {
+          cerrarSesion();
+        }
+      } catch(e) {}
+    }
 
     function seleccionarFila(cod) {
       codigoFilaSeleccionada = cod;
@@ -725,6 +1079,10 @@
     }
 
     function botonSuperiorNuevaActividad() {
+      if (!proyectoEsGestor) {
+        alert("Solo el Gestor del Proyecto puede crear actividades principales.");
+        return;
+      }
       if (codigoFilaSeleccionada) {
         abrirWizardCreacion(codigoFilaSeleccionada);
       } else {
@@ -747,11 +1105,25 @@
       document.getElementById("mc-header-info").innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
       
       const btnHijo = document.getElementById("mc-btn-hijo");
-      if (nivel >= 4) {
+      const btnResp = document.getElementById("mc-btn-resp");
+      const btnElim = document.getElementById("mc-btn-eliminar");
+
+      const esMiActividad = actividadContextualSeleccionada.responsable && actividadContextualSeleccionada.responsable.includes(currentUser.username);
+      const puedeCrearHijo = proyectoEsGestor || esMiActividad;
+
+      if (nivel >= 4 || !puedeCrearHijo) {
         btnHijo.classList.add("hidden");
       } else {
         btnHijo.classList.remove("hidden");
         document.getElementById("mc-txt-hijo").innerText = `Agregar ${nombresNivel[nivel]}`;
+      }
+
+      if (!proyectoEsGestor) {
+        btnResp.classList.add("hidden");
+        btnElim.classList.add("hidden");
+      } else {
+        btnResp.classList.remove("hidden");
+        btnElim.classList.remove("hidden");
       }
 
       let posX = event.clientX;
@@ -950,6 +1322,7 @@
       const avance = estado === 'Ejecutado' ? 100 : (estado === 'Pendiente' ? 0 : 50);
 
       const payload = {
+        proyecto_id: proyectoActualId,
         codigo: wizardCodigoGenerado,
         descripcion: document.getElementById("wz-input-desc").value.trim(),
         responsable: respFinal,
@@ -981,6 +1354,10 @@
     }
 
     async function eliminarActividad(cod) {
+      if (!proyectoEsGestor) {
+        alert("Solo el Gestor del Proyecto puede eliminar actividades.");
+        return;
+      }
       const codLimpio = cod.replace(/\.$/, "");
       const hijas = actividadesGlobal.filter(a => {
         const c = a.codigo.replace(/\.$/, "");
@@ -994,7 +1371,7 @@
 
       if (!confirm(mensajeConfirmacion)) return;
 
-      const res = await fetch(`/actividades/${cod}`, {
+      const res = await fetch(`/proyectos/${proyectoActualId}/actividades/${cod}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1105,6 +1482,10 @@
     }
 
     function editarResponsable(cod) {
+      if (!proyectoEsGestor) {
+        alert("Solo el Gestor del Proyecto puede asignar o modificar responsables.");
+        return;
+      }
       actividadMultiRespActual = actividadesGlobal.find(a => a.codigo === cod);
       if (!actividadMultiRespActual) return;
 
@@ -1182,7 +1563,7 @@
       const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = `IMARPE_Gantt_Reporte_${new Date().toISOString().split("T")[0]}.csv`;
+      link.download = `IMARPE_Proyecto_${proyectoActualId}_${new Date().toISOString().split("T")[0]}.csv`;
       link.click();
     }
 
@@ -1339,128 +1720,6 @@
       });
     }
 
-    // --- AUTENTICACIÓN ---
-    document.getElementById("login-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const user = document.getElementById("login-username").value.trim();
-      const pass = document.getElementById("login-password").value.trim();
-      
-      const formData = new URLSearchParams();
-      formData.append("username", user);
-      formData.append("password", pass);
-
-      try {
-        const res = await fetch(`/token`, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: formData
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          alert(errData.detail || "Usuario o contraseña incorrectos.");
-          return;
-        }
-
-        const data = await res.json();
-        token = data.access_token;
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(data));
-        
-        document.getElementById("view-login").classList.add("hidden");
-        document.getElementById("user-display").innerText = data.nombre_completo || data.username;
-        document.getElementById("role-display").innerText = data.rol || "ADMINISTRADOR";
-        
-        await cargarDatosIniciales();
-      } catch (err) {
-        console.error("Error en login:", err);
-        alert("Error de conexión con el servidor. Intente nuevamente.");
-      }
-    });
-
-    function mostrarLogin() { 
-      document.getElementById("view-login").classList.remove("hidden"); 
-    }
-
-    function mostrarDashboard() {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      document.getElementById("user-display").innerText = user.nombre_completo || user.username || "Usuario";
-      document.getElementById("role-display").innerText = user.rol || "ADMINISTRADOR";
-      document.getElementById("view-login").classList.add("hidden");
-      cargarDatosIniciales();
-    }
-
-    function cerrarSesion() { 
-      localStorage.clear(); 
-      token = null; 
-      mostrarLogin();
-    }
-
-    async function cargarDatosIniciales() {
-      await cargarProyectoNombre();
-      await cargarResponsables();
-      await cargarActividades();
-      actualizarVistaGantt();
-    }
-
-    async function cargarProyectoNombre() {
-      // 1. Carga instantánea desde memoria local para eliminar parpadeos (0ms)
-      const nombreCache = localStorage.getItem("nombre_proyecto_cache");
-      if (nombreCache) {
-        document.getElementById("txt-nombre-proyecto").value = nombreCache;
-      }
-
-      // 2. Sincronización con la base de datos persistente
-      try {
-        const res = await fetch(`/configuracion/nombre_proyecto`);
-        if (res.ok) {
-          const d = await res.json();
-          if (d.valor) {
-            document.getElementById("txt-nombre-proyecto").value = d.valor;
-            localStorage.setItem("nombre_proyecto_cache", d.valor);
-          }
-        }
-      } catch(e) {}
-    }
-
-    document.getElementById("txt-nombre-proyecto").addEventListener("change", async (e) => {
-      const nuevoNombre = e.target.value.trim();
-      localStorage.setItem("nombre_proyecto_cache", nuevoNombre);
-      
-      await fetch(`/configuracion/nombre_proyecto`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ valor: nuevoNombre })
-      });
-    });
-
-    async function cargarResponsables() {
-      try {
-        const res = await fetch(`/responsables`);
-        if (res.ok) {
-          responsablesGlobal = await res.json();
-          const selFiltro = document.getElementById("filtro-responsable-select");
-          selFiltro.innerHTML = '<option value="">👤 Todo el Personal</option>';
-          responsablesGlobal.forEach(r => {
-            selFiltro.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
-          });
-        }
-      } catch(e) {}
-    }
-
-    async function cargarActividades() {
-      try {
-        const res = await fetch(`/actividades`);
-        if (res.ok) {
-          actividadesGlobal = await res.json();
-          renderizarTabla();
-          actualizarKPIs();
-        } else if (res.status === 401) {
-          cerrarSesion();
-        }
-      } catch(e) {}
-    }
-
     function tieneHijos(codigo) {
       const codLimpio = codigo.replace(/\.$/, "");
       return actividadesGlobal.some(a => {
@@ -1473,7 +1732,7 @@
       renderizarTabla();
     }
 
-    // --- RENDERIZADO DEL GANTT VISUAL (FECHAS NORMALIZADAS) ---
+    // --- RENDERIZADO DEL GANTT VISUAL ---
     function renderizarTabla() {
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
@@ -1639,20 +1898,23 @@
 
         const paddingLeft = (nivel - 1) * 16 + 8;
         const cod = act.codigo;
+        const esMio = act.responsable && act.responsable.includes(currentUser.username);
+        const puedeEditarTiempos = proyectoEsGestor;
+        const puedeEditarAvance = proyectoEsGestor || esMio;
 
-        const tdResp = visibilidadColumnas.responsable ? `<td class="p-2 border-r border-b border-gray-200 text-center whitespace-nowrap cell-editable" ondblclick="editarResponsable('${cod}')">${obtenerAvatarHTML(act.responsable)}</td>` : '';
-        const tdEst = visibilidadColumnas.estado ? `<td class="p-2.5 border-r border-b border-gray-200 cell-editable whitespace-nowrap" ondblclick="editarEstado('${cod}')"><span class="px-2 py-0.5 rounded text-[11px] font-bold ${act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' : (act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700')}">${act.estado}</span></td>` : '';
-        const tdIni = visibilidadColumnas.inicio ? `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs cell-editable whitespace-nowrap font-medium" ondblclick="editarFechaInicio('${cod}')">${fechaIniVisual}</td>` : '';
-        const tdFin = visibilidadColumnas.fin ? `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs cell-editable whitespace-nowrap font-medium" ondblclick="editarFechaFin('${cod}')">${fechaFinVisual}</td>` : '';
-        const tdDias = visibilidadColumnas.dias ? `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs cell-editable whitespace-nowrap" ondblclick="editarDias('${cod}')">${act.dias}</td>` : '';
-        const tdAvance = visibilidadColumnas.avance ? `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs cell-editable whitespace-nowrap" ondblclick="editarAvance('${cod}')">${act.avance}%</td>` : '';
+        const tdResp = visibilidadColumnas.responsable ? `<td class="p-2 border-r border-b border-gray-200 text-center whitespace-nowrap ${puedeEditarTiempos ? 'cell-editable' : ''}" ondblclick="${puedeEditarTiempos ? `editarResponsable('${cod}')` : ''}">${obtenerAvatarHTML(act.responsable)}</td>` : '';
+        const tdEst = visibilidadColumnas.estado ? `<td class="p-2.5 border-r border-b border-gray-200 ${puedeEditarAvance ? 'cell-editable' : ''} whitespace-nowrap" ondblclick="${puedeEditarAvance ? `editarEstado('${cod}')` : ''}"><span class="px-2 py-0.5 rounded text-[11px] font-bold ${act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' : (act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700')}">${act.estado}</span></td>` : '';
+        const tdIni = visibilidadColumnas.inicio ? `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? 'cell-editable' : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaInicio('${cod}')` : ''}">${fechaIniVisual}</td>` : '';
+        const tdFin = visibilidadColumnas.fin ? `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? 'cell-editable' : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaFin('${cod}')` : ''}">${fechaFinVisual}</td>` : '';
+        const tdDias = visibilidadColumnas.dias ? `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${puedeEditarTiempos ? 'cell-editable' : ''} whitespace-nowrap" ondblclick="${puedeEditarTiempos ? `editarDias('${cod}')` : ''}">${act.dias}</td>` : '';
+        const tdAvance = visibilidadColumnas.avance ? `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${puedeEditarAvance ? 'cell-editable' : ''} whitespace-nowrap" ondblclick="${puedeEditarAvance ? `editarAvance('${cod}')` : ''}">${act.avance}%</td>` : '';
         const tdGantt = visibilidadColumnas.gantt ? `<td class="p-1 border-r border-b border-gray-200 min-w-[850px]">${ganttHTML}</td>` : '';
 
         tr.innerHTML = `
           <td class="p-2.5 font-mono font-bold text-xs border-r border-b border-gray-200 whitespace-nowrap">
             ${iconoColapso}${cod}
           </td>
-          <td class="p-2.5 border-r border-b border-gray-200 cell-editable" style="padding-left: ${paddingLeft}px;" ondblclick="editarDescripcion('${cod}')" title="Doble clic para editar / Clic derecho para opciones">
+          <td class="p-2.5 border-r border-b border-gray-200 ${puedeEditarTiempos ? 'cell-editable' : ''}" style="padding-left: ${paddingLeft}px;" ondblclick="${puedeEditarTiempos ? `editarDescripcion('${cod}')` : ''}" title="Doble clic para editar / Clic derecho para opciones">
             ${act.descripcion}
           </td>
           ${tdResp}
@@ -1663,8 +1925,8 @@
           ${tdAvance}
           ${tdGantt}
           <td class="p-2 text-center border-b border-gray-200 space-x-1 whitespace-nowrap">
-            <button onclick="event.stopPropagation(); abrirWizardCreacion('${cod}')" class="text-blue-600 hover:text-blue-800 font-bold px-1 text-sm" title="Agregar subtarea jerárquica">+</button>
-            <button onclick="event.stopPropagation(); eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>
+            ${(proyectoEsGestor || esMio) && nivel < 4 ? `<button onclick="event.stopPropagation(); abrirWizardCreacion('${cod}')" class="text-blue-600 hover:text-blue-800 font-bold px-1 text-sm" title="Agregar subtarea jerárquica">+</button>` : ''}
+            ${proyectoEsGestor ? `<button onclick="event.stopPropagation(); eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>` : ''}
           </td>
         `;
         tbody.appendChild(tr);
@@ -1723,6 +1985,7 @@
     function cerrarInputCustom() { document.getElementById("modal-input-custom").classList.add("hidden"); }
 
     function editarDescripcion(cod) {
+      if (!proyectoEsGestor) return;
       const act = actividadesGlobal.find(a => a.codigo === cod);
       abrirInputCustom({
         titulo: "Modificar Descripción",
@@ -1744,7 +2007,7 @@
           titulo: "Bloqueado",
           mensaje: "El Estado se calcula automáticamente de sus subtareas.",
           tipo: "text",
-          valorActual: act.estado,
+          valorActual: "",
           onAceptar: () => {}
         });
         return;
@@ -1786,8 +2049,8 @@
       });
     }
 
-    // --- EDICIÓN SEGURA DE FECHA DE INICIO (SIN NaN) ---
     function editarFechaInicio(cod) {
+      if (!proyectoEsGestor) return;
       if (tieneHijos(cod)) {
         alert("🔒 Bloqueado CPM: La Fecha de Inicio se calcula automáticamente con las componentes hijas.");
         return;
@@ -1813,9 +2076,9 @@
 
     function cerrarFechaCustom() { document.getElementById("modal-fecha-custom").classList.add("hidden"); }
 
-    // --- EDICIÓN SEGURA DE FECHA FIN (SIN NaN) ---
     let modalActivoAct = null;
     function editarFechaFin(cod) {
+      if (!proyectoEsGestor) return;
       if (tieneHijos(cod)) {
         alert("🔒 Bloqueado CPM: La Fecha de Fin se calcula automáticamente de sus desgloses.");
         return;
@@ -1867,8 +2130,8 @@
       });
     }
 
-    // --- EDICIÓN SEGURA DE DÍAS (SIN NaN) ---
     function editarDias(cod) {
+      if (!proyectoEsGestor) return;
       if (tieneHijos(cod)) {
         alert("🔒 Bloqueado CPM: Los Días se autocalculan midiendo la ventana de ejecución total.");
         return;
@@ -1927,6 +2190,7 @@
       const fFinLimpia = formatearFechaLatina(act.fecha_fin);
 
       const payload = {
+        proyecto_id: proyectoActualId,
         codigo: String(act.codigo).trim(),
         descripcion: String(act.descripcion || '').trim(),
         responsable: String(act.responsable || 'No asignado').trim(),
@@ -1966,7 +2230,9 @@
     // --- RUTA CRÍTICA (CPM) ROBUSTA ---
     async function verRutaCritica() {
       try {
-        const res = await fetch(`/ruta-critica`);
+        const res = await fetch(`/ruta-critica?proyecto_id=${proyectoActualId}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
         if (!res.ok) throw new Error("Error al calcular CPM");
         const cpm = await res.json();
         
@@ -2013,7 +2279,9 @@
     // --- HISTORIAL CON ESTILIZADO DE ACCIONES ---
     async function abrirHistorial() {
       try {
-        const res = await fetch(`/historial`);
+        const res = await fetch(`/proyectos/${proyectoActualId}/historial`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
         if (!res.ok) throw new Error("Error al obtener historial");
         const data = await res.json();
         
@@ -2045,7 +2313,12 @@
       document.getElementById("modal-historial").classList.add("hidden"); 
     }
 
+    // --- RESPONSABLES ---
     async function abrirResponsables() {
+      if (!proyectoEsGestor) {
+        alert("Solo el Gestor del Proyecto puede administrar el personal.");
+        return;
+      }
       await cargarResponsables();
       renderizarTablaResponsables();
       document.getElementById("modal-responsables").classList.remove("hidden");
@@ -2171,6 +2444,62 @@
       } else {
         const err = await res.json().catch(() => ({}));
         alert(err.detail || "Error al eliminar");
+      }
+    }
+
+    // --- PANEL ADMIN TI (ALTA USUARIOS) ---
+    function abrirModalAdminTI() {
+      document.getElementById("modal-admin-ti").classList.remove("hidden");
+      cargarListaUsuariosTI();
+    }
+    function cerrarModalAdminTI() { document.getElementById("modal-admin-ti").classList.add("hidden"); }
+
+    async function cargarListaUsuariosTI() {
+      try {
+        const res = await fetch("/usuarios", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const usuarios = await res.json();
+        const tbody = document.getElementById("ti-tabla-usuarios");
+        tbody.innerHTML = "";
+        usuarios.forEach(u => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-gray-50">
+              <td class="p-2.5 font-bold text-gray-800">${u.nombre_completo || '-'}</td>
+              <td class="p-2.5 font-mono text-gray-600">${u.username}</td>
+              <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-black ${u.rol === 'ADMIN_TI' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}">${u.rol}</span></td>
+              <td class="p-2.5 text-center"><span class="text-emerald-600 font-black text-[10px]">ACTIVO</span></td>
+            </tr>
+          `;
+        });
+      } catch (err) {}
+    }
+
+    async function darAltaUsuario(e) {
+      e.preventDefault();
+      const nombre_completo = document.getElementById("ti-input-nombre").value.trim();
+      const username = document.getElementById("ti-input-user").value.trim();
+      const password = document.getElementById("ti-input-pass").value.trim();
+      const rol = document.getElementById("ti-input-rol").value;
+
+      try {
+        const res = await fetch("/usuarios", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ nombre_completo, username, password, rol })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Error al dar de alta");
+        }
+        alert("Usuario creado con éxito");
+        document.getElementById("ti-input-nombre").value = "";
+        document.getElementById("ti-input-user").value = "";
+        document.getElementById("ti-input-pass").value = "";
+        cargarListaUsuariosTI();
+      } catch (err) {
+        alert(err.message);
       }
     }
   </script>
