@@ -164,7 +164,7 @@
     <!-- Contenido Principal Centrado -->
     <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8 flex flex-col justify-start">
       
-      <!-- Hero Banner Ejecutivo con Resumen del Usuario -->
+      <!-- Hero Banner Ejecutivo -->
       <div class="bg-white rounded-2xl p-6 mb-8 border border-gray-200/80 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div>
           <span class="text-[11px] font-black text-teal-600 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">Portal de Gestión Institucional</span>
@@ -172,7 +172,6 @@
           <p class="text-xs text-gray-500 font-medium mt-1">Seleccione un espacio de trabajo para registrar avances o supervisar la ruta de actividades.</p>
         </div>
 
-        <!-- Mini Métricas Agregadas -->
         <div class="flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-end">
           <div class="bg-slate-50 border border-slate-200/70 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
             <span class="block text-[10px] font-black text-slate-500 uppercase">En Panel</span>
@@ -185,18 +184,13 @@
         </div>
       </div>
 
-      <!-- Cuadrícula Dinámica con Tarjetas Balanceadas -->
-      <div id="grid-proyectos-hub" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Renderizado dinámico vía JavaScript -->
-      </div>
+      <!-- Cuadrícula Dinámica -->
+      <div id="grid-proyectos-hub" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </main>
   </div>
 
   <!-- ================= VISTA: GANTT Y CONTROL DE PROYECTO ================= -->
-  <!-- BLOQUE SUPERIOR FIJO -->
   <div id="bloque-superior-gantt" class="flex-shrink-0 z-30 bg-[#f5f6fa] shadow-sm">
-    
-    <!-- CINTA SUPERIOR AZUL CORPORATIVA IMARPE -->
     <header class="bg-[#0f2a4a] text-white shadow-md">
       <div class="max-w-[1920px] mx-auto px-4 md:px-8 h-[65px] flex items-center justify-between">
         <div class="flex items-center space-x-3 min-w-[200px]">
@@ -225,7 +219,7 @@
       </div>
     </header>
 
-    <!-- TARJETAS DE INDICADORES (KPIs) COMPACTADAS AL CENTRO -->
+    <!-- Indicadores KPIs -->
     <div class="max-w-[1920px] w-full mx-auto px-4 md:px-6 pt-3 pb-2 space-y-2.5">
       <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="bg-[#1abc9c] text-white px-4 py-2 rounded-lg shadow flex items-center justify-between">
@@ -246,9 +240,8 @@
         </div>
       </div>
 
-      <!-- BOTONERA DE CONTROL Y FILTROS -->
+      <!-- Barra de Filtros y Herramientas -->
       <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-2.5 rounded-lg shadow-sm border border-gray-200">
-        
         <div class="flex flex-wrap items-center gap-2">
           <button id="btn-nueva-act-gantt" onclick="botonSuperiorNuevaActividad()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-3.5 py-1.5 rounded transition shadow flex items-center space-x-1.5">
             <span class="text-base leading-none">+</span>
@@ -262,23 +255,19 @@
             <option value="3">Nivel 3: Subtareas</option>
           </select>
 
-          <!-- Búsqueda rápida -->
           <div class="relative">
             <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar actividad..." class="w-36 md:w-44 text-xs bg-gray-100 border border-gray-300 rounded px-2.5 py-1.5 outline-none focus:border-[#0f2a4a] font-semibold">
           </div>
 
-          <!-- Selector de Personal con flecha limpia -->
           <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="text-xs bg-gray-100 border border-gray-300 rounded py-1.5 pl-2.5 outline-none font-semibold text-gray-700 select-clean-arrow max-w-[170px]">
             <option value="">👤 Todo el Personal</option>
           </select>
 
-          <!-- Toggle Zoom (Semanas / Meses) -->
           <div class="flex items-center bg-gray-200 rounded p-0.5 text-xs font-bold">
             <button id="btn-zoom-semanas" onclick="cambiarZoom('semanas')" class="px-2.5 py-1 rounded bg-white shadow text-[#0f2a4a]">Semanas</button>
             <button id="btn-zoom-meses" onclick="cambiarZoom('meses')" class="px-2.5 py-1 rounded text-gray-600">Meses</button>
           </div>
 
-          <!-- Control SpinButton Desde Semana -->
           <div id="contenedor-spinbutton" class="flex items-center bg-[#0f2a4a] text-white rounded px-2 py-1 space-x-1.5 shadow">
             <span class="text-[11px] font-bold uppercase tracking-tight">Semana</span>
             <div class="flex items-center bg-white rounded border border-gray-300 overflow-hidden">
@@ -344,26 +333,21 @@
             <th id="th-avance" class="p-2.5 font-bold border-r border-b border-blue-900/60 text-center min-w-[75px] whitespace-nowrap">
               % Avance <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            
-            <!-- CABECERA DEL GANTT -->
             <th id="th-gantt" class="p-1 font-bold min-w-[850px] border-r border-b border-blue-900/60">
               <div id="gantt-header-meses" class="flex text-center text-[10px] text-gray-200 border-b border-blue-800/80 pb-1 mb-1 font-bold"></div>
               <div id="gantt-header-semanas" class="flex text-center text-[9px] text-teal-300 font-mono tracking-tighter"></div>
             </th>
-            
             <th id="th-acciones" class="p-2.5 font-bold text-center border-b border-blue-900/60 w-20 whitespace-nowrap">Acciones</th>
           </tr>
         </thead>
-        <tbody id="lista-actividades" class="select-none bg-white">
-          <!-- Renderizado dinámico -->
-        </tbody>
+        <tbody id="lista-actividades" class="select-none bg-white"></tbody>
       </table>
     </div>
   </main>
 
   <!-- ================= MODALES AUXILIARES ================= -->
 
-  <!-- MODAL: NUEVO PROYECTO / PROGRAMA -->
+  <!-- MODAL: NUEVO PROYECTO -->
   <div id="modal-nuevo-proyecto" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
       <div class="bg-teal-700 text-white p-4 flex justify-between items-center">
@@ -387,7 +371,7 @@
     </div>
   </div>
 
-  <!-- MODAL: ADMINISTRADOR TI (ALTA DE USUARIOS) -->
+  <!-- MODAL: ADMIN TI -->
   <div id="modal-admin-ti" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
       <div class="bg-amber-500 text-slate-900 p-4 flex justify-between items-center flex-shrink-0">
@@ -444,7 +428,7 @@
     </div>
   </div>
 
-  <!-- MODAL: CREACIÓN GUIADA Y DINÁMICA (PASO A PASO) -->
+  <!-- MODAL: CREACIÓN GUIADA Y DINÁMICA -->
   <div id="modal-wizard-creacion" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300 transition-all">
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
@@ -526,7 +510,7 @@
           </div>
         </div>
 
-        <!-- Botones de Navegación -->
+        <!-- Botones Wizard -->
         <div class="flex justify-between items-center pt-5 mt-5 border-t border-gray-200">
           <button id="wz-btn-anterior" onclick="retrocederPasoWizard()" class="invisible px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">
             ← Anterior
@@ -545,7 +529,7 @@
     </div>
   </div>
 
-  <!-- MODAL: ASIGNACIÓN MÚLTIPLE DE RESPONSABLES -->
+  <!-- MODAL: RESPONSABLES MULTIPLES -->
   <div id="modal-asignar-responsables" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
       <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
@@ -671,7 +655,6 @@
         </span>
       </div>
 
-      <!-- Contenedor con Scroll Interno y Cabecera Fija -->
       <div class="p-5 flex-1 overflow-hidden flex flex-col min-h-0 bg-[#f8f9fa]">
         <div class="flex-1 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white relative">
           <table class="w-full text-xs text-left border-separate border-spacing-0">
@@ -708,7 +691,6 @@
         <button onclick="cerrarHistorial()" class="text-white text-2xl font-bold hover:text-gray-200 transition leading-none">&times;</button>
       </div>
       
-      <!-- Contenedor con Scroll Interno y Cabecera Fija -->
       <div class="p-5 flex-1 overflow-hidden flex flex-col min-h-0 bg-[#f8f9fa]">
         <div class="flex-1 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white relative">
           <table class="w-full text-xs text-left border-separate border-spacing-0">
@@ -757,6 +739,7 @@
     </div>
   </div>
 
+  <!-- ================= LÓGICA DE CONTROL JAVASCRIPT ================= -->
   <script>
     let token = localStorage.getItem("token");
     let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
@@ -794,10 +777,7 @@
     const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"];
     const coloresAvatar = ['#2980b9', '#27ae60', '#8e44ad', '#d35400', '#16a085', '#c0392b', '#2c3e50', '#7f8c8d'];
 
-    // =========================================================================
-    // UTILIDADES UNIVERSALES DE PARSEO DE FECHAS (PREVIENE NaN/NaN/NaN)
-    // =========================================================================
-
+    // --- UTILIDADES UNIVERSALES DE FECHAS ---
     function parsearFechaUniversal(fechaStr) {
       if (!fechaStr || typeof fechaStr !== 'string') return null;
       const s = fechaStr.trim();
@@ -929,7 +909,6 @@
         if (!res.ok) throw new Error("Error al cargar proyectos");
         const proyectos = await res.json();
 
-        // Actualizar KPIs del Hero Banner
         document.getElementById("hub-kpi-total-proy").innerText = proyectos.length;
         const sumaAvance = proyectos.reduce((acc, p) => acc + (p.avance_global || 0), 0);
         const promAvance = proyectos.length > 0 ? Math.round(sumaAvance / proyectos.length) : 0;
@@ -938,7 +917,6 @@
         const grid = document.getElementById("grid-proyectos-hub");
         grid.innerHTML = "";
 
-        // 1. Renderizado de Proyectos Existentes
         proyectos.forEach(p => {
           const card = document.createElement("div");
           card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50";
@@ -981,7 +959,7 @@
           grid.appendChild(card);
         });
 
-        // 2. Tarjeta Interactiva Integrada "+ Nuevo Proyecto"
+        // Tarjeta Interactiva "+ Nuevo Proyecto"
         const cardNuevo = document.createElement("div");
         cardNuevo.onclick = abrirModalNuevoProyecto;
         cardNuevo.className = "bg-slate-50/60 hover:bg-white rounded-2xl p-6 border-2 border-dashed border-slate-300 hover:border-teal-500 transition-all cursor-pointer flex flex-col items-center justify-center text-center group min-h-[290px] shadow-sm hover:shadow-md";
@@ -1037,11 +1015,15 @@
       }
     }
 
+    // =========================================================================
+    // APERTURA INSTANTÁNEA (0ms) Y GESTIÓN DE PROYECTO
+    // =========================================================================
+
     async function ingresarAlProyecto(id, nombre, esGestor) {
       proyectoActualId = id;
       proyectoEsGestor = (esGestor === 1 || esGestor === true);
 
-      // 1. Reset instantáneo del título y badge (0ms)
+      // 1. Título y rol instantáneo
       document.getElementById("txt-nombre-proyecto").value = nombre;
       document.getElementById("txt-nombre-proyecto").disabled = !proyectoEsGestor;
 
@@ -1049,32 +1031,7 @@
       badge.innerText = proyectoEsGestor ? "👑 Gestor de Proyecto" : "👤 Responsable Asignado";
       badge.className = `text-[9px] font-black uppercase px-2 py-0.5 rounded shadow whitespace-nowrap ${proyectoEsGestor ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}`;
 
-      // 2. Limpieza inmediata del estado previo para eliminar ruido visual
-      actividadesGlobal = [];
-      codigoFilaSeleccionada = null;
-      nodosColapsados.clear();
-      
-      document.getElementById("kpi-avance").innerText = "-";
-      document.getElementById("kpi-ejecutado").innerText = "-";
-      document.getElementById("kpi-proceso").innerText = "-";
-      document.getElementById("kpi-pendiente").innerText = "-";
-
-      const tbody = document.getElementById("lista-actividades");
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="10" class="p-12 text-center text-gray-400 font-semibold">
-            <div class="inline-flex items-center space-x-2">
-              <svg class="animate-spin h-5 w-5 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <span>Cargando actividades del proyecto...</span>
-            </div>
-          </td>
-        </tr>
-      `;
-
-      // 3. Permisos de botones según rol
+      // 2. Control de visibilidad de herramientas
       if (!proyectoEsGestor) {
         document.getElementById("btn-nueva-act-gantt").classList.add("hidden");
         document.getElementById("btn-historial-gantt").classList.add("hidden");
@@ -1085,11 +1042,25 @@
         document.getElementById("btn-personal-gantt").classList.remove("hidden");
       }
 
-      // 4. Transición visual limpia
+      // 3. Renderizado instantáneo desde memoria caché local (0 ms)
+      const cacheKey = `cache_acts_proj_${id}`;
+      const cachedActs = localStorage.getItem(cacheKey);
+      
+      if (cachedActs) {
+        actividadesGlobal = JSON.parse(cachedActs);
+        renderizarTabla();
+        actualizarKPIs();
+      } else {
+        actividadesGlobal = [];
+        const tbody = document.getElementById("lista-actividades");
+        tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold">Cargando actividades...</td></tr>`;
+      }
+
+      // 4. Cambiar de pantalla sin parpadeos
       document.getElementById("view-hub").classList.add("hidden");
 
-      // 5. Carga de datos aislados del proyecto
-      await cargarDatosIniciales();
+      // 5. Sincronización en paralelo con el servidor en segundo plano
+      await sincronizarDatosProyecto(id, cacheKey);
     }
 
     function volverAlHub() {
@@ -1097,14 +1068,34 @@
       cargarHubProyectos();
     }
 
-    // =========================================================================
-    // GESTIÓN DEL PROYECTO SELECCIONADO (GANTT Y ACTIVIDADES)
-    // =========================================================================
+    async function sincronizarDatosProyecto(id, cacheKey) {
+      try {
+        const [resResp, resActs] = await Promise.all([
+          responsablesGlobal.length === 0 ? fetch(`/responsables`) : Promise.resolve(null),
+          fetch(`/proyectos/${id}/actividades`, { headers: { "Authorization": `Bearer ${token}` } })
+        ]);
 
-    async function cargarDatosIniciales() {
-      await cargarResponsables();
-      await cargarActividades();
-      actualizarVistaGantt();
+        if (resResp && resResp.ok) {
+          responsablesGlobal = await resResp.json();
+          const selFiltro = document.getElementById("filtro-responsable-select");
+          selFiltro.innerHTML = '<option value="">👤 Todo el Personal</option>';
+          responsablesGlobal.forEach(r => {
+            selFiltro.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
+          });
+        }
+
+        if (resActs.ok) {
+          const freshActs = await resActs.json();
+          actividadesGlobal = freshActs;
+          localStorage.setItem(cacheKey, JSON.stringify(freshActs));
+          renderizarTabla();
+          actualizarKPIs();
+        } else if (resActs.status === 401) {
+          cerrarSesion();
+        }
+      } catch (err) {
+        console.error("Error sincronizando en segundo plano:", err);
+      }
     }
 
     async function cargarResponsables() {
@@ -1129,6 +1120,7 @@
         });
         if (res.ok) {
           actividadesGlobal = await res.json();
+          localStorage.setItem(`cache_acts_proj_${proyectoActualId}`, JSON.stringify(actividadesGlobal));
           renderizarTabla();
           actualizarKPIs();
         } else if (res.status === 401) {
@@ -2247,7 +2239,7 @@
       });
     }
 
-    // --- GUARDADO SIN ERRORES Y CON FECHAS NORMALIZADAS ---
+    // --- GUARDADO SIN ERRORES Y ACTUALIZACIÓN DE CACHÉ ---
     async function guardarCambioDirecto(act) {
       if (!token) {
         cerrarSesion();
@@ -2281,6 +2273,7 @@
         });
 
         if (res.ok) {
+          localStorage.setItem(`cache_acts_proj_${proyectoActualId}`, JSON.stringify(actividadesGlobal));
           await cargarActividades();
         } else if (res.status === 401) {
           alert("La sesión expiró. Inicie sesión nuevamente.");
@@ -2295,7 +2288,7 @@
       }
     }
 
-    // --- RUTA CRÍTICA (CPM) ROBUSTA ---
+    // --- RUTA CRÍTICA (CPM) ---
     async function verRutaCritica() {
       try {
         const res = await fetch(`/ruta-critica?proyecto_id=${proyectoActualId}`, {
@@ -2344,7 +2337,7 @@
       document.getElementById("modal-cpm").classList.add("hidden"); 
     }
 
-    // --- HISTORIAL CON ESTILIZADO DE ACCIONES ---
+    // --- HISTORIAL ---
     async function abrirHistorial() {
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/historial`, {
@@ -2515,7 +2508,7 @@
       }
     }
 
-    // --- PANEL ADMIN TI (ALTA USUARIOS) ---
+    // --- PANEL ADMIN TI ---
     function abrirModalAdminTI() {
       document.getElementById("modal-admin-ti").classList.remove("hidden");
       cargarListaUsuariosTI();
