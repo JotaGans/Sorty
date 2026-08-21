@@ -148,23 +148,22 @@
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
         <div class="flex items-center space-x-4">
-          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-black px-3.5 py-1.5 rounded-lg transition shadow flex items-center space-x-1.5">
+          <!-- Botón Alta Usuarios Alineado a la Línea Gráfica Turquesa/Verde IMARPE -->
+          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3.5 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-teal-500">
             <span>🛡️</span>
             <span>Gestión TI: Alta de Usuarios</span>
           </button>
           <div class="text-right border-l border-blue-900/60 pl-3">
-            <p id="user-display-hub" class="text-xs font-bold text-gray-100">Usuario</p>
-            <p id="role-display-hub" class="text-[10px] text-cyan-300 uppercase font-semibold">Rol</p>
+            <p id="user-display-hub" class="text-xs font-bold text-gray-100">admin</p>
+            <p id="role-display-hub" class="text-[10px] text-teal-300 uppercase font-semibold">ADMINISTRADOR TI</p>
           </div>
-          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow">Salir</button>
+          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow">Salir</button>
         </div>
       </div>
     </header>
 
     <!-- Contenido Principal Centrado -->
     <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8 flex flex-col justify-start">
-      
-      <!-- Hero Banner Ejecutivo -->
       <div class="bg-white rounded-2xl p-6 mb-8 border border-gray-200/80 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div>
           <span class="text-[11px] font-black text-teal-600 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">Portal de Gestión Institucional</span>
@@ -184,60 +183,77 @@
         </div>
       </div>
 
-      <!-- Cuadrícula Dinámica -->
       <div id="grid-proyectos-hub" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </main>
   </div>
 
   <!-- ================= VISTA: GANTT Y CONTROL DE PROYECTO ================= -->
   <div id="bloque-superior-gantt" class="flex-shrink-0 z-30 bg-[#f5f6fa] shadow-sm">
+    
+    <!-- Cinta Superior Limpia y Despejada -->
     <header class="bg-[#0f2a4a] text-white shadow-md">
       <div class="max-w-[1920px] mx-auto px-4 md:px-8 h-[65px] flex items-center justify-between">
         <div class="flex items-center space-x-3 min-w-[200px]">
-          <button onclick="volverAlHub()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-2.5 py-1.5 rounded transition border border-white/20 flex items-center space-x-1" title="Volver al Hub de Proyectos">
-            <span>←</span>
-            <span>Mis Proyectos</span>
-          </button>
-          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-9 object-contain" onerror="this.outerHTML='<span class=\'text-xl font-bold tracking-widest text-white\'>IMARPE</span>'">
+          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
         
-        <div class="flex-1 max-w-2xl px-4 text-center mx-auto flex items-center justify-center space-x-2">
+        <div class="flex-1 max-w-2xl px-4 text-center mx-auto">
           <input type="text" id="txt-nombre-proyecto" 
                  placeholder="NOMBRE DEL PROYECTO"
                  class="w-full bg-transparent text-white font-bold text-lg md:text-xl text-center border-b border-transparent focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide" 
                  value="">
-          <span id="badge-rol-gantt" class="text-[9px] font-black uppercase px-2 py-0.5 rounded shadow whitespace-nowrap bg-teal-800 text-teal-200">Rol</span>
         </div>
         
-        <div id="user-info" class="flex items-center space-x-3 border-l border-blue-800 pl-4 min-w-[180px] justify-end">
+        <div id="user-info" class="flex items-center space-x-3 border-l border-blue-800 pl-4 min-w-[200px] justify-end">
           <div class="text-right hidden sm:block">
-            <p id="user-display" class="text-xs font-bold text-gray-200">Usuario</p>
-            <p id="role-display" class="text-[10px] text-teal-300 uppercase font-semibold">Rol</p>
+            <p id="user-display" class="text-xs font-bold text-gray-100">admin</p>
+            <p id="role-display" class="text-[10px] text-teal-300 uppercase font-semibold">ADMINISTRADOR TI</p>
           </div>
-          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-2.5 py-1 rounded font-bold transition">Salir</button>
+          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-2.5 py-1 rounded font-bold transition shadow">Salir</button>
         </div>
       </div>
     </header>
 
-    <!-- Indicadores KPIs -->
+    <!-- Franja de Navegación, Métricas (KPIs) y Etiqueta de Rol Alineados -->
     <div class="max-w-[1920px] w-full mx-auto px-4 md:px-6 pt-3 pb-2 space-y-2.5">
-      <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="bg-[#1abc9c] text-white px-4 py-2 rounded-lg shadow flex items-center justify-between">
-          <span class="text-[13px] font-black uppercase tracking-wider">AVANCE GLOBAL</span>
-          <p id="kpi-avance" class="text-2xl font-black">0%</p>
+      <div class="flex flex-col lg:flex-row items-center justify-between gap-3">
+        
+        <!-- Botón Retorno a Mis Proyectos -->
+        <div class="w-full lg:w-auto flex justify-start">
+          <button onclick="volverAlHub()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold px-3.5 py-2 rounded-lg transition shadow border border-blue-900 flex items-center space-x-2">
+            <span>←</span>
+            <span>Mis Proyectos</span>
+          </button>
         </div>
-        <div class="bg-[#2ecc71] text-white px-4 py-2 rounded-lg shadow flex items-center justify-between">
-          <span class="text-[13px] font-black uppercase tracking-wider">EJECUTADO</span>
-          <p id="kpi-ejecutado" class="text-2xl font-black">0 Items</p>
+
+        <!-- Bloque Central de Indicadores KPIs -->
+        <div class="flex-1 max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-2.5 w-full">
+          <div class="bg-[#1abc9c] text-white px-3 py-1.5 rounded-lg shadow flex items-center justify-between">
+            <span class="text-[11px] font-black uppercase tracking-wider">AVANCE</span>
+            <p id="kpi-avance" class="text-xl font-black">0%</p>
+          </div>
+          <div class="bg-[#2ecc71] text-white px-3 py-1.5 rounded-lg shadow flex items-center justify-between">
+            <span class="text-[11px] font-black uppercase tracking-wider">EJECUTADO</span>
+            <p id="kpi-ejecutado" class="text-xl font-black">0 Items</p>
+          </div>
+          <div class="bg-[#f1c40f] text-[#2c3e50] px-3 py-1.5 rounded-lg shadow flex items-center justify-between">
+            <span class="text-[11px] font-black uppercase tracking-wider">EN PROCESO</span>
+            <p id="kpi-proceso" class="text-xl font-black">0 Items</p>
+          </div>
+          <div class="bg-[#e74c3c] text-white px-3 py-1.5 rounded-lg shadow flex items-center justify-between">
+            <span class="text-[11px] font-black uppercase tracking-wider">PENDIENTE</span>
+            <p id="kpi-pendiente" class="text-xl font-black">0 Items</p>
+          </div>
         </div>
-        <div class="bg-[#f1c40f] text-[#2c3e50] px-4 py-2 rounded-lg shadow flex items-center justify-between">
-          <span class="text-[13px] font-black uppercase tracking-wider">EN PROCESO</span>
-          <p id="kpi-proceso" class="text-2xl font-black">0 Items</p>
+
+        <!-- Etiqueta de Rol en Proyecto -->
+        <div class="w-full lg:w-auto flex justify-end">
+          <div id="badge-rol-gantt" class="bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-extrabold uppercase px-3 py-2 rounded-lg shadow-sm flex items-center space-x-1">
+            <span>👑</span>
+            <span>GESTOR DE PROYECTO</span>
+          </div>
         </div>
-        <div class="bg-[#e74c3c] text-white px-4 py-2 rounded-lg shadow flex items-center justify-between">
-          <span class="text-[13px] font-black uppercase tracking-wider">PENDIENTE</span>
-          <p id="kpi-pendiente" class="text-2xl font-black">0 Items</p>
-        </div>
+
       </div>
 
       <!-- Barra de Filtros y Herramientas -->
@@ -374,9 +390,9 @@
   <!-- MODAL: ADMIN TI -->
   <div id="modal-admin-ti" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
-      <div class="bg-amber-500 text-slate-900 p-4 flex justify-between items-center flex-shrink-0">
-        <h3 class="font-black text-sm">🛡️ Administración de Identidades y Cuentas (TI)</h3>
-        <button onclick="cerrarModalAdminTI()" class="text-slate-900 text-2xl font-black hover:opacity-70">&times;</button>
+      <div class="bg-teal-700 text-white p-4 flex justify-between items-center flex-shrink-0">
+        <h3 class="font-bold text-sm">🛡️ Administración de Identidades y Cuentas (TI)</h3>
+        <button onclick="cerrarModalAdminTI()" class="text-white text-2xl font-bold hover:text-gray-200">&times;</button>
       </div>
       <div class="p-6 overflow-y-auto space-y-6">
         <form onsubmit="darAltaUsuario(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
@@ -384,15 +400,15 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div>
               <label class="block font-bold text-gray-600 mb-1">Nombre Completo</label>
-              <input type="text" id="ti-input-nombre" required placeholder="Ej. Salas Guerrero, Jesús" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-amber-500">
+              <input type="text" id="ti-input-nombre" required placeholder="Ej. Salas Guerrero, Jesús" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
             </div>
             <div>
               <label class="block font-bold text-gray-600 mb-1">Usuario (Login)</label>
-              <input type="text" id="ti-input-user" required placeholder="Ej. jsalas" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-amber-500">
+              <input type="text" id="ti-input-user" required placeholder="Ej. jsalas" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
             </div>
             <div>
               <label class="block font-bold text-gray-600 mb-1">Contraseña Inicial</label>
-              <input type="password" id="ti-input-pass" required placeholder="••••••••" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-amber-500">
+              <input type="password" id="ti-input-pass" required placeholder="••••••••" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
             </div>
             <div>
               <label class="block font-bold text-gray-600 mb-1">Rol Global</label>
@@ -822,9 +838,31 @@
       return `${y}-${m}-${d}`;
     }
 
+    function actualizarDisplaysUsuario() {
+      const userText = currentUser.username || "Usuario";
+      const roleText = currentUser.rol === "ADMIN_TI" ? "ADMINISTRADOR TI" : "OPERADOR";
+      
+      const uHub = document.getElementById("user-display-hub");
+      const rHub = document.getElementById("role-display-hub");
+      const uGantt = document.getElementById("user-display");
+      const rGantt = document.getElementById("role-display");
+
+      if (uHub) uHub.innerText = userText;
+      if (rHub) rHub.innerText = roleText;
+      if (uGantt) uGantt.innerText = userText;
+      if (rGantt) rGantt.innerText = roleText;
+
+      const btnTI = document.getElementById("btn-admin-ti-hub");
+      if (btnTI) {
+        if (currentUser.rol === "ADMIN_TI") btnTI.classList.remove("hidden");
+        else btnTI.classList.add("hidden");
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       if (token && currentUser.username) {
         document.getElementById("view-login").classList.add("hidden");
+        actualizarDisplaysUsuario();
         cargarHubProyectos();
       } else {
         mostrarLogin();
@@ -866,6 +904,7 @@
         localStorage.setItem("currentUser", JSON.stringify(currentUser));
         
         document.getElementById("view-login").classList.add("hidden");
+        actualizarDisplaysUsuario();
         cargarHubProyectos();
       } catch (err) {
         console.error("Error en login:", err);
@@ -892,15 +931,7 @@
     async function cargarHubProyectos() {
       document.getElementById("view-login").classList.add("hidden");
       document.getElementById("view-hub").classList.remove("hidden");
-
-      document.getElementById("user-display-hub").innerText = currentUser.username || "Usuario";
-      document.getElementById("role-display-hub").innerText = currentUser.rol === "ADMIN_TI" ? "ADMINISTRADOR TI" : "OPERADOR";
-
-      if (currentUser.rol === "ADMIN_TI") {
-        document.getElementById("btn-admin-ti-hub").classList.remove("hidden");
-      } else {
-        document.getElementById("btn-admin-ti-hub").classList.add("hidden");
-      }
+      actualizarDisplaysUsuario();
 
       try {
         const res = await fetch(`/proyectos`, {
@@ -959,7 +990,6 @@
           grid.appendChild(card);
         });
 
-        // Tarjeta Interactiva "+ Nuevo Proyecto"
         const cardNuevo = document.createElement("div");
         cardNuevo.onclick = abrirModalNuevoProyecto;
         cardNuevo.className = "bg-slate-50/60 hover:bg-white rounded-2xl p-6 border-2 border-dashed border-slate-300 hover:border-teal-500 transition-all cursor-pointer flex flex-col items-center justify-center text-center group min-h-[290px] shadow-sm hover:shadow-md";
@@ -1023,15 +1053,23 @@
       proyectoActualId = id;
       proyectoEsGestor = (esGestor === 1 || esGestor === true);
 
-      // 1. Título y rol instantáneo
       document.getElementById("txt-nombre-proyecto").value = nombre;
       document.getElementById("txt-nombre-proyecto").disabled = !proyectoEsGestor;
 
+      // Actualizar etiqueta visual de rol en la barra de KPIs
       const badge = document.getElementById("badge-rol-gantt");
-      badge.innerText = proyectoEsGestor ? "👑 Gestor de Proyecto" : "👤 Responsable Asignado";
-      badge.className = `text-[9px] font-black uppercase px-2 py-0.5 rounded shadow whitespace-nowrap ${proyectoEsGestor ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}`;
+      if (proyectoEsGestor) {
+        badge.className = "bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-extrabold uppercase px-3 py-2 rounded-lg shadow-sm flex items-center space-x-1";
+        badge.innerHTML = `<span>👑</span><span>GESTOR DE PROYECTO</span>`;
+      } else {
+        badge.className = "bg-blue-100 text-blue-900 border border-blue-300 text-[11px] font-extrabold uppercase px-3 py-2 rounded-lg shadow-sm flex items-center space-x-1";
+        badge.innerHTML = `<span>👤</span><span>RESPONSABLE ASIGNADO</span>`;
+      }
 
-      // 2. Control de visibilidad de herramientas
+      // Sincronizar datos reales del usuario logueado en la cabecera
+      actualizarDisplaysUsuario();
+
+      // Permisos de botones
       if (!proyectoEsGestor) {
         document.getElementById("btn-nueva-act-gantt").classList.add("hidden");
         document.getElementById("btn-historial-gantt").classList.add("hidden");
@@ -1042,7 +1080,7 @@
         document.getElementById("btn-personal-gantt").classList.remove("hidden");
       }
 
-      // 3. Renderizado instantáneo desde memoria caché local (0 ms)
+      // Renderizado instantáneo de caché
       const cacheKey = `cache_acts_proj_${id}`;
       const cachedActs = localStorage.getItem(cacheKey);
       
@@ -1056,10 +1094,7 @@
         tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold">Cargando actividades...</td></tr>`;
       }
 
-      // 4. Cambiar de pantalla sin parpadeos
       document.getElementById("view-hub").classList.add("hidden");
-
-      // 5. Sincronización en paralelo con el servidor en segundo plano
       await sincronizarDatosProyecto(id, cacheKey);
     }
 
@@ -2529,7 +2564,7 @@
             <tr class="hover:bg-gray-50">
               <td class="p-2.5 font-bold text-gray-800">${u.nombre_completo || '-'}</td>
               <td class="p-2.5 font-mono text-gray-600">${u.username}</td>
-              <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-black ${u.rol === 'ADMIN_TI' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}">${u.rol}</span></td>
+              <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-black ${u.rol === 'ADMIN_TI' ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-700'}">${u.rol}</span></td>
               <td class="p-2.5 text-center"><span class="text-emerald-600 font-black text-[10px]">ACTIVO</span></td>
             </tr>
           `;
