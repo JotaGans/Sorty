@@ -1094,7 +1094,11 @@
         tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold">Cargando actividades...</td></tr>`;
       }
 
+      // 4. Cambiar de pantalla sin parpadeos
       document.getElementById("view-hub").classList.add("hidden");
+      renderizarCabeceraGantt(); // <-- Garantiza que el encabezado del Gantt siempre se dibuje
+
+      // 5. Sincronización en paralelo con el servidor en segundo plano
       await sincronizarDatosProyecto(id, cacheKey);
     }
 
@@ -1123,7 +1127,7 @@
           const freshActs = await resActs.json();
           actividadesGlobal = freshActs;
           localStorage.setItem(cacheKey, JSON.stringify(freshActs));
-          renderizarTabla();
+          actualizarVistaGantt(); // <-- Dibuja cabecera y tabla con los datos frescos
           actualizarKPIs();
         } else if (resActs.status === 401) {
           cerrarSesion();
@@ -1258,7 +1262,7 @@
           const n = parseInt(r.codigo.replace(/\.$/, ""));
           if (!isNaN(n) && n > maxNum) maxNum = n;
         });
-        return `${maxNum + 1}.`;
+        return `${maxNum + 1}`;
       }
 
       const codLimpio = codigoPadre.replace(/\.$/, "");
@@ -1623,7 +1627,10 @@
     }
 
     function estaOcultoPorPadre(codigo) {
-      const partes = codigo.replace(/\.$/, "").split(".");
+      const codLimpio = codigo.replace(/\.$/, "");
+      const partes = codLimpio.split(".");
+      if (partes.length <= 1) return false;
+
       let acumulado = "";
       for (let i = 0; i < partes.length - 1; i++) {
         acumulado += (i === 0 ? "" : ".") + partes[i];
