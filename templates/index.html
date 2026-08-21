@@ -1815,6 +1815,75 @@
       });
     }
 
+    // =========================================================================
+    // MOTOR DE CÁLCULO JERÁRQUICO AUTOMÁTICO (ROLL-UP BOTTOM-UP WBS)
+    // =========================================================================
+    function recalcularJerarquiaWBS() {
+      if (!actividadesGlobal || actividadesGlobal.length === 0) return;
+
+      // Obtener todos los niveles existentes ordenados de mayor a menor (de hojas a raíces: 4 -> 3 -> 2 -> 1)
+      const niveles = [4, 3, 2, 1];
+
+      niveles.forEach(nivelActual => {
+        actividadesGlobal.forEach(madre => {
+          const codLimpio = madre.codigo.replace(/\.$/, "");
+          const partes = codLimpio.split(".");
+          const nivelMadre = partes.length;
+
+          if (nivelMadre === nivelActual) {
+            // Buscar hijos directos inmediatos
+            const hijosDirectos = actividadesGlobal.filter(h => {
+              const c = h.codigo.replace(/\.$/, "");
+              return c.startsWith(codLimpio + ".") && c.split(".").length === nivelMadre + 1;
+            });
+
+            if (hijosDirectos.length > 0) {
+              // 1. Cálculo de % Avance automático (Promedio de hijos)
+              const sumaAvances = hijosDirectos.reduce((acc, h) => acc + (parseInt(h.avance) || 0), 0);
+              const promAvance = Math.round(sumaAvances / hijosDirectos.length);
+              madre.avance = promAvance;
+
+              // 2. Cálculo de Estado automático
+              if (promAvance === 100) {
+                madre.estado = "Ejecutado";
+              } else if (promAvance > 0) {
+                madre.estado = "En proceso";
+              } else {
+                madre.estado = "Pendiente";
+              }
+
+              // 3. Roll-up de Fechas automáticas (Min Inicio, Max Fin)
+              let minIni = null;
+              let maxFin = null;
+
+              hijosDirectos.forEach(h => {
+                const dtIni = parsearFechaUniversal(h.fecha_inicio);
+                const dtFin = parsearFechaUniversal(h.fecha_fin);
+
+                if (dtIni && (!minIni || dtIni < minIni)) minIni = dtIni;
+                if (dtFin && (!maxFin || dtFin > maxFin)) maxFin = dtFin;
+              });
+
+              if (minIni && maxFin) {
+                const dIni = String(minIni.getDate()).padStart(2, '0');
+                const mIni = String(minIni.getMonth() + 1).padStart(2, '0');
+                const yIni = minIni.getFullYear();
+                madre.fecha_inicio = `${dIni}/${mIni}/${yIni}`;
+
+                const dFin = String(maxFin.getDate()).padStart(2, '0');
+                const mFin = String(maxFin.getMonth() + 1).padStart(2, '0');
+                const yFin = maxFin.getFullYear();
+                madre.fecha_fin = `${dFin}/${mFin}/${yFin}`;
+
+                const diffDias = Math.floor((maxFin - minIni) / (1000 * 60 * 60 * 24)) + 1;
+                madre.dias = Math.max(1, diffDias);
+              }
+            }
+          }
+        });
+      });
+    }
+
     function tieneHijos(codigo) {
       const codLimpio = codigo.replace(/\.$/, "");
       return actividadesGlobal.some(a => {
@@ -1829,6 +1898,7 @@
 
     // --- RENDERIZADO DEL GANTT VISUAL ---
     function renderizarTabla() {
+      recalcularJerarquiaWBS(); // <-- Recálculo automático en cascada
       const tbody = document.getElementById("lista-actividades");
       tbody.innerHTML = "";
 
@@ -2034,8 +2104,9 @@
     }
 
     function actualizarKPIs() {
+      recalcularJerarquiaWBS();
       const raices = actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
-      const globalPct = raices.length > 0 ? Math.round(raices.reduce((acc, a) => acc + a.avance, 0) / raices.length) : 0;
+      const globalPct = raices.length > 0 ? Math.round(raices.reduce((acc, a) => acc + (a.avance || 0), 0) / raices.length) : 0;
       
       document.getElementById("kpi-avance").innerText = `${globalPct}%`;
       document.getElementById("kpi-ejecutado").innerText = `${actividadesGlobal.filter(a => a.estado === 'Ejecutado').length} Items`;
