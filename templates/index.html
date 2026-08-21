@@ -1917,11 +1917,13 @@
               const esHito = (act.dias <= 1);
               let barraOElementoHTML = "";
               const miniAvataresHTML = obtenerMiniAvataresGanttHTML(act.responsable);
+              const esBarraDelgada = widthPct < 5.0; // Menos de 5% de ancho del gráfico
 
               if (esHito) {
                 barraOElementoHTML = `
                   <div class="milestone-diamond" style="left: ${leftPct}%;" title="HITO: ${act.descripcion} (${fechaIniVisual})"></div>
-                  <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct}% + 18px);">
+                  <div class="absolute flex items-center top-1 z-20 pointer-events-none text-[9px] font-bold text-gray-700" style="left: calc(${leftPct}% + 18px);">
+                    <span class="mr-1">${act.avance}%</span>
                     ${miniAvataresHTML}
                   </div>
                 `;
@@ -1931,12 +1933,11 @@
                     <div class="w-full h-full bg-[#0f2a4a] rounded-sm shadow relative">
                       <div class="absolute left-0 -bottom-1 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#0f2a4a]"></div>
                       <div class="absolute right-0 -bottom-1 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#0f2a4a]"></div>
-                      <div class="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white px-1 overflow-hidden whitespace-nowrap">
-                        ${act.avance}%
-                      </div>
+                      ${!esBarraDelgada ? `<div class="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white px-1 overflow-hidden whitespace-nowrap">${act.avance}%</div>` : ''}
                     </div>
                   </div>
-                  <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct + widthPct}% + 4px);">
+                  <div class="absolute flex items-center top-1 z-20 pointer-events-none text-[9px] font-black text-[#0f2a4a]" style="left: calc(${leftPct + widthPct}% + 4px);">
+                    ${esBarraDelgada ? `<span class="bg-blue-50 px-1 rounded border border-blue-200 mr-1 shadow-xs">${act.avance}%</span>` : ''}
                     ${miniAvataresHTML}
                   </div>
                 `;
@@ -1953,18 +1954,16 @@
                 }
 
                 let subAvanceHTML = "";
-                if (act.estado === "En proceso" && act.avance > 0) {
-                  subAvanceHTML = `
-                    <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l-md flex items-center justify-center text-[9px] font-extrabold text-white shadow-inner" style="width: ${act.avance}%;">
-                      ${act.avance >= 20 ? act.avance + '%' : ''}
-                    </div>
-                  `;
-                } else if (act.estado === "Ejecutado") {
-                  subAvanceHTML = `
-                    <div class="w-full h-full flex items-center justify-center text-[9px] font-extrabold text-white">
-                      100%
-                    </div>
-                  `;
+                if (!esBarraDelgada) {
+                  if (act.estado === "En proceso" && act.avance > 0) {
+                    subAvanceHTML = `
+                      <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l-md flex items-center justify-center text-[9px] font-extrabold text-white shadow-inner" style="width: ${act.avance}%;">
+                        ${act.avance >= 25 ? act.avance + '%' : ''}
+                      </div>
+                    `;
+                  } else if (act.estado === "Ejecutado") {
+                    subAvanceHTML = `<div class="w-full h-full flex items-center justify-center text-[9px] font-extrabold text-white">100%</div>`;
+                  }
                 }
 
                 barraOElementoHTML = `
@@ -1974,6 +1973,7 @@
                     ${subAvanceHTML}
                   </div>
                   <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct + widthPct}% + 4px);">
+                    ${esBarraDelgada ? `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">${act.avance}%</span>` : ''}
                     ${miniAvataresHTML}
                   </div>
                 `;
@@ -2374,11 +2374,12 @@
 
     // --- HISTORIAL ---
     async function abrirHistorial() {
+      if (!proyectoActualId) return;
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/historial`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error("Error al obtener historial");
+        if (!res.ok) throw new Error("No se pudo cargar");
         const data = await res.json();
         
         const tbody = document.getElementById("historial-tabla-body");
@@ -2395,13 +2396,12 @@
             `;
           });
         } else {
-          tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-500 font-semibold">Sin registros de auditoría disponibles.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 font-semibold">Sin registros de auditoría en este proyecto.</td></tr>`;
         }
 
         document.getElementById("modal-historial").classList.remove("hidden");
       } catch (err) {
-        console.error("Error Historial:", err);
-        alert("No se pudo cargar el Historial.");
+        alert("No se pudo abrir el Historial. Intente nuevamente.");
       }
     }
 

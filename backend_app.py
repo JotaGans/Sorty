@@ -504,24 +504,113 @@ def ver_historial(proyecto_id: int, user: dict = Depends(get_current_user), db: 
     rows = db.execute("SELECT timestamp, accion, detalle FROM historial WHERE proyecto_id = ? ORDER BY id DESC LIMIT 100", (proyecto_id,)).fetchall()
     return [dict(r) for r in rows]
 
+# --- ALGORITMO FORMAL CPM (CRITICAL PATH METHOD) ---
 @app.get("/ruta-critica")
 def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT codigo, descripcion, dias, predecesores FROM actividades WHERE proyecto_id = ? ORDER BY codigo ASC", (proyecto_id,)).fetchall()
-    detalles = {}
-    total_dias = sum(r["dias"] for r in rows if not "." in r["codigo"])
+    rows = db.execute("""
+        SELECT codigo, descripcion, dias, predecesores, fecha_inicio, fecha_fin 
+        FROM actividades 
+        WHERE proyecto_id = ? 
+        ORDER BY codigo ASC
+    """, (proyecto_id,)).fetchall()
+
+    if not rows:
+        return {"duracion_proyecto_dias": 0, "detalles": {}}
+
+    # Solo procesamos actividades terminales (hojas) para el grafo CPM formal
+    todos_codigos = [r["codigo"] for r in rows]
+    actividades_dict = {}
+    
     for r in rows:
-        detalles[r["codigo"]] = {
-            "codigo": r["codigo"],
+        cod = r["codigo"]
+        # Determinar si es nodo terminal (no tiene hijos jerárquicos)
+        cod_limpio = cod.rstrip(".")
+        es_madre = any(otro.startswith(f"{cod_limpio}.") and otro != cod for otro in todos_codigos)
+        
+        actividades_dict[cod] = {
+            "codigo": cod,
             "descripcion": r["descripcion"],
-            "duracion": r["dias"],
+            "duracion": max(1, int(r["dias"] or 1)),
+            "predecesores": [p.strip() for p in (r["predecesores"] or "").split(",") if p.strip() and p.strip() in todos_codigos],
+            "es_madre": es_madre,
             "ES": 0,
-            "EF": r["dias"],
+            "EF": 0,
             "LS": 0,
-            "LF": r["dias"],
+            "LF": 0,
             "holgura": 0,
-            "es_critica": True if r["dias"] > 0 else False
+            "es_critica": False
         }
-    return {"duracion_proyecto_dias": total_dias, "detalles": detalles}
+
+    nodos = {k: v for k, v in actividades_dict.items() if not v["es_madre"]}
+    if not nodos:
+        nodos = actividades_dict
+
+    # 1. FORWARD PASS (Early Start & Early Finish)
+    cambio = True
+    pasadas = 0
+    while cambio and pasadas < len(nodos) * 2:
+        cambio = False
+        pasadas += 1
+        for cod, n in nodos.items():
+            max_ef_pred = 0
+            for pred in n["predecesores"]:
+                if pred in nodos:
+                    max_ef_pred = max(max_ef_pred, nodos[pred]["EF"])
+            
+            nuevo_es = max_ef_pred
+            nuevo_ef = nuevo_es + n["duracion"]
+            
+            if nuevo_es != n["ES"] or nuevo_ef != n["EF"]:
+                n["ES"] = nuevo_es
+                n["EF"] = nuevo_ef
+                cambio = True
+
+    duracion_total = max((n["EF"] for n in nodos.values()), default=0)
+
+    # 2. BACKWARD PASS (Late Start & Late Finish)
+    for n in nodos.values():
+        n["LF"] = duracion_total
+        n["LS"] = duracion_total - n["duracion"]
+
+    cambio = True
+    pasadas = 0
+    while cambio and pasadas < len(nodos) * 2:
+        cambio = False
+        pasadas += 1
+        for cod, n in nodos.items():
+            sucesores = [s for s in nodos.values() if cod in s["predecesores"]]
+            if sucesores:
+                min_ls_suc = min(s["LS"] for s in sucesores)
+                nuevo_lf = min_ls_suc
+                nuevo_ls = nuevo_lf - n["duracion"]
+                if nuevo_lf != n["LF"] or nuevo_ls != n["LS"]:
+                    n["LF"] = nuevo_lf
+                    n["LS"] = nuevo_ls
+                    cambio = True
+
+    # 3. CÁLCULO DE HOLGURA Y RUTA CRÍTICA REAL
+    for n in nodos.values():
+        n["holgura"] = max(0, n["LS"] - n["ES"])
+        n["es_critica"] = (n["holgura"] == 0 and n["duracion"] > 0)
+
+    return {"duracion_proyecto_dias": duracion_total, "detalles": nodos}
+
+
+# --- HISTORIAL ROBUSTO SANEADO ---
+@app.get("/proyectos/{proyecto_id}/historial")
+def ver_historial(proyecto_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    try:
+        rows = db.execute("""
+            SELECT COALESCE(timestamp, datetime('now')) as timestamp, 
+                   COALESCE(accion, 'Registro') as accion, 
+                   COALESCE(detalle, 'Operación sin detalle') as detalle 
+            FROM historial 
+            WHERE proyecto_id = ? 
+            ORDER BY id DESC LIMIT 150
+        """, (proyecto_id,)).fetchall()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        return []
 
 # Servir frontend estático
 app.mount("/static", StaticFiles(directory="static"), name="static")
