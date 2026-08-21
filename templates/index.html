@@ -349,7 +349,8 @@
             <th id="th-avance" class="p-2.5 font-bold border-r border-b border-blue-900/60 text-center min-w-[75px] whitespace-nowrap">
               % Avance <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            <th id="th-gantt" class="p-1 font-bold min-w-[850px] border-r border-b border-blue-900/60">
+            <!-- En la cabecera de la tabla -->
+<th id="th-gantt" class="p-1 font-bold min-w-[1400px] border-r border-b border-blue-900/60">
               <div id="gantt-header-meses" class="flex text-center text-[10px] text-gray-200 border-b border-blue-800/80 pb-1 mb-1 font-bold"></div>
               <div id="gantt-header-semanas" class="flex text-center text-[9px] text-teal-300 font-mono tracking-tighter"></div>
             </th>
@@ -1080,12 +1081,13 @@
         document.getElementById("btn-personal-gantt").classList.remove("hidden");
       }
 
-      // Renderizado instantáneo de caché
+      // 3. Renderizado instantáneo desde memoria caché local (0 ms)
       const cacheKey = `cache_acts_proj_${id}`;
       const cachedActs = localStorage.getItem(cacheKey);
       
       if (cachedActs) {
         actividadesGlobal = JSON.parse(cachedActs);
+        autoAjustarSemanaInicio(); // <-- Ajusta el zoom a las fechas del proyecto
         renderizarTabla();
         actualizarKPIs();
       } else {
@@ -1093,6 +1095,25 @@
         const tbody = document.getElementById("lista-actividades");
         tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold">Cargando actividades...</td></tr>`;
       }
+
+      function autoAjustarSemanaInicio() {
+      if (!actividadesGlobal || actividadesGlobal.length === 0) return;
+      
+      let minFecha = null;
+      actividadesGlobal.forEach(a => {
+        const dt = parsearFechaUniversal(a.fecha_inicio);
+        if (dt && (!minFecha || dt < minFecha)) minFecha = dt;
+      });
+
+      if (minFecha) {
+        // Encontrar la semana correspondiente al inicio del proyecto
+        const indexEncontrado = semanasTotales.findIndex(s => minFecha >= s.fechaLunes && minFecha <= s.fechaDomingo);
+        if (indexEncontrado >= 0) {
+          semanaInicioIndex = Math.max(0, indexEncontrado - 1); // Deja 1 semana de margen a la izquierda
+          document.getElementById("input-semana-inicio").value = semanaInicioIndex + 1;
+        }
+      }
+    }
 
       // 4. Cambiar de pantalla sin parpadeos
       document.getElementById("view-hub").classList.add("hidden");
@@ -1127,7 +1148,8 @@
           const freshActs = await resActs.json();
           actividadesGlobal = freshActs;
           localStorage.setItem(cacheKey, JSON.stringify(freshActs));
-          actualizarVistaGantt(); // <-- Dibuja cabecera y tabla con los datos frescos
+          autoAjustarSemanaInicio(); // <-- Auto-ajustar al recibir datos del servidor
+          actualizarVistaGantt();
           actualizarKPIs();
         } else if (resActs.status === 401) {
           cerrarSesion();
