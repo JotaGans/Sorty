@@ -1041,6 +1041,7 @@
       proyectoActualId = id;
       proyectoEsGestor = (esGestor === 1 || esGestor === true);
 
+      // 1. Reset instantáneo del título y badge (0ms)
       document.getElementById("txt-nombre-proyecto").value = nombre;
       document.getElementById("txt-nombre-proyecto").disabled = !proyectoEsGestor;
 
@@ -1048,10 +1049,32 @@
       badge.innerText = proyectoEsGestor ? "👑 Gestor de Proyecto" : "👤 Responsable Asignado";
       badge.className = `text-[9px] font-black uppercase px-2 py-0.5 rounded shadow whitespace-nowrap ${proyectoEsGestor ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}`;
 
-      document.getElementById("user-display").innerText = currentUser.username || "Usuario";
-      document.getElementById("role-display").innerText = currentUser.rol === "ADMIN_TI" ? "ADMINISTRADOR TI" : "OPERADOR";
+      // 2. Limpieza inmediata del estado previo para eliminar ruido visual
+      actividadesGlobal = [];
+      codigoFilaSeleccionada = null;
+      nodosColapsados.clear();
+      
+      document.getElementById("kpi-avance").innerText = "-";
+      document.getElementById("kpi-ejecutado").innerText = "-";
+      document.getElementById("kpi-proceso").innerText = "-";
+      document.getElementById("kpi-pendiente").innerText = "-";
 
-      // Aplicar restricciones visuales de rol
+      const tbody = document.getElementById("lista-actividades");
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="10" class="p-12 text-center text-gray-400 font-semibold">
+            <div class="inline-flex items-center space-x-2">
+              <svg class="animate-spin h-5 w-5 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>Cargando actividades del proyecto...</span>
+            </div>
+          </td>
+        </tr>
+      `;
+
+      // 3. Permisos de botones según rol
       if (!proyectoEsGestor) {
         document.getElementById("btn-nueva-act-gantt").classList.add("hidden");
         document.getElementById("btn-historial-gantt").classList.add("hidden");
@@ -1062,7 +1085,10 @@
         document.getElementById("btn-personal-gantt").classList.remove("hidden");
       }
 
+      // 4. Transición visual limpia
       document.getElementById("view-hub").classList.add("hidden");
+
+      // 5. Carga de datos aislados del proyecto
       await cargarDatosIniciales();
     }
 
