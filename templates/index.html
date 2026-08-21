@@ -1937,9 +1937,12 @@
       const pctHoy = hoyEstaVisible ? ((ahora - tInicioVisible) / duracionVisibleMs) * 100 : -10;
 
       actividadesGlobal.forEach(act => {
-        const partes = act.codigo.replace(/\.$/, "").split(".");
+        // Normalización preventiva del código (quita puntos al final si existieran)
+        act.codigo = String(act.codigo).replace(/\.+$/, "");
+        
+        const partes = act.codigo.split(".");
         const nivel = partes.length;
-        const codLimpio = act.codigo.replace(/\.$/, "");
+        const codLimpio = act.codigo;
 
         if (nivel > nivelFiltroActivo) return;
         if (estaOcultoPorPadre(act.codigo)) return;
@@ -2111,8 +2114,13 @@
     }
 
     function actualizarKPIs() {
+      // Normalizar códigos antes de calcular
+      actividadesGlobal.forEach(a => {
+        a.codigo = String(a.codigo).replace(/\.+$/, "");
+      });
+
       recalcularJerarquiaWBS();
-      const raices = actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
+      const raices = actividadesGlobal.filter(a => !a.codigo.includes("."));
       const globalPct = raices.length > 0 ? Math.round(raices.reduce((acc, a) => acc + (a.avance || 0), 0) / raices.length) : 0;
       
       document.getElementById("kpi-avance").innerText = `${globalPct}%`;

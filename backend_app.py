@@ -280,6 +280,16 @@ def init_db():
     else:
         c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
 
+    # Saneamiento de códigos heredados con punto al final
+    try:
+        c.execute("""
+            UPDATE actividades 
+            SET codigo = RTRIM(codigo, '.') 
+            WHERE codigo LIKE '%.'
+        """)
+    except Exception:
+        pass
+
     conn.commit()
     conn.close()
 
