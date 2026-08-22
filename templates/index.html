@@ -343,7 +343,7 @@
             <th id="th-avance" class="p-2.5 font-bold border-r border-b border-blue-900/60 text-center min-w-[65px] md:min-w-[75px] whitespace-nowrap">
               % Avance <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            <th id="th-gantt" class="p-1 font-bold min-w-[600px] md:min-w-[900px] lg:min-w-[1200px] border-r border-b border-blue-900/60">
+            <th id="th-gantt" class="p-1 font-bold min-w-[750px] md:min-w-[950px] border-r border-b border-blue-900/60">
               <div id="gantt-header-meses" class="flex text-center text-[10px] text-gray-200 border-b border-blue-800/80 pb-1 mb-1 font-bold"></div>
               <div id="gantt-header-semanas" class="flex text-center text-[9px] text-teal-300 font-mono tracking-tighter"></div>
             </th>
@@ -1146,7 +1146,8 @@
     function autoAjustarSemanaInicio() {
       if (!actividadesGlobal || actividadesGlobal.length === 0) {
         semanaInicioIndex = Math.max(0, indiceSemanaHoy >= 0 ? indiceSemanaHoy - 1 : 0);
-        document.getElementById("input-semana-inicio").value = semanaInicioIndex + 1;
+        const inputSem = document.getElementById("input-semana-inicio");
+        if (inputSem) inputSem.value = semanaInicioIndex + 1;
         return;
       }
       
@@ -1157,12 +1158,26 @@
       });
 
       if (minFecha) {
-        const indexEncontrado = semanasTotales.findIndex(s => minFecha >= s.fechaLunes && minFecha <= s.fechaDomingo);
+        // Encontrar la semana exacta del calendario que contiene la fecha inicial
+        const indexEncontrado = semanasTotales.findIndex(s => {
+          const tIni = s.fechaLunes.getTime();
+          const tFin = s.fechaDomingo.getTime();
+          const tAct = minFecha.getTime();
+          return tAct >= tIni && tAct <= tFin;
+        });
+
         if (indexEncontrado >= 0) {
+          // Centrar o arrancar 1 semana antes para no pegar la barra al borde
           semanaInicioIndex = Math.max(0, indexEncontrado - 1);
-          document.getElementById("input-semana-inicio").value = semanaInicioIndex + 1;
+        } else {
+          semanaInicioIndex = 0;
         }
+      } else {
+        semanaInicioIndex = 0;
       }
+
+      const inputSem = document.getElementById("input-semana-inicio");
+      if (inputSem) inputSem.value = semanaInicioIndex + 1;
     }
 
     // =========================================================================
@@ -1911,12 +1926,12 @@
 
       gruposMes.forEach(g => {
         const pct = (g.count / semanasVisibles.length) * 100;
-        divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-blue-800/80">${g.nombre}</div>`;
+        divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-blue-800/80 text-[10px]">${g.nombre}</div>`;
       });
 
       semanasVisibles.forEach(s => {
         const claseHoy = s.esHoy ? "header-semana-actual rounded-sm shadow" : "opacity-90";
-        divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre})">${s.dia}</div>`;
+        divSemanas.innerHTML += `<div class="flex-1 min-w-[32px] text-center py-0.5 border-r border-blue-900/40 ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre})">${s.dia}</div>`;
       });
     }
 
