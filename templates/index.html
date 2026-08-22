@@ -1081,10 +1081,10 @@
           actualizarKPIs();
         } catch(e) {
           actividadesGlobal = [];
+          irASemanaActual();
         }
       } else {
         actividadesGlobal = [];
-        fijarSemanaInicio(1);
         const tbody = document.getElementById("lista-actividades");
         tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold">Cargando actividades del proyecto...</td></tr>`;
       }
@@ -1143,7 +1143,7 @@
 
     function autoAjustarSemanaInicio() {
       if (!actividadesGlobal || actividadesGlobal.length === 0) {
-        fijarSemanaInicio(1);
+        irASemanaActual();
         return;
       }
       
@@ -1170,12 +1170,28 @@
         }
 
         if (indexEncontrado >= 0) {
-          // Centramos en la semana del proyecto (o 1 previa si existe margen)
+          // Centrar en la semana calculada (con 1 semana de resguardo si es posible)
           const semElegida = Math.max(1, indexEncontrado);
           fijarSemanaInicio(semElegida);
         } else {
           fijarSemanaInicio(1);
         }
+      } else {
+        irASemanaActual();
+      }
+    }
+
+    function irASemanaActual() {
+      const ahora = new Date();
+      const tAhora = ahora.getTime();
+      let indexHoy = semanasTotales.findIndex(s => {
+        const tIni = new Date(s.fechaLunes).setHours(0, 0, 0, 0);
+        const tFin = new Date(s.fechaDomingo).setHours(23, 59, 59, 999);
+        return tAhora >= tIni && tAhora <= tFin;
+      });
+
+      if (indexHoy >= 0) {
+        fijarSemanaInicio(Math.max(1, indexHoy));
       } else {
         fijarSemanaInicio(1);
       }
@@ -1878,7 +1894,9 @@
     function fijarSemanaInicio(val) {
       let num = parseInt(val);
       if (isNaN(num) || num < 1) num = 1;
-      if (num > semanasTotales.length - 2) num = Math.max(1, semanasTotales.length - 2);
+      if (semanasTotales.length > 0 && num > semanasTotales.length - 2) {
+        num = Math.max(1, semanasTotales.length - 2);
+      }
       
       semanaInicioIndex = num - 1;
       
