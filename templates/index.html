@@ -1078,14 +1078,15 @@
       if (cachedActs) {
         try {
           actividadesGlobal = JSON.parse(cachedActs);
-          autoAjustarSemanaInicio();
-          renderizarCabeceraGantt();
-          renderizarTabla();
+          autoAjustarSemanaInicio(); // <-- Calcula la semana de inicio del proyecto
+          actualizarVistaGantt();   // <-- Dibuja cabecera y tabla enfocadas en esa semana
           actualizarKPIs();
         } catch(e) {
           actividadesGlobal = [];
         }
-      } else {
+      } 
+      
+      else {
         actividadesGlobal = [];
         renderizarCabeceraGantt();
         const tbody = document.getElementById("lista-actividades");
@@ -1129,12 +1130,16 @@
           const freshActs = await resActs.json();
           actividadesGlobal = freshActs || [];
           localStorage.setItem(cacheKey, JSON.stringify(actividadesGlobal));
-          autoAjustarSemanaInicio();
-          actualizarVistaGantt();
+          autoAjustarSemanaInicio(); // <-- Re-evalúa con datos frescos del servidor
+          actualizarVistaGantt();   // <-- Renderiza en la posición correcta
           actualizarKPIs();
-        } else if (resActs.status === 401) {
+        } 
+        
+        else if (resActs.status === 401) {
           cerrarSesion();
-        } else {
+        } 
+        
+        else {
           actualizarVistaGantt();
         }
       } catch (err) {
@@ -1145,29 +1150,31 @@
 
     function autoAjustarSemanaInicio() {
       if (!actividadesGlobal || actividadesGlobal.length === 0) {
-        semanaInicioIndex = Math.max(0, indiceSemanaHoy >= 0 ? indiceSemanaHoy - 1 : 0);
+        semanaInicioIndex = 0;
         const inputSem = document.getElementById("input-semana-inicio");
-        if (inputSem) inputSem.value = semanaInicioIndex + 1;
+        if (inputSem) inputSem.value = 1;
         return;
       }
       
       let minFecha = null;
       actividadesGlobal.forEach(a => {
         const dt = parsearFechaUniversal(a.fecha_inicio);
-        if (dt && (!minFecha || dt < minFecha)) minFecha = dt;
+        if (dt && (!minFecha || dt < minFecha)) {
+          minFecha = dt;
+        }
       });
 
       if (minFecha) {
-        // Encontrar la semana exacta del calendario que contiene la fecha inicial
+        // Buscar el índice de la semana correspondiente a minFecha
         const indexEncontrado = semanasTotales.findIndex(s => {
-          const tIni = s.fechaLunes.getTime();
-          const tFin = s.fechaDomingo.getTime();
+          const tIni = new Date(s.fechaLunes).setHours(0,0,0,0);
+          const tFin = new Date(s.fechaDomingo).setHours(23,59,59,999);
           const tAct = minFecha.getTime();
           return tAct >= tIni && tAct <= tFin;
         });
 
         if (indexEncontrado >= 0) {
-          // Centrar o arrancar 1 semana antes para no pegar la barra al borde
+          // Iniciar 1 semana antes para que la barra no quede pegada al borde izquierdo
           semanaInicioIndex = Math.max(0, indexEncontrado - 1);
         } else {
           semanaInicioIndex = 0;
