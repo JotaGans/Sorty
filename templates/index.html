@@ -1071,25 +1071,20 @@
         document.getElementById("btn-personal-gantt").classList.remove("hidden");
       }
 
-      // Renderizado inmediato si hay caché
-      // Renderizado inmediato con caché
       const cacheKey = `cache_acts_proj_${id}`;
       const cachedActs = localStorage.getItem(cacheKey);
       
       if (cachedActs) {
         try {
           actividadesGlobal = JSON.parse(cachedActs);
-          autoAjustarSemanaInicio(); // 1. Calcula semana real
-          renderizarCabeceraGantt(); // 2. Dibuja cabecera en esa semana
-          renderizarTabla();         // 3. Dibuja barras en esa misma semana
+          autoAjustarSemanaInicio(); // <-- Ajusta la semana automáticamente
           actualizarKPIs();
         } catch(e) {
           actividadesGlobal = [];
         }
       } else {
         actividadesGlobal = [];
-        semanaInicioIndex = 0;
-        renderizarCabeceraGantt();
+        fijarSemanaInicio(1);
         const tbody = document.getElementById("lista-actividades");
         tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold">Cargando actividades del proyecto...</td></tr>`;
       }
@@ -1129,9 +1124,7 @@
           const freshActs = await resActs.json();
           actividadesGlobal = freshActs || [];
           localStorage.setItem(cacheKey, JSON.stringify(actividadesGlobal));
-          autoAjustarSemanaInicio(); // Auto-enfoque con datos del servidor
-          renderizarCabeceraGantt();
-          renderizarTabla();
+          autoAjustarSemanaInicio(); // <-- Re-evalúa el inicio al llegar la respuesta del backend
           actualizarKPIs();
         } 
         
@@ -1177,20 +1170,14 @@
         }
 
         if (indexEncontrado >= 0) {
-          // Dejamos 1 semana previa de resguardo visual
-          const semElegida = Math.max(1, indexEncontrado); 
-          semanaInicioIndex = semElegida - 1;
-          const inputSem = document.getElementById("input-semana-inicio");
-          if (inputSem) inputSem.value = semElegida;
+          // Centramos en la semana del proyecto (o 1 previa si existe margen)
+          const semElegida = Math.max(1, indexEncontrado);
+          fijarSemanaInicio(semElegida);
         } else {
-          semanaInicioIndex = 0;
-          const inputSem = document.getElementById("input-semana-inicio");
-          if (inputSem) inputSem.value = 1;
+          fijarSemanaInicio(1);
         }
       } else {
-        semanaInicioIndex = 0;
-        const inputSem = document.getElementById("input-semana-inicio");
-        if (inputSem) inputSem.value = 1;
+        fijarSemanaInicio(1);
       }
     }
 
@@ -1891,17 +1878,13 @@
     function fijarSemanaInicio(val) {
       let num = parseInt(val);
       if (isNaN(num) || num < 1) num = 1;
-      if (num > semanasTotales.length - 2) num = semanasTotales.length - 2;
+      if (num > semanasTotales.length - 2) num = Math.max(1, semanasTotales.length - 2);
+      
       semanaInicioIndex = num - 1;
-      document.getElementById("input-semana-inicio").value = num;
-      actualizarVistaGantt();
-    }
-
-    function irASemanaActual() {
-      if (indiceSemanaHoy >= 0) fijarSemanaInicio(Math.max(1, indiceSemanaHoy - 1));
-    }
-
-    function actualizarVistaGantt() {
+      
+      const input = document.getElementById("input-semana-inicio");
+      if (input) input.value = num;
+      
       renderizarCabeceraGantt();
       renderizarTabla();
     }
