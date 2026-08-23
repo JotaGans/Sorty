@@ -457,6 +457,32 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
     db.commit()
     return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id}
 
+# --- ACTUALIZAR DESCRIPCIÓN DE PROYECTO (MÁX 120 CARACTERES) ---
+class ProyectoDescripcionUpdate(BaseModel):
+    descripcion: str
+
+@app.put("/proyectos/{proyecto_id}/descripcion")
+def actualizar_descripcion_proyecto(
+    proyecto_id: int, 
+    data: ProyectoDescripcionUpdate, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
+    # Validar permisos de Gestor o Creador
+    permiso = db.execute("""
+        SELECT 1 FROM proyectos p
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1)
+    """, (user["id"], proyecto_id, user["id"])).fetchone()
+    
+    if not permiso and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="No tiene permisos de Gestor en este proyecto.")
+    
+    desc_limpia = (data.descripcion or "").strip()[:120]
+    db.execute("UPDATE proyectos SET descripcion = ? WHERE id = ?", (desc_limpia, proyecto_id))
+    db.commit()
+    return {"message": "Descripción actualizada correctamente", "descripcion": desc_limpia}
+
 # --- CONFIGURACIÓN DE PROYECTO ---
 @app.get("/configuracion/nombre_proyecto")
 def obtener_nombre_proyecto(db: sqlite3.Connection = Depends(get_db)):

@@ -1052,6 +1052,44 @@
       }
     }
 
+    function editarDescripcionProyecto(id, descActual) {
+      abrirInputCustom({
+        titulo: "Editar Descripción del Proyecto",
+        mensaje: "Máximo 120 caracteres para conservar el diseño de la tarjeta:",
+        tipo: "text",
+        valorActual: descActual || "",
+        onAceptar: async (nuevaDesc) => {
+          const descFinal = (nuevaDesc || "").trim().substring(0, 120);
+          try {
+            const res = await fetch(`/proyectos/${id}/descripcion`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ descripcion: descFinal })
+            });
+
+            if (res.ok) {
+              await cargarHubProyectos();
+            } else {
+              const err = await res.json().catch(() => ({}));
+              alert(err.detail || "No se pudo actualizar la descripción.");
+            }
+          } catch (e) {
+            alert("Error de conexión al actualizar la descripción.");
+          }
+        }
+      });
+      
+      // Limitar longitud del input del modal
+      const txtInput = document.getElementById("mic-input-text");
+      if (txtInput) {
+        txtInput.setAttribute("maxlength", "120");
+        txtInput.placeholder = "Ej: Proyecto institucional orientado a...";
+      }
+    }
+
     // =========================================================================
     // APERTURA INSTANTÁNEA ROBUSTA Y GESTIÓN DE PROYECTO
     // =========================================================================
