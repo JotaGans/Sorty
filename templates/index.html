@@ -1436,17 +1436,18 @@
     }
 
     function ejecutarAccionContextual(accion) {
-      if (!actividadContextualSeleccionada) return;
-      const cod = actividadContextualSeleccionada.codigo;
+      const act = actividadContextualSeleccionada;
+      const cod = act ? act.codigo : null;
       cerrarMenuContextual();
 
-      if (accion === 'agregar_hijo') {
-        abrirWizardCreacion(cod);
-      } else if (accion === 'agregar_raiz') {
+      if (accion === 'agregar_raiz') {
+        // Abre directamente el asistente para crear Nivel 1
         abrirWizardCreacion(null);
-      } else if (accion === 'asignar_resp') {
+      } else if (accion === 'agregar_hijo' && cod) {
+        abrirWizardCreacion(cod);
+      } else if (accion === 'asignar_resp' && cod) {
         editarResponsable(cod);
-      } else if (accion === 'eliminar') {
+      } else if (accion === 'eliminar' && cod) {
         eliminarActividad(cod);
       }
     }
