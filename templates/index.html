@@ -320,8 +320,8 @@
   </div>
 
   <!-- TABLA WBS + GANTT DESPLAZABLE Y RESPONSIVO -->
-  <main id="view-dashboard" class="flex-1 max-w-[1920px] w-full mx-auto px-3 md:px-6 pb-4 overflow-hidden flex flex-col">
-    <div class="bg-white rounded-lg shadow border border-gray-200 flex-1 overflow-auto">
+  <main id="view-dashboard" oncontextmenu="abrirMenuContextualVacio(event)" class="flex-1 max-w-[1920px] w-full mx-auto px-3 md:px-6 pb-4 overflow-hidden flex flex-col">
+    <div class="bg-white rounded-lg shadow border border-gray-200 flex-1 overflow-auto" oncontextmenu="abrirMenuContextualVacio(event)">
       <table class="w-full text-left text-xs md:text-sm border-separate border-spacing-0" id="tabla-gantt-main">
         <thead class="bg-[#0f2a4a] text-white select-none">
           <tr>
@@ -1352,12 +1352,14 @@
       actividadContextualSeleccionada = actividadesGlobal.find(a => a.codigo === cod);
       if (!actividadContextualSeleccionada) return;
 
-      const partes = cod.replace(/\.$/, "").split(".");
+      const partes = cod.replace(/\.+$/, "").split(".");
       const nivel = partes.length;
       const nombresNivel = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
       
       const menu = document.getElementById("menu-contextual");
-      document.getElementById("mc-header-info").innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
+      const headerInfo = document.getElementById("mc-header-info");
+      headerInfo.classList.remove("hidden");
+      headerInfo.innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
       
       const btnHijo = document.getElementById("mc-btn-hijo");
       const btnRaiz = document.getElementById("mc-btn-raiz");
@@ -1367,6 +1369,7 @@
       const esMiActividad = actividadContextualSeleccionada.responsable && actividadContextualSeleccionada.responsable.includes(currentUser.username);
       const puedeCrearHijo = proyectoEsGestor || esMiActividad;
 
+      // Subtarea según nivel
       if (nivel >= 4 || !puedeCrearHijo) {
         btnHijo.classList.add("hidden");
       } else {
@@ -1374,16 +1377,49 @@
         document.getElementById("mc-txt-hijo").innerText = `Agregar ${nombresNivel[nivel]}`;
       }
 
-      if (!proyectoEsGestor) {
+      // 'Nueva Actividad Principal' SOLO visible si se hace clic derecho a una actividad de Nivel 1
+      if (proyectoEsGestor && nivel === 1) {
+        btnRaiz.classList.remove("hidden");
+      } else {
         btnRaiz.classList.add("hidden");
+      }
+
+      if (!proyectoEsGestor) {
         btnResp.classList.add("hidden");
         btnElim.classList.add("hidden");
       } else {
-        btnRaiz.classList.remove("hidden");
         btnResp.classList.remove("hidden");
         btnElim.classList.remove("hidden");
       }
 
+      posicionarMenuContextual(event);
+    }
+
+    // Menú contextual para el espacio vacío del lienzo/tabla
+    function abrirMenuContextualVacio(event) {
+      if (!proyectoEsGestor) return;
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Limpiar selección previa
+      codigoFilaSeleccionada = null;
+      document.querySelectorAll("#lista-actividades tr").forEach(tr => tr.classList.remove("row-selected"));
+      actividadContextualSeleccionada = null;
+
+      const menu = document.getElementById("menu-contextual");
+      const headerInfo = document.getElementById("mc-header-info");
+      headerInfo.classList.add("hidden");
+
+      document.getElementById("mc-btn-hijo").classList.add("hidden");
+      document.getElementById("mc-btn-resp").classList.add("hidden");
+      document.getElementById("mc-btn-eliminar").classList.add("hidden");
+      document.getElementById("mc-btn-raiz").classList.remove("hidden");
+
+      posicionarMenuContextual(event);
+    }
+
+    function posicionarMenuContextual(event) {
+      const menu = document.getElementById("menu-contextual");
       let posX = event.clientX;
       let posY = event.clientY;
       if (posX + 230 > window.innerWidth) posX = window.innerWidth - 235;
