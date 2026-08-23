@@ -403,6 +403,10 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
                 "estado": str(a["estado"] or "Pendiente")
             }
 
+        # Función auxiliar de redondeo aritmético idéntico a Math.round() de JS
+        def round_half_up(n):
+            return int(n + 0.5) if n >= 0 else int(n - 0.5)
+
         # Aplicar Bottom-Up (Nivel 4 -> 3 -> 2 -> 1)
         todos_cods = list(acts_dict.keys())
         for nivel_actual in [4, 3, 2, 1]:
@@ -411,7 +415,7 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
                 if len(partes) == nivel_actual:
                     hijos = [acts_dict[c] for c in todos_cods if c.startswith(f"{cod}.") and len(c.split(".")) == nivel_actual + 1]
                     if hijos:
-                        prom_av = round(sum(h["avance"] for h in hijos) / len(hijos))
+                        prom_av = round_half_up(sum(h["avance"] for h in hijos) / len(hijos))
                         act["avance"] = prom_av
                         if prom_av == 100:
                             act["estado"] = "Ejecutado"
@@ -428,7 +432,7 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
         
         # Avance global promedio de actividades de nivel 1 (raíces)
         raices = [a for a in acts_finales if not "." in a["codigo"]]
-        pct_global = round(sum(a["avance"] for a in raices) / len(raices)) if raices else 0
+        pct_global = round_half_up(sum(a["avance"] for a in raices) / len(raices)) if raices else 0
 
         p_dict["total_actividades"] = len(acts_finales)
         p_dict["ejecutadas"] = ejec
