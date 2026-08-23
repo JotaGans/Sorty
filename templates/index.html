@@ -107,6 +107,10 @@
       <span class="text-blue-600 font-bold">+</span>
       <span id="mc-txt-hijo">Agregar Subtarea</span>
     </button>
+    <button id="mc-btn-raiz" onclick="ejecutarAccionContextual('agregar_raiz')" class="w-full text-left px-3 py-1.5 hover:bg-teal-50 hover:text-teal-800 flex items-center space-x-2 text-teal-700 font-bold">
+      <span>✨</span>
+      <span>Nueva Actividad Principal (Nivel 1)</span>
+    </button>
     <button id="mc-btn-resp" onclick="ejecutarAccionContextual('asignar_resp')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2">
       <span>👥</span>
       <span>Asignar Responsables</span>
@@ -1310,11 +1314,8 @@
         alert("Solo el Gestor del Proyecto puede crear actividades principales.");
         return;
       }
-      if (codigoFilaSeleccionada) {
-        abrirWizardCreacion(codigoFilaSeleccionada);
-      } else {
-        abrirWizardCreacion(null);
-      }
+      // Crea siempre una nueva actividad principal (Nivel 1: 1, 2, 3...)
+      abrirWizardCreacion(null);
     }
 
     function abrirMenuContextual(event, cod) {
@@ -1332,6 +1333,7 @@
       document.getElementById("mc-header-info").innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
       
       const btnHijo = document.getElementById("mc-btn-hijo");
+      const btnRaiz = document.getElementById("mc-btn-raiz");
       const btnResp = document.getElementById("mc-btn-resp");
       const btnElim = document.getElementById("mc-btn-eliminar");
 
@@ -1346,9 +1348,11 @@
       }
 
       if (!proyectoEsGestor) {
+        btnRaiz.classList.add("hidden");
         btnResp.classList.add("hidden");
         btnElim.classList.add("hidden");
       } else {
+        btnRaiz.classList.remove("hidden");
         btnResp.classList.remove("hidden");
         btnElim.classList.remove("hidden");
       }
@@ -1356,7 +1360,7 @@
       let posX = event.clientX;
       let posY = event.clientY;
       if (posX + 230 > window.innerWidth) posX = window.innerWidth - 235;
-      if (posY + 160 > window.innerHeight) posY = window.innerHeight - 165;
+      if (posY + 190 > window.innerHeight) posY = window.innerHeight - 195;
 
       menu.style.left = `${posX}px`;
       menu.style.top = `${posY}px`;
@@ -1375,6 +1379,8 @@
 
       if (accion === 'agregar_hijo') {
         abrirWizardCreacion(cod);
+      } else if (accion === 'agregar_raiz') {
+        abrirWizardCreacion(null);
       } else if (accion === 'asignar_resp') {
         editarResponsable(cod);
       } else if (accion === 'eliminar') {
