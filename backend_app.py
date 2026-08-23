@@ -357,6 +357,7 @@ def listar_usuarios(user: dict = Depends(get_current_user), db: sqlite3.Connecti
     return [dict(r) for r in rows]
 
 # --- HUB DE PROYECTOS ---
+# --- HUB DE PROYECTOS CON CÁLCULO JERÁRQUICO UNIFICADO ---
 @app.get("/proyectos")
 def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     u_id = user["id"]
@@ -378,16 +379,58 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
     proyectos_resumen = []
     for r in rows:
         p_dict = dict(r)
-        acts = db.execute("SELECT avance, estado FROM actividades WHERE proyecto_id = ?", (p_dict["id"],)).fetchall()
-        total = len(acts)
-        ejec = sum(1 for a in acts if a["estado"] == "Ejecutado")
-        proc = sum(1 for a in acts if a["estado"] == "En proceso")
-        pend = sum(1 for a in acts if a["estado"] == "Pendiente")
+        p_id = p_dict["id"]
         
-        r1 = db.execute("SELECT avance FROM actividades WHERE proyecto_id = ? AND codigo NOT LIKE '%.%'", (p_dict["id"],)).fetchall()
-        pct_global = round(sum(a["avance"] for a in r1) / len(r1)) if r1 else 0
+        # Obtener todas las actividades del proyecto para roll-up preciso
+        acts_raw = db.execute("SELECT codigo, avance, estado FROM actividades WHERE proyecto_id = ? ORDER BY codigo ASC", (p_id,)).fetchall()
+        
+        if not acts_raw:
+            p_dict["total_actividades"] = 0
+            p_dict["ejecutadas"] = 0
+            p_dict["en_proceso"] = 0
+            p_dict["pendientes"] = 0
+            p_dict["avance_global"] = 0
+            proyectos_resumen.append(p_dict)
+            continue
 
-        p_dict["total_actividades"] = total
+        # Normalizar y procesar en memoria
+        acts_dict = {}
+        for a in acts_raw:
+            cod = str(a["codigo"]).rstrip(".")
+            acts_dict[cod] = {
+                "codigo": cod,
+                "avance": int(a["avance"] or 0),
+                "estado": str(a["estado"] or "Pendiente")
+            }
+
+        # Aplicar Bottom-Up (Nivel 4 -> 3 -> 2 -> 1)
+        todos_cods = list(acts_dict.keys())
+        for nivel_actual in [4, 3, 2, 1]:
+            for cod, act in acts_dict.items():
+                partes = cod.split(".")
+                if len(partes) == nivel_actual:
+                    hijos = [acts_dict[c] for c in todos_cods if c.startswith(f"{cod}.") and len(c.split(".")) == nivel_actual + 1]
+                    if hijos:
+                        prom_av = round(sum(h["avance"] for h in hijos) / len(hijos))
+                        act["avance"] = prom_av
+                        if prom_av == 100:
+                            act["estado"] = "Ejecutado"
+                        elif prom_av > 0:
+                            act["estado"] = "En proceso"
+                        else:
+                            act["estado"] = "Pendiente"
+
+        # Conteo final sincronizado
+        acts_finales = list(acts_dict.values())
+        ejec = sum(1 for a in acts_finales if a["estado"] == "Ejecutado")
+        proc = sum(1 for a in acts_finales if a["estado"] == "En proceso")
+        pend = sum(1 for a in acts_finales if a["estado"] == "Pendiente")
+        
+        # Avance global promedio de actividades de nivel 1 (raíces)
+        raices = [a for a in acts_finales if not "." in a["codigo"]]
+        pct_global = round(sum(a["avance"] for a in raices) / len(raices)) if raices else 0
+
+        p_dict["total_actividades"] = len(acts_finales)
         p_dict["ejecutadas"] = ejec
         p_dict["en_proceso"] = proc
         p_dict["pendientes"] = pend
