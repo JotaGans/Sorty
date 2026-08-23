@@ -470,9 +470,18 @@
                    class="w-full mt-1.5 p-3 bg-white border border-gray-300 rounded-lg text-sm font-semibold outline-none focus:border-[#0f2a4a] shadow-sm"
                    onkeydown="if(event.key==='Enter') irAPasoWizard(2)">
           </div>
-          <div class="bg-blue-50 p-2.5 rounded-lg border border-blue-100 text-[11px] text-blue-900 font-medium flex items-center justify-between">
-            <span>Código WBS calculado:</span>
-            <span id="wz-codigo-preview" class="font-mono font-black text-xs text-[#0f2a4a] bg-white px-2 py-0.5 rounded border">1.1</span>
+          <div class="bg-blue-50 p-2.5 rounded-lg border border-blue-100 text-[11px] text-blue-900 font-medium flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center space-x-2">
+              <span class="font-bold">Código de Actividad:</span>
+              <span id="wz-codigo-preview" class="font-mono font-black text-xs text-[#0f2a4a] bg-white px-2.5 py-1 rounded border shadow-xs">1.1</span>
+            </div>
+            <!-- Selector contextual exclusivo cuando se selecciona una actividad Nivel 1 -->
+            <div id="wz-contenedor-selector-tipo" class="hidden">
+              <select id="wz-select-tipo-creacion" onchange="cambiarTipoCreacionDesdeNivel1(this.value)" class="text-xs font-bold bg-white border border-blue-300 text-[#0f2a4a] rounded px-2 py-1 outline-none cursor-pointer shadow-xs">
+                <option value="hijo">➕ Tarea dependiente (Nivel 2)</option>
+                <option value="raiz">✨ Nueva Actividad Principal (Nivel 1)</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -1311,11 +1320,29 @@
 
     function botonSuperiorNuevaActividad() {
       if (!proyectoEsGestor) {
-        alert("Solo el Gestor del Proyecto puede crear actividades principales.");
+        alert("Solo el Gestor del Proyecto puede crear actividades.");
         return;
       }
-      // Crea siempre una nueva actividad principal (Nivel 1: 1, 2, 3...)
-      abrirWizardCreacion(null);
+
+      if (!codigoFilaSeleccionada) {
+        // Sin selección previa -> Crear Nivel 1
+        abrirWizardCreacion(null);
+        return;
+      }
+
+      const codLimpio = String(codigoFilaSeleccionada).replace(/\.+$/, "");
+      const nivel = codLimpio.split(".").length;
+
+      if (nivel === 1) {
+        // Nivel 1 seleccionado -> Abrir permitiendo elegir entre Nivel 2 o nueva raíz
+        abrirWizardCreacion(codLimpio, true);
+      } else if (nivel < 4) {
+        // Nivel 2 o 3 -> Crear nivel inmediato inferior (Nivel 3 o 4)
+        abrirWizardCreacion(codLimpio, false);
+      } else {
+        // Si ya está en Nivel 4 (máximo nivel), crea otra actividad principal
+        abrirWizardCreacion(null);
+      }
     }
 
     function abrirMenuContextual(event, cod) {
@@ -1417,10 +1444,23 @@
       return `${codLimpio}.${maxNum + 1}`;
     }
 
-    function abrirWizardCreacion(codigoPadre = null) {
+    function abrirWizardCreacion(codigoPadre = null, permitirToggleNivel1 = false) {
       wizardCodigoPadre = codigoPadre;
-      wizardCodigoGenerado = calcularSiguienteCorrelativo(codigoPadre);
       
+      const contToggle = document.getElementById("wz-contenedor-selector-tipo");
+      const selToggle = document.getElementById("wz-select-tipo-creacion");
+
+      if (permitirToggleNivel1 && codigoPadre) {
+        contToggle.classList.remove("hidden");
+        selToggle.value = "hijo";
+        wizardCodigoGenerado = calcularSiguienteCorrelativo(codigoPadre);
+      } else {
+        contToggle.classList.add("hidden");
+        wizardCodigoGenerado = calcularSiguienteCorrelativo(codigoPadre);
+      }
+
+      actualizarTextosCabeceraWizard(codigoPadre);
+
       const anio = new Date().getFullYear();
       document.getElementById("wz-input-desc").value = "";
       document.getElementById("wz-input-ini").value = `${anio}-01-01`;
@@ -1428,15 +1468,6 @@
       document.getElementById("wz-input-estado").value = "Pendiente";
       document.getElementById("wz-input-pred").value = "";
       document.getElementById("wz-codigo-preview").innerText = wizardCodigoGenerado;
-
-      if (codigoPadre) {
-        const madre = actividadesGlobal.find(a => a.codigo === codigoPadre);
-        document.getElementById("wz-titulo").innerText = `Nueva Subtarea para [${codigoPadre}]`;
-        document.getElementById("wz-subtitulo").innerText = `Dependencia: ${madre ? madre.descripcion : codigoPadre}`;
-      } else {
-        document.getElementById("wz-titulo").innerText = "Nueva Actividad Raíz (Nivel 1)";
-        document.getElementById("wz-subtitulo").innerText = "Creando actividad principal independiente";
-      }
 
       const contResp = document.getElementById("wz-lista-responsables");
       contResp.innerHTML = "";
@@ -1456,6 +1487,35 @@
       irAPasoWizard(1);
       document.getElementById("modal-wizard-creacion").classList.remove("hidden");
       setTimeout(() => document.getElementById("wz-input-desc").focus(), 100);
+    }
+
+    function cambiarTipoCreacionDesdeNivel1(opcion) {
+      if (opcion === "raiz") {
+        wizardCodigoPadre = null;
+        wizardCodigoGenerado = calcularSiguienteCorrelativo(null);
+        document.getElementById("wz-titulo").innerText = "Nueva Actividad Raíz (Nivel 1)";
+        document.getElementById("wz-subtitulo").innerText = "Creando actividad principal independiente";
+      } else {
+        wizardCodigoPadre = codigoFilaSeleccionada;
+        wizardCodigoGenerado = calcularSiguienteCorrelativo(codigoFilaSeleccionada);
+        actualizarTextosCabeceraWizard(codigoFilaSeleccionada);
+      }
+      document.getElementById("wz-codigo-preview").innerText = wizardCodigoGenerado;
+    }
+
+    function actualizarTextosCabeceraWizard(codigoPadre) {
+      if (codigoPadre) {
+        const madre = actividadesGlobal.find(a => a.codigo === codigoPadre);
+        const partes = codigoPadre.replace(/\.+$/, "").split(".");
+        const nivelPadre = partes.length;
+        const nombresNivel = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
+        
+        document.getElementById("wz-titulo").innerText = `Nueva ${nombresNivel[nivelPadre] || 'Subtarea'} para [${codigoPadre}]`;
+        document.getElementById("wz-subtitulo").innerText = `Dependencia: ${madre ? madre.descripcion : codigoPadre}`;
+      } else {
+        document.getElementById("wz-titulo").innerText = "Nueva Actividad Raíz (Nivel 1)";
+        document.getElementById("wz-subtitulo").innerText = "Creando actividad principal independiente";
+      }
     }
 
     function cerrarWizardCreacion() {
