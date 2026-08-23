@@ -958,6 +958,12 @@
         proyectos.forEach(p => {
           const card = document.createElement("div");
           card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50";
+          
+          const tooltipEdit = p.es_gestor ? 'title="Doble clic para editar descripción"' : '';
+          const estiloCursor = p.es_gestor ? 'cursor-pointer hover:text-teal-700 hover:bg-teal-50/70 p-1 -m-1 rounded transition' : '';
+          const textoDesc = (p.descripcion && p.descripcion.trim() !== "") ? p.descripcion.trim() : "Sin descripción adicional registrada.";
+          const descEscapada = (p.descripcion || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
           card.innerHTML = `
             <div>
               <div class="flex items-center justify-between mb-3.5">
@@ -967,7 +973,13 @@
                 <span class="text-xs font-black text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">${p.avance_global}% Avance</span>
               </div>
               <h3 class="font-extrabold text-base text-[#0f2a4a] leading-snug min-h-[44px] flex items-center">${p.nombre}</h3>
-              <p class="text-xs text-gray-500 mt-2 line-clamp-2 min-h-[32px]">${p.descripcion || 'Sin descripción adicional registrada.'}</p>
+              
+              <!-- DESCRIPCIÓN EDITABLE CON DOBLE CLIC -->
+              <p ${tooltipEdit} 
+                 ondblclick="${p.es_gestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" 
+                 class="text-xs text-gray-500 mt-2 line-clamp-2 min-h-[32px] leading-relaxed ${estiloCursor}">
+                ${textoDesc}
+              </p>
               
               <div class="w-full bg-gray-100 rounded-full h-2 mt-4 overflow-hidden shadow-inner">
                 <div class="bg-teal-500 h-2 rounded-full transition-all duration-500" style="width: ${p.avance_global}%"></div>
