@@ -1194,6 +1194,44 @@
       construirCalendarioAnual();
       sincronizarCheckboxesColumnas();
       aplicarVisibilidadColumnas();
+
+      // Guardado automático del Nombre del Proyecto desde la barra superior
+      const inputNombreProy = document.getElementById("txt-nombre-proyecto");
+      if (inputNombreProy) {
+        const guardarNombreProyecto = async () => {
+          if (!proyectoActualId || !proyectoEsGestor) return;
+          const nuevoNombre = inputNombreProy.value.trim();
+          if (!nuevoNombre) return;
+
+          try {
+            const res = await fetch(`/proyectos/${proyectoActualId}/nombre`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ nombre: nuevoNombre })
+            });
+
+            if (res.ok) {
+              notificarToast("Nombre del proyecto actualizado con éxito.", "success");
+            } else {
+              const err = await res.json().catch(() => ({}));
+              alert(err.detail || "No se pudo actualizar el nombre del proyecto.");
+            }
+          } catch (e) {
+            console.error("Error al actualizar nombre:", e);
+          }
+        };
+
+        inputNombreProy.addEventListener("blur", guardarNombreProyecto);
+        inputNombreProy.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            inputNombreProy.blur(); // Dispara el evento blur para guardar
+          }
+        });
+      }
     });
 
     // --- AUTENTICACIÓN ---

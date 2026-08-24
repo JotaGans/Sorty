@@ -500,6 +500,36 @@ def actualizar_descripcion_proyecto(
     db.commit()
     return {"message": "Descripción actualizada correctamente", "descripcion": desc_limpia}
 
+# --- ACTUALIZAR NOMBRE DE PROYECTO ---
+class ProyectoNombreUpdate(BaseModel):
+    nombre: str
+
+@app.put("/proyectos/{proyecto_id}/nombre")
+def actualizar_nombre_proyecto(
+    proyecto_id: int, 
+    data: ProyectoNombreUpdate, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
+    permiso = db.execute("""
+        SELECT 1 FROM proyectos p
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1)
+    """, (user["id"], proyecto_id, user["id"])).fetchone()
+    
+    if not permiso and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="No tiene permisos de Gestor para renombrar este proyecto.")
+    
+    nombre_limpio = (data.nombre or "").strip()
+    if not nombre_limpio:
+        raise HTTPException(status_code=400, detail="El nombre del proyecto no puede estar vacío.")
+        
+    db.execute("UPDATE proyectos SET nombre = ? WHERE id = ?", (nombre_limpio, proyecto_id))
+    db.execute("INSERT INTO historial (proyecto_id, accion, detalle) VALUES (?, 'Renombrar Proyecto', ?)",
+               (proyecto_id, f"[{user['username']}] actualizó el nombre del proyecto a: '{nombre_limpio}'"))
+    db.commit()
+    return {"message": "Nombre del proyecto actualizado correctamente", "nombre": nombre_limpio}
+
 # --- CONFIGURACIÓN DE PROYECTO ---
 @app.get("/configuracion/nombre_proyecto")
 def obtener_nombre_proyecto(db: sqlite3.Connection = Depends(get_db)):
