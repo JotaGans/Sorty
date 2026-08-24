@@ -551,8 +551,8 @@ def obtener_actividades_proyecto(proyecto_id: int, user: dict = Depends(get_curr
 @app.post("/actividades")
 def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     try:
-        p_id = act.proyecto_id or 1
-        cod = str(act.codigo).strip()
+        p_id = int(act.proyecto_id) if act.proyecto_id is not None else 1
+        cod = str(act.codigo).strip().rstrip(".")
         desc = str(act.descripcion).strip()
         resp = str(act.responsable or "No asignado").strip()
         est = str(act.estado or "Pendiente").strip()
@@ -562,44 +562,71 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         dias_val = int(act.dias if act.dias is not None else 1)
         pred = str(act.predecesores or "").strip()
 
+        # Validar si el usuario es gestor o responsable
         es_gestor = db.execute("""
             SELECT 1 FROM proyectos p 
             LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
             WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1)
         """, (user["id"], p_id, user["id"])).fetchone()
 
-        existe = db.execute("SELECT codigo, responsable FROM actividades WHERE proyecto_id = ? AND codigo = ?", (p_id, cod)).fetchone()
+        existe = db.execute("""
+            SELECT * FROM actividades 
+            WHERE proyecto_id = ? AND (codigo = ? OR codigo = ?)
+        """, (p_id, cod, f"{cod}.")).fetchone()
 
-        if not es_gestor:
-            if not existe or user.get("nombre_completo", user["username"]) not in existe["responsable"]:
+        if not es_gestor and user.get("rol") != "ADMIN_TI":
+            if not existe or user.get("nombre_completo", user["username"]) not in (existe["responsable"] or ""):
                 raise HTTPException(status_code=403, detail="Permiso denegado: Solo puedes modificar tus actividades asignadas.")
 
+        ahora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         if existe:
-            if es_gestor:
+            # Detectar cambios específicos para el historial
+            cambios = []
+            if existe["descripcion"] != desc:
+                cambios.append(f"Descripción: '{desc}'")
+            if (existe["responsable"] or "No asignado") != resp:
+                cambios.append(f"Resp: '{resp}'")
+            if existe["estado"] != est:
+                cambios.append(f"Estado: '{est}'")
+            if int(existe["avance"] or 0) != av:
+                cambios.append(f"Avance: {av}%")
+            if existe["fecha_inicio"] != f_ini or existe["fecha_fin"] != f_fin:
+                cambios.append(f"Fechas: {f_ini} al {f_fin} ({dias_val}d)")
+
+            detalle_cambio = f"[{user['username']}] Modificó [{cod}]: " + (", ".join(cambios) if cambios else "Actualización general")
+
+            if es_gestor or user.get("rol") == "ADMIN_TI":
                 db.execute("""
                     UPDATE actividades 
                     SET descripcion = ?, responsable = ?, estado = ?, avance = ?, 
                         fecha_inicio = ?, fecha_fin = ?, dias = ?, predecesores = ?
-                    WHERE proyecto_id = ? AND codigo = ?
-                """, (desc, resp, est, av, f_ini, f_fin, dias_val, pred, p_id, cod))
+                    WHERE proyecto_id = ? AND (codigo = ? OR codigo = ?)
+                """, (desc, resp, est, av, f_ini, f_fin, dias_val, pred, p_id, cod, f"{cod}."))
             else:
                 db.execute("""
                     UPDATE actividades 
                     SET estado = ?, avance = ?
-                    WHERE proyecto_id = ? AND codigo = ?
-                """, (est, av, p_id, cod))
-            accion = "Modificación"
+                    WHERE proyecto_id = ? AND (codigo = ? OR codigo = ?)
+                """, (est, av, p_id, cod, f"{cod}."))
+
+            db.execute("""
+                INSERT INTO historial (proyecto_id, timestamp, accion, detalle) 
+                VALUES (?, ?, 'Modificación Actividad', ?)
+            """, (p_id, ahora_str, detalle_cambio))
         else:
-            if not es_gestor:
-                raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede dar de alta nuevas actividades.")
+            if not es_gestor and user.get("rol") != "ADMIN_TI":
+                raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede crear nuevas actividades.")
+            
             db.execute("""
                 INSERT INTO actividades (proyecto_id, codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (p_id, cod, desc, resp, est, av, f_ini, f_fin, dias_val, pred))
-            accion = "Alta"
 
-        db.execute("INSERT INTO historial (proyecto_id, accion, detalle) VALUES (?, ?, ?)",
-                   (p_id, accion, f"[{user['username']}] [{cod}] {desc}"))
+            db.execute("""
+                INSERT INTO historial (proyecto_id, timestamp, accion, detalle) 
+                VALUES (?, ?, 'Creación Actividad', ?)
+            """, (p_id, ahora_str, f"[{user['username']}] Creó [{cod}]: '{desc}' | Inicio: {f_ini} | Días: {dias_val}"))
 
         db.commit()
         return {"mensaje": "Actividad guardada correctamente"}
