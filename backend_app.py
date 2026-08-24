@@ -555,110 +555,26 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error en base de datos: {str(e)}")
 
-def renumerar_arbol_wbs(proyecto_id: int, db: sqlite3.Connection):
-    """
-    Reorganiza y renumera correlativamente todas las actividades del proyecto
-    respetando la jerarquía multinivel sin causar conflictos de PRIMARY KEY.
-    """
-    rows = db.execute("""
-        SELECT codigo, ROWID FROM actividades 
-        WHERE proyecto_id = ?
-    """, (proyecto_id,)).fetchall()
-
-    if not rows:
-        return
-
-    def split_clave(cod_str):
-        partes = str(cod_str).rstrip(".").split(".")
-        nums = []
-        for p in partes:
-            try:
-                nums.append(int(p))
-            except ValueError:
-                nums.append(0)
-        return nums
-
-    lista_ordenada = sorted([dict(r) for r in rows], key=lambda x: split_clave(x["codigo"]))
-
-    # Paso 1: Asignar identificadores temporales para evitar conflicto UNIQUE / PRIMARY KEY
-    for idx, item in enumerate(lista_ordenada):
-        db.execute("""
-            UPDATE actividades 
-            SET codigo = ? 
-            WHERE ROWID = ? AND proyecto_id = ?
-        """, (f"__TMP_REN_{idx}_{item['ROWID']}__", item["ROWID"], proyecto_id))
-
-    # Paso 2: Calcular correlativos limpios multinivel
-    mapeo_nuevos = {}
-    contadores_nivel = {}
-
-    for item in lista_ordenada:
-        cod_antiguo = item["codigo"].rstrip(".")
-        partes = cod_antiguo.split(".")
-        nivel = len(partes)
-
-        padre_antiguo = ".".join(partes[:-1]) if nivel > 1 else ""
-        padre_nuevo = mapeo_nuevos.get(padre_antiguo, "")
-
-        if padre_nuevo not in contadores_nivel:
-            contadores_nivel[padre_nuevo] = 1
-        else:
-            contadores_nivel[padre_nuevo] += 1
-
-        correlativo_actual = contadores_nivel[padre_nuevo]
-        cod_nuevo = f"{padre_nuevo}.{correlativo_actual}" if padre_nuevo else str(correlativo_actual)
-        mapeo_nuevos[cod_antiguo] = cod_nuevo
-
-        # Paso 3: Asignar el código correlativo final
-        db.execute("""
-            UPDATE actividades 
-            SET codigo = ? 
-            WHERE ROWID = ? AND proyecto_id = ?
-        """, (cod_nuevo, item["ROWID"], proyecto_id))
-
-
 @app.delete("/proyectos/{proyecto_id}/actividades/{codigo}")
-def eliminar_actividad(
-    proyecto_id: int, 
-    codigo: str, 
-    user: dict = Depends(get_current_user), 
-    db: sqlite3.Connection = Depends(get_db)
-):
-    p_id = int(proyecto_id)
-    u_id = int(user["id"])
-
-    permiso = db.execute("""
+def eliminar_actividad(proyecto_id: int, codigo: str, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    es_gestor = db.execute("""
         SELECT 1 FROM proyectos p 
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
         WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1)
-    """, (u_id, p_id, u_id)).fetchone()
+    """, (user["id"], proyecto_id, user["id"])).fetchone()
 
-    if not permiso and user.get("rol") != "ADMIN_TI":
-        raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto o Admin TI puede eliminar actividades.")
+    if not es_gestor:
+        raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede eliminar actividades.")
 
-    cod_limpio = str(codigo).strip().rstrip(".")
-    
-    try:
-        # 1. Eliminar la actividad y sus subordinadas
-        db.execute("""
-            DELETE FROM actividades 
-            WHERE proyecto_id = ? AND (codigo = ? OR codigo LIKE ? OR codigo = ? OR codigo LIKE ?)
-        """, (p_id, cod_limpio, f"{cod_limpio}.%", f"{cod_limpio}.", f"{cod_limpio}.%."))
-
-        # 2. Renumerar correlativamente el árbol completo
-        renumerar_arbol_wbs(p_id, db)
-
-        # 3. Registrar auditoría con hora de Perú
-        db.execute("""
-            INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
-            VALUES (?, ?, ?, 'Eliminación y Reindexación', ?)
-        """, (p_id, ahora_peru_str(), user["username"], f"Eliminó [{cod_limpio}] y subordinadas (reindexación correlativa ejecutada)"))
-
-        db.commit()
-        return {"mensaje": "Actividad eliminada y jerarquía reindexada exitosamente"}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al eliminar actividad: {str(e)}")
+    cod_limpio = codigo.rstrip(".")
+    db.execute("DELETE FROM actividades WHERE proyecto_id = ? AND (codigo = ? OR codigo LIKE ?)",
+               (proyecto_id, codigo, f"{cod_limpio}.%"))
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
+        VALUES (?, ?, ?, 'Eliminación Actividad', ?)
+    """, (proyecto_id, ahora_peru_str(), user["username"], f"Eliminó [{codigo}] y subordinadas"))
+    db.commit()
+    return {"mensaje": "Actividad(es) eliminada(s)"}
 
 # --- RESPONSABLES ---
 @app.get("/responsables")
