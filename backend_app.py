@@ -531,8 +531,10 @@ def actualizar_nombre_proyecto(
         raise HTTPException(status_code=400, detail="El nombre del proyecto no puede estar vacío.")
         
     db.execute("UPDATE proyectos SET nombre = ? WHERE id = ?", (nombre_limpio, proyecto_id))
-    db.execute("INSERT INTO historial (proyecto_id, timestamp, accion, detalle) VALUES (?, ?, 'Renombrar Proyecto', ?)",
-               (proyecto_id, ahora_peru_str(), f"[{user['username']}] actualizó el nombre del proyecto a: '{nombre_limpio}'"))
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
+        VALUES (?, ?, ?, 'Renombrar Proyecto', ?)
+    """, (proyecto_id, ahora_peru_str(), user["username"], f"Actualizó el nombre del proyecto a: '{nombre_limpio}'"))
     db.commit()
     return {"message": "Nombre del proyecto actualizado correctamente", "nombre": nombre_limpio}
 
@@ -600,7 +602,7 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
             if existe["fecha_inicio"] != f_ini or existe["fecha_fin"] != f_fin:
                 cambios.append(f"Fechas: {f_ini} al {f_fin} ({dias_val}d)")
 
-            detalle_cambio = f"[{user['username']}] Modificó [{cod}]: " + (", ".join(cambios) if cambios else "Actualización general")
+            detalle_cambio = f"Modificó [{cod}]: " + (", ".join(cambios) if cambios else "Actualización general")
 
             if es_gestor or user.get("rol") == "ADMIN_TI":
                 db.execute("""
@@ -617,9 +619,9 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
                 """, (est, av, p_id, cod, f"{cod}."))
 
             db.execute("""
-                INSERT INTO historial (proyecto_id, timestamp, accion, detalle) 
-                VALUES (?, ?, 'Modificación Actividad', ?)
-            """, (p_id, ahora_str, detalle_cambio))
+                INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
+                VALUES (?, ?, ?, 'Modificación Actividad', ?)
+            """, (p_id, ahora_str, user["username"], detalle_cambio))
         else:
             if not es_gestor and user.get("rol") != "ADMIN_TI":
                 raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede crear nuevas actividades.")
@@ -630,9 +632,9 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
             """, (p_id, cod, desc, resp, est, av, f_ini, f_fin, dias_val, pred))
 
             db.execute("""
-                INSERT INTO historial (proyecto_id, timestamp, accion, detalle) 
-                VALUES (?, ?, 'Creación Actividad', ?)
-            """, (p_id, ahora_str, f"[{user['username']}] Creó [{cod}]: '{desc}' | Inicio: {f_ini} | Días: {dias_val}"))
+                INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
+                VALUES (?, ?, ?, 'Creación Actividad', ?)
+            """, (p_id, ahora_str, user["username"], f"Creó [{cod}]: '{desc}' | Inicio: {f_ini} | Días: {dias_val}"))
 
         db.commit()
         return {"mensaje": "Actividad guardada correctamente"}
@@ -656,8 +658,10 @@ def eliminar_actividad(proyecto_id: int, codigo: str, user: dict = Depends(get_c
     cod_limpio = codigo.rstrip(".")
     db.execute("DELETE FROM actividades WHERE proyecto_id = ? AND (codigo = ? OR codigo LIKE ?)",
                (proyecto_id, codigo, f"{cod_limpio}.%"))
-    db.execute("INSERT INTO historial (proyecto_id, timestamp, accion, detalle) VALUES (?, ?, 'Eliminación Actividad', ?)",
-               (proyecto_id, ahora_peru_str(), f"[{user['username']}] Eliminó [{codigo}] y subordinadas"))
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
+        VALUES (?, ?, ?, 'Eliminación Actividad', ?)
+    """, (proyecto_id, ahora_peru_str(), user["username"], f"Eliminó [{codigo}] y subordinadas"))
     db.commit()
     return {"mensaje": "Actividad(es) eliminada(s)"}
 
@@ -687,7 +691,7 @@ def eliminar_responsable(nombre: str, user: dict = Depends(get_current_user), db
     db.commit()
     return {"mensaje": "Responsable eliminado"}
 
-# --- HISTORIAL ROBUSTO PARA GESTORES (TOTALMENTE COMPATIBLE) ---
+# --- HISTORIAL ROBUSTO PARA GESTORES ---
 @app.get("/proyectos/{proyecto_id}/historial")
 def ver_historial(
     proyecto_id: int, 
@@ -700,6 +704,7 @@ def ver_historial(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 proyecto_id INTEGER DEFAULT 1,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                usuario TEXT,
                 accion TEXT,
                 detalle TEXT
             )
@@ -710,6 +715,7 @@ def ver_historial(
 
         rows = db.execute("""
             SELECT COALESCE(timestamp, datetime('now')) as timestamp, 
+                   COALESCE(usuario, 'Sin registrar') as usuario,
                    COALESCE(accion, 'Registro') as accion, 
                    COALESCE(detalle, 'Operación sin detalle') as detalle 
             FROM historial 
@@ -911,9 +917,9 @@ def programar_notificacion_asignacion(
 
         # Auditoría en historial
         db.execute("""
-        INSERT INTO historial (proyecto_id, timestamp, accion, detalle)
-        VALUES (?, ?, 'Notificación Correo', ?)
-        """, (int(data.proyecto_id), fecha_hora_ahora, f"Notificación enviada a: [{', '.join(nombres_a_notificar)}] para actividad [{cod_limpio}]"))
+            INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle)
+            VALUES (?, ?, ?, 'Notificación Correo', ?)
+        """, (int(data.proyecto_id), fecha_hora_ahora, user["username"], f"Notificación enviada a: [{', '.join(nombres_a_notificar)}] para actividad [{cod_limpio}]"))
 
         db.commit()
         return {
