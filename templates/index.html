@@ -165,21 +165,21 @@
     </header>
 
     <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8 flex flex-col justify-start">
-      <div class="bg-white rounded-2xl p-6 mb-8 border border-gray-200/80 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+      <div class="bg-white rounded-2xl p-6 mb-8 border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div>
-          <span class="text-[11px] font-black text-teal-600 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">Portal de Gestión Institucional</span>
-          <h2 class="text-2xl md:text-3xl font-extrabold text-[#0f2a4a] mt-2 tracking-tight">Mis Proyectos y Programas</h2>
-          <p class="text-xs text-gray-500 font-medium mt-1">Seleccione un espacio de trabajo para registrar avances o supervisar la ruta de actividades.</p>
+          <span class="text-[11px] font-bold text-teal-700 uppercase tracking-wide bg-teal-50 px-2.5 py-1 rounded-md border border-teal-200">Portal de Gestión Institucional</span>
+          <h2 class="text-2xl md:text-3xl font-bold text-[#0f2a4a] mt-2 tracking-normal">Mis Proyectos y Programas</h2>
+          <p class="text-xs text-gray-600 font-normal mt-1">Seleccione un espacio de trabajo para registrar avances o supervisar la ruta de actividades.</p>
         </div>
 
         <div class="flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-end">
-          <div class="bg-slate-50 border border-slate-200/70 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
-            <span class="block text-[10px] font-black text-slate-500 uppercase">En Panel</span>
-            <span id="hub-kpi-total-proy" class="text-lg font-black text-[#0f2a4a]">0</span>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
+            <span class="block text-[10px] font-bold text-slate-600 uppercase">En Panel</span>
+            <span id="hub-kpi-total-proy" class="text-lg font-bold text-[#0f2a4a]">0</span>
           </div>
-          <div class="bg-teal-50 border border-teal-200/70 rounded-xl px-4 py-2.5 text-center min-w-[110px]">
-            <span class="block text-[10px] font-black text-teal-700 uppercase">Avance Prom.</span>
-            <span id="hub-kpi-prom-avance" class="text-lg font-black text-teal-800">0%</span>
+          <div class="bg-teal-50 border border-teal-200 rounded-xl px-4 py-2.5 text-center min-w-[110px]">
+            <span class="block text-[10px] font-bold text-teal-800 uppercase">Avance Prom.</span>
+            <span id="hub-kpi-prom-avance" class="text-lg font-bold text-teal-800">0%</span>
           </div>
         </div>
       </div>
@@ -1311,7 +1311,7 @@
 
         proyectos.forEach(p => {
           const card = document.createElement("div");
-          card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50";
+          card.className = "bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50";
           
           const tooltipEdit = p.es_gestor ? 'title="Doble clic para editar descripción"' : '';
           const estiloCursor = p.es_gestor ? 'cursor-pointer hover:text-teal-700 hover:bg-teal-50/70 p-1 -m-1 rounded transition' : '';
@@ -1320,37 +1320,37 @@
 
           card.innerHTML = `
             <div>
-              <div class="flex items-center justify-between mb-3.5">
-                <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider ${p.es_gestor ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-blue-50 text-blue-800 border border-blue-200/80'}">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wide ${p.es_gestor ? 'bg-amber-50 text-amber-900 border border-amber-200' : 'bg-blue-50 text-blue-900 border border-blue-200'}">
                   ${p.es_gestor ? '👑 Gestor' : '👤 Responsable'}
                 </span>
-                <span class="text-xs font-black text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">${p.avance_global}% Avance</span>
+                <span class="text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${p.avance_global}% Avance</span>
               </div>
-              <h3 class="font-extrabold text-base text-[#0f2a4a] leading-snug min-h-[44px] flex items-center">${p.nombre}</h3>
+              <h3 class="font-bold text-base text-[#0f2a4a] leading-snug min-h-[44px] flex items-center">${p.nombre}</h3>
               
-              <!-- DESCRIPCIÓN EDITABLE CON DOBLE CLIC -->
+              <!-- DESCRIPCIÓN EDITABLE -->
               <p ${tooltipEdit} 
                  ondblclick="${p.es_gestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" 
-                 class="text-xs text-gray-500 mt-2 line-clamp-2 min-h-[32px] leading-relaxed ${estiloCursor}">
+                 class="text-xs text-gray-600 mt-2 line-clamp-2 min-h-[32px] leading-relaxed ${estiloCursor}">
                 ${textoDesc}
               </p>
               
               <div class="w-full bg-gray-100 rounded-full h-2 mt-4 overflow-hidden shadow-inner">
-                <div class="bg-teal-500 h-2 rounded-full transition-all duration-500" style="width: ${p.avance_global}%"></div>
+                <div class="bg-teal-600 h-2 rounded-full transition-all duration-500" style="width: ${p.avance_global}%"></div>
               </div>
 
               <div class="grid grid-cols-3 gap-2 mt-5 text-center">
-                <div class="bg-emerald-50/80 p-2 rounded-xl border border-emerald-100">
-                  <span class="block text-[9px] font-black text-emerald-700 uppercase">Ejecutado</span>
-                  <span class="text-xs font-black text-emerald-900">${p.ejecutadas}</span>
+                <div class="bg-emerald-50 p-2 rounded-xl border border-emerald-100">
+                  <span class="block text-[10px] font-bold text-emerald-800 uppercase">Ejecutado</span>
+                  <span class="text-xs font-bold text-emerald-950">${p.ejecutadas}</span>
                 </div>
-                <div class="bg-amber-50/80 p-2 rounded-xl border border-amber-100">
-                  <span class="block text-[9px] font-black text-amber-700 uppercase">Proceso</span>
-                  <span class="text-xs font-black text-amber-900">${p.en_proceso}</span>
+                <div class="bg-amber-50 p-2 rounded-xl border border-amber-100">
+                  <span class="block text-[10px] font-bold text-amber-800 uppercase">Proceso</span>
+                  <span class="text-xs font-bold text-amber-950">${p.en_proceso}</span>
                 </div>
-                <div class="bg-rose-50/80 p-2 rounded-xl border border-rose-100">
-                  <span class="block text-[9px] font-black text-rose-700 uppercase">Pendiente</span>
-                  <span class="text-xs font-black text-rose-900">${p.pendientes}</span>
+                <div class="bg-rose-50 p-2 rounded-xl border border-rose-100">
+                  <span class="block text-[10px] font-bold text-rose-800 uppercase">Pendiente</span>
+                  <span class="text-xs font-bold text-rose-950">${p.pendientes}</span>
                 </div>
               </div>
             </div>
