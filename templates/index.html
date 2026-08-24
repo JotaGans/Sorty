@@ -3453,11 +3453,19 @@
       tbody.innerHTML = "";
       lista.forEach(u => {
         const esActivo = u.estado === 'ACTIVO';
+        const rolNormalizado = u.rol === 'ADMIN_TI' ? 'ADMIN_TI' : 'OPERADOR';
+
         tbody.innerHTML += `
           <tr class="hover:bg-gray-50 transition border-b border-gray-100">
             <td class="p-2.5 font-bold text-gray-800">${u.nombre_completo || '-'}</td>
             <td class="p-2.5 font-mono text-gray-600">@${u.username}</td>
-            <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-black ${u.rol === 'ADMIN_TI' ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-700'}">${u.rol}</span></td>
+            <td class="p-2.5">
+              <select onchange="cambiarRolGlobalUsuario(${u.id}, this.value)" 
+                      class="text-xs font-bold px-2 py-1 rounded-lg border border-gray-300 outline-none cursor-pointer ${rolNormalizado === 'ADMIN_TI' ? 'bg-teal-50 text-teal-800 border-teal-300' : 'bg-slate-50 text-slate-700'}">
+                <option value="OPERADOR" ${rolNormalizado === 'OPERADOR' ? 'selected' : ''}>OPERADOR</option>
+                <option value="ADMIN_TI" ${rolNormalizado === 'ADMIN_TI' ? 'selected' : ''}>ADMINISTRADOR TI</option>
+              </select>
+            </td>
             <td class="p-2.5 text-center">
               <span class="px-2 py-0.5 rounded text-[10px] font-bold ${esActivo ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
                 ${u.estado}
@@ -3472,6 +3480,31 @@
           </tr>
         `;
       });
+    }
+
+    async function cambiarRolGlobalUsuario(usuarioId, nuevoRol) {
+      try {
+        const res = await fetch("/usuarios/rol", {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${token}` 
+          },
+          body: JSON.stringify({ usuario_id: usuarioId, rol: nuevoRol })
+        });
+
+        if (res.ok) {
+          notificarToast(`Rol institucional actualizado a ${nuevoRol === 'ADMIN_TI' ? 'ADMINISTRADOR TI' : 'OPERADOR'}.`, "success");
+          await cargarListaUsuariosTI();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "No se pudo actualizar el rol global.");
+          await cargarListaUsuariosTI();
+        }
+      } catch (e) {
+        alert("Error de comunicación con el servidor.");
+        await cargarListaUsuariosTI();
+      }
     }
 
     function filtrarUsuariosTI() {

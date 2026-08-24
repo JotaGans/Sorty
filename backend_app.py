@@ -92,6 +92,10 @@ class UsuarioEstadoUpdate(BaseModel):
     usuario_id: int
     estado: str  # 'ACTIVO' | 'INACTIVO'
 
+class UsuarioRolUpdate(BaseModel):
+    usuario_id: int
+    rol: str  # 'ADMIN_TI' | 'OPERADOR'
+
 class PermisoProyectoUpdate(BaseModel):
     usuario_id: int
     nivel: str  # 'NINGUNO' | 'LECTURA' | 'GESTOR'
@@ -304,6 +308,13 @@ def init_db():
         except sqlite3.OperationalError:
             pass
 
+    # Normalizar roles heredados a los únicos oficiales (ADMIN_TI y OPERADOR)
+    c.execute("""
+        UPDATE usuarios 
+        SET rol = 'OPERADOR' 
+        WHERE rol NOT IN ('ADMIN_TI', 'OPERADOR')
+    """)
+
     conn.commit()
     conn.close()
 
@@ -399,6 +410,25 @@ def alternar_estado_usuario(data: UsuarioEstadoUpdate, user: dict = Depends(get_
     db.execute("UPDATE usuarios SET estado = ? WHERE id = ?", (data.estado, data.usuario_id))
     db.commit()
     return {"mensaje": f"Estado actualizado a {data.estado}"}
+
+@app.put("/usuarios/rol")
+def actualizar_rol_global_usuario(
+    data: UsuarioRolUpdate, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar roles globales.")
+    
+    if data.rol not in ["ADMIN_TI", "OPERADOR"]:
+        raise HTTPException(status_code=400, detail="Rol no válido.")
+
+    if data.usuario_id == user["id"] and data.rol != "ADMIN_TI":
+        raise HTTPException(status_code=400, detail="No puedes quitarte el rol de Administrador TI a ti mismo.")
+
+    db.execute("UPDATE usuarios SET rol = ? WHERE id = ?", (data.rol, data.usuario_id))
+    db.commit()
+    return {"mensaje": f"Rol actualizado a {data.rol}"}
 
 # --- HUB DE PROYECTOS ---
 @app.get("/proyectos")
