@@ -2,7 +2,13 @@ import os
 import sqlite3
 import hashlib
 import binascii
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+# Zona horaria oficial de Perú (UTC-5)
+ZONA_PERU = timezone(timedelta(hours=-5))
+
+def ahora_peru_str() -> str:
+    return datetime.now(ZONA_PERU).strftime("%Y-%m-%d %H:%M:%S")
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -525,8 +531,8 @@ def actualizar_nombre_proyecto(
         raise HTTPException(status_code=400, detail="El nombre del proyecto no puede estar vacío.")
         
     db.execute("UPDATE proyectos SET nombre = ? WHERE id = ?", (nombre_limpio, proyecto_id))
-    db.execute("INSERT INTO historial (proyecto_id, accion, detalle) VALUES (?, 'Renombrar Proyecto', ?)",
-               (proyecto_id, f"[{user['username']}] actualizó el nombre del proyecto a: '{nombre_limpio}'"))
+    db.execute("INSERT INTO historial (proyecto_id, timestamp, accion, detalle) VALUES (?, ?, 'Renombrar Proyecto', ?)",
+               (proyecto_id, ahora_peru_str(), f"[{user['username']}] actualizó el nombre del proyecto a: '{nombre_limpio}'"))
     db.commit()
     return {"message": "Nombre del proyecto actualizado correctamente", "nombre": nombre_limpio}
 
@@ -578,7 +584,7 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
             if not existe or user.get("nombre_completo", user["username"]) not in (existe["responsable"] or ""):
                 raise HTTPException(status_code=403, detail="Permiso denegado: Solo puedes modificar tus actividades asignadas.")
 
-        ahora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ahora_str = ahora_peru_str()
 
         if existe:
             # Detectar cambios específicos para el historial
@@ -650,8 +656,8 @@ def eliminar_actividad(proyecto_id: int, codigo: str, user: dict = Depends(get_c
     cod_limpio = codigo.rstrip(".")
     db.execute("DELETE FROM actividades WHERE proyecto_id = ? AND (codigo = ? OR codigo LIKE ?)",
                (proyecto_id, codigo, f"{cod_limpio}.%"))
-    db.execute("INSERT INTO historial (proyecto_id, accion, detalle) VALUES (?, 'Eliminación', ?)",
-               (proyecto_id, f"[{user['username']}] Eliminó [{codigo}] y subordinadas"))
+    db.execute("INSERT INTO historial (proyecto_id, timestamp, accion, detalle) VALUES (?, ?, 'Eliminación Actividad', ?)",
+               (proyecto_id, ahora_peru_str(), f"[{user['username']}] Eliminó [{codigo}] y subordinadas"))
     db.commit()
     return {"mensaje": "Actividad(es) eliminada(s)"}
 
@@ -880,7 +886,7 @@ def programar_notificacion_asignacion(
 
         registros_creados = 0
         fecha_hoy = datetime.now().strftime("%Y-%m-%d")
-        fecha_hora_ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        fecha_hora_ahora = ahora_peru_str()
 
         for nombre in nombres_a_notificar:
             r_info = db.execute("SELECT correo FROM responsables WHERE nombre = ?", (nombre,)).fetchone()
@@ -905,9 +911,9 @@ def programar_notificacion_asignacion(
 
         # Auditoría en historial
         db.execute("""
-            INSERT INTO historial (proyecto_id, accion, detalle)
-            VALUES (?, 'Notificación Correo', ?)
-        """, (int(data.proyecto_id), f"Notificación enviada a: [{', '.join(nombres_a_notificar)}] para actividad [{cod_limpio}]"))
+        INSERT INTO historial (proyecto_id, timestamp, accion, detalle)
+        VALUES (?, ?, 'Notificación Correo', ?)
+        """, (int(data.proyecto_id), fecha_hora_ahora, f"Notificación enviada a: [{', '.join(nombres_a_notificar)}] para actividad [{cod_limpio}]"))
 
         db.commit()
         return {
