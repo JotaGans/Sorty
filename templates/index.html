@@ -763,7 +763,7 @@
   </div>
 
   <!-- MODAL: CONFIRMACIÓN Y CONFIGURACIÓN DE NOTIFICACIÓN POR CORREO -->
-  <div id="modal-notificacion-correo" class="hidden fixed inset-0 bg-black/60 z-[85] flex items-center justify-center p-4">
+  <div id="modal-notificacion-correo" class="hidden fixed inset-0 bg-black/70 z-[140] flex items-center justify-center p-4 backdrop-blur-[1px]">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300">
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
         <div class="flex items-center space-x-2">
@@ -1136,8 +1136,13 @@
         }
       }
 
-      // Tecla Escape (Esc) para cancelar / cerrar ventanas
+      // Tecla Escape (Esc) para cancelar / cerrar ventanas con prioridad al modal visible
       if (e.key === "Escape") {
+        const modNotif = document.getElementById("modal-notificacion-correo");
+        if (modNotif && !modNotif.classList.contains("hidden")) {
+          cerrarModalNotificacionCorreo();
+          return;
+        }
         const modDialog = document.getElementById("modal-dialog-imarpe");
         if (modDialog && !modDialog.classList.contains("hidden")) {
           cerrarDialogoImarpe(false);
@@ -1163,14 +1168,14 @@
           cerrarAsignarResponsables();
           return;
         }
-        const modNotif = document.getElementById("modal-notificacion-correo");
-        if (modNotif && !modNotif.classList.contains("hidden")) {
-          cerrarModalNotificacionCorreo();
-          return;
-        }
         const modWz = document.getElementById("modal-wizard-creacion");
         if (modWz && !modWz.classList.contains("hidden")) {
           cerrarWizardCreacion();
+          return;
+        }
+        const modCol = document.getElementById("modal-columnas");
+        if (modCol && !modCol.classList.contains("hidden")) {
+          cerrarModalColumnas();
           return;
         }
       }
@@ -2233,18 +2238,22 @@
     }
 
     // =========================================================================
-    // MÓDULO DE NOTIFICACIONES Y ALERTAS PREVENTIVAS DE CIERRE
+    // MÓDULO DE NOTIFICACIONES Y ALERTAS PREVENTIVAS DE CIERRE (BLINDADO)
     // =========================================================================
     let actividadNotificacionActual = null;
     let destinatariosNuevosNotificacion = [];
 
     function abrirModalNotificacionCorreo(act, destinatariosNuevos = []) {
+      // Asegurar que el diálogo previo de confirmación esté cerrado por completo
+      const modDialog = document.getElementById("modal-dialog-imarpe");
+      if (modDialog) modDialog.classList.add("hidden");
+
       actividadNotificacionActual = act;
-      destinatariosNuevosNotificacion = destinatariosNuevos;
+      destinatariosNuevosNotificacion = Array.isArray(destinatariosNuevos) ? destinatariosNuevos : [];
       const duracion = parseInt(act.dias) || 1;
 
-      const textoDestinatarios = destinatariosNuevos.length > 0 
-        ? destinatariosNuevos.join("; ") 
+      const textoDestinatarios = destinatariosNuevosNotificacion.length > 0 
+        ? destinatariosNuevosNotificacion.join("; ") 
         : (act.responsable || "Personal");
 
       document.getElementById("notif-txt-actividad").innerHTML = `
@@ -2253,7 +2262,9 @@
       `;
       document.getElementById("notif-txt-duracion").innerText = duracion;
       document.getElementById("notif-txt-fin").innerText = formatearFechaLatina(act.fecha_fin);
-      document.getElementById("notif-input-dias-custom").value = "";
+      
+      const inpCustom = document.getElementById("notif-input-dias-custom");
+      if (inpCustom) inpCustom.value = "";
 
       const contenedor = document.getElementById("notif-contenedor-opciones-dias");
       contenedor.innerHTML = "";
@@ -2266,7 +2277,7 @@
           opcionesDisponibles++;
           contenedor.innerHTML += `
             <label class="flex items-center space-x-2 p-1.5 rounded hover:bg-teal-50 cursor-pointer font-bold text-gray-700">
-              <input type="checkbox" value="${diasAntes}" class="notif-chk-dia rounded text-teal-600 focus:ring-0">
+              <input type="checkbox" value="${diasAntes}" class="notif-chk-dia rounded text-teal-600 focus:ring-0 cursor-pointer">
               <span>${diasAntes} ${diasAntes === 1 ? 'día' : 'días'} antes</span>
             </label>
           `;
@@ -2274,10 +2285,17 @@
       });
 
       if (opcionesDisponibles === 0) {
-        contenedor.innerHTML = `<p class="col-span-2 text-gray-400 italic text-[11px] text-center">La actividad dura ${duracion} día(s). Solo se enviará la notificación de asignación inicial.</p>`;
+        contenedor.innerHTML = `<p class="col-span-2 text-gray-400 italic text-[11px] text-center">La actividad dura ${duracion} día(s). Solo se registrará la notificación inicial.</p>`;
       }
 
       document.getElementById("modal-notificacion-correo").classList.remove("hidden");
+    }
+
+    function cerrarModalNotificacionCorreo() {
+      const modal = document.getElementById("modal-notificacion-correo");
+      if (modal) modal.classList.add("hidden");
+      actividadNotificacionActual = null;
+      destinatariosNuevosNotificacion = [];
     }
 
     async function confirmarEnvioNotificaciones() {
@@ -2301,14 +2319,17 @@
         }
       }
 
-      // Cerrar de inmediato el modal de configuración de correo
+      const actRef = actividadNotificacionActual;
+      const nuevosRef = destinatariosNuevosNotificacion;
+
+      // Cerramos de inmediato la ventana para evitar bloqueos
       cerrarModalNotificacionCorreo();
 
       try {
         const payload = {
           proyecto_id: parseInt(proyectoActualId) || 1,
-          codigo_actividad: String(actividadNotificacionActual.codigo).trim(),
-          destinatarios_nuevos: destinatariosNuevosNotificacion || [],
+          codigo_actividad: String(actRef.codigo).trim(),
+          destinatarios_nuevos: nuevosRef || [],
           dias_recordatorio: seleccionados.sort((a, b) => b - a)
         };
 
@@ -2322,14 +2343,14 @@
         });
 
         if (res.ok) {
-          notificarToast("Notificación enviada y recordatorios preventivos programados con éxito.", "success");
+          notificarToast("Notificación procesada y alertas programadas exitosamente.", "success");
         } else {
           const err = await res.json().catch(() => ({}));
           alert(err.detail || "No se pudo procesar la notificación.");
         }
       } catch (e) {
-        console.error("Error al despachar notificación:", e);
-        alert("Error de conexión al servidor al despachar las alertas.");
+        console.error("Error al programar notificación:", e);
+        alert("Error de comunicación con el servidor.");
       }
     }
 
