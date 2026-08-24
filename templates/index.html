@@ -3225,9 +3225,18 @@
       document.getElementById("modal-cpm").classList.add("hidden"); 
     }
 
-    // --- HISTORIAL DE AUDITORÍA CON USUARIO ACTIVO ---
+    // --- HISTORIAL DE AUDITORÍA (APERTURA INSTANTÁNEA) ---
     async function abrirHistorial() {
       if (!proyectoActualId) return;
+
+      const modal = document.getElementById("modal-historial");
+      const tbody = document.getElementById("historial-tabla-body");
+
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 font-semibold animate-pulse">Cargando registros de auditoría...</td></tr>`;
+      }
+      modal.classList.remove("hidden");
+
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/historial`, {
           headers: { "Authorization": `Bearer ${token}` }
@@ -3235,7 +3244,6 @@
         if (!res.ok) throw new Error("No se pudo cargar el historial");
         const data = await res.json();
         
-        const tbody = document.getElementById("historial-tabla-body");
         tbody.innerHTML = "";
 
         if (data && data.length > 0) {
@@ -3252,11 +3260,11 @@
         } else {
           tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 font-semibold">Sin registros de auditoría en este proyecto.</td></tr>`;
         }
-
-        document.getElementById("modal-historial").classList.remove("hidden");
       } catch (err) {
         console.error("Error al abrir historial:", err);
-        alert("No se pudo abrir el Historial. Intente nuevamente.");
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-red-500 font-semibold">Error al consultar el historial de auditoría.</td></tr>`;
+        }
       }
     }
 
@@ -3539,8 +3547,15 @@
       const divSug = document.getElementById("sugerencias-usuarios-rol");
       if (divSug) divSug.classList.add("hidden");
 
+      const modal = document.getElementById("modal-responsables");
+      const tbody = document.getElementById("personal-permisos-tabla-body");
+
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 font-semibold animate-pulse">Sincronizando miembros y permisos...</td></tr>`;
+      }
+      modal.classList.remove("hidden");
+
       await recargarDatosPersonalProyecto();
-      document.getElementById("modal-responsables").classList.remove("hidden");
     }
 
     function cerrarResponsables() {
