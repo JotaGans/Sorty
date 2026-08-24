@@ -3,12 +3,6 @@ import sqlite3
 import hashlib
 import binascii
 from datetime import datetime, timedelta, timezone
-
-# Zona horaria oficial de Perú (UTC-5)
-ZONA_PERU = timezone(timedelta(hours=-5))
-
-def ahora_peru_str() -> str:
-    return datetime.now(ZONA_PERU).strftime("%Y-%m-%d %H:%M:%S")
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +10,12 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from jose import JWTError, jwt
+
+# --- CONFIGURACIÓN DE ZONA HORARIA PERÚ (UTC-5) ---
+ZONA_PERU = timezone(timedelta(hours=-5))
+
+def ahora_peru_str() -> str:
+    return datetime.now(ZONA_PERU).strftime("%Y-%m-%d %H:%M:%S")
 
 # --- CONFIGURACIÓN Y SEGURIDAD ---
 SECRET_KEY = "IMARPE_SGAS_SUPER_SECRET_KEY_2026_SECURITY_TOKEN"
@@ -85,11 +85,17 @@ class UsuarioAltaModel(BaseModel):
     username: str
     password: str
     nombre_completo: str
-    rol: str  # 'ADMIN_TI' | 'OPERADOR'
+    rol: str
 
 class ProyectoCrearModel(BaseModel):
     nombre: str
     descripcion: Optional[str] = ""
+
+class ProyectoDescripcionUpdate(BaseModel):
+    descripcion: str
+
+class ProyectoNombreUpdate(BaseModel):
+    nombre: str
 
 class ActividadModel(BaseModel):
     proyecto_id: Optional[int] = 1
@@ -117,6 +123,12 @@ class ResponsableActualizarModel(BaseModel):
 class ConfigValorModel(BaseModel):
     valor: str
 
+class NotificacionRequest(BaseModel):
+    proyecto_id: int
+    codigo_actividad: str
+    destinatarios_nuevos: Optional[List[str]] = []
+    dias_recordatorio: Optional[List[int]] = []
+
 # --- INICIALIZACIÓN Y MIGRACIÓN DE BD ---
 def init_db():
     if os.path.exists("/data") and not os.path.exists(DB_PATH) and os.path.exists("imarpe_gantt.db"):
@@ -129,7 +141,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # 1. Tabla Usuarios y migraciones
+    # 1. Tabla Usuarios
     c.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -140,7 +152,6 @@ def init_db():
             estado TEXT NOT NULL DEFAULT 'ACTIVO'
         )
     """)
-
     for col, defn in [("nombre_completo", "TEXT"), ("rol", "TEXT DEFAULT 'OPERADOR'"), ("estado", "TEXT DEFAULT 'ACTIVO'")]:
         try:
             c.execute(f"ALTER TABLE usuarios ADD COLUMN {col} {defn}")
@@ -151,7 +162,6 @@ def init_db():
     hashed_admin_pass = hash_password("admin123")
     c.execute("SELECT id FROM usuarios WHERE username = 'admin'")
     admin_row = c.fetchone()
-    
     if not admin_row:
         c.execute("""
             INSERT INTO usuarios (username, password, nombre_completo, rol, estado)
@@ -166,7 +176,7 @@ def init_db():
             WHERE username = 'admin'
         """, (hashed_admin_pass,))
 
-    # 3. Tabla Proyectos y migraciones
+    # 3. Tabla Proyectos
     c.execute("""
         CREATE TABLE IF NOT EXISTS proyectos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -177,15 +187,11 @@ def init_db():
             FOREIGN KEY(creador_id) REFERENCES usuarios(id)
         )
     """)
-
-    try:
-        c.execute("ALTER TABLE proyectos ADD COLUMN descripcion TEXT")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute("ALTER TABLE proyectos ADD COLUMN creador_id INTEGER")
-    except sqlite3.OperationalError:
-        pass
+    for col, defn in [("descripcion", "TEXT"), ("creador_id", "INTEGER")]:
+        try:
+            c.execute(f"ALTER TABLE proyectos ADD COLUMN {col} {defn}")
+        except sqlite3.OperationalError:
+            pass
 
     # 4. Tabla Permisos Proyecto
     c.execute("""
@@ -197,71 +203,41 @@ def init_db():
         )
     """)
 
-    # 5. Migración Segura de la Tabla Actividades a Clave Primaria Compuesta (proyecto_id, codigo)
-    # Detectar si la tabla tiene restricción única solo en 'codigo'
-    c.execute("PRAGMA table_info(actividades)")
-    cols_act = c.fetchall()
-    
-    if cols_act:
-        # Recrear tabla garantizando PRIMARY KEY (proyecto_id, codigo)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS actividades_nueva (
-                proyecto_id INTEGER DEFAULT 1,
-                codigo TEXT NOT NULL,
-                descripcion TEXT NOT NULL,
-                responsable TEXT,
-                estado TEXT,
-                avance INTEGER,
-                fecha_inicio TEXT,
-                fecha_fin TEXT,
-                dias INTEGER,
-                predecesores TEXT DEFAULT '',
-                PRIMARY KEY (proyecto_id, codigo)
-            )
-        """)
-        try:
-            c.execute("""
-                INSERT OR IGNORE INTO actividades_nueva (proyecto_id, codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
-                SELECT COALESCE(proyecto_id, 1), codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, COALESCE(predecesores, '')
-                FROM actividades
-            """)
-            c.execute("DROP TABLE actividades")
-            c.execute("ALTER TABLE actividades_nueva RENAME TO actividades")
-        except Exception:
-            pass
-    else:
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS actividades (
-                proyecto_id INTEGER DEFAULT 1,
-                codigo TEXT NOT NULL,
-                descripcion TEXT NOT NULL,
-                responsable TEXT,
-                estado TEXT,
-                avance INTEGER,
-                fecha_inicio TEXT,
-                fecha_fin TEXT,
-                dias INTEGER,
-                predecesores TEXT DEFAULT '',
-                PRIMARY KEY (proyecto_id, codigo)
-            )
-        """)
+    # 5. Tabla Actividades
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS actividades (
+            proyecto_id INTEGER DEFAULT 1,
+            codigo TEXT NOT NULL,
+            descripcion TEXT NOT NULL,
+            responsable TEXT,
+            estado TEXT,
+            avance INTEGER,
+            fecha_inicio TEXT,
+            fecha_fin TEXT,
+            dias INTEGER,
+            predecesores TEXT DEFAULT '',
+            PRIMARY KEY (proyecto_id, codigo)
+        )
+    """)
 
-    # 6. Tablas auxiliares
+    # 6. Tabla Historial con auto-migración garantizada
     c.execute("""
         CREATE TABLE IF NOT EXISTS historial (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             proyecto_id INTEGER DEFAULT 1,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            usuario TEXT DEFAULT 'admin',
             accion TEXT,
             detalle TEXT
         )
     """)
+    for col, defn in [("proyecto_id", "INTEGER DEFAULT 1"), ("usuario", "TEXT DEFAULT 'admin'")]:
+        try:
+            c.execute(f"ALTER TABLE historial ADD COLUMN {col} {defn}")
+        except sqlite3.OperationalError:
+            pass
 
-    try:
-        c.execute("ALTER TABLE historial ADD COLUMN proyecto_id INTEGER DEFAULT 1")
-    except sqlite3.OperationalError:
-        pass
-
+    # 7. Tablas auxiliares
     c.execute("""
         CREATE TABLE IF NOT EXISTS responsables (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -278,25 +254,6 @@ def init_db():
         )
     """)
 
-    # Proyecto semilla
-    c.execute("SELECT id FROM proyectos WHERE id = 1")
-    if not c.fetchone():
-        c.execute("INSERT INTO proyectos (id, nombre, creador_id) VALUES (1, 'GESTIÓN DE CONVENIOS', ?)", (admin_id,))
-        c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
-    else:
-        c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
-
-    # Saneamiento de códigos heredados con punto al final
-    try:
-        c.execute("""
-            UPDATE actividades 
-            SET codigo = RTRIM(codigo, '.') 
-            WHERE codigo LIKE '%.'
-        """)
-    except Exception:
-        pass
-
-    # Tabla para registro y despacho de notificaciones y recordatorios
     c.execute("""
         CREATE TABLE IF NOT EXISTS alertas_notificaciones (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -304,14 +261,22 @@ def init_db():
             codigo_actividad TEXT,
             destinatario_nombre TEXT,
             destinatario_correo TEXT,
-            tipo_alerta TEXT, -- 'ASIGNACION_INICIAL' | 'RECORDATORIO_PREVENTIVO'
+            tipo_alerta TEXT,
             dias_antes INTEGER,
             fecha_programada TEXT,
-            estado TEXT DEFAULT 'PROGRAMADO', -- 'PROGRAMADO' | 'ENVIADO'
+            estado TEXT DEFAULT 'PROGRAMADO',
             fecha_envio DATETIME,
             FOREIGN KEY(proyecto_id) REFERENCES proyectos(id)
         )
     """)
+
+    # Proyecto semilla
+    c.execute("SELECT id FROM proyectos WHERE id = 1")
+    if not c.fetchone():
+        c.execute("INSERT INTO proyectos (id, nombre, creador_id) VALUES (1, 'GESTIÓN DE CONVENIOS', ?)", (admin_id,))
+        c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
+    else:
+        c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
 
     conn.commit()
     conn.close()
@@ -356,11 +321,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: sqlite3.Connecti
         "user_id": user["id"]
     }
 
-# --- GESTIÓN DE USUARIOS (ADMIN TI EXCLUSIVO) ---
+# --- GESTIÓN DE USUARIOS (ADMIN TI) ---
 @app.post("/usuarios")
 def alta_usuario(nuevo: UsuarioAltaModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     if user["rol"] != "ADMIN_TI":
-        raise HTTPException(status_code=403, detail="Acceso denegado: Solo el Administrador TI puede gestionar usuarios.")
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede dar de alta usuarios.")
     
     existe = db.execute("SELECT id FROM usuarios WHERE username = ?", (nuevo.username,)).fetchone()
     if existe:
@@ -380,7 +345,6 @@ def listar_usuarios(user: dict = Depends(get_current_user), db: sqlite3.Connecti
     return [dict(r) for r in rows]
 
 # --- HUB DE PROYECTOS ---
-# --- HUB DE PROYECTOS CON CÁLCULO JERÁRQUICO UNIFICADO ---
 @app.get("/proyectos")
 def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     u_id = user["id"]
@@ -404,19 +368,13 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
         p_dict = dict(r)
         p_id = p_dict["id"]
         
-        # Obtener todas las actividades del proyecto para roll-up preciso
         acts_raw = db.execute("SELECT codigo, avance, estado FROM actividades WHERE proyecto_id = ? ORDER BY codigo ASC", (p_id,)).fetchall()
         
         if not acts_raw:
-            p_dict["total_actividades"] = 0
-            p_dict["ejecutadas"] = 0
-            p_dict["en_proceso"] = 0
-            p_dict["pendientes"] = 0
-            p_dict["avance_global"] = 0
+            p_dict.update({"total_actividades": 0, "ejecutadas": 0, "en_proceso": 0, "pendientes": 0, "avance_global": 0})
             proyectos_resumen.append(p_dict)
             continue
 
-        # Normalizar y procesar en memoria
         acts_dict = {}
         for a in acts_raw:
             cod = str(a["codigo"]).rstrip(".")
@@ -426,11 +384,9 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
                 "estado": str(a["estado"] or "Pendiente")
             }
 
-        # Función auxiliar de redondeo aritmético idéntico a Math.round() de JS
         def round_half_up(n):
             return int(n + 0.5) if n >= 0 else int(n - 0.5)
 
-        # Aplicar Bottom-Up (Nivel 4 -> 3 -> 2 -> 1)
         todos_cods = list(acts_dict.keys())
         for nivel_actual in [4, 3, 2, 1]:
             for cod, act in acts_dict.items():
@@ -440,27 +396,16 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
                     if hijos:
                         prom_av = round_half_up(sum(h["avance"] for h in hijos) / len(hijos))
                         act["avance"] = prom_av
-                        if prom_av == 100:
-                            act["estado"] = "Ejecutado"
-                        elif prom_av > 0:
-                            act["estado"] = "En proceso"
-                        else:
-                            act["estado"] = "Pendiente"
+                        act["estado"] = "Ejecutado" if prom_av == 100 else ("En proceso" if prom_av > 0 else "Pendiente")
 
-        # Conteo final sincronizado
         acts_finales = list(acts_dict.values())
-        ejec = sum(1 for a in acts_finales if a["estado"] == "Ejecutado")
-        proc = sum(1 for a in acts_finales if a["estado"] == "En proceso")
-        pend = sum(1 for a in acts_finales if a["estado"] == "Pendiente")
-        
-        # Avance global promedio de actividades de nivel 1 (raíces)
-        raices = [a for a in acts_finales if not "." in a["codigo"]]
+        raices = [a for a in acts_finales if "." not in a["codigo"]]
         pct_global = round_half_up(sum(a["avance"] for a in raices) / len(raices)) if raices else 0
 
         p_dict["total_actividades"] = len(acts_finales)
-        p_dict["ejecutadas"] = ejec
-        p_dict["en_proceso"] = proc
-        p_dict["pendientes"] = pend
+        p_dict["ejecutadas"] = sum(1 for a in acts_finales if a["estado"] == "Ejecutado")
+        p_dict["en_proceso"] = sum(1 for a in acts_finales if a["estado"] == "En proceso")
+        p_dict["pendientes"] = sum(1 for a in acts_finales if a["estado"] == "Pendiente")
         p_dict["avance_global"] = pct_global
         proyectos_resumen.append(p_dict)
 
@@ -471,27 +416,16 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
     db.execute("INSERT INTO proyectos (nombre, descripcion, creador_id) VALUES (?, ?, ?)",
                (p.nombre.strip(), p.descripcion.strip(), user["id"]))
     nuevo_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
-    
-    db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (?, ?, 1)",
-               (nuevo_id, user["id"]))
-    
-    db.execute("INSERT INTO historial (proyecto_id, accion, detalle) VALUES (?, 'Creación Proyecto', ?)",
-               (nuevo_id, f"Proyecto creado por [{user['username']}]"))
+    db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (?, ?, 1)", (nuevo_id, user["id"]))
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
+        VALUES (?, ?, ?, 'Creación Proyecto', ?)
+    """, (nuevo_id, ahora_peru_str(), user["username"], f"Proyecto creado: '{p.nombre.strip()}'"))
     db.commit()
     return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id}
 
-# --- ACTUALIZAR DESCRIPCIÓN DE PROYECTO (MÁX 120 CARACTERES) ---
-class ProyectoDescripcionUpdate(BaseModel):
-    descripcion: str
-
 @app.put("/proyectos/{proyecto_id}/descripcion")
-def actualizar_descripcion_proyecto(
-    proyecto_id: int, 
-    data: ProyectoDescripcionUpdate, 
-    user: dict = Depends(get_current_user), 
-    db: sqlite3.Connection = Depends(get_db)
-):
-    # Validar permisos de Gestor o Creador
+def actualizar_descripcion_proyecto(proyecto_id: int, data: ProyectoDescripcionUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     permiso = db.execute("""
         SELECT 1 FROM proyectos p
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
@@ -506,17 +440,8 @@ def actualizar_descripcion_proyecto(
     db.commit()
     return {"message": "Descripción actualizada correctamente", "descripcion": desc_limpia}
 
-# --- ACTUALIZAR NOMBRE DE PROYECTO ---
-class ProyectoNombreUpdate(BaseModel):
-    nombre: str
-
 @app.put("/proyectos/{proyecto_id}/nombre")
-def actualizar_nombre_proyecto(
-    proyecto_id: int, 
-    data: ProyectoNombreUpdate, 
-    user: dict = Depends(get_current_user), 
-    db: sqlite3.Connection = Depends(get_db)
-):
+def actualizar_nombre_proyecto(proyecto_id: int, data: ProyectoNombreUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     permiso = db.execute("""
         SELECT 1 FROM proyectos p
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
@@ -538,18 +463,6 @@ def actualizar_nombre_proyecto(
     db.commit()
     return {"message": "Nombre del proyecto actualizado correctamente", "nombre": nombre_limpio}
 
-# --- CONFIGURACIÓN DE PROYECTO ---
-@app.get("/configuracion/nombre_proyecto")
-def obtener_nombre_proyecto(db: sqlite3.Connection = Depends(get_db)):
-    row = db.execute("SELECT valor FROM configuracion WHERE clave = 'nombre_proyecto'").fetchone()
-    return {"valor": row["valor"] if row else "GESTIÓN DE CONVENIOS"}
-
-@app.post("/configuracion/nombre_proyecto")
-def guardar_nombre_proyecto(cfg: ConfigValorModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    db.execute("INSERT OR REPLACE INTO configuracion (clave, valor) VALUES ('nombre_proyecto', ?)", (cfg.valor.strip(),))
-    db.commit()
-    return {"mensaje": "Guardado"}
-
 # --- ACTIVIDADES Y GANTT POR PROYECTO ---
 @app.get("/proyectos/{proyecto_id}/actividades")
 def obtener_actividades_proyecto(proyecto_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
@@ -570,7 +483,6 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         dias_val = int(act.dias if act.dias is not None else 1)
         pred = str(act.predecesores or "").strip()
 
-        # Validar si el usuario es gestor o responsable
         es_gestor = db.execute("""
             SELECT 1 FROM proyectos p 
             LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
@@ -589,7 +501,6 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         ahora_str = ahora_peru_str()
 
         if existe:
-            # Detectar cambios específicos para el historial
             cambios = []
             if existe["descripcion"] != desc:
                 cambios.append(f"Descripción: '{desc}'")
@@ -665,7 +576,7 @@ def eliminar_actividad(proyecto_id: int, codigo: str, user: dict = Depends(get_c
     db.commit()
     return {"mensaje": "Actividad(es) eliminada(s)"}
 
-# --- RESPONSABLES (CRUD COMPLETO) ---
+# --- RESPONSABLES ---
 @app.get("/responsables")
 def listar_responsables(db: sqlite3.Connection = Depends(get_db)):
     rows = db.execute("SELECT nombre, cargo, correo FROM responsables ORDER BY nombre ASC").fetchall()
@@ -699,23 +610,12 @@ def ver_historial(
     db: sqlite3.Connection = Depends(get_db)
 ):
     try:
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS historial (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                proyecto_id INTEGER DEFAULT 1,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                usuario TEXT,
-                accion TEXT,
-                detalle TEXT
-            )
-        """)
-
         p_id_int = int(proyecto_id)
         p_id_str = str(proyecto_id)
 
         rows = db.execute("""
             SELECT COALESCE(timestamp, datetime('now')) as timestamp, 
-                   COALESCE(usuario, 'Sin registrar') as usuario,
+                   COALESCE(usuario, 'admin') as usuario,
                    COALESCE(accion, 'Registro') as accion, 
                    COALESCE(detalle, 'Operación sin detalle') as detalle 
             FROM historial 
@@ -741,13 +641,11 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
     if not rows:
         return {"duracion_proyecto_dias": 0, "detalles": {}}
 
-    # Solo procesamos actividades terminales (hojas) para el grafo CPM formal
     todos_codigos = [r["codigo"] for r in rows]
     actividades_dict = {}
     
     for r in rows:
         cod = r["codigo"]
-        # Determinar si es nodo terminal (no tiene hijos jerárquicos)
         cod_limpio = cod.rstrip(".")
         es_madre = any(otro.startswith(f"{cod_limpio}.") and otro != cod for otro in todos_codigos)
         
@@ -757,19 +655,14 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
             "duracion": max(1, int(r["dias"] or 1)),
             "predecesores": [p.strip() for p in (r["predecesores"] or "").split(",") if p.strip() and p.strip() in todos_codigos],
             "es_madre": es_madre,
-            "ES": 0,
-            "EF": 0,
-            "LS": 0,
-            "LF": 0,
-            "holgura": 0,
-            "es_critica": False
+            "ES": 0, "EF": 0, "LS": 0, "LF": 0, "holgura": 0, "es_critica": False
         }
 
     nodos = {k: v for k, v in actividades_dict.items() if not v["es_madre"]}
     if not nodos:
         nodos = actividades_dict
 
-    # 1. FORWARD PASS (Early Start & Early Finish)
+    # 1. Forward Pass
     cambio = True
     pasadas = 0
     while cambio and pasadas < len(nodos) * 2:
@@ -780,10 +673,8 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
             for pred in n["predecesores"]:
                 if pred in nodos:
                     max_ef_pred = max(max_ef_pred, nodos[pred]["EF"])
-            
             nuevo_es = max_ef_pred
             nuevo_ef = nuevo_es + n["duracion"]
-            
             if nuevo_es != n["ES"] or nuevo_ef != n["EF"]:
                 n["ES"] = nuevo_es
                 n["EF"] = nuevo_ef
@@ -791,7 +682,7 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
 
     duracion_total = max((n["EF"] for n in nodos.values()), default=0)
 
-    # 2. BACKWARD PASS (Late Start & Late Finish)
+    # 2. Backward Pass
     for n in nodos.values():
         n["LF"] = duracion_total
         n["LS"] = duracion_total - n["duracion"]
@@ -812,37 +703,14 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
                     n["LS"] = nuevo_ls
                     cambio = True
 
-    # 3. CÁLCULO DE HOLGURA Y RUTA CRÍTICA REAL
+    # 3. Holgura y Ruta Crítica
     for n in nodos.values():
         n["holgura"] = max(0, n["LS"] - n["ES"])
         n["es_critica"] = (n["holgura"] == 0 and n["duracion"] > 0)
 
     return {"duracion_proyecto_dias": duracion_total, "detalles": nodos}
 
-
-# --- HISTORIAL ROBUSTO SANEADO ---
-@app.get("/proyectos/{proyecto_id}/historial")
-def ver_historial(proyecto_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    try:
-        rows = db.execute("""
-            SELECT COALESCE(timestamp, datetime('now')) as timestamp, 
-                   COALESCE(accion, 'Registro') as accion, 
-                   COALESCE(detalle, 'Operación sin detalle') as detalle 
-            FROM historial 
-            WHERE proyecto_id = ? 
-            ORDER BY id DESC LIMIT 150
-        """, (proyecto_id,)).fetchall()
-        return [dict(r) for r in rows]
-    except Exception as e:
-        return []
-
-# --- MÓDULO DE NOTIFICACIONES Y ALERTAS PREVENTIVAS BLINDADO ---
-class NotificacionRequest(BaseModel):
-    proyecto_id: int
-    codigo_actividad: str
-    destinatarios_nuevos: Optional[List[str]] = []
-    dias_recordatorio: Optional[List[int]] = []
-
+# --- NOTIFICACIONES ---
 @app.post("/notificaciones/asignacion")
 def programar_notificacion_asignacion(
     data: NotificacionRequest, 
@@ -850,26 +718,7 @@ def programar_notificacion_asignacion(
     db: sqlite3.Connection = Depends(get_db)
 ):
     try:
-        # Asegurar existencia de la tabla
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS alertas_notificaciones (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                proyecto_id INTEGER,
-                codigo_actividad TEXT,
-                destinatario_nombre TEXT,
-                destinatario_correo TEXT,
-                tipo_alerta TEXT,
-                dias_antes INTEGER,
-                fecha_programada TEXT,
-                estado TEXT DEFAULT 'PROGRAMADO',
-                fecha_envio DATETIME,
-                FOREIGN KEY(proyecto_id) REFERENCES proyectos(id)
-            )
-        """)
-
-        # Búsqueda flexible por ID numérico o string
         proy = db.execute("SELECT nombre FROM proyectos WHERE id = ?", (int(data.proyecto_id),)).fetchone()
-        
         cod_limpio = str(data.codigo_actividad).strip().rstrip(".")
         act = db.execute("""
             SELECT * FROM actividades 
@@ -877,13 +726,7 @@ def programar_notificacion_asignacion(
               AND (codigo = ? OR codigo = ?)
         """, (int(data.proyecto_id), str(data.proyecto_id), cod_limpio, f"{cod_limpio}.")).fetchone()
 
-        if not act:
-            # Fallback para no bloquear la demo si la actividad existe
-            act_desc = f"Actividad {cod_limpio}"
-            resp_str = ""
-        else:
-            act_desc = act["descripcion"]
-            resp_str = act["responsable"] or ""
+        resp_str = act["responsable"] if act and act["responsable"] else ""
 
         if data.destinatarios_nuevos and len(data.destinatarios_nuevos) > 0:
             nombres_a_notificar = [str(n).strip() for n in data.destinatarios_nuevos if str(n).strip()]
@@ -898,14 +741,12 @@ def programar_notificacion_asignacion(
             r_info = db.execute("SELECT correo FROM responsables WHERE nombre = ?", (nombre,)).fetchone()
             correo = r_info["correo"] if r_info and r_info["correo"] else f"{nombre.lower().replace(' ', '.')}@imarpe.gob.pe"
 
-            # 1. Alerta inicial inmediata
             db.execute("""
                 INSERT INTO alertas_notificaciones 
                 (proyecto_id, codigo_actividad, destinatario_nombre, destinatario_correo, tipo_alerta, dias_antes, fecha_programada, estado, fecha_envio)
                 VALUES (?, ?, ?, ?, 'ASIGNACION_INICIAL', 0, ?, 'ENVIADO', ?)
             """, (int(data.proyecto_id), cod_limpio, nombre, correo, fecha_hoy, fecha_hora_ahora))
 
-            # 2. Recordatorios preventivos
             for d in (data.dias_recordatorio or []):
                 db.execute("""
                     INSERT INTO alertas_notificaciones 
@@ -915,7 +756,6 @@ def programar_notificacion_asignacion(
 
             registros_creados += 1
 
-        # Auditoría en historial
         db.execute("""
             INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle)
             VALUES (?, ?, ?, 'Notificación Correo', ?)
