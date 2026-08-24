@@ -641,26 +641,124 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error en base de datos: {str(e)}")
 
+# --- FUNCIÓN AUXILIAR DE REESTRUCTURACIÓN JERÁRQUICA WBS ---
+def reestructurar_codigos_wbs(proyecto_id: int, db: sqlite3.Connection):
+    # Obtener todas las actividades restantes del proyecto
+    rows = db.execute("""
+        SELECT codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores 
+        FROM actividades 
+        WHERE proyecto_id = ?
+    """, (proyecto_id,)).fetchall()
+
+    if not rows:
+        return
+
+    # Convertir a lista y ordenar de forma natural por jerarquía numérica (1, 1.1, 1.2, 2, 2.1...)
+    def clave_orden_wbs(row):
+        cod_limpio = str(row["codigo"]).rstrip(".")
+        partes = []
+        for p in cod_limpio.split("."):
+            try:
+                partes.append(int(p))
+            except ValueError:
+                partes.append(p)
+        return partes
+
+    actividades_ordenadas = sorted(rows, key=clave_orden_wbs)
+
+    # Construir mapa de reasignación correlativa
+    mapeo_nuevos_codigos = {}
+    conteo_por_padre = {}
+
+    for act in actividades_ordenadas:
+        cod_antiguo = str(act["codigo"]).rstrip(".")
+        partes = cod_antiguo.split(".")
+        
+        if len(partes) == 1:
+            padre = ""
+        else:
+            padre = ".".join(partes[:-1])
+        
+        # Obtener el nuevo prefijo del padre si ya fue reasignado
+        nuevo_padre = mapeo_nuevos_codigos.get(padre, padre) if padre else ""
+        
+        # Correlativo continuo para este grupo de hermanos
+        conteo_por_padre[padre] = conteo_por_padre.get(padre, 0) + 1
+        indice_hermano = conteo_por_padre[padre]
+
+        if nuevo_padre:
+            nuevo_cod = f"{nuevo_padre}.{indice_hermano}"
+        else:
+            nuevo_cod = f"{indice_hermano}"
+
+        mapeo_nuevos_codigos[cod_antiguo] = nuevo_cod
+
+    # Reemplazar los registros con los nuevos códigos y mapear predecesores
+    actividades_renumeradas = []
+    for act in actividades_ordenadas:
+        cod_ant = str(act["codigo"]).rstrip(".")
+        nuevo_cod = mapeo_nuevos_codigos[cod_ant]
+
+        # Actualizar predecesores si apuntaban a códigos que cambiaron
+        preds_antiguos = [p.strip().rstrip(".") for p in (act["predecesores"] or "").split(",") if p.strip()]
+        preds_nuevos = [mapeo_nuevos_codigos[p] for p in preds_antiguos if p in mapeo_nuevos_codigos]
+        predecesores_str = ", ".join(preds_nuevos)
+
+        actividades_renumeradas.append((
+            proyecto_id,
+            nuevo_cod,
+            act["descripcion"],
+            act["responsable"],
+            act["estado"],
+            act["avance"],
+            act["fecha_inicio"],
+            act["fecha_fin"],
+            act["dias"],
+            predecesores_str
+        ))
+
+    # Sobrescribir la tabla de actividades del proyecto de forma atómica
+    db.execute("DELETE FROM actividades WHERE proyecto_id = ?", (proyecto_id,))
+    db.executemany("""
+        INSERT INTO actividades (proyecto_id, codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, actividades_renumeradas)
+
+
 @app.delete("/proyectos/{proyecto_id}/actividades/{codigo}")
-def eliminar_actividad(proyecto_id: int, codigo: str, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+def eliminar_actividad(
+    proyecto_id: int, 
+    codigo: str, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
     es_gestor = db.execute("""
         SELECT 1 FROM proyectos p 
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
         WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1)
     """, (user["id"], proyecto_id, user["id"])).fetchone()
 
-    if not es_gestor:
+    if not es_gestor and user.get("rol") != "ADMIN_TI":
         raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede eliminar actividades.")
 
     cod_limpio = codigo.rstrip(".")
-    db.execute("DELETE FROM actividades WHERE proyecto_id = ? AND (codigo = ? OR codigo LIKE ?)",
-               (proyecto_id, codigo, f"{cod_limpio}.%"))
+    
+    # 1. Eliminar la actividad y sus subordinadas
+    db.execute("""
+        DELETE FROM actividades 
+        WHERE proyecto_id = ? AND (codigo = ? OR codigo = ? OR codigo LIKE ?)
+    """, (proyecto_id, cod_limpio, f"{cod_limpio}.", f"{cod_limpio}.%"))
+    
+    # 2. Reestructurar y renumerar correlativamente todos los niveles
+    reestructurar_codigos_wbs(proyecto_id, db)
+
     db.execute("""
         INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
         VALUES (?, ?, ?, 'Eliminación Actividad', ?)
-    """, (proyecto_id, ahora_peru_str(), user["username"], f"Eliminó [{codigo}] y subordinadas"))
+    """, (proyecto_id, ahora_peru_str(), user["username"], f"Eliminó [{codigo}] y reestructuró correlativamente el WBS"))
+    
     db.commit()
-    return {"mensaje": "Actividad(es) eliminada(s)"}
+    return {"mensaje": "Actividad eliminada y jerarquía reestructurada correlativamente"}
 
 # --- RESPONSABLES ---
 @app.get("/responsables")
