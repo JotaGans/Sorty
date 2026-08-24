@@ -809,6 +809,42 @@
     </div>
   </div>
 
+  <!-- ================= SISTEMA DE NOTIFICACIONES Y MODALES UX IMARPE ================= -->
+  
+  <!-- 1. CONTENEDOR TOAST (Avisos automáticos en esquina inferior derecha) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-[120] flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- 2. MODAL DIÁLOGO INSTITUCIONAL (Reemplazo estilizado de Alert y Confirm) -->
+  <div id="modal-dialog-imarpe" class="hidden fixed inset-0 bg-black/60 z-[130] flex items-center justify-center p-4 backdrop-blur-[1px] transition-all">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 transform transition-all scale-100">
+      
+      <!-- Cabecera dinámica -->
+      <div id="dialog-header-bg" class="bg-[#0f2a4a] text-white px-5 py-3.5 flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <span id="dialog-icono" class="text-xl">ℹ️</span>
+          <h3 id="dialog-titulo" class="font-bold text-sm tracking-wide">Mensaje del Sistema</h3>
+        </div>
+        <button id="dialog-btn-x" onclick="cerrarDialogoImarpe(false)" class="text-white/80 hover:text-white text-xl font-bold leading-none">&times;</button>
+      </div>
+
+      <!-- Cuerpo del mensaje -->
+      <div class="p-6 space-y-3">
+        <div id="dialog-mensaje" class="text-xs md:text-sm font-semibold text-gray-700 leading-relaxed whitespace-pre-line"></div>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex justify-end items-center space-x-2.5">
+        <button id="dialog-btn-cancelar" onclick="cerrarDialogoImarpe(false)" class="hidden px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">
+          Cancelar
+        </button>
+        <button id="dialog-btn-aceptar" onclick="cerrarDialogoImarpe(true)" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded-lg transition shadow">
+          Aceptar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ================= LÓGICA DE CONTROL JAVASCRIPT ================= -->
   <script>
     let token = localStorage.getItem("token");
@@ -846,6 +882,120 @@
 
     const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"];
     const coloresAvatar = ['#2980b9', '#27ae60', '#8e44ad', '#d35400', '#16a085', '#c0392b', '#2c3e50', '#7f8c8d'];
+
+    // =========================================================================
+    // MOTOR DE MODALES Y NOTIFICACIONES NATIVAS ESTILIZADAS IMARPE (UX/UI)
+    // =========================================================================
+    let resolverDialogoActual = null;
+
+    // 1. Notificaciones Toast no intrusivas (Éxito, Error, Info)
+    function notificarToast(mensaje, tipo = "success", duracionMs = 3500) {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+
+      const toast = document.createElement("div");
+      const estilos = {
+        success: "bg-[#0f2a4a] border-teal-500 text-white",
+        error: "bg-[#991b1b] border-red-400 text-white",
+        warning: "bg-[#b45309] border-amber-400 text-white",
+        info: "bg-[#1e293b] border-blue-400 text-white"
+      };
+      const iconos = {
+        success: "✓",
+        error: "✕",
+        warning: "⚠️",
+        info: "ℹ️"
+      };
+
+      toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-xl border shadow-xl text-xs font-bold tracking-wide transition-all transform duration-300 translate-y-3 opacity-0 ${estilos[tipo] || estilos.info}`;
+      toast.innerHTML = `
+        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px] font-black">${iconos[tipo] || 'ℹ️'}</span>
+        <span class="flex-1 leading-snug">${mensaje}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove("translate-y-3", "opacity-0");
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.add("translate-y-3", "opacity-0");
+        setTimeout(() => toast.remove(), 300);
+      }, duracionMs);
+    }
+
+    // 2. Diálogo Modal Promisificado (Reemplazo de alert() y confirm())
+    function mostrarMensajeInstitucional({ titulo = "Sistema IMARPE", mensaje, tipo = "info", esConfirmacion = false, textoAceptar = "Aceptar", textoCancelar = "Cancelar" }) {
+      return new Promise((resolve) => {
+        resolverDialogoActual = resolve;
+
+        const modal = document.getElementById("modal-dialog-imarpe");
+        const headerBg = document.getElementById("dialog-header-bg");
+        const txtTitulo = document.getElementById("dialog-titulo");
+        const txtIcono = document.getElementById("dialog-icono");
+        const txtMensaje = document.getElementById("dialog-mensaje");
+        const btnAceptar = document.getElementById("dialog-btn-aceptar");
+        const btnCancelar = document.getElementById("dialog-btn-cancelar");
+        const btnX = document.getElementById("dialog-btn-x");
+
+        txtTitulo.innerText = titulo;
+        txtMensaje.innerText = mensaje;
+        btnAceptar.innerText = textoAceptar;
+        btnCancelar.innerText = textoCancelar;
+
+        if (tipo === "error" || tipo === "warning" || tipo === "danger") {
+          headerBg.className = "bg-[#c0392b] text-white px-5 py-3.5 flex items-center justify-between";
+          btnAceptar.className = "px-5 py-2 bg-[#c0392b] hover:bg-[#a93226] text-white text-xs font-bold rounded-lg transition shadow";
+          txtIcono.innerText = "⚠️";
+        } else if (tipo === "question" || esConfirmacion) {
+          headerBg.className = "bg-[#0f2a4a] text-white px-5 py-3.5 flex items-center justify-between";
+          btnAceptar.className = "px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow";
+          txtIcono.innerText = "📧";
+        } else {
+          headerBg.className = "bg-[#0f2a4a] text-white px-5 py-3.5 flex items-center justify-between";
+          btnAceptar.className = "px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded-lg transition shadow";
+          txtIcono.innerText = "ℹ️";
+        }
+
+        if (esConfirmacion) {
+          btnCancelar.classList.remove("hidden");
+          btnX.classList.remove("hidden");
+        } else {
+          btnCancelar.classList.add("hidden");
+          btnX.classList.add("hidden");
+        }
+
+        modal.classList.remove("hidden");
+      });
+    }
+
+    function cerrarDialogoImarpe(resultado) {
+      document.getElementById("modal-dialog-imarpe").classList.add("hidden");
+      if (resolverDialogoActual) {
+        resolverDialogoActual(resultado);
+        resolverDialogoActual = null;
+      }
+    }
+
+    // 3. Sobrescritura global de alert() y confirm()
+    window.alert = function(msg) {
+      mostrarMensajeInstitucional({
+        titulo: "Notificación del Sistema",
+        mensaje: msg,
+        tipo: (String(msg).includes("⚠️") || String(msg).includes("Error") || String(msg).includes("inválido")) ? "warning" : "info",
+        esConfirmacion: false
+      });
+    };
+
+    window.confirmModal = function(msg, titulo = "Confirmación Requerida", tipo = "question") {
+      return mostrarMensajeInstitucional({
+        titulo: titulo,
+        mensaje: msg,
+        tipo: tipo,
+        esConfirmacion: true
+      });
+    };
 
     // --- UTILIDADES UNIVERSALES DE FECHAS ---
     function parsearFechaUniversal(fechaStr) {
@@ -1785,9 +1935,9 @@
         alert("Solo el Gestor del Proyecto puede eliminar actividades.");
         return;
       }
-      const codLimpio = cod.replace(/\.$/, "");
+      const codLimpio = cod.replace(/\.+$/, "");
       const hijas = actividadesGlobal.filter(a => {
-        const c = a.codigo.replace(/\.$/, "");
+        const c = a.codigo.replace(/\.+$/, "");
         return c.startsWith(codLimpio + ".") && c !== codLimpio;
       });
 
@@ -1796,7 +1946,8 @@
         mensajeConfirmacion = `⚠️ ATENCIÓN: La actividad [${cod}] contiene ${hijas.length} actividad(es) subordinada(s).\n\nSi continúa, se eliminarán todas las actividades hijas en cascada.\n\n¿Desea proceder con la eliminación total?`;
       }
 
-      if (!confirm(mensajeConfirmacion)) return;
+      const aceptado = await confirmModal(mensajeConfirmacion, "Eliminar Registro", "danger");
+      if (!aceptado) return;
 
       const res = await fetch(`/proyectos/${proyectoActualId}/actividades/${cod}`, {
         method: "DELETE",
@@ -1804,6 +1955,7 @@
       });
       if (res.ok) {
         codigoFilaSeleccionada = null;
+        notificarToast(`Actividad [${cod}] eliminada correctamente.`, "info");
         await cargarActividades();
       } else {
         alert("No tiene permisos para eliminar actividades.");
@@ -1939,14 +2091,15 @@
         cerrarAsignarResponsables();
         await guardarCambioDirecto(actividadMultiRespActual);
 
-        // Preguntar si se desea notificar si hay responsables asignados
+        // Preguntar si se desea notificar con el modal institucional
         if (seleccionados.length > 0) {
-          setTimeout(() => {
-            const deseaNotificar = confirm("¿Desea enviar una notificación por correo electrónico a los responsables asignados sobre esta actividad?");
-            if (deseaNotificar) {
-              abrirModalNotificacionCorreo(actividadMultiRespActual);
-            }
-          }, 300);
+          const deseaNotificar = await confirmModal(
+            "¿Desea enviar una notificación por correo electrónico a los responsables asignados sobre esta actividad?",
+            "Notificación Institucional"
+          );
+          if (deseaNotificar) {
+            abrirModalNotificacionCorreo(actividadMultiRespActual);
+          }
         }
       };
 
@@ -2033,7 +2186,7 @@
 
         if (res.ok) {
           cerrarModalNotificacionCorreo();
-          alert("✓ Notificación inicial enviada y recordatorios preventivos programados correctamente.");
+          notificarToast("Notificación enviada y recordatorios preventivos programados con éxito.", "success");
         } else {
           alert("No se pudo programar la notificación.");
         }
