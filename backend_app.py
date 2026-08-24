@@ -555,26 +555,96 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error en base de datos: {str(e)}")
 
+def renumerar_arbol_wbs(proyecto_id: int, db: sqlite3.Connection):
+    """
+    Reorganiza y renumera correlativamente todas las actividades del proyecto
+    respetando la jerarquía multinivel (1, 1.1, 1.1.1, 2, 2.1, etc.)
+    """
+    rows = db.execute("""
+        SELECT codigo, ROWID FROM actividades 
+        WHERE proyecto_id = ?
+    """, (proyecto_id,)).fetchall()
+
+    if not rows:
+        return
+
+    # Normalizar códigos y ordenar naturalmente
+    def split_clave(cod_str):
+        partes = cod_str.rstrip(".").split(".")
+        nums = []
+        for p in partes:
+            try:
+                nums.append(int(p))
+            except ValueError:
+                nums.append(0)
+        return nums
+
+    lista_ordenada = sorted([dict(r) for r in rows], key=lambda x: split_clave(x["codigo"]))
+
+    # Mapeo de reemplazos: clave antigua -> nueva clave correlativa
+    mapeo_nuevos = {}
+    contadores_nivel = {}
+
+    for item in lista_ordenada:
+        cod_antiguo = item["codigo"].rstrip(".")
+        partes = cod_antiguo.split(".")
+        nivel = len(partes)
+
+        padre_antiguo = ".".join(partes[:-1]) if nivel > 1 else ""
+        padre_nuevo = mapeo_nuevos.get(padre_antiguo, "")
+
+        if padre_nuevo not in contadores_nivel:
+            contadores_nivel[padre_nuevo] = 1
+        else:
+            contadores_nivel[padre_nuevo] += 1
+
+        correlativo_actual = contadores_nivel[padre_nuevo]
+        cod_nuevo = f"{padre_nuevo}.{correlativo_actual}" if padre_nuevo else str(correlativo_actual)
+        mapeo_nuevos[cod_antiguo] = cod_nuevo
+
+        # Actualizar en base de datos usando el ROWID único
+        db.execute("""
+            UPDATE actividades 
+            SET codigo = ? 
+            WHERE ROWID = ? AND proyecto_id = ?
+        """, (cod_nuevo, item["ROWID"], proyecto_id))
+
+
 @app.delete("/proyectos/{proyecto_id}/actividades/{codigo}")
-def eliminar_actividad(proyecto_id: int, codigo: str, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+def eliminar_actividad(
+    proyecto_id: int, 
+    codigo: str, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
     es_gestor = db.execute("""
         SELECT 1 FROM proyectos p 
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
         WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1)
     """, (user["id"], proyecto_id, user["id"])).fetchone()
 
-    if not es_gestor:
+    if not es_gestor and user.get("rol") != "ADMIN_TI":
         raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede eliminar actividades.")
 
     cod_limpio = codigo.rstrip(".")
-    db.execute("DELETE FROM actividades WHERE proyecto_id = ? AND (codigo = ? OR codigo LIKE ?)",
-               (proyecto_id, codigo, f"{cod_limpio}.%"))
+    
+    # 1. Eliminar la actividad y todas sus subordinadas
+    db.execute("""
+        DELETE FROM actividades 
+        WHERE proyecto_id = ? AND (codigo = ? OR codigo LIKE ? OR codigo = ? OR codigo LIKE ?)
+    """, (proyecto_id, cod_limpio, f"{cod_limpio}.%", f"{cod_limpio}.", f"{cod_limpio}.%."))
+
+    # 2. Reindexar automáticamente todos los códigos correlativos
+    renumerar_arbol_wbs(proyecto_id, db)
+
+    # 3. Registrar auditoría
     db.execute("""
         INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
-        VALUES (?, ?, ?, 'Eliminación Actividad', ?)
-    """, (proyecto_id, ahora_peru_str(), user["username"], f"Eliminó [{codigo}] y subordinadas"))
+        VALUES (?, ?, ?, 'Eliminación y Reindexación', ?)
+    """, (proyecto_id, ahora_peru_str(), user["username"], f"Eliminó [{cod_limpio}] y reindexó la estructura correlativa"))
+
     db.commit()
-    return {"mensaje": "Actividad(es) eliminada(s)"}
+    return {"mensaje": "Actividad eliminada y estructura WBS renumerada con éxito"}
 
 # --- RESPONSABLES ---
 @app.get("/responsables")
