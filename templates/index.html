@@ -3075,9 +3075,10 @@
 
       const fIniLimpia = formatearFechaLatina(act.fecha_inicio);
       const fFinLimpia = formatearFechaLatina(act.fecha_fin);
+      const pId = parseInt(proyectoActualId) || 1;
 
       const payload = {
-        proyecto_id: proyectoActualId,
+        proyecto_id: pId,
         codigo: String(act.codigo).trim(),
         descripcion: String(act.descripcion || '').trim(),
         responsable: String(act.responsable || 'No asignado').trim(),
@@ -3100,14 +3101,13 @@
         });
 
         if (res.ok) {
-          localStorage.setItem(`cache_acts_proj_${proyectoActualId}`, JSON.stringify(actividadesGlobal));
+          localStorage.setItem(`cache_acts_proj_${pId}`, JSON.stringify(actividadesGlobal));
           await cargarActividades();
         } else if (res.status === 401) {
           alert("La sesión expiró. Inicie sesión nuevamente.");
           cerrarSesion();
         } else {
           const err = await res.json().catch(() => ({}));
-          console.error("Detalle del error:", err);
           alert(err.detail || `Error (${res.status}) al guardar.`);
         }
       } catch (error) {
@@ -3167,22 +3167,13 @@
     // --- HISTORIAL DE AUDITORÍA ---
     async function abrirHistorial() {
       if (!proyectoActualId) return;
-      if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
-        alert("🔒 El Historial de Auditoría es de acceso exclusivo para el Gestor del Proyecto.");
-        return;
-      }
-
+      
       try {
-        const res = await fetch(`/proyectos/${proyectoActualId}/historial`, {
+        const res = await fetch(`/proyectos/${parseInt(proyectoActualId)}/historial`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
 
-        if (res.status === 403) {
-          alert("No tiene permisos de Gestor para consultar el historial de este proyecto.");
-          return;
-        }
-
-        if (!res.ok) throw new Error("Error en servidor al consultar historial");
+        if (!res.ok) throw new Error("No se pudo cargar el historial");
         
         const data = await res.json();
         const tbody = document.getElementById("historial-tabla-body");
