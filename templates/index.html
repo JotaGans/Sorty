@@ -2281,11 +2281,15 @@
     }
 
     async function confirmarEnvioNotificaciones() {
-      if (!actividadNotificacionActual) return;
-      const duracion = parseInt(actividadNotificacionActual.dias) || 1;
+      if (!actividadNotificacionActual) {
+        cerrarModalNotificacionCorreo();
+        return;
+      }
       
+      const duracion = parseInt(actividadNotificacionActual.dias) || 1;
       const seleccionados = Array.from(document.querySelectorAll(".notif-chk-dia:checked")).map(cb => parseInt(cb.value));
-      const customVal = parseInt(document.getElementById("notif-input-dias-custom").value);
+      const customInput = document.getElementById("notif-input-dias-custom");
+      const customVal = customInput ? parseInt(customInput.value) : NaN;
 
       if (!isNaN(customVal)) {
         if (customVal >= duracion || customVal <= 0) {
@@ -2297,10 +2301,13 @@
         }
       }
 
+      // Cerrar de inmediato el modal de configuración de correo
+      cerrarModalNotificacionCorreo();
+
       try {
         const payload = {
-          proyecto_id: parseInt(proyectoActualId),
-          codigo_actividad: String(actividadNotificacionActual.codigo),
+          proyecto_id: parseInt(proyectoActualId) || 1,
+          codigo_actividad: String(actividadNotificacionActual.codigo).trim(),
           destinatarios_nuevos: destinatariosNuevosNotificacion || [],
           dias_recordatorio: seleccionados.sort((a, b) => b - a)
         };
@@ -2315,15 +2322,14 @@
         });
 
         if (res.ok) {
-          cerrarModalNotificacionCorreo();
-          notificarToast("Notificación enviada únicamente a los nuevos responsables.", "success");
+          notificarToast("Notificación enviada y recordatorios preventivos programados con éxito.", "success");
         } else {
           const err = await res.json().catch(() => ({}));
-          alert(err.detail || "No se pudo programar la notificación.");
+          alert(err.detail || "No se pudo procesar la notificación.");
         }
       } catch (e) {
-        console.error("Error al enviar notificación:", e);
-        alert("Error de conexión al programar notificaciones.");
+        console.error("Error al despachar notificación:", e);
+        alert("Error de conexión al servidor al despachar las alertas.");
       }
     }
 
