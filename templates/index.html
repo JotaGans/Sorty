@@ -705,7 +705,7 @@
 
   <!-- MODAL HISTORIAL -->
   <div id="modal-historial" class="hidden fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4">
-    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
       <div class="bg-[#718093] text-white p-4 flex justify-between items-center flex-shrink-0 shadow-sm">
         <div class="flex items-center space-x-2">
           <span class="text-xl">📜</span>
@@ -720,7 +720,8 @@
             <thead class="sticky top-0 z-30 shadow-sm">
               <tr>
                 <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white w-36 whitespace-nowrap sticky top-0">Fecha y Hora</th>
-                <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white w-36 whitespace-nowrap sticky top-0">Acción</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white w-28 whitespace-nowrap sticky top-0">Usuario</th>
+                <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white w-40 whitespace-nowrap sticky top-0">Acción</th>
                 <th class="p-2.5 font-bold border-b border-blue-900 bg-[#0f2a4a] text-white sticky top-0">Detalle</th>
               </tr>
             </thead>
@@ -3164,18 +3165,16 @@
       document.getElementById("modal-cpm").classList.add("hidden"); 
     }
 
-    // --- HISTORIAL DE AUDITORÍA ---
+    // --- HISTORIAL DE AUDITORÍA CON USUARIO ACTIVO ---
     async function abrirHistorial() {
       if (!proyectoActualId) return;
-      
       try {
-        const res = await fetch(`/proyectos/${parseInt(proyectoActualId)}/historial`, {
+        const res = await fetch(`/proyectos/${proyectoActualId}/historial`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
-
         if (!res.ok) throw new Error("No se pudo cargar el historial");
-        
         const data = await res.json();
+        
         const tbody = document.getElementById("historial-tabla-body");
         tbody.innerHTML = "";
 
@@ -3183,19 +3182,20 @@
           data.forEach(h => {
             tbody.innerHTML += `
               <tr class="hover:bg-gray-50 transition">
-                <td class="p-2.5 text-gray-500 font-mono text-[11px] whitespace-nowrap">${h.timestamp || '-'}</td>
-                <td class="p-2.5 font-bold text-[#0f2a4a] whitespace-nowrap">${h.accion || '-'}</td>
-                <td class="p-2.5 text-gray-800">${h.detalle || '-'}</td>
+                <td class="p-2.5 text-gray-500 font-mono text-[11px] whitespace-nowrap border-b border-gray-100">${h.timestamp || '-'}</td>
+                <td class="p-2.5 font-bold text-teal-700 font-mono text-xs whitespace-nowrap border-b border-gray-100">@${h.usuario || 'admin'}</td>
+                <td class="p-2.5 font-bold text-[#0f2a4a] whitespace-nowrap border-b border-gray-100">${h.accion || '-'}</td>
+                <td class="p-2.5 text-gray-800 border-b border-gray-100">${h.detalle || '-'}</td>
               </tr>
             `;
           });
         } else {
-          tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 font-semibold">Sin registros de auditoría en este proyecto.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 font-semibold">Sin registros de auditoría en este proyecto.</td></tr>`;
         }
 
         document.getElementById("modal-historial").classList.remove("hidden");
       } catch (err) {
-        console.error("Error al cargar historial:", err);
+        console.error("Error al abrir historial:", err);
         alert("No se pudo abrir el Historial. Intente nuevamente.");
       }
     }
