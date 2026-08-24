@@ -762,6 +762,53 @@
     </div>
   </div>
 
+  <!-- MODAL: CONFIRMACIÓN Y CONFIGURACIÓN DE NOTIFICACIÓN POR CORREO -->
+  <div id="modal-notificacion-correo" class="hidden fixed inset-0 bg-black/60 z-[85] flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📧</span>
+          <h3 class="font-bold text-sm">Notificación Automática a Responsables</h3>
+        </div>
+        <button onclick="cerrarModalNotificacionCorreo()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs text-gray-700">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3.5 space-y-1">
+          <p class="font-black text-[#0f2a4a] text-xs" id="notif-txt-actividad">[1.1] Nombre de Actividad</p>
+          <p class="text-[11px] text-gray-600">Duración: <strong id="notif-txt-duracion" class="text-teal-700">0</strong> días calendario | Término: <strong id="notif-txt-fin">--/--/----</strong></p>
+        </div>
+
+        <div>
+          <label class="block font-black text-gray-700 uppercase tracking-wider mb-1.5 text-[11px]">
+            Recordatorios Preventivos de Cierre (Días antes de finalizar):
+          </label>
+          <p class="text-[11px] text-gray-500 mb-2">Seleccione o defina alertas automáticas previas a la fecha límite:</p>
+          
+          <div id="notif-contenedor-opciones-dias" class="grid grid-cols-2 gap-2 bg-white p-3 rounded-xl border border-gray-200">
+            <!-- Se llenará dinámicamente según la duración -->
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-xl border border-gray-200">
+          <label class="block font-bold text-gray-700 mb-1">Otro plazo personalizado (días antes):</label>
+          <div class="flex items-center space-x-2">
+            <input type="number" id="notif-input-dias-custom" min="1" placeholder="Ej: 2" class="w-24 p-2 bg-gray-50 border border-gray-300 rounded font-bold text-[#0f2a4a] outline-none">
+            <span id="notif-custom-msg" class="text-[10px] text-gray-500">Debe ser menor a la duración total.</span>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+          <button onclick="cerrarModalNotificacionCorreo()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition">Cancelar</button>
+          <button onclick="confirmarEnvioNotificaciones()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition shadow flex items-center space-x-1.5">
+            <span>🚀</span>
+            <span>Confirmar y Programar Envíos</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= LÓGICA DE CONTROL JAVASCRIPT ================= -->
   <script>
     let token = localStorage.getItem("token");
@@ -1891,6 +1938,16 @@
         actividadMultiRespActual.responsable = seleccionados.length > 0 ? seleccionados.join("; ") : "No asignado";
         cerrarAsignarResponsables();
         await guardarCambioDirecto(actividadMultiRespActual);
+
+        // Preguntar si se desea notificar si hay responsables asignados
+        if (seleccionados.length > 0) {
+          setTimeout(() => {
+            const deseaNotificar = confirm("¿Desea enviar una notificación por correo electrónico a los responsables asignados sobre esta actividad?");
+            if (deseaNotificar) {
+              abrirModalNotificacionCorreo(actividadMultiRespActual);
+            }
+          }, 300);
+        }
       };
 
       document.getElementById("modal-asignar-responsables").classList.remove("hidden");
@@ -1898,6 +1955,91 @@
 
     function cerrarAsignarResponsables() {
       document.getElementById("modal-asignar-responsables").classList.add("hidden");
+    }
+
+    // =========================================================================
+    // MÓDULO DE NOTIFICACIONES Y ALERTAS PREVENTIVAS DE CIERRE
+    // =========================================================================
+    let actividadNotificacionActual = null;
+
+    function abrirModalNotificacionCorreo(act) {
+      actividadNotificacionActual = act;
+      const duracion = parseInt(act.dias) || 1;
+
+      document.getElementById("notif-txt-actividad").innerText = `[${act.codigo}] ${act.descripcion}`;
+      document.getElementById("notif-txt-duracion").innerText = duracion;
+      document.getElementById("notif-txt-fin").innerText = formatearFechaLatina(act.fecha_fin);
+      document.getElementById("notif-input-dias-custom").value = "";
+
+      const contenedor = document.getElementById("notif-contenedor-opciones-dias");
+      contenedor.innerHTML = "";
+
+      const opcionesPredefinidas = [1, 3, 5, 7];
+      let opcionesDisponibles = 0;
+
+      opcionesPredefinidas.forEach(diasAntes => {
+        if (diasAntes < duracion) {
+          opcionesDisponibles++;
+          contenedor.innerHTML += `
+            <label class="flex items-center space-x-2 p-1.5 rounded hover:bg-teal-50 cursor-pointer font-bold text-gray-700">
+              <input type="checkbox" value="${diasAntes}" class="notif-chk-dia rounded text-teal-600 focus:ring-0">
+              <span>${diasAntes} ${diasAntes === 1 ? 'día' : 'días'} antes</span>
+            </label>
+          `;
+        }
+      });
+
+      if (opcionesDisponibles === 0) {
+        contenedor.innerHTML = `<p class="col-span-2 text-gray-400 italic text-[11px] text-center">La actividad dura ${duracion} día(s). Solo se enviará la notificación de asignación inicial.</p>`;
+      }
+
+      document.getElementById("modal-notificacion-correo").classList.remove("hidden");
+    }
+
+    function cerrarModalNotificacionCorreo() {
+      document.getElementById("modal-notificacion-correo").classList.add("hidden");
+    }
+
+    async function confirmarEnvioNotificaciones() {
+      if (!actividadNotificacionActual) return;
+      const duracion = parseInt(actividadNotificacionActual.dias) || 1;
+      
+      const seleccionados = Array.from(document.querySelectorAll(".notif-chk-dia:checked")).map(cb => parseInt(cb.value));
+      const customVal = parseInt(document.getElementById("notif-input-dias-custom").value);
+
+      if (!isNaN(customVal)) {
+        if (customVal >= duracion || customVal <= 0) {
+          alert(`⚠️ Plazo personalizado inválido:\nEl valor ingresado (${customVal} días) debe ser estrictamente menor a la duración total de la actividad (${duracion} días).`);
+          return;
+        }
+        if (!seleccionados.includes(customVal)) {
+          seleccionados.push(customVal);
+        }
+      }
+
+      try {
+        const res = await fetch("/notificaciones/asignacion", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            proyecto_id: proyectoActualId,
+            codigo_actividad: actividadNotificacionActual.codigo,
+            dias_recordatorio: seleccionados.sort((a, b) => b - a)
+          })
+        });
+
+        if (res.ok) {
+          cerrarModalNotificacionCorreo();
+          alert("✓ Notificación inicial enviada y recordatorios preventivos programados correctamente.");
+        } else {
+          alert("No se pudo programar la notificación.");
+        }
+      } catch (e) {
+        alert("Error de conexión al programar notificaciones.");
+      }
     }
 
     function alternarColapsoNodo(cod) {

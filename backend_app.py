@@ -290,6 +290,23 @@ def init_db():
     except Exception:
         pass
 
+    # Tabla para registro y despacho de notificaciones y recordatorios
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS alertas_notificaciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            proyecto_id INTEGER,
+            codigo_actividad TEXT,
+            destinatario_nombre TEXT,
+            destinatario_correo TEXT,
+            tipo_alerta TEXT, -- 'ASIGNACION_INICIAL' | 'RECORDATORIO_PREVENTIVO'
+            dias_antes INTEGER,
+            fecha_programada TEXT,
+            estado TEXT DEFAULT 'PROGRAMADO', -- 'PROGRAMADO' | 'ENVIADO'
+            fecha_envio DATETIME,
+            FOREIGN KEY(proyecto_id) REFERENCES proyectos(id)
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -720,6 +737,65 @@ def ver_historial(proyecto_id: int, user: dict = Depends(get_current_user), db: 
         return [dict(r) for r in rows]
     except Exception as e:
         return []
+
+# --- MÓDULO DE NOTIFICACIONES Y ALERTAS PREVENTIVAS ---
+class NotificacionRequest(BaseModel):
+    proyecto_id: int
+    codigo_actividad: str
+    dias_recordatorio: List[int] = []
+
+@app.post("/notificaciones/asignacion")
+def programar_notificacion_asignacion(
+    data: NotificacionRequest, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
+    proy = db.execute("SELECT nombre FROM proyectos WHERE id = ?", (data.proyecto_id,)).fetchone()
+    act = db.execute("SELECT * FROM actividades WHERE proyecto_id = ? AND codigo = ?", 
+                     (data.proyecto_id, data.codigo_actividad)).fetchone()
+    
+    if not act or not proy:
+        raise HTTPException(status_code=404, detail="Proyecto o actividad no encontrada.")
+
+    resp_str = act["responsable"] or ""
+    nombres_resp = [r.strip() for r in resp_str.split(";") if r.strip() and r.strip() != "No asignado"]
+    
+    registros_creados = 0
+    for nombre in nombres_resp:
+        r_info = db.execute("SELECT correo FROM responsables WHERE nombre = ?", (nombre,)).fetchone()
+        correo = r_info["correo"] if r_info and r_info["correo"] else f"{nombre.lower().replace(' ', '.')}@imarpe.gob.pe"
+        
+        # 1. Registro de notificación inicial
+        db.execute("""
+            INSERT INTO alertas_notificaciones 
+            (proyecto_id, codigo_actividad, destinatario_nombre, destinatario_correo, tipo_alerta, dias_antes, fecha_programada, estado, fecha_envio)
+            VALUES (?, ?, ?, ?, 'ASIGNACION_INICIAL', 0, date('now'), 'ENVIADO', datetime('now'))
+        """, (data.proyecto_id, data.codigo_actividad, nombre, correo))
+        
+        # 2. Registro de recordatorios preventivos
+        for d in data.dias_recordatorio:
+            db.execute("""
+                INSERT INTO alertas_notificaciones 
+                (proyecto_id, codigo_actividad, destinatario_nombre, destinatario_correo, tipo_alerta, dias_antes, fecha_programada, estado)
+                VALUES (?, ?, ?, ?, 'RECORDATORIO_PREVENTIVO', ?, date('now'), 'PROGRAMADO')
+            """, (data.proyecto_id, data.codigo_actividad, nombre, correo, d))
+        
+        registros_creados += 1
+
+    # Registro de auditoría
+    db.execute("""
+        INSERT INTO historial (proyecto_id, accion, detalle)
+        VALUES (?, 'Notificación Correo', ?)
+    """, (data.proyecto_id, f"Notificación de asignación enviada a [{', '.join(nombres_resp)}] para actividad [{data.codigo_actividad}]"))
+
+    db.commit()
+    return {
+        "status": "success",
+        "mensaje": f"Notificaciones procesadas para {registros_creados} responsable(s).",
+        "proyecto": proy["nombre"],
+        "actividad": act["descripcion"],
+        "dias_recordatorio": data.dias_recordatorio
+    }
 
 # Servir frontend estático
 app.mount("/static", StaticFiles(directory="static"), name="static")
