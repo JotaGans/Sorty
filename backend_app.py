@@ -654,11 +654,47 @@ def eliminar_responsable(nombre: str, user: dict = Depends(get_current_user), db
     db.commit()
     return {"mensaje": "Responsable eliminado"}
 
-# --- RUTA CRÍTICA (CPM) E HISTORIAL ---
+# --- HISTORIAL ROBUSTO PARA GESTORES ---
 @app.get("/proyectos/{proyecto_id}/historial")
-def ver_historial(proyecto_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT timestamp, accion, detalle FROM historial WHERE proyecto_id = ? ORDER BY id DESC LIMIT 100", (proyecto_id,)).fetchall()
-    return [dict(r) for r in rows]
+def ver_historial(
+    proyecto_id: int, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
+    # Validar permisos: Solo Gestor del proyecto o Administrador TI
+    permiso = db.execute("""
+        SELECT 1 FROM proyectos p
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1)
+    """, (user["id"], proyecto_id, user["id"])).fetchone()
+
+    if not permiso and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Acceso denegado: El Historial de Auditoría es exclusivo para el Gestor del Proyecto.")
+
+    try:
+        # Asegurar existencia de la tabla
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS historial (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                proyecto_id INTEGER DEFAULT 1,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                accion TEXT,
+                detalle TEXT
+            )
+        """)
+        
+        rows = db.execute("""
+            SELECT COALESCE(timestamp, datetime('now')) as timestamp, 
+                   COALESCE(accion, 'Registro') as accion, 
+                   COALESCE(detalle, 'Operación sin detalle') as detalle 
+            FROM historial 
+            WHERE proyecto_id = ? OR proyecto_id = ? OR (proyecto_id IS NULL AND ? = 1)
+            ORDER BY id DESC LIMIT 150
+        """, (proyecto_id, str(proyecto_id), proyecto_id)).fetchall()
+        
+        return [dict(r) for r in rows]
+    except Exception as e:
+        return []
 
 # --- ALGORITMO FORMAL CPM (CRITICAL PATH METHOD) ---
 @app.get("/ruta-critica")

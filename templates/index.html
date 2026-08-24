@@ -3164,16 +3164,27 @@
       document.getElementById("modal-cpm").classList.add("hidden"); 
     }
 
-    // --- HISTORIAL ---
+    // --- HISTORIAL DE AUDITORÍA ---
     async function abrirHistorial() {
       if (!proyectoActualId) return;
+      if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
+        alert("🔒 El Historial de Auditoría es de acceso exclusivo para el Gestor del Proyecto.");
+        return;
+      }
+
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/historial`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error("No se pudo cargar");
-        const data = await res.json();
+
+        if (res.status === 403) {
+          alert("No tiene permisos de Gestor para consultar el historial de este proyecto.");
+          return;
+        }
+
+        if (!res.ok) throw new Error("Error en servidor al consultar historial");
         
+        const data = await res.json();
         const tbody = document.getElementById("historial-tabla-body");
         tbody.innerHTML = "";
 
@@ -3193,6 +3204,7 @@
 
         document.getElementById("modal-historial").classList.remove("hidden");
       } catch (err) {
+        console.error("Error al cargar historial:", err);
         alert("No se pudo abrir el Historial. Intente nuevamente.");
       }
     }
