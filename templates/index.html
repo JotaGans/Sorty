@@ -2087,40 +2087,45 @@
       }
     }
 
-    async function eliminarActividad(codigo) {
-      // Validación flexible de permisos (Gestor o Administrador TI)
-      const esGestorValido = (proyectoEsGestor === true || proyectoEsGestor === 1 || String(proyectoEsGestor) === "true" || (currentUser && currentUser.rol === "ADMIN_TI"));
-      
+    // --- ELIMINAR ACTIVIDAD Y RENUMERAR WBS ---
+    async function eliminarActividad(cod) {
+      const esGestorValido = (
+        proyectoEsGestor === true || 
+        proyectoEsGestor === 1 || 
+        String(proyectoEsGestor) === "true" || 
+        (currentUser && currentUser.rol === "ADMIN_TI")
+      );
+
       if (!esGestorValido) {
-        alert("No tiene permisos para eliminar actividades.");
+        alert("🔒 No tiene permisos de Gestor para eliminar actividades de este proyecto.");
         return;
       }
 
-      const confirmar = await mostrarDialogoConfirmacion(
-        "Eliminar Actividad",
-        `¿Está seguro de eliminar la actividad [${codigo}] y todas sus sub-actividades asociadas? Esta acción renumerará la jerarquía automáticamente.`,
-        "Eliminar",
-        "Cancelar"
-      );
+      const pId = parseInt(proyectoActualId) || 1;
+      const codLimpio = String(cod).trim().replace(/\.$/, "");
 
-      if (!confirmar) return;
+      // Confirmación nativa directa para evitar suspensión de promesas
+      const seguro = window.confirm(`¿Está seguro de eliminar la actividad [${codLimpio}] y todas sus sub-actividades subordinadas?\n\nLa jerarquía WBS se renumerará automáticamente.`);
+      if (!seguro) return;
 
       try {
-        const res = await fetch(`/proyectos/${proyectoActualId}/actividades/${encodeURIComponent(codigo)}`, {
+        const res = await fetch(`/proyectos/${pId}/actividades/${encodeURIComponent(codLimpio)}`, {
           method: "DELETE",
-          headers: { "Authorization": `Bearer ${token}` }
+          headers: { 
+            "Authorization": `Bearer ${token}` 
+          }
         });
 
         if (res.ok) {
-          notificarToast(`Actividad [${codigo}] eliminada y estructura renumerada.`, "success");
+          notificarToast(`Actividad [${codLimpio}] eliminada correctamente.`, "success");
           await cargarActividades();
         } else {
           const err = await res.json().catch(() => ({}));
-          alert(err.detail || "No se pudo eliminar la actividad.");
+          alert(err.detail || "No se pudo eliminar la actividad seleccionada.");
         }
       } catch (e) {
         console.error("Error al eliminar actividad:", e);
-        alert("Error de conexión al eliminar la actividad.");
+        alert("Error de conexión con el servidor al eliminar la actividad.");
       }
     }
 
