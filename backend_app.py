@@ -292,11 +292,17 @@ def init_db():
     else:
         c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
 
-    # Índices de aceleración instantánea en SQLite (Lectura en memoria <5ms)
-    c.execute("CREATE INDEX IF NOT EXISTS idx_historial_proy ON historial(proyecto_id, id DESC)")
-    c.execute("CREATE INDEX IF NOT EXISTS idx_actividades_proy ON actividades(proyecto_id, codigo)")
-    c.execute("CREATE INDEX IF NOT EXISTS idx_proy_usuarios ON proyecto_usuarios(proyecto_id, usuario_id)")
-    c.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_estado ON usuarios(estado)")
+    # Índices de aceleración seguros en SQLite
+    for idx_sql in [
+        "CREATE INDEX IF NOT EXISTS idx_historial_proy ON historial(proyecto_id, timestamp DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_actividades_proy ON actividades(proyecto_id, codigo)",
+        "CREATE INDEX IF NOT EXISTS idx_proy_usuarios ON proyecto_usuarios(proyecto_id, usuario_id)",
+        "CREATE INDEX IF NOT EXISTS idx_usuarios_estado ON usuarios(estado)"
+    ]:
+        try:
+            c.execute(idx_sql)
+        except sqlite3.OperationalError:
+            pass
 
     conn.commit()
     conn.close()
@@ -668,7 +674,7 @@ def ver_historial(
                    COALESCE(detalle, 'Operación sin detalle') as detalle 
             FROM historial 
             WHERE proyecto_id = ?
-            ORDER BY id DESC LIMIT 100
+            ORDER BY ROWID DESC LIMIT 100
         """, (p_id,)).fetchall()
         
         return [dict(r) for r in rows]
