@@ -385,59 +385,73 @@
     </div>
   </div>
 
-  <!-- MODAL: ADMIN TI -->
+  <!-- MODAL: ADMIN TI REPOTENCIADO -->
   <div id="modal-admin-ti" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
-    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
-      <div class="bg-teal-700 text-white p-4 flex justify-between items-center flex-shrink-0">
-        <h3 class="font-bold text-sm">🛡️ Administración de Identidades y Cuentas (TI)</h3>
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-300 flex flex-col max-h-[88vh]">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">🛡️</span>
+          <h3 class="font-bold text-sm">Administración de Identidades y Cuentas (TI)</h3>
+        </div>
         <button onclick="cerrarModalAdminTI()" class="text-white text-2xl font-bold hover:text-gray-200">&times;</button>
       </div>
+
       <div class="p-6 overflow-y-auto space-y-6">
+        <!-- Formulario Alta con Nombres y Apellidos Separados -->
         <form onsubmit="darAltaUsuario(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
           <h4 class="text-xs font-black uppercase text-gray-700 tracking-wider">Alta de Nuevo Trabajador</h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Nombre Completo</label>
-              <input type="text" id="ti-input-nombre" required placeholder="Ej. Salas Guerrero, Jesús" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
+              <label class="block font-bold text-gray-600 mb-1">Nombres</label>
+              <input type="text" id="ti-input-nombres" required placeholder="Ej. Jesús Gianfranco" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
             </div>
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Usuario (Login)</label>
+              <label class="block font-bold text-gray-600 mb-1">Apellidos</label>
+              <input type="text" id="ti-input-apellidos" required placeholder="Ej. Salas Guerrero" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
+            </div>
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Usuario (Login / Correo)</label>
               <input type="text" id="ti-input-user" required placeholder="Ej. jsalas" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
             </div>
             <div>
               <label class="block font-bold text-gray-600 mb-1">Contraseña Inicial</label>
               <input type="password" id="ti-input-pass" required placeholder="••••••••" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
             </div>
-            <div>
-              <label class="block font-bold text-gray-600 mb-1">Rol Global</label>
+            <div class="sm:col-span-2">
+              <label class="block font-bold text-gray-600 mb-1">Rol Institucional Global</label>
               <select id="ti-input-rol" class="w-full p-2 border border-gray-300 rounded font-bold outline-none">
                 <option value="OPERADOR">OPERADOR (Gestor / Responsable de Proyectos)</option>
                 <option value="ADMIN_TI">ADMINISTRADOR TI (Gestión de Identidades)</option>
               </select>
             </div>
           </div>
-          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2 rounded transition shadow">Dar de Alta Trabajador</button>
+          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2.5 rounded-lg transition shadow">Dar de Alta Trabajador</button>
         </form>
 
+        <!-- Tabla con Buscador Reactivo y Acción de Baja/Alta -->
         <div>
-          <h4 class="text-xs font-black uppercase text-gray-700 tracking-wider mb-2">Cuentas Registradas</h4>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-black uppercase text-gray-700 tracking-wider">Cuentas Registradas</h4>
+            <input type="text" id="ti-filtro-usuarios" oninput="filtrarUsuariosTI()" placeholder="🔍 Buscar por nombre o usuario..." class="text-xs bg-white border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:border-[#0f2a4a] w-56 font-semibold">
+          </div>
           <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
             <table class="w-full text-xs text-left">
-              <thead class="bg-gray-100 border-b border-gray-200">
+              <thead class="bg-gray-100 border-b border-gray-200 text-gray-700">
                 <tr>
-                  <th class="p-2.5 font-bold">Nombre Completo</th>
+                  <th class="p-2.5 font-bold">Apellidos y Nombres</th>
                   <th class="p-2.5 font-bold">Usuario</th>
                   <th class="p-2.5 font-bold">Rol</th>
                   <th class="p-2.5 font-bold text-center">Estado</th>
+                  <th class="p-2.5 font-bold text-center">Acción</th>
                 </tr>
               </thead>
-              <tbody id="ti-tabla-usuarios" class="divide-y divide-gray-100"></tbody>
+              <tbody id="ti-tabla-usuarios" class="divide-y divide-gray-100 font-medium"></tbody>
             </table>
           </div>
         </div>
       </div>
       <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
-        <button onclick="cerrarModalAdminTI()" class="px-5 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded">Cerrar</button>
+        <button onclick="cerrarModalAdminTI()" class="px-5 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg">Cerrar</button>
       </div>
     </div>
   </div>
@@ -736,29 +750,36 @@
     </div>
   </div>
 
-  <!-- MODAL RESPONSABLES -->
+  <!-- MODAL: PERSONAL Y PERMISOS DEL PROYECTO -->
   <div id="modal-responsables" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-[#f8f9fa] rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
-      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
-        <h3 class="font-bold text-base">⚙️ Administrador de Responsables - IMARPE</h3>
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">⚙️</span>
+          <h3 class="font-bold text-sm">Administración de Personal y Roles del Proyecto</h3>
+        </div>
         <button onclick="cerrarResponsables()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
       </div>
-      <div class="p-4 overflow-y-auto space-y-3 flex-1">
-        <table class="w-full text-xs text-left">
-          <thead class="bg-[#0f2a4a] text-white font-bold">
+
+      <div class="p-4 bg-blue-50/70 border-b border-blue-100 text-xs text-blue-900 font-medium">
+        Defina qué trabajadores pueden <strong>gestionar y editar</strong> este proyecto, quiénes tienen acceso de <strong>solo lectura</strong> o quiénes no tienen visualización.
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-3 flex-1 bg-white">
+        <table class="w-full text-xs text-left border-separate border-spacing-0">
+          <thead class="sticky top-0 bg-[#0f2a4a] text-white font-bold">
             <tr>
-              <th class="p-2.5 border-r border-blue-900">Apellidos y Nombres ✎</th>
-              <th class="p-2.5 border-r border-blue-900">Cargo / Rol ✎</th>
-              <th class="p-2.5 border-r border-blue-900">Correo Electrónico ✎</th>
-              <th class="p-2.5 text-center w-16">Acción</th>
+              <th class="p-2.5 border-b border-blue-900">Trabajador (Apellidos y Nombres)</th>
+              <th class="p-2.5 border-b border-blue-900">Usuario</th>
+              <th class="p-2.5 border-b border-blue-900 text-center w-48">Nivel de Acceso en este Proyecto</th>
             </tr>
           </thead>
-          <tbody id="responsables-tabla-body" class="divide-y divide-gray-200"></tbody>
+          <tbody id="personal-permisos-tabla-body" class="divide-y divide-gray-100"></tbody>
         </table>
       </div>
-      <div class="p-3 bg-gray-100 border-t border-gray-300 flex justify-between items-center">
-        <button onclick="crearNuevoResponsable()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold px-4 py-2 rounded shadow">+ Agregar Nuevo</button>
-        <button onclick="cerrarResponsables()" class="bg-gray-400 hover:bg-gray-500 text-white text-xs font-bold px-4 py-2 rounded">Cerrar</button>
+
+      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
+        <button onclick="cerrarResponsables()" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded-lg transition shadow">Listo</button>
       </div>
     </div>
   </div>
@@ -3345,31 +3366,59 @@
     }
     function cerrarModalAdminTI() { document.getElementById("modal-admin-ti").classList.add("hidden"); }
 
+    // --- GESTIÓN DE IDENTIDADES TI ---
+    let usuariosTIGlobal = [];
+
     async function cargarListaUsuariosTI() {
       try {
         const res = await fetch("/usuarios", {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) return;
-        const usuarios = await res.json();
-        const tbody = document.getElementById("ti-tabla-usuarios");
-        tbody.innerHTML = "";
-        usuarios.forEach(u => {
-          tbody.innerHTML += `
-            <tr class="hover:bg-gray-50">
-              <td class="p-2.5 font-bold text-gray-800">${u.nombre_completo || '-'}</td>
-              <td class="p-2.5 font-mono text-gray-600">${u.username}</td>
-              <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-black ${u.rol === 'ADMIN_TI' ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-700'}">${u.rol}</span></td>
-              <td class="p-2.5 text-center"><span class="text-emerald-600 font-black text-[10px]">ACTIVO</span></td>
-            </tr>
-          `;
-        });
+        usuariosTIGlobal = await res.json();
+        renderizarTablaUsuariosTI(usuariosTIGlobal);
       } catch (err) {}
+    }
+
+    function renderizarTablaUsuariosTI(lista) {
+      const tbody = document.getElementById("ti-tabla-usuarios");
+      tbody.innerHTML = "";
+      lista.forEach(u => {
+        const esActivo = u.estado === 'ACTIVO';
+        tbody.innerHTML += `
+          <tr class="hover:bg-gray-50 transition">
+            <td class="p-2.5 font-bold text-gray-800">${u.nombre_completo || '-'}</td>
+            <td class="p-2.5 font-mono text-gray-600">@${u.username}</td>
+            <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-black ${u.rol === 'ADMIN_TI' ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-700'}">${u.rol}</span></td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${esActivo ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                ${u.estado}
+              </span>
+            </td>
+            <td class="p-2.5 text-center">
+              <button onclick="alternarEstadoUsuario(${u.id}, '${esActivo ? 'INACTIVO' : 'ACTIVO'}')" 
+                      class="px-2.5 py-1 rounded text-[11px] font-bold transition ${esActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}">
+                ${esActivo ? 'Dar de Baja' : 'Reactivar'}
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function filtrarUsuariosTI() {
+      const q = (document.getElementById("ti-filtro-usuarios")?.value || "").toLowerCase().trim();
+      const filtrados = usuariosTIGlobal.filter(u => 
+        (u.nombre_completo && u.nombre_completo.toLowerCase().includes(q)) ||
+        (u.username && u.username.toLowerCase().includes(q))
+      );
+      renderizarTablaUsuariosTI(filtrados);
     }
 
     async function darAltaUsuario(e) {
       e.preventDefault();
-      const nombre_completo = document.getElementById("ti-input-nombre").value.trim();
+      const nombres = document.getElementById("ti-input-nombres").value.trim();
+      const apellidos = document.getElementById("ti-input-apellidos").value.trim();
       const username = document.getElementById("ti-input-user").value.trim();
       const password = document.getElementById("ti-input-pass").value.trim();
       const rol = document.getElementById("ti-input-rol").value;
@@ -3378,19 +3427,95 @@
         const res = await fetch("/usuarios", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ nombre_completo, username, password, rol })
+          body: JSON.stringify({ nombres, apellidos, username, password, rol })
         });
         if (!res.ok) {
           const err = await res.json();
           throw new Error(err.detail || "Error al dar de alta");
         }
-        alert("Usuario creado con éxito");
-        document.getElementById("ti-input-nombre").value = "";
+        notificarToast("Trabajador registrado exitosamente.", "success");
+        document.getElementById("ti-input-nombres").value = "";
+        document.getElementById("ti-input-apellidos").value = "";
         document.getElementById("ti-input-user").value = "";
         document.getElementById("ti-input-pass").value = "";
         cargarListaUsuariosTI();
       } catch (err) {
         alert(err.message);
+      }
+    }
+
+    async function alternarEstadoUsuario(usuarioId, nuevoEstado) {
+      try {
+        const res = await fetch("/usuarios/estado", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ usuario_id: usuarioId, estado: nuevoEstado })
+        });
+        if (res.ok) {
+          notificarToast(`Cuenta de usuario ${nuevoEstado === 'ACTIVO' ? 'reactivada' : 'dada de baja'}.`, "info");
+          cargarListaUsuariosTI();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "No se pudo cambiar el estado.");
+        }
+      } catch (e) {
+        alert("Error de comunicación.");
+      }
+    }
+
+    // --- MÓDULO PERSONAL: GESTIÓN DE ROLES POR PROYECTO ---
+    async function abrirResponsables() {
+      if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
+        alert("Solo un Gestor del Proyecto puede administrar los roles y personal.");
+        return;
+      }
+      try {
+        const res = await fetch(`/proyectos/${proyectoActualId}/personal_permisos`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Error cargando permisos");
+        const lista = await res.json();
+        const tbody = document.getElementById("personal-permisos-tabla-body");
+        tbody.innerHTML = "";
+
+        lista.forEach(u => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-gray-50 transition border-b border-gray-100">
+              <td class="p-2.5 font-bold text-gray-800">${u.nombre_completo || '-'}</td>
+              <td class="p-2.5 font-mono text-gray-500 text-xs">@${u.username}</td>
+              <td class="p-2.5 text-center">
+                <select onchange="cambiarNivelAccesoPersonal(${u.id}, this.value)" 
+                        class="text-xs font-bold p-1.5 rounded-lg border border-gray-300 outline-none cursor-pointer ${u.nivel_permiso === 'GESTOR' ? 'bg-amber-50 text-amber-900 border-amber-300' : (u.nivel_permiso === 'LECTURA' ? 'bg-blue-50 text-blue-900 border-blue-300' : 'bg-gray-50 text-gray-500')}">
+                  <option value="GESTOR" ${u.nivel_permiso === 'GESTOR' ? 'selected' : ''}>👑 Gestor de Proyecto</option>
+                  <option value="LECTURA" ${u.nivel_permiso === 'LECTURA' ? 'selected' : ''}>👁️ Solo Lectura (Informativo)</option>
+                  <option value="NINGUNO" ${u.nivel_permiso === 'NINGUNO' ? 'selected' : ''}>🚫 Sin Acceso</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        });
+
+        document.getElementById("modal-responsables").classList.remove("hidden");
+      } catch (e) {
+        alert("No se pudo abrir el panel de personal.");
+      }
+    }
+
+    async function cambiarNivelAccesoPersonal(usuarioId, nuevoNivel) {
+      try {
+        const res = await fetch(`/proyectos/${proyectoActualId}/personal_permisos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ usuario_id: usuarioId, nivel: nuevoNivel })
+        });
+        if (res.ok) {
+          notificarToast("Nivel de acceso actualizado.", "success");
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al actualizar permiso.");
+        }
+      } catch (e) {
+        alert("Error de conexión al asignar rol.");
       }
     }
   </script>

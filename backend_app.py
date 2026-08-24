@@ -82,10 +82,19 @@ class Token(BaseModel):
     user_id: int
 
 class UsuarioAltaModel(BaseModel):
+    nombres: str
+    apellidos: str
     username: str
     password: str
-    nombre_completo: str
     rol: str
+
+class UsuarioEstadoUpdate(BaseModel):
+    usuario_id: int
+    estado: str  # 'ACTIVO' | 'INACTIVO'
+
+class PermisoProyectoUpdate(BaseModel):
+    usuario_id: int
+    nivel: str  # 'NINGUNO' | 'LECTURA' | 'GESTOR'
 
 class ProyectoCrearModel(BaseModel):
     nombre: str
@@ -199,9 +208,14 @@ def init_db():
             proyecto_id INTEGER,
             usuario_id INTEGER,
             es_gestor BOOLEAN DEFAULT 0,
+            permiso TEXT DEFAULT 'GESTOR',
             PRIMARY KEY (proyecto_id, usuario_id)
         )
     """)
+    try:
+        c.execute("ALTER TABLE proyecto_usuarios ADD COLUMN permiso TEXT DEFAULT 'GESTOR'")
+    except sqlite3.OperationalError:
+        pass
 
     # 5. Tabla Actividades
     c.execute("""
@@ -327,22 +341,35 @@ def alta_usuario(nuevo: UsuarioAltaModel, user: dict = Depends(get_current_user)
     if user["rol"] != "ADMIN_TI":
         raise HTTPException(status_code=403, detail="Solo el Administrador TI puede dar de alta usuarios.")
     
-    existe = db.execute("SELECT id FROM usuarios WHERE username = ?", (nuevo.username,)).fetchone()
+    user_limpio = nuevo.username.strip().lower()
+    nombre_comp = f"{nuevo.apellidos.strip()}, {nuevo.nombres.strip()}"
+    
+    existe = db.execute("SELECT id FROM usuarios WHERE username = ?", (user_limpio,)).fetchone()
     if existe:
         raise HTTPException(status_code=400, detail="El nombre de usuario ya está registrado.")
 
     hashed = hash_password(nuevo.password)
     db.execute("INSERT INTO usuarios (username, password, nombre_completo, rol, estado) VALUES (?, ?, ?, ?, 'ACTIVO')",
-               (nuevo.username, hashed, nuevo.nombre_completo, nuevo.rol))
+               (user_limpio, hashed, nombre_comp, nuevo.rol))
+    
+    # Sincronizar automáticamente en el directorio de responsables institucionales
+    db.execute("INSERT OR IGNORE INTO responsables (nombre, cargo, correo) VALUES (?, ?, ?)",
+               (nombre_comp, "Personal IMARPE", f"{user_limpio}@imarpe.gob.pe"))
+    
     db.commit()
     return {"mensaje": "Usuario dado de alta exitosamente"}
 
-@app.get("/usuarios")
-def listar_usuarios(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+@app.put("/usuarios/estado")
+def alternar_estado_usuario(data: UsuarioEstadoUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     if user["rol"] != "ADMIN_TI":
-        raise HTTPException(status_code=403, detail="Acceso denegado")
-    rows = db.execute("SELECT id, username, nombre_completo, rol, estado FROM usuarios ORDER BY id DESC").fetchall()
-    return [dict(r) for r in rows]
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar el estado de usuarios.")
+    
+    if data.usuario_id == user["id"]:
+        raise HTTPException(status_code=400, detail="No puedes desactivar tu propia cuenta activa.")
+
+    db.execute("UPDATE usuarios SET estado = ? WHERE id = ?", (data.estado, data.usuario_id))
+    db.commit()
+    return {"mensaje": f"Estado actualizado a {data.estado}"}
 
 # --- HUB DE PROYECTOS ---
 @app.get("/proyectos")
@@ -627,6 +654,57 @@ def ver_historial(
     except Exception as e:
         print(f"Error consultando historial: {e}")
         return []
+
+@app.get("/proyectos/{proyecto_id}/personal_permisos")
+def listar_personal_proyecto(proyecto_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    p_id = int(proyecto_id)
+    # Lista todos los usuarios activos y su nivel de permiso en este proyecto
+    rows = db.execute("""
+        SELECT u.id, u.username, u.nombre_completo, u.rol,
+               COALESCE(pu.permiso, CASE WHEN pu.es_gestor = 1 OR p.creador_id = u.id THEN 'GESTOR' ELSE 'NINGUNO' END) as nivel_permiso
+        FROM usuarios u
+        LEFT JOIN proyectos p ON p.id = ?
+        LEFT JOIN proyecto_usuarios pu ON pu.proyecto_id = ? AND pu.usuario_id = u.id
+        WHERE u.estado = 'ACTIVO'
+        ORDER BY u.nombre_completo ASC
+    """, (p_id, p_id)).fetchall()
+    return [dict(r) for r in rows]
+
+@app.post("/proyectos/{proyecto_id}/personal_permisos")
+def actualizar_permiso_personal(proyecto_id: int, data: PermisoProyectoUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    p_id = int(proyecto_id)
+    u_id = int(user["id"])
+
+    permiso_admin = db.execute("""
+        SELECT 1 FROM proyectos p
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1 OR pu.permiso = 'GESTOR')
+    """, (u_id, p_id, u_id)).fetchone()
+
+    if not permiso_admin and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede asignar permisos.")
+
+    es_gestor_val = 1 if data.nivel == 'GESTOR' else 0
+
+    if data.nivel == 'NINGUNO':
+        db.execute("DELETE FROM proyecto_usuarios WHERE proyecto_id = ? AND usuario_id = ?", (p_id, data.usuario_id))
+    else:
+        db.execute("""
+            INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor, permiso)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(proyecto_id, usuario_id) DO UPDATE SET es_gestor = excluded.es_gestor, permiso = excluded.permiso
+        """, (p_id, data.usuario_id, es_gestor_val, data.nivel))
+
+    u_target = db.execute("SELECT username, nombre_completo FROM usuarios WHERE id = ?", (data.usuario_id,)).fetchone()
+    target_info = u_target["nombre_completo"] if u_target else f"ID {data.usuario_id}"
+    
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle)
+        VALUES (?, ?, ?, 'Permisos Proyecto', ?)
+    """, (p_id, ahora_peru_str(), user["username"], f"Asignó nivel '{data.nivel}' a {target_info}"))
+
+    db.commit()
+    return {"mensaje": "Nivel de acceso actualizado exitosamente"}
 
 # --- ALGORITMO FORMAL CPM (CRITICAL PATH METHOD) ---
 @app.get("/ruta-critica")
