@@ -436,16 +436,16 @@
           </div>
           <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
             <table class="w-full text-xs text-left">
-              <thead class="bg-gray-100 border-b border-gray-200 text-gray-700">
+              <thead class="bg-[#0f2a4a] text-white">
                 <tr>
-                  <th class="p-2.5 font-bold">Apellidos y Nombres</th>
-                  <th class="p-2.5 font-bold">Usuario</th>
-                  <th class="p-2.5 font-bold">Rol</th>
-                  <th class="p-2.5 font-bold text-center">Estado</th>
-                  <th class="p-2.5 font-bold text-center">Acción</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Apellidos y Nombres</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Usuario</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Rol</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center">Estado</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center">Acción</th>
                 </tr>
               </thead>
-              <tbody id="ti-tabla-usuarios" class="divide-y divide-gray-100 font-medium"></tbody>
+              <tbody id="ti-tabla-usuarios" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
             </table>
           </div>
         </div>
@@ -750,32 +750,71 @@
     </div>
   </div>
 
-  <!-- MODAL: PERSONAL Y PERMISOS DEL PROYECTO -->
+  <!-- MODAL: PERSONAL Y ROLES DEL PROYECTO (CON AUTOCOMPLETADO Y VALIDACIONES) -->
   <div id="modal-responsables" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 max-h-[88vh] flex flex-col">
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
         <div class="flex items-center space-x-2">
           <span class="text-xl">⚙️</span>
           <h3 class="font-bold text-sm">Administración de Personal y Roles del Proyecto</h3>
         </div>
-        <button onclick="cerrarResponsables()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
+        <button onclick="cerrarResponsables()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
       </div>
 
-      <div class="p-4 bg-blue-50/70 border-b border-blue-100 text-xs text-blue-900 font-medium">
-        Defina qué trabajadores pueden <strong>gestionar y editar</strong> este proyecto, quiénes tienen acceso de <strong>solo lectura</strong> o quiénes no tienen visualización.
+      <div class="p-4 bg-blue-50/80 border-b border-blue-100 text-xs text-blue-950 font-medium leading-relaxed">
+        Agregue usuarios para concederles el rol de <strong>Gestor de Proyecto</strong> (edición total) o <strong>Visualizador del Proyecto</strong> (solo lectura). Los responsables con actividades asignadas ya cuentan con acceso operativo automático.
       </div>
 
-      <div class="p-5 overflow-y-auto space-y-3 flex-1 bg-white">
-        <table class="w-full text-xs text-left border-separate border-spacing-0">
-          <thead class="sticky top-0 bg-[#0f2a4a] text-white font-bold">
-            <tr>
-              <th class="p-2.5 border-b border-blue-900">Trabajador (Apellidos y Nombres)</th>
-              <th class="p-2.5 border-b border-blue-900">Usuario</th>
-              <th class="p-2.5 border-b border-blue-900 text-center w-48">Nivel de Acceso en este Proyecto</th>
-            </tr>
-          </thead>
-          <tbody id="personal-permisos-tabla-body" class="divide-y divide-gray-100"></tbody>
-        </table>
+      <div class="p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
+        <!-- Panel de Búsqueda Predictiva y Asignación de Rol -->
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Otorgar Rol o Acceso a un Trabajador</h4>
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            
+            <!-- Campo con buscador predictivo / autocomplete -->
+            <div class="relative md:col-span-6">
+              <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Buscar Trabajador (Nombre o Usuario):</label>
+              <input type="text" id="inp-buscar-usuario-rol" oninput="autocompletarBusquedaUsuarios(this.value)" placeholder="Escriba nombres o @usuario..." class="w-full p-2 text-xs bg-gray-50 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a] focus:bg-white" autocomplete="off">
+              
+              <!-- Menú Flotante de Sugerencias -->
+              <div id="sugerencias-usuarios-rol" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+            </div>
+
+            <!-- Selector de Rol a Asignar -->
+            <div class="md:col-span-4">
+              <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Privilegio a Otorgar:</label>
+              <select id="sel-rol-asignar" class="w-full p-2 text-xs font-bold bg-gray-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a]">
+                <option value="GESTOR">👑 Gestor de Proyecto</option>
+                <option value="VISUALIZADOR">👁️ Visualizador del Proyecto</option>
+              </select>
+            </div>
+
+            <!-- Botón Asignar -->
+            <div class="md:col-span-2">
+              <button onclick="confirmarAsignacionRolUsuario()" class="w-full p-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs rounded-lg transition shadow">
+                + Asignar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Miembros con Rol en este Proyecto -->
+        <div>
+          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider mb-2">Miembros y Roles Configurados en este Proyecto</h4>
+          <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+            <table class="w-full text-xs text-left border-separate border-spacing-0">
+              <thead class="bg-[#0f2a4a] text-white font-bold">
+                <tr>
+                  <th class="p-2.5 text-white border-b border-blue-900">Trabajador (Apellidos y Nombres)</th>
+                  <th class="p-2.5 text-white border-b border-blue-900">Usuario</th>
+                  <th class="p-2.5 text-white border-b border-blue-900 text-center">Rol en Proyecto</th>
+                  <th class="p-2.5 text-white border-b border-blue-900 text-center w-20">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="personal-permisos-tabla-body" class="divide-y divide-gray-100 font-medium"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
@@ -3359,15 +3398,17 @@
       }
     }
 
-    // --- PANEL ADMIN TI ---
+    // --- GESTIÓN DE IDENTIDADES TI ---
+    let usuariosTIGlobal = [];
+
     function abrirModalAdminTI() {
       document.getElementById("modal-admin-ti").classList.remove("hidden");
       cargarListaUsuariosTI();
     }
-    function cerrarModalAdminTI() { document.getElementById("modal-admin-ti").classList.add("hidden"); }
 
-    // --- GESTIÓN DE IDENTIDADES TI ---
-    let usuariosTIGlobal = [];
+    function cerrarModalAdminTI() { 
+      document.getElementById("modal-admin-ti").classList.add("hidden"); 
+    }
 
     async function cargarListaUsuariosTI() {
       try {
@@ -3377,16 +3418,19 @@
         if (!res.ok) return;
         usuariosTIGlobal = await res.json();
         renderizarTablaUsuariosTI(usuariosTIGlobal);
-      } catch (err) {}
+      } catch (err) {
+        console.error("Error al cargar usuarios TI:", err);
+      }
     }
 
     function renderizarTablaUsuariosTI(lista) {
       const tbody = document.getElementById("ti-tabla-usuarios");
+      if (!tbody) return;
       tbody.innerHTML = "";
       lista.forEach(u => {
         const esActivo = u.estado === 'ACTIVO';
         tbody.innerHTML += `
-          <tr class="hover:bg-gray-50 transition">
+          <tr class="hover:bg-gray-50 transition border-b border-gray-100">
             <td class="p-2.5 font-bold text-gray-800">${u.nombre_completo || '-'}</td>
             <td class="p-2.5 font-mono text-gray-600">@${u.username}</td>
             <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-black ${u.rol === 'ADMIN_TI' ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-700'}">${u.rol}</span></td>
@@ -3459,63 +3503,192 @@
           alert(err.detail || "No se pudo cambiar el estado.");
         }
       } catch (e) {
-        alert("Error de comunicación.");
+        alert("Error de comunicación con el servidor.");
       }
     }
 
     // --- MÓDULO PERSONAL: GESTIÓN DE ROLES POR PROYECTO ---
+    let dataPersonalProyecto = { miembros: [], todos_usuarios: [], responsables_en_actividades: [] };
+    let usuarioSeleccionadoParaRol = null;
+
     async function abrirResponsables() {
       if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
-        alert("Solo un Gestor del Proyecto puede administrar los roles y personal.");
+        alert("Solo un Gestor del Proyecto puede administrar los roles y el personal.");
         return;
       }
+
+      usuarioSeleccionadoParaRol = null;
+      const inp = document.getElementById("inp-buscar-usuario-rol");
+      if (inp) inp.value = "";
+      const divSug = document.getElementById("sugerencias-usuarios-rol");
+      if (divSug) divSug.classList.add("hidden");
+
+      await recargarDatosPersonalProyecto();
+      document.getElementById("modal-responsables").classList.remove("hidden");
+    }
+
+    function cerrarResponsables() {
+      document.getElementById("modal-responsables").classList.add("hidden");
+      cargarActividades();
+    }
+
+    async function recargarDatosPersonalProyecto() {
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/personal_permisos`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) throw new Error("Error cargando permisos");
-        const lista = await res.json();
-        const tbody = document.getElementById("personal-permisos-tabla-body");
-        tbody.innerHTML = "";
-
-        lista.forEach(u => {
-          tbody.innerHTML += `
-            <tr class="hover:bg-gray-50 transition border-b border-gray-100">
-              <td class="p-2.5 font-bold text-gray-800">${u.nombre_completo || '-'}</td>
-              <td class="p-2.5 font-mono text-gray-500 text-xs">@${u.username}</td>
-              <td class="p-2.5 text-center">
-                <select onchange="cambiarNivelAccesoPersonal(${u.id}, this.value)" 
-                        class="text-xs font-bold p-1.5 rounded-lg border border-gray-300 outline-none cursor-pointer ${u.nivel_permiso === 'GESTOR' ? 'bg-amber-50 text-amber-900 border-amber-300' : (u.nivel_permiso === 'LECTURA' ? 'bg-blue-50 text-blue-900 border-blue-300' : 'bg-gray-50 text-gray-500')}">
-                  <option value="GESTOR" ${u.nivel_permiso === 'GESTOR' ? 'selected' : ''}>👑 Gestor de Proyecto</option>
-                  <option value="LECTURA" ${u.nivel_permiso === 'LECTURA' ? 'selected' : ''}>👁️ Solo Lectura (Informativo)</option>
-                  <option value="NINGUNO" ${u.nivel_permiso === 'NINGUNO' ? 'selected' : ''}>🚫 Sin Acceso</option>
-                </select>
-              </td>
-            </tr>
-          `;
-        });
-
-        document.getElementById("modal-responsables").classList.remove("hidden");
+        dataPersonalProyecto = await res.json();
+        renderizarTablaMiembrosProyecto();
       } catch (e) {
-        alert("No se pudo abrir el panel de personal.");
+        console.error(e);
+        alert("No se pudo cargar la lista de personal del proyecto.");
       }
     }
 
-    async function cambiarNivelAccesoPersonal(usuarioId, nuevoNivel) {
+    function renderizarTablaMiembrosProyecto() {
+      const tbody = document.getElementById("personal-permisos-tabla-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      if (!dataPersonalProyecto.miembros || dataPersonalProyecto.miembros.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 font-semibold">No hay roles especiales asignados. Utilice el buscador superior para agregar gestores o visualizadores.</td></tr>`;
+        return;
+      }
+
+      dataPersonalProyecto.miembros.forEach(m => {
+        const esGestor = (m.nivel_permiso === "GESTOR" || m.es_gestor === 1);
+        tbody.innerHTML += `
+          <tr class="hover:bg-gray-50 transition border-b border-gray-100">
+            <td class="p-2.5 font-bold text-gray-800">${m.nombre_completo || '-'}</td>
+            <td class="p-2.5 font-mono text-gray-500 text-xs">@${m.username}</td>
+            <td class="p-2.5 text-center">
+              <span class="px-2.5 py-1 rounded-md text-[11px] font-bold ${esGestor ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}">
+                ${esGestor ? '👑 Gestor de Proyecto' : '👁️ Visualizador del Proyecto'}
+              </span>
+            </td>
+            <td class="p-2.5 text-center">
+              <button onclick="removerRolProyecto(${m.id}, '${m.nombre_completo || m.username}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-1" title="Quitar rol">
+                🗑️
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function autocompletarBusquedaUsuarios(termino) {
+      const term = termino.toLowerCase().trim();
+      const divSugerencias = document.getElementById("sugerencias-usuarios-rol");
+      if (!divSugerencias) return;
+      
+      if (!term) {
+        divSugerencias.innerHTML = "";
+        divSugerencias.classList.add("hidden");
+        usuarioSeleccionadoParaRol = null;
+        return;
+      }
+
+      const coincidencias = (dataPersonalProyecto.todos_usuarios || []).filter(u => 
+        (u.nombre_completo && u.nombre_completo.toLowerCase().includes(term)) ||
+        (u.username && u.username.toLowerCase().includes(term))
+      );
+
+      divSugerencias.innerHTML = "";
+      if (coincidencias.length === 0) {
+        divSugerencias.innerHTML = `<div class="p-2.5 text-gray-400 italic">No se encontraron usuarios con '${termino}'</div>`;
+      } else {
+        coincidencias.slice(0, 6).forEach(u => {
+          const item = document.createElement("div");
+          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition";
+          item.innerHTML = `
+            <span class="font-bold text-[#0f2a4a]">${u.nombre_completo || u.username}</span>
+            <span class="font-mono text-gray-400 text-[11px]">@${u.username}</span>
+          `;
+          item.onclick = () => {
+            usuarioSeleccionadoParaRol = u;
+            document.getElementById("inp-buscar-usuario-rol").value = `${u.nombre_completo || u.username} (@${u.username})`;
+            divSugerencias.classList.add("hidden");
+          };
+          divSugerencias.appendChild(item);
+        });
+      }
+      divSugerencias.classList.remove("hidden");
+    }
+
+    async function confirmarAsignacionRolUsuario() {
+      if (!usuarioSeleccionadoParaRol) {
+        alert("Por favor busque y seleccione un trabajador de la lista de sugerencias.");
+        return;
+      }
+
+      const u = usuarioSeleccionadoParaRol;
+      const rolElegido = document.getElementById("sel-rol-asignar").value;
+      
+      const miembroActual = (dataPersonalProyecto.miembros || []).find(m => m.id === u.id);
+      if (miembroActual && (miembroActual.nivel_permiso === "GESTOR" || miembroActual.es_gestor === 1)) {
+        if (rolElegido === "GESTOR") {
+          alert(`ℹ️ El usuario '${u.nombre_completo || u.username}' ya cuenta con el rol de Gestor de Proyecto.`);
+          return;
+        }
+      }
+
+      const tieneActividades = (dataPersonalProyecto.responsables_en_actividades || []).some(nomResp => 
+        nomResp.includes(u.nombre_completo) || (u.nombre_completo && nomResp.includes(u.username))
+      );
+
+      if (tieneActividades && rolElegido === "VISUALIZADOR") {
+        alert(`ℹ️ El usuario '${u.nombre_completo || u.username}' ya tiene actividades asignadas como Responsable en este proyecto, por lo que ya cuenta con visibilidad y acceso operativo.\n\nSi desea concederle privilegios de administración, asígnele el rol 'Gestor de Proyecto'.`);
+        return;
+      }
+
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/personal_permisos`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ usuario_id: usuarioId, nivel: nuevoNivel })
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${token}` 
+          },
+          body: JSON.stringify({ usuario_id: u.id, nivel: rolElegido })
         });
+
         if (res.ok) {
-          notificarToast("Nivel de acceso actualizado.", "success");
+          notificarToast(`Rol '${rolElegido === 'GESTOR' ? 'Gestor de Proyecto' : 'Visualizador'}' asignado con éxito.`, "success");
+          document.getElementById("inp-buscar-usuario-rol").value = "";
+          usuarioSeleccionadoParaRol = null;
+          await recargarDatosPersonalProyecto();
         } else {
           const err = await res.json().catch(() => ({}));
-          alert(err.detail || "Error al actualizar permiso.");
+          alert(err.detail || "No se pudo asignar el rol.");
         }
       } catch (e) {
-        alert("Error de conexión al asignar rol.");
+        console.error(e);
+        alert("Error de comunicación con el servidor.");
+      }
+    }
+
+    async function removerRolProyecto(usuarioId, nombre) {
+      if (!confirm(`¿Desea remover los privilegios especiales de ${nombre} en este proyecto?`)) return;
+
+      try {
+        const res = await fetch(`/proyectos/${proyectoActualId}/personal_permisos`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${token}` 
+          },
+          body: JSON.stringify({ usuario_id: usuarioId, nivel: 'NINGUNO' })
+        });
+
+        if (res.ok) {
+          notificarToast(`Privilegios removidos para ${nombre}.`, "info");
+          await recargarDatosPersonalProyecto();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "No se pudo actualizar.");
+        }
+      } catch (e) {
+        alert("Error al remover permisos.");
       }
     }
   </script>

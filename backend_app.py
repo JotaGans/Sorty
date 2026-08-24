@@ -655,23 +655,55 @@ def ver_historial(
         print(f"Error consultando historial: {e}")
         return []
 
+# --- MÓDULO PERSONAL: ROLES Y PERMISOS POR PROYECTO ---
 @app.get("/proyectos/{proyecto_id}/personal_permisos")
-def listar_personal_proyecto(proyecto_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+def listar_personal_proyecto(
+    proyecto_id: int, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
     p_id = int(proyecto_id)
-    # Lista todos los usuarios activos y su nivel de permiso en este proyecto
-    rows = db.execute("""
+    
+    # 1. Obtener los miembros con rol asignado en este proyecto
+    miembros_asignados = db.execute("""
         SELECT u.id, u.username, u.nombre_completo, u.rol,
-               COALESCE(pu.permiso, CASE WHEN pu.es_gestor = 1 OR p.creador_id = u.id THEN 'GESTOR' ELSE 'NINGUNO' END) as nivel_permiso
-        FROM usuarios u
-        LEFT JOIN proyectos p ON p.id = ?
-        LEFT JOIN proyecto_usuarios pu ON pu.proyecto_id = ? AND pu.usuario_id = u.id
-        WHERE u.estado = 'ACTIVO'
+               pu.es_gestor,
+               COALESCE(pu.permiso, CASE WHEN pu.es_gestor = 1 OR p.creador_id = u.id THEN 'GESTOR' ELSE 'VISUALIZADOR' END) as nivel_permiso
+        FROM proyecto_usuarios pu
+        JOIN usuarios u ON pu.usuario_id = u.id
+        JOIN proyectos p ON p.id = pu.proyecto_id
+        WHERE pu.proyecto_id = ? AND u.estado = 'ACTIVO'
         ORDER BY u.nombre_completo ASC
-    """, (p_id, p_id)).fetchall()
-    return [dict(r) for r in rows]
+    """, (p_id,)).fetchall()
+
+    # 2. Obtener lista de todos los usuarios activos para el autocompletado
+    todos_usuarios = db.execute("""
+        SELECT id, username, nombre_completo, rol FROM usuarios WHERE estado = 'ACTIVO' ORDER BY nombre_completo ASC
+    """).fetchall()
+
+    # 3. Obtener nombres de responsables que tienen actividades en este proyecto
+    acts = db.execute("SELECT responsable FROM actividades WHERE proyecto_id = ?", (p_id,)).fetchall()
+    responsables_en_acts = []
+    for a in acts:
+        resp_str = a["responsable"] or ""
+        for r in resp_str.split(";"):
+            r_limpio = r.strip()
+            if r_limpio and r_limpio != "No asignado" and r_limpio not in responsables_en_acts:
+                responsables_en_acts.append(r_limpio)
+
+    return {
+        "miembros": [dict(m) for m in miembros_asignados],
+        "todos_usuarios": [dict(u) for u in todos_usuarios],
+        "responsables_en_actividades": responsables_en_acts
+    }
 
 @app.post("/proyectos/{proyecto_id}/personal_permisos")
-def actualizar_permiso_personal(proyecto_id: int, data: PermisoProyectoUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+def actualizar_permiso_personal(
+    proyecto_id: int, 
+    data: PermisoProyectoUpdate, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
     p_id = int(proyecto_id)
     u_id = int(user["id"])
 
@@ -696,15 +728,15 @@ def actualizar_permiso_personal(proyecto_id: int, data: PermisoProyectoUpdate, u
         """, (p_id, data.usuario_id, es_gestor_val, data.nivel))
 
     u_target = db.execute("SELECT username, nombre_completo FROM usuarios WHERE id = ?", (data.usuario_id,)).fetchone()
-    target_info = u_target["nombre_completo"] if u_target else f"ID {data.usuario_id}"
+    target_info = u_target["nombre_completo"] if u_target and u_target["nombre_completo"] else f"@{u_target['username']}"
     
     db.execute("""
         INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle)
         VALUES (?, ?, ?, 'Permisos Proyecto', ?)
-    """, (p_id, ahora_peru_str(), user["username"], f"Asignó nivel '{data.nivel}' a {target_info}"))
+    """, (p_id, ahora_peru_str(), user["username"], f"Asignó rol '{data.nivel}' a: {target_info}"))
 
     db.commit()
-    return {"mensaje": "Nivel de acceso actualizado exitosamente"}
+    return {"mensaje": "Permiso actualizado exitosamente"}
 
 # --- ALGORITMO FORMAL CPM (CRITICAL PATH METHOD) ---
 @app.get("/ruta-critica")
