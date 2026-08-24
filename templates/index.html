@@ -387,7 +387,7 @@
 
   <!-- MODAL: ADMIN TI REPOTENCIADO -->
   <div id="modal-admin-ti" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
-    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-300 flex flex-col max-h-[88vh]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-300 flex flex-col max-h-[88vh]">
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
         <div class="flex items-center space-x-2">
           <span class="text-xl">🛡️</span>
@@ -438,11 +438,11 @@
             <table class="w-full text-xs text-left">
               <thead class="bg-[#0f2a4a] text-white">
                 <tr>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Apellidos y Nombres</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Usuario</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Rol</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center">Estado</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center">Acción</th>
+                  <th class="p-3 font-bold text-white border-b border-blue-900 min-w-[240px]">Apellidos y Nombres</th>
+                  <th class="p-3 font-bold text-white border-b border-blue-900 w-32 whitespace-nowrap">Usuario</th>
+                  <th class="p-3 font-bold text-white border-b border-blue-900 w-44 whitespace-nowrap">Rol</th>
+                  <th class="p-3 font-bold text-white border-b border-blue-900 text-center w-24 whitespace-nowrap">Estado</th>
+                  <th class="p-3 font-bold text-white border-b border-blue-900 text-center w-28 whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
               <tbody id="ti-tabla-usuarios" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
@@ -3457,23 +3457,23 @@
 
         tbody.innerHTML += `
           <tr class="hover:bg-gray-50 transition border-b border-gray-100">
-            <td class="p-2.5 font-bold text-gray-800">${u.nombre_completo || '-'}</td>
-            <td class="p-2.5 font-mono text-gray-600">@${u.username}</td>
-            <td class="p-2.5">
+            <td class="p-3 font-bold text-gray-800">${u.nombre_completo || '-'}</td>
+            <td class="p-3 font-mono text-gray-600 whitespace-nowrap">@${u.username}</td>
+            <td class="p-3 whitespace-nowrap">
               <select onchange="cambiarRolGlobalUsuario(${u.id}, this.value)" 
-                      class="text-xs font-bold px-2 py-1 rounded-lg border border-gray-300 outline-none cursor-pointer ${rolNormalizado === 'ADMIN_TI' ? 'bg-teal-50 text-teal-800 border-teal-300' : 'bg-slate-50 text-slate-700'}">
+                      class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-gray-300 outline-none cursor-pointer ${rolNormalizado === 'ADMIN_TI' ? 'bg-teal-50 text-teal-800 border-teal-300' : 'bg-slate-50 text-slate-700'}">
                 <option value="OPERADOR" ${rolNormalizado === 'OPERADOR' ? 'selected' : ''}>OPERADOR</option>
                 <option value="ADMIN_TI" ${rolNormalizado === 'ADMIN_TI' ? 'selected' : ''}>ADMINISTRADOR TI</option>
               </select>
             </td>
-            <td class="p-2.5 text-center">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${esActivo ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+            <td class="p-3 text-center whitespace-nowrap">
+              <span class="px-2.5 py-1 rounded text-[10px] font-bold ${esActivo ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
                 ${u.estado}
               </span>
             </td>
-            <td class="p-2.5 text-center">
+            <td class="p-3 text-center whitespace-nowrap">
               <button onclick="alternarEstadoUsuario(${u.id}, '${esActivo ? 'INACTIVO' : 'ACTIVO'}')" 
-                      class="px-2.5 py-1 rounded text-[11px] font-bold transition ${esActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}">
+                      class="px-3 py-1.5 rounded text-xs font-bold whitespace-nowrap transition shadow-xs ${esActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200'}">
                 ${esActivo ? 'Dar de Baja' : 'Reactivar'}
               </button>
             </td>
