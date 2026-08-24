@@ -2087,7 +2087,7 @@
       }
     }
 
-    // --- ELIMINAR ACTIVIDAD Y RENUMERAR WBS ---
+    // --- ELIMINAR ACTIVIDAD CON MODAL INSTITUCIONAL ---
     async function eliminarActividad(cod) {
       const esGestorValido = (
         proyectoEsGestor === true || 
@@ -2097,36 +2097,38 @@
       );
 
       if (!esGestorValido) {
-        alert("🔒 No tiene permisos de Gestor para eliminar actividades de este proyecto.");
+        mostrarModalDialogo("Permiso Denegado", "No tiene permisos de Gestor para eliminar actividades en este proyecto.", false);
         return;
       }
 
-      const pId = parseInt(proyectoActualId) || 1;
       const codLimpio = String(cod).trim().replace(/\.$/, "");
+      const pId = parseInt(proyectoActualId) || 1;
 
-      // Confirmación nativa directa para evitar suspensión de promesas
-      const seguro = window.confirm(`¿Está seguro de eliminar la actividad [${codLimpio}] y todas sus sub-actividades subordinadas?\n\nLa jerarquía WBS se renumerará automáticamente.`);
-      if (!seguro) return;
+      // Diálogo modal estilizado institucional
+      mostrarModalDialogo(
+        "Confirmar Eliminación",
+        `¿Está seguro de eliminar la actividad [${codLimpio}] y todas sus subordinadas?\nLa numeración se ajustará correlativamente en automático.`,
+        true,
+        async () => {
+          try {
+            const res = await fetch(`/proyectos/${pId}/actividades/${encodeURIComponent(codLimpio)}`, {
+              method: "DELETE",
+              headers: { "Authorization": `Bearer ${token}` }
+            });
 
-      try {
-        const res = await fetch(`/proyectos/${pId}/actividades/${encodeURIComponent(codLimpio)}`, {
-          method: "DELETE",
-          headers: { 
-            "Authorization": `Bearer ${token}` 
+            if (res.ok) {
+              notificarToast(`Actividad [${codLimpio}] eliminada y jerarquía ajustada.`, "success");
+              await cargarActividades();
+            } else {
+              const err = await res.json().catch(() => ({}));
+              mostrarModalDialogo("Error", err.detail || "No se pudo eliminar la actividad.", false);
+            }
+          } catch (e) {
+            console.error("Error al eliminar actividad:", e);
+            mostrarModalDialogo("Error de Conexión", "Ocurrió un error al comunicarse con el servidor.", false);
           }
-        });
-
-        if (res.ok) {
-          notificarToast(`Actividad [${codLimpio}] eliminada correctamente.`, "success");
-          await cargarActividades();
-        } else {
-          const err = await res.json().catch(() => ({}));
-          alert(err.detail || "No se pudo eliminar la actividad seleccionada.");
         }
-      } catch (e) {
-        console.error("Error al eliminar actividad:", e);
-        alert("Error de conexión con el servidor al eliminar la actividad.");
-      }
+      );
     }
 
     function obtenerListaResponsablesAsignados(responsablesStr) {

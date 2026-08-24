@@ -558,7 +558,7 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
 def renumerar_arbol_wbs(proyecto_id: int, db: sqlite3.Connection):
     """
     Reorganiza y renumera correlativamente todas las actividades del proyecto
-    respetando la jerarquía multinivel (1, 1.1, 1.1.1, 2, 2.1, etc.)
+    respetando la jerarquía multinivel sin causar conflictos de PRIMARY KEY.
     """
     rows = db.execute("""
         SELECT codigo, ROWID FROM actividades 
@@ -568,9 +568,8 @@ def renumerar_arbol_wbs(proyecto_id: int, db: sqlite3.Connection):
     if not rows:
         return
 
-    # Normalizar códigos y ordenar naturalmente
     def split_clave(cod_str):
-        partes = cod_str.rstrip(".").split(".")
+        partes = str(cod_str).rstrip(".").split(".")
         nums = []
         for p in partes:
             try:
@@ -581,7 +580,15 @@ def renumerar_arbol_wbs(proyecto_id: int, db: sqlite3.Connection):
 
     lista_ordenada = sorted([dict(r) for r in rows], key=lambda x: split_clave(x["codigo"]))
 
-    # Mapeo de reemplazos: clave antigua -> nueva clave correlativa
+    # Paso 1: Asignar identificadores temporales para evitar conflicto UNIQUE / PRIMARY KEY
+    for idx, item in enumerate(lista_ordenada):
+        db.execute("""
+            UPDATE actividades 
+            SET codigo = ? 
+            WHERE ROWID = ? AND proyecto_id = ?
+        """, (f"__TMP_REN_{idx}_{item['ROWID']}__", item["ROWID"], proyecto_id))
+
+    # Paso 2: Calcular correlativos limpios multinivel
     mapeo_nuevos = {}
     contadores_nivel = {}
 
@@ -602,7 +609,7 @@ def renumerar_arbol_wbs(proyecto_id: int, db: sqlite3.Connection):
         cod_nuevo = f"{padre_nuevo}.{correlativo_actual}" if padre_nuevo else str(correlativo_actual)
         mapeo_nuevos[cod_antiguo] = cod_nuevo
 
-        # Actualizar en base de datos usando el ROWID único
+        # Paso 3: Asignar el código correlativo final
         db.execute("""
             UPDATE actividades 
             SET codigo = ? 
@@ -629,25 +636,29 @@ def eliminar_actividad(
     if not permiso and user.get("rol") != "ADMIN_TI":
         raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto o Admin TI puede eliminar actividades.")
 
-    cod_limpio = codigo.rstrip(".")
+    cod_limpio = str(codigo).strip().rstrip(".")
     
-    # Eliminar nodo y subordinados
-    db.execute("""
-        DELETE FROM actividades 
-        WHERE proyecto_id = ? AND (codigo = ? OR codigo LIKE ? OR codigo = ? OR codigo LIKE ?)
-    """, (p_id, cod_limpio, f"{cod_limpio}.%", f"{cod_limpio}.", f"{cod_limpio}.%."))
+    try:
+        # 1. Eliminar la actividad y sus subordinadas
+        db.execute("""
+            DELETE FROM actividades 
+            WHERE proyecto_id = ? AND (codigo = ? OR codigo LIKE ? OR codigo = ? OR codigo LIKE ?)
+        """, (p_id, cod_limpio, f"{cod_limpio}.%", f"{cod_limpio}.", f"{cod_limpio}.%."))
 
-    # Reindexación correlativa
-    renumerar_arbol_wbs(p_id, db)
+        # 2. Renumerar correlativamente el árbol completo
+        renumerar_arbol_wbs(p_id, db)
 
-    # Auditoría
-    db.execute("""
-        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
-        VALUES (?, ?, ?, 'Eliminación Actividad', ?)
-    """, (p_id, ahora_peru_str(), user["username"], f"Eliminó [{cod_limpio}] y reindexó la estructura correlativa"))
+        # 3. Registrar auditoría con hora de Perú
+        db.execute("""
+            INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
+            VALUES (?, ?, ?, 'Eliminación y Reindexación', ?)
+        """, (p_id, ahora_peru_str(), user["username"], f"Eliminó [{cod_limpio}] y subordinadas (reindexación correlativa ejecutada)"))
 
-    db.commit()
-    return {"mensaje": "Actividad eliminada y estructura WBS renumerada con éxito"}
+        db.commit()
+        return {"mensaje": "Actividad eliminada y jerarquía reindexada exitosamente"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al eliminar actividad: {str(e)}")
 
 # --- RESPONSABLES ---
 @app.get("/responsables")
