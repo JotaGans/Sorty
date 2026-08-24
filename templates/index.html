@@ -888,17 +888,17 @@
     // =========================================================================
     let resolverDialogoActual = null;
 
-    // 1. Notificaciones Toast no intrusivas (Éxito, Error, Info)
+    // 1. Notificaciones Toast no intrusivas (Verde Limón Institucional para Éxito)
     function notificarToast(mensaje, tipo = "success", duracionMs = 3500) {
       const container = document.getElementById("toast-container");
       if (!container) return;
 
       const toast = document.createElement("div");
       const estilos = {
-        success: "bg-[#0f2a4a] border-teal-500 text-white",
+        success: "bg-emerald-600 border-lime-400 text-white shadow-emerald-900/20",
         error: "bg-[#991b1b] border-red-400 text-white",
         warning: "bg-[#b45309] border-amber-400 text-white",
-        info: "bg-[#1e293b] border-blue-400 text-white"
+        info: "bg-[#0f2a4a] border-blue-400 text-white"
       };
       const iconos = {
         success: "✓",
@@ -907,10 +907,10 @@
         info: "ℹ️"
       };
 
-      toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-xl border shadow-xl text-xs font-bold tracking-wide transition-all transform duration-300 translate-y-3 opacity-0 ${estilos[tipo] || estilos.info}`;
+      toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-xl border-2 shadow-2xl text-xs font-extrabold tracking-wide transition-all transform duration-300 translate-y-3 opacity-0 ${estilos[tipo] || estilos.info}`;
       toast.innerHTML = `
-        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px] font-black">${iconos[tipo] || 'ℹ️'}</span>
-        <span class="flex-1 leading-snug">${mensaje}</span>
+        <span class="w-5 h-5 rounded-full ${tipo === 'success' ? 'bg-lime-400 text-emerald-900' : 'bg-white/20 text-white'} flex items-center justify-center text-xs font-black shadow-sm">${iconos[tipo] || 'ℹ️'}</span>
+        <span class="flex-1 leading-snug drop-shadow-sm">${mensaje}</span>
       `;
 
       container.appendChild(toast);
