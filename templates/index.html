@@ -1063,6 +1063,119 @@
       }
     }
 
+    // =========================================================================
+    // ACCESIBILIDAD Y TECLADO: ENTER (ACEPTAR) / ESC (CANCELAR) EN MODALES
+    // =========================================================================
+    document.addEventListener("keydown", (e) => {
+      // Si el foco está en un textarea multilínea, permitir saltos de línea con Enter
+      if (e.target && e.target.tagName.toLowerCase() === "textarea") return;
+
+      if (e.key === "Enter") {
+        // 1. Modal Diálogo Institucional / Alert / Confirm
+        const modDialog = document.getElementById("modal-dialog-imarpe");
+        if (modDialog && !modDialog.classList.contains("hidden")) {
+          e.preventDefault();
+          cerrarDialogoImarpe(true);
+          return;
+        }
+
+        // 2. Modal Input Custom (Modificar Descripción, Estado, Números, etc.)
+        const modInput = document.getElementById("modal-input-custom");
+        if (modInput && !modInput.classList.contains("hidden")) {
+          e.preventDefault();
+          document.getElementById("mic-btn-guardar").click();
+          return;
+        }
+
+        // 3. Modal Fecha Inicio Custom
+        const modFecha = document.getElementById("modal-fecha-custom");
+        if (modFecha && !modFecha.classList.contains("hidden")) {
+          e.preventDefault();
+          document.getElementById("mfc-btn-guardar").click();
+          return;
+        }
+
+        // 4. Modal Fecha Fin Interactiva
+        const modFin = document.getElementById("modal-fin-interactiva");
+        if (modFin && !modFin.classList.contains("hidden")) {
+          e.preventDefault();
+          document.getElementById("mfi-btn-guardar").click();
+          return;
+        }
+
+        // 5. Modal Asignar Responsables Múltiples
+        const modResp = document.getElementById("modal-asignar-responsables");
+        if (modResp && !modResp.classList.contains("hidden")) {
+          e.preventDefault();
+          document.getElementById("btn-guardar-multi-resp").click();
+          return;
+        }
+
+        // 6. Modal Configurar Notificaciones por Correo
+        const modNotif = document.getElementById("modal-notificacion-correo");
+        if (modNotif && !modNotif.classList.contains("hidden")) {
+          e.preventDefault();
+          confirmarEnvioNotificaciones();
+          return;
+        }
+
+        // 7. Modal Asistente de Creación (Wizard)
+        const modWz = document.getElementById("modal-wizard-creacion");
+        if (modWz && !modWz.classList.contains("hidden")) {
+          e.preventDefault();
+          avanzarPasoWizard();
+          return;
+        }
+
+        // 8. Modal Columnas Visibles
+        const modCol = document.getElementById("modal-columnas");
+        if (modCol && !modCol.classList.contains("hidden")) {
+          e.preventDefault();
+          cerrarModalColumnas();
+          return;
+        }
+      }
+
+      // Tecla Escape (Esc) para cancelar / cerrar ventanas
+      if (e.key === "Escape") {
+        const modDialog = document.getElementById("modal-dialog-imarpe");
+        if (modDialog && !modDialog.classList.contains("hidden")) {
+          cerrarDialogoImarpe(false);
+          return;
+        }
+        const modInput = document.getElementById("modal-input-custom");
+        if (modInput && !modInput.classList.contains("hidden")) {
+          cerrarInputCustom();
+          return;
+        }
+        const modFecha = document.getElementById("modal-fecha-custom");
+        if (modFecha && !modFecha.classList.contains("hidden")) {
+          cerrarFechaCustom();
+          return;
+        }
+        const modFin = document.getElementById("modal-fin-interactiva");
+        if (modFin && !modFin.classList.contains("hidden")) {
+          cerrarFinInteractiva();
+          return;
+        }
+        const modResp = document.getElementById("modal-asignar-responsables");
+        if (modResp && !modResp.classList.contains("hidden")) {
+          cerrarAsignarResponsables();
+          return;
+        }
+        const modNotif = document.getElementById("modal-notificacion-correo");
+        if (modNotif && !modNotif.classList.contains("hidden")) {
+          cerrarModalNotificacionCorreo();
+          return;
+        }
+        const modWz = document.getElementById("modal-wizard-creacion");
+        if (modWz && !modWz.classList.contains("hidden")) {
+          cerrarWizardCreacion();
+          return;
+        }
+      }
+    });
+
     document.addEventListener("DOMContentLoaded", () => {
       if (token && currentUser.username) {
         document.getElementById("view-login").classList.add("hidden");
