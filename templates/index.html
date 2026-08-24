@@ -2173,6 +2173,8 @@
       return `<div class="inline-flex items-center ml-1.5 align-middle select-none">${avataresHTML}</div>`;
     }
 
+    let responsablesPreviosActividad = [];
+
     function editarResponsable(cod) {
       if (!proyectoEsGestor) {
         alert("Solo el Gestor del Proyecto puede asignar o modificar responsables.");
@@ -2181,7 +2183,10 @@
       actividadMultiRespActual = actividadesGlobal.find(a => a.codigo === cod);
       if (!actividadMultiRespActual) return;
 
-      const asignados = obtenerListaResponsablesAsignados(actividadMultiRespActual.responsable);
+      // Guardar lista de responsables previos antes de la modificación
+      responsablesPreviosActividad = obtenerListaResponsablesAsignados(actividadMultiRespActual.responsable);
+
+      const asignados = responsablesPreviosActividad;
       const contenedor = document.getElementById("lista-checkbox-responsables");
       contenedor.innerHTML = "";
 
@@ -2204,14 +2209,18 @@
         cerrarAsignarResponsables();
         await guardarCambioDirecto(actividadMultiRespActual);
 
-        // Preguntar si se desea notificar con el modal institucional
-        if (seleccionados.length > 0) {
-          const deseaNotificar = await confirmModal(
-            "¿Desea enviar una notificación por correo electrónico a los responsables asignados sobre esta actividad?",
-            "Notificación Institucional"
-          );
+        // Calcular exclusivamente los NUEVOS responsables agregados en esta modificación
+        const nuevosResponsables = seleccionados.filter(nom => !responsablesPreviosActividad.includes(nom));
+
+        // Solo preguntar si hay efectivamente miembros NUEVOS agregados
+        if (nuevosResponsables.length > 0) {
+          const mensajePregunta = nuevosResponsables.length === 1
+            ? `¿Desea enviar una notificación por correo electrónico al nuevo responsable asignado (${nuevosResponsables[0]})?`
+            : `¿Desea enviar una notificación por correo electrónico a los ${nuevosResponsables.length} nuevos responsables asignados (${nuevosResponsables.join(", ")})?`;
+
+          const deseaNotificar = await confirmModal(mensajePregunta, "Notificación Institucional");
           if (deseaNotificar) {
-            abrirModalNotificacionCorreo(actividadMultiRespActual);
+            abrirModalNotificacionCorreo(actividadMultiRespActual, nuevosResponsables);
           }
         }
       };
@@ -2227,12 +2236,21 @@
     // MÓDULO DE NOTIFICACIONES Y ALERTAS PREVENTIVAS DE CIERRE
     // =========================================================================
     let actividadNotificacionActual = null;
+    let destinatariosNuevosNotificacion = [];
 
-    function abrirModalNotificacionCorreo(act) {
+    function abrirModalNotificacionCorreo(act, destinatariosNuevos = []) {
       actividadNotificacionActual = act;
+      destinatariosNuevosNotificacion = destinatariosNuevos;
       const duracion = parseInt(act.dias) || 1;
 
-      document.getElementById("notif-txt-actividad").innerText = `[${act.codigo}] ${act.descripcion}`;
+      const textoDestinatarios = destinatariosNuevos.length > 0 
+        ? destinatariosNuevos.join("; ") 
+        : (act.responsable || "Personal");
+
+      document.getElementById("notif-txt-actividad").innerHTML = `
+        <span class="block text-xs font-bold text-[#0f2a4a]">[${act.codigo}] ${act.descripcion}</span>
+        <span class="block text-[11px] font-semibold text-emerald-800 mt-0.5">Destinatario(s) nuevo(s): ${textoDestinatarios}</span>
+      `;
       document.getElementById("notif-txt-duracion").innerText = duracion;
       document.getElementById("notif-txt-fin").innerText = formatearFechaLatina(act.fecha_fin);
       document.getElementById("notif-input-dias-custom").value = "";
@@ -2262,10 +2280,6 @@
       document.getElementById("modal-notificacion-correo").classList.remove("hidden");
     }
 
-    function cerrarModalNotificacionCorreo() {
-      document.getElementById("modal-notificacion-correo").classList.add("hidden");
-    }
-
     async function confirmarEnvioNotificaciones() {
       if (!actividadNotificacionActual) return;
       const duracion = parseInt(actividadNotificacionActual.dias) || 1;
@@ -2293,13 +2307,14 @@
           body: JSON.stringify({
             proyecto_id: proyectoActualId,
             codigo_actividad: actividadNotificacionActual.codigo,
+            destinatarios_nuevos: destinatariosNuevosNotificacion,
             dias_recordatorio: seleccionados.sort((a, b) => b - a)
           })
         });
 
         if (res.ok) {
           cerrarModalNotificacionCorreo();
-          notificarToast("Notificación enviada y recordatorios preventivos programados con éxito.", "success");
+          notificarToast("Notificación enviada únicamente a los nuevos responsables.", "success");
         } else {
           alert("No se pudo programar la notificación.");
         }

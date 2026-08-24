@@ -742,6 +742,7 @@ def ver_historial(proyecto_id: int, user: dict = Depends(get_current_user), db: 
 class NotificacionRequest(BaseModel):
     proyecto_id: int
     codigo_actividad: str
+    destinatarios_nuevos: List[str] = []
     dias_recordatorio: List[int] = []
 
 @app.post("/notificaciones/asignacion")
@@ -757,11 +758,15 @@ def programar_notificacion_asignacion(
     if not act or not proy:
         raise HTTPException(status_code=404, detail="Proyecto o actividad no encontrada.")
 
-    resp_str = act["responsable"] or ""
-    nombres_resp = [r.strip() for r in resp_str.split(";") if r.strip() and r.strip() != "No asignado"]
+    # Si se especifican destinatarios_nuevos, usar solo esos; de lo contrario, usar los de la actividad
+    if data.destinatarios_nuevos:
+        nombres_a_notificar = [n.strip() for n in data.destinatarios_nuevos if n.strip()]
+    else:
+        resp_str = act["responsable"] or ""
+        nombres_a_notificar = [r.strip() for r in resp_str.split(";") if r.strip() and r.strip() != "No asignado"]
     
     registros_creados = 0
-    for nombre in nombres_resp:
+    for nombre in nombres_a_notificar:
         r_info = db.execute("SELECT correo FROM responsables WHERE nombre = ?", (nombre,)).fetchone()
         correo = r_info["correo"] if r_info and r_info["correo"] else f"{nombre.lower().replace(' ', '.')}@imarpe.gob.pe"
         
@@ -782,18 +787,19 @@ def programar_notificacion_asignacion(
         
         registros_creados += 1
 
-    # Registro de auditoría
+    # Registro de auditoría detallando solo los nuevos notificados
     db.execute("""
         INSERT INTO historial (proyecto_id, accion, detalle)
         VALUES (?, 'Notificación Correo', ?)
-    """, (data.proyecto_id, f"Notificación de asignación enviada a [{', '.join(nombres_resp)}] para actividad [{data.codigo_actividad}]"))
+    """, (data.proyecto_id, f"Notificación de asignación enviada a nuevos responsables: [{', '.join(nombres_a_notificar)}] para actividad [{data.codigo_actividad}]"))
 
     db.commit()
     return {
         "status": "success",
-        "mensaje": f"Notificaciones procesadas para {registros_creados} responsable(s).",
+        "mensaje": f"Notificaciones procesadas para {registros_creados} nuevo(s) responsable(s).",
         "proyecto": proy["nombre"],
         "actividad": act["descripcion"],
+        "destinatarios_notificados": nombres_a_notificar,
         "dias_recordatorio": data.dias_recordatorio
     }
 
