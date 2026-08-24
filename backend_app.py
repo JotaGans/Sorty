@@ -742,8 +742,8 @@ def ver_historial(proyecto_id: int, user: dict = Depends(get_current_user), db: 
 class NotificacionRequest(BaseModel):
     proyecto_id: int
     codigo_actividad: str
-    destinatarios_nuevos: List[str] = []
-    dias_recordatorio: List[int] = []
+    destinatarios_nuevos: Optional[List[str]] = []
+    dias_recordatorio: Optional[List[int]] = []
 
 @app.post("/notificaciones/asignacion")
 def programar_notificacion_asignacion(
@@ -751,57 +751,75 @@ def programar_notificacion_asignacion(
     user: dict = Depends(get_current_user), 
     db: sqlite3.Connection = Depends(get_db)
 ):
-    proy = db.execute("SELECT nombre FROM proyectos WHERE id = ?", (data.proyecto_id,)).fetchone()
-    act = db.execute("SELECT * FROM actividades WHERE proyecto_id = ? AND codigo = ?", 
-                     (data.proyecto_id, data.codigo_actividad)).fetchone()
-    
-    if not act or not proy:
-        raise HTTPException(status_code=404, detail="Proyecto o actividad no encontrada.")
-
-    # Si se especifican destinatarios_nuevos, usar solo esos; de lo contrario, usar los de la actividad
-    if data.destinatarios_nuevos:
-        nombres_a_notificar = [n.strip() for n in data.destinatarios_nuevos if n.strip()]
-    else:
-        resp_str = act["responsable"] or ""
-        nombres_a_notificar = [r.strip() for r in resp_str.split(";") if r.strip() and r.strip() != "No asignado"]
-    
-    registros_creados = 0
-    for nombre in nombres_a_notificar:
-        r_info = db.execute("SELECT correo FROM responsables WHERE nombre = ?", (nombre,)).fetchone()
-        correo = r_info["correo"] if r_info and r_info["correo"] else f"{nombre.lower().replace(' ', '.')}@imarpe.gob.pe"
-        
-        # 1. Registro de notificación inicial
+    try:
+        # Asegurar creación de la tabla si no existía previamente
         db.execute("""
-            INSERT INTO alertas_notificaciones 
-            (proyecto_id, codigo_actividad, destinatario_nombre, destinatario_correo, tipo_alerta, dias_antes, fecha_programada, estado, fecha_envio)
-            VALUES (?, ?, ?, ?, 'ASIGNACION_INICIAL', 0, date('now'), 'ENVIADO', datetime('now'))
-        """, (data.proyecto_id, data.codigo_actividad, nombre, correo))
+            CREATE TABLE IF NOT EXISTS alertas_notificaciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                proyecto_id INTEGER,
+                codigo_actividad TEXT,
+                destinatario_nombre TEXT,
+                destinatario_correo TEXT,
+                tipo_alerta TEXT,
+                dias_antes INTEGER,
+                fecha_programada TEXT,
+                estado TEXT DEFAULT 'PROGRAMADO',
+                fecha_envio DATETIME,
+                FOREIGN KEY(proyecto_id) REFERENCES proyectos(id)
+            )
+        """)
+
+        proy = db.execute("SELECT nombre FROM proyectos WHERE id = ?", (data.proyecto_id,)).fetchone()
+        act = db.execute("SELECT * FROM actividades WHERE proyecto_id = ? AND codigo = ?", 
+                         (data.proyecto_id, data.codigo_actividad)).fetchone()
         
-        # 2. Registro de recordatorios preventivos
-        for d in data.dias_recordatorio:
+        if not act or not proy:
+            raise HTTPException(status_code=404, detail="Proyecto o actividad no encontrada.")
+
+        if data.destinatarios_nuevos and len(data.destinatarios_nuevos) > 0:
+            nombres_a_notificar = [n.strip() for n in data.destinatarios_nuevos if n.strip()]
+        else:
+            resp_str = act["responsable"] or ""
+            nombres_a_notificar = [r.strip() for r in resp_str.split(";") if r.strip() and r.strip() != "No asignado"]
+        
+        registros_creados = 0
+        for nombre in nombres_a_notificar:
+            r_info = db.execute("SELECT correo FROM responsables WHERE nombre = ?", (nombre,)).fetchone()
+            correo = r_info["correo"] if r_info and r_info["correo"] else f"{nombre.lower().replace(' ', '.')}@imarpe.gob.pe"
+            
+            # 1. Notificación inicial
             db.execute("""
                 INSERT INTO alertas_notificaciones 
-                (proyecto_id, codigo_actividad, destinatario_nombre, destinatario_correo, tipo_alerta, dias_antes, fecha_programada, estado)
-                VALUES (?, ?, ?, ?, 'RECORDATORIO_PREVENTIVO', ?, date('now'), 'PROGRAMADO')
-            """, (data.proyecto_id, data.codigo_actividad, nombre, correo, d))
-        
-        registros_creados += 1
+                (proyecto_id, codigo_actividad, destinatario_nombre, destinatario_correo, tipo_alerta, dias_antes, fecha_programada, estado, fecha_envio)
+                VALUES (?, ?, ?, ?, 'ASIGNACION_INICIAL', 0, date('now'), 'ENVIADO', datetime('now'))
+            """, (data.proyecto_id, data.codigo_actividad, nombre, correo))
+            
+            # 2. Recordatorios preventivos
+            for d in (data.dias_recordatorio or []):
+                db.execute("""
+                    INSERT INTO alertas_notificaciones 
+                    (proyecto_id, codigo_actividad, destinatario_nombre, destinatario_correo, tipo_alerta, dias_antes, fecha_programada, estado)
+                    VALUES (?, ?, ?, ?, 'RECORDATORIO_PREVENTIVO', ?, date('now'), 'PROGRAMADO')
+                """, (data.proyecto_id, data.codigo_actividad, nombre, correo, d))
+            
+            registros_creados += 1
 
-    # Registro de auditoría detallando solo los nuevos notificados
-    db.execute("""
-        INSERT INTO historial (proyecto_id, accion, detalle)
-        VALUES (?, 'Notificación Correo', ?)
-    """, (data.proyecto_id, f"Notificación de asignación enviada a nuevos responsables: [{', '.join(nombres_a_notificar)}] para actividad [{data.codigo_actividad}]"))
+        db.execute("""
+            INSERT INTO historial (proyecto_id, accion, detalle)
+            VALUES (?, 'Notificación Correo', ?)
+        """, (data.proyecto_id, f"Notificación enviada a: [{', '.join(nombres_a_notificar)}] para actividad [{data.codigo_actividad}]"))
 
-    db.commit()
-    return {
-        "status": "success",
-        "mensaje": f"Notificaciones procesadas para {registros_creados} nuevo(s) responsable(s).",
-        "proyecto": proy["nombre"],
-        "actividad": act["descripcion"],
-        "destinatarios_notificados": nombres_a_notificar,
-        "dias_recordatorio": data.dias_recordatorio
-    }
+        db.commit()
+        return {
+            "status": "success",
+            "mensaje": f"Notificaciones procesadas para {registros_creados} responsable(s).",
+            "destinatarios": nombres_a_notificar
+        }
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al guardar alerta: {str(e)}")
 
 # Servir frontend estático
 app.mount("/static", StaticFiles(directory="static"), name="static")

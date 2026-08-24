@@ -2298,27 +2298,31 @@
       }
 
       try {
+        const payload = {
+          proyecto_id: parseInt(proyectoActualId),
+          codigo_actividad: String(actividadNotificacionActual.codigo),
+          destinatarios_nuevos: destinatariosNuevosNotificacion || [],
+          dias_recordatorio: seleccionados.sort((a, b) => b - a)
+        };
+
         const res = await fetch("/notificaciones/asignacion", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          body: JSON.stringify({
-            proyecto_id: proyectoActualId,
-            codigo_actividad: actividadNotificacionActual.codigo,
-            destinatarios_nuevos: destinatariosNuevosNotificacion,
-            dias_recordatorio: seleccionados.sort((a, b) => b - a)
-          })
+          body: JSON.stringify(payload)
         });
 
         if (res.ok) {
           cerrarModalNotificacionCorreo();
           notificarToast("Notificación enviada únicamente a los nuevos responsables.", "success");
         } else {
-          alert("No se pudo programar la notificación.");
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "No se pudo programar la notificación.");
         }
       } catch (e) {
+        console.error("Error al enviar notificación:", e);
         alert("Error de conexión al programar notificaciones.");
       }
     }
