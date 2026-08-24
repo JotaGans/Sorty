@@ -336,6 +336,21 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: sqlite3.Connecti
     }
 
 # --- GESTIÓN DE USUARIOS (ADMIN TI) ---
+@app.get("/usuarios")
+def listar_usuarios(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Acceso denegado: Solo Admin TI.")
+    
+    rows = db.execute("""
+        SELECT id, username, 
+               COALESCE(nombre_completo, username) as nombre_completo, 
+               rol, 
+               COALESCE(estado, 'ACTIVO') as estado 
+        FROM usuarios 
+        ORDER BY id DESC
+    """).fetchall()
+    return [dict(r) for r in rows]
+
 @app.post("/usuarios")
 def alta_usuario(nuevo: UsuarioAltaModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     if user["rol"] != "ADMIN_TI":
@@ -349,10 +364,12 @@ def alta_usuario(nuevo: UsuarioAltaModel, user: dict = Depends(get_current_user)
         raise HTTPException(status_code=400, detail="El nombre de usuario ya está registrado.")
 
     hashed = hash_password(nuevo.password)
-    db.execute("INSERT INTO usuarios (username, password, nombre_completo, rol, estado) VALUES (?, ?, ?, ?, 'ACTIVO')",
-               (user_limpio, hashed, nombre_comp, nuevo.rol))
+    db.execute("""
+        INSERT INTO usuarios (username, password, nombre_completo, rol, estado) 
+        VALUES (?, ?, ?, ?, 'ACTIVO')
+    """, (user_limpio, hashed, nombre_comp, nuevo.rol))
     
-    # Sincronizar automáticamente en el directorio de responsables institucionales
+    # Registrar también en el catálogo de responsables
     db.execute("INSERT OR IGNORE INTO responsables (nombre, cargo, correo) VALUES (?, ?, ?)",
                (nombre_comp, "Personal IMARPE", f"{user_limpio}@imarpe.gob.pe"))
     
