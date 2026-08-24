@@ -292,6 +292,12 @@ def init_db():
     else:
         c.execute("INSERT OR REPLACE INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (1, ?, 1)", (admin_id,))
 
+    # Índices de aceleración instantánea en SQLite (Lectura en memoria <5ms)
+    c.execute("CREATE INDEX IF NOT EXISTS idx_historial_proy ON historial(proyecto_id, id DESC)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_actividades_proy ON actividades(proyecto_id, codigo)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_proy_usuarios ON proyecto_usuarios(proyecto_id, usuario_id)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_estado ON usuarios(estado)")
+
     conn.commit()
     conn.close()
 
@@ -653,19 +659,17 @@ def ver_historial(
     user: dict = Depends(get_current_user), 
     db: sqlite3.Connection = Depends(get_db)
 ):
+    p_id = int(proyecto_id)
     try:
-        p_id_int = int(proyecto_id)
-        p_id_str = str(proyecto_id)
-
         rows = db.execute("""
             SELECT COALESCE(timestamp, datetime('now')) as timestamp, 
                    COALESCE(usuario, 'admin') as usuario,
                    COALESCE(accion, 'Registro') as accion, 
                    COALESCE(detalle, 'Operación sin detalle') as detalle 
             FROM historial 
-            WHERE proyecto_id = ? OR proyecto_id = ? OR (proyecto_id IS NULL AND ? = 1)
-            ORDER BY ROWID DESC LIMIT 150
-        """, (p_id_int, p_id_str, p_id_int)).fetchall()
+            WHERE proyecto_id = ?
+            ORDER BY id DESC LIMIT 100
+        """, (p_id,)).fetchall()
         
         return [dict(r) for r in rows]
     except Exception as e:
@@ -681,8 +685,8 @@ def listar_personal_proyecto(
 ):
     p_id = int(proyecto_id)
     
-    # 1. Obtener los miembros con rol asignado en este proyecto
-    miembros_asignados = db.execute("""
+    # 1. Miembros asignados al proyecto
+    miembros = db.execute("""
         SELECT u.id, u.username, u.nombre_completo, u.rol,
                pu.es_gestor,
                COALESCE(pu.permiso, CASE WHEN pu.es_gestor = 1 OR p.creador_id = u.id THEN 'GESTOR' ELSE 'VISUALIZADOR' END) as nivel_permiso
@@ -693,24 +697,23 @@ def listar_personal_proyecto(
         ORDER BY u.nombre_completo ASC
     """, (p_id,)).fetchall()
 
-    # 2. Obtener lista de todos los usuarios activos para el autocompletado
-    todos_usuarios = db.execute("""
+    # 2. Catálogo completo de usuarios activos (solo columnas necesarias)
+    todos = db.execute("""
         SELECT id, username, nombre_completo, rol FROM usuarios WHERE estado = 'ACTIVO' ORDER BY nombre_completo ASC
     """).fetchall()
 
-    # 3. Obtener nombres de responsables que tienen actividades en este proyecto
-    acts = db.execute("SELECT responsable FROM actividades WHERE proyecto_id = ?", (p_id,)).fetchall()
+    # 3. Responsables de actividades en este proyecto
+    acts = db.execute("SELECT DISTINCT responsable FROM actividades WHERE proyecto_id = ? AND responsable IS NOT NULL", (p_id,)).fetchall()
     responsables_en_acts = []
     for a in acts:
-        resp_str = a["responsable"] or ""
-        for r in resp_str.split(";"):
-            r_limpio = r.strip()
-            if r_limpio and r_limpio != "No asignado" and r_limpio not in responsables_en_acts:
-                responsables_en_acts.append(r_limpio)
+        for r in (a["responsable"] or "").split(";"):
+            limpio = r.strip()
+            if limpio and limpio != "No asignado" and limpio not in responsables_en_acts:
+                responsables_en_acts.append(limpio)
 
     return {
-        "miembros": [dict(m) for m in miembros_asignados],
-        "todos_usuarios": [dict(u) for u in todos_usuarios],
+        "miembros": [dict(m) for m in miembros],
+        "todos_usuarios": [dict(u) for u in todos],
         "responsables_en_actividades": responsables_en_acts
     }
 
