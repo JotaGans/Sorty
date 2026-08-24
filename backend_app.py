@@ -617,31 +617,34 @@ def eliminar_actividad(
     user: dict = Depends(get_current_user), 
     db: sqlite3.Connection = Depends(get_db)
 ):
-    es_gestor = db.execute("""
+    p_id = int(proyecto_id)
+    u_id = int(user["id"])
+
+    permiso = db.execute("""
         SELECT 1 FROM proyectos p 
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
         WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1)
-    """, (user["id"], proyecto_id, user["id"])).fetchone()
+    """, (u_id, p_id, u_id)).fetchone()
 
-    if not es_gestor and user.get("rol") != "ADMIN_TI":
-        raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede eliminar actividades.")
+    if not permiso and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto o Admin TI puede eliminar actividades.")
 
     cod_limpio = codigo.rstrip(".")
     
-    # 1. Eliminar la actividad y todas sus subordinadas
+    # Eliminar nodo y subordinados
     db.execute("""
         DELETE FROM actividades 
         WHERE proyecto_id = ? AND (codigo = ? OR codigo LIKE ? OR codigo = ? OR codigo LIKE ?)
-    """, (proyecto_id, cod_limpio, f"{cod_limpio}.%", f"{cod_limpio}.", f"{cod_limpio}.%."))
+    """, (p_id, cod_limpio, f"{cod_limpio}.%", f"{cod_limpio}.", f"{cod_limpio}.%."))
 
-    # 2. Reindexar automáticamente todos los códigos correlativos
-    renumerar_arbol_wbs(proyecto_id, db)
+    # Reindexación correlativa
+    renumerar_arbol_wbs(p_id, db)
 
-    # 3. Registrar auditoría
+    # Auditoría
     db.execute("""
         INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
-        VALUES (?, ?, ?, 'Eliminación y Reindexación', ?)
-    """, (proyecto_id, ahora_peru_str(), user["username"], f"Eliminó [{cod_limpio}] y reindexó la estructura correlativa"))
+        VALUES (?, ?, ?, 'Eliminación Actividad', ?)
+    """, (p_id, ahora_peru_str(), user["username"], f"Eliminó [{cod_limpio}] y reindexó la estructura correlativa"))
 
     db.commit()
     return {"mensaje": "Actividad eliminada y estructura WBS renumerada con éxito"}

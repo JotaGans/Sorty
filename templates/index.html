@@ -2087,35 +2087,40 @@
       }
     }
 
-    async function eliminarActividad(cod) {
-      if (!proyectoEsGestor) {
-        alert("Solo el Gestor del Proyecto puede eliminar actividades.");
+    async function eliminarActividad(codigo) {
+      // Validación flexible de permisos (Gestor o Administrador TI)
+      const esGestorValido = (proyectoEsGestor === true || proyectoEsGestor === 1 || String(proyectoEsGestor) === "true" || (currentUser && currentUser.rol === "ADMIN_TI"));
+      
+      if (!esGestorValido) {
+        alert("No tiene permisos para eliminar actividades.");
         return;
       }
-      const codLimpio = cod.replace(/\.+$/, "");
-      const hijas = actividadesGlobal.filter(a => {
-        const c = a.codigo.replace(/\.+$/, "");
-        return c.startsWith(codLimpio + ".") && c !== codLimpio;
-      });
 
-      let mensajeConfirmacion = `¿Está seguro de eliminar la actividad [${cod}]?`;
-      if (hijas.length > 0) {
-        mensajeConfirmacion = `⚠️ ATENCIÓN: La actividad [${cod}] contiene ${hijas.length} actividad(es) subordinada(s).\n\nSi continúa, se eliminarán todas las actividades hijas en cascada.\n\n¿Desea proceder con la eliminación total?`;
-      }
+      const confirmar = await mostrarDialogoConfirmacion(
+        "Eliminar Actividad",
+        `¿Está seguro de eliminar la actividad [${codigo}] y todas sus sub-actividades asociadas? Esta acción renumerará la jerarquía automáticamente.`,
+        "Eliminar",
+        "Cancelar"
+      );
 
-      const aceptado = await confirmModal(mensajeConfirmacion, "Eliminar Registro", "danger");
-      if (!aceptado) return;
+      if (!confirmar) return;
 
-      const res = await fetch(`/proyectos/${proyectoActualId}/actividades/${cod}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        codigoFilaSeleccionada = null;
-        notificarToast(`Actividad [${cod}] eliminada correctamente.`, "info");
-        await cargarActividades();
-      } else {
-        alert("No tiene permisos para eliminar actividades.");
+      try {
+        const res = await fetch(`/proyectos/${proyectoActualId}/actividades/${encodeURIComponent(codigo)}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          notificarToast(`Actividad [${codigo}] eliminada y estructura renumerada.`, "success");
+          await cargarActividades();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "No se pudo eliminar la actividad.");
+        }
+      } catch (e) {
+        console.error("Error al eliminar actividad:", e);
+        alert("Error de conexión al eliminar la actividad.");
       }
     }
 
