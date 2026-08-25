@@ -218,8 +218,10 @@
         
         <!-- Botón Retorno a Mis Proyectos -->
         <div class="w-full lg:w-auto flex justify-start">
-          <button onclick="volverAlHub()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold px-3.5 py-2 rounded-lg transition shadow border border-blue-900 flex items-center space-x-2">
-            <span>←</span>
+          <button onclick="volverAlHub()" class="group bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-[#0f2a4a] border border-slate-300 text-xs font-extrabold px-3.5 py-2 rounded-lg transition-all duration-150 shadow-xs flex items-center space-x-2" title="Volver al panel principal de proyectos">
+            <svg class="w-4 h-4 text-slate-600 group-hover:text-[#0f2a4a] transition-transform duration-150 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+            </svg>
             <span>Mis Proyectos</span>
           </button>
         </div>
