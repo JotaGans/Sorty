@@ -3849,14 +3849,19 @@
     let responsablesInicialesEdicion = [];
 
     async function editarResponsable(cod) {
-      if (!proyectoEsGestor) {
-        alert("Solo el Gestor del Proyecto puede asignar o modificar responsables.");
+      if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
+        alert("Solo un Gestor del Proyecto puede asignar o modificar responsables.");
         return;
       }
 
-      actividadMultiRespActual = actividadesGlobal.find(a => a.codigo === cod);
-      if (!actividadMultiRespActual) return;
+      const codLimpio = String(cod).trim().replace(/\.+$/, "");
+      actividadMultiRespActual = actividadesGlobal.find(a => String(a.codigo).trim().replace(/\.+$/, "") === codLimpio);
+      if (!actividadMultiRespActual) {
+        alert("No se encontró la actividad seleccionada.");
+        return;
+      }
 
+      // Cargar trabajadores si no están en memoria
       if (!catalogoTrabajadoresGlobal || catalogoTrabajadoresGlobal.length === 0) {
         await cargarDirectorioTrabajadores();
       }
@@ -3877,15 +3882,51 @@
       document.getElementById("inp-buscar-resp-actividad").value = "";
       document.getElementById("sug-responsables-actividad").classList.add("hidden");
 
+      // Botón Guardar Asignación Directo
       document.getElementById("btn-guardar-multi-resp").onclick = async () => {
         const seleccionados = listaAsignadosModal.map(r => r.nombre_completo.trim()).filter(Boolean);
         const respFinal = seleccionados.length > 0 ? seleccionados.join("; ") : "No asignado";
         
-        actividadMultiRespActual.responsable = respFinal;
-        cerrarAsignarResponsables();
+        // Guardar referencia antes de cerrar modal
+        const actRef = actividadMultiRespActual;
+        const codAct = actRef.codigo;
         
-        await guardarCambioDirecto(actividadMultiRespActual);
+        // Cerrar modal
+        cerrarAsignarResponsables();
 
+        // 1. Actualizar memoria local de inmediato
+        actRef.responsable = respFinal;
+        renderizarTabla();
+
+        // 2. Guardar en Backend mediante endpoint atómico
+        try {
+          const res = await fetch("/actividades/responsable", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              proyecto_id: parseInt(proyectoActualId),
+              codigo: String(codAct).trim(),
+              responsable: respFinal
+            })
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            alert(err.detail || "Error al persistir el responsable en la base de datos.");
+          } else {
+            // Guardar en caché local
+            localStorage.setItem(`cache_acts_proj_${proyectoActualId}`, JSON.stringify(actividadesGlobal));
+            notificarToast("Responsable(s) asignado(s) y guardado(s) permanentemente.", "success");
+          }
+        } catch (e) {
+          console.error("Error al guardar responsable:", e);
+          alert("Error de conexión con el servidor al guardar la asignación.");
+        }
+
+        // 3. Flujo de Notificación para nuevos miembros
         const inicialesSet = new Set(responsablesInicialesEdicion.map(n => n.trim().toLowerCase()));
         const nuevos = seleccionados.filter(nom => !inicialesSet.has(nom.toLowerCase()));
 
@@ -3896,7 +3937,7 @@
 
           const deseaNotificar = await confirmModal(mensajeNotif, "Notificación Institucional", "question");
           if (deseaNotificar) {
-            abrirModalNotificacionCorreo(actividadMultiRespActual, nuevos);
+            abrirModalNotificacionCorreo(actRef, nuevos);
           }
         }
       };

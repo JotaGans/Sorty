@@ -935,6 +935,37 @@ def eliminar_actividad(
     db.commit()
     return {"mensaje": "Actividad eliminada y jerarquía reestructurada correlativamente"}
 
+class AsignacionResponsableModel(BaseModel):
+    proyecto_id: int
+    codigo: str
+    responsable: str
+
+@app.put("/actividades/responsable")
+def actualizar_responsable_actividad(
+    data: AsignacionResponsableModel,
+    user: dict = Depends(get_current_user),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    p_id = int(data.proyecto_id)
+    cod_limpio = str(data.codigo).strip().rstrip(".")
+    resp_limpio = str(data.responsable or "No asignado").strip()
+    
+    # 1. Actualizar en la base de datos de forma directa (con y sin punto)
+    db.execute("""
+        UPDATE actividades 
+        SET responsable = ?
+        WHERE proyecto_id = ? AND (codigo = ? OR codigo = ?)
+    """, (resp_limpio, p_id, cod_limpio, f"{cod_limpio}."))
+    
+    # 2. Registrar en auditoría
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle)
+        VALUES (?, ?, ?, 'Asignación Responsable', ?)
+    """, (p_id, ahora_peru_str(), user["username"], f"Asignó responsable(s) a [{cod_limpio}]: {resp_limpio}"))
+    
+    db.commit()
+    return {"mensaje": "Responsable actualizado correctamente", "responsable": resp_limpio}
+
 # --- RESPONSABLES ---
 @app.get("/responsables")
 def listar_responsables(db: sqlite3.Connection = Depends(get_db)):
