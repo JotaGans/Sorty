@@ -2726,7 +2726,7 @@
       renderizarTabla();
     }
 
-    // --- RENDERIZADO DEL GANTT VISUAL RESPONSIVO ---
+    // --- RENDERIZADO DEL GANTT VISUAL RESPONSIVO CON AFFORDANCE UX ---
     function renderizarTabla() {
       recalcularJerarquiaWBS();
       const tbody = document.getElementById("lista-actividades");
@@ -2790,7 +2790,7 @@
 
         const tr = document.createElement("tr");
         tr.id = `fila-act-${act.codigo.replace(/\./g, '_')}`;
-        tr.className = `${esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50")} ${estaSeleccionada ? 'row-selected' : ''} cursor-pointer transition-colors`;
+        tr.className = `${esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50")} ${estaSeleccionada ? 'row-selected' : ''} transition-colors`;
         
         tr.onclick = () => seleccionarFila(act.codigo);
         tr.oncontextmenu = (e) => abrirMenuContextual(e, act.codigo);
@@ -2901,22 +2901,83 @@
         const paddingLeft = (nivel - 1) * 16 + 8;
         const cod = act.codigo;
         const esMio = act.responsable && act.responsable.includes(currentUser.username);
-        const puedeEditarTiempos = proyectoEsGestor;
-        const puedeEditarAvance = proyectoEsGestor || esMio;
+        
+        // --- REGLAS DE PRIVILEGIO Y EDICIÓN ---
+        const puedeEditarTiempos = proyectoEsGestor && !esMadre;
+        const puedeEditarAvance = (proyectoEsGestor || esMio) && !esMadre;
 
-        const tdResp = visibilidadColumnas.responsable ? `<td class="p-2 border-r border-b border-gray-200 text-center whitespace-nowrap ${puedeEditarTiempos ? 'cell-editable' : ''}" ondblclick="${puedeEditarTiempos ? `editarResponsable('${cod}')` : ''}">${obtenerAvatarHTML(act.responsable)}</td>` : '';
-        const tdEst = visibilidadColumnas.estado ? `<td class="p-2.5 border-r border-b border-gray-200 ${puedeEditarAvance ? 'cell-editable' : ''} whitespace-nowrap" ondblclick="${puedeEditarAvance ? `editarEstado('${cod}')` : ''}"><span class="px-2 py-0.5 rounded text-[11px] font-bold ${act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' : (act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700')}">${act.estado}</span></td>` : '';
-        const tdIni = visibilidadColumnas.inicio ? `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? 'cell-editable' : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaInicio('${cod}')` : ''}">${fechaIniVisual}</td>` : '';
-        const tdFin = visibilidadColumnas.fin ? `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? 'cell-editable' : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaFin('${cod}')` : ''}">${fechaFinVisual}</td>` : '';
-        const tdDias = visibilidadColumnas.dias ? `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${puedeEditarTiempos ? 'cell-editable' : ''} whitespace-nowrap" ondblclick="${puedeEditarTiempos ? `editarDias('${cod}')` : ''}">${act.dias}</td>` : '';
-        const tdAvance = visibilidadColumnas.avance ? `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${puedeEditarAvance ? 'cell-editable' : ''} whitespace-nowrap" ondblclick="${puedeEditarAvance ? `editarAvance('${cod}')` : ''}">${act.avance}%</td>` : '';
+        // Estilos diferenciados: Editables vs Calculadas / Bloqueadas
+        const claseEditable = "cell-editable cursor-pointer";
+        const claseBloqueada = "bg-slate-50/80 text-slate-500 cursor-not-allowed select-none";
+        const lockIcon = `<span class="text-[9px] text-gray-400 ml-1 select-none" title="Autocalculado por subtareas">🔒</span>`;
+
+        // 1. Celda Responsable (siempre editable por Gestores)
+        const tdResp = visibilidadColumnas.responsable 
+          ? `<td class="p-2 border-r border-b border-gray-200 text-center whitespace-nowrap ${proyectoEsGestor ? 'cell-editable cursor-pointer' : ''}" ondblclick="${proyectoEsGestor ? `editarResponsable('${cod}')` : ''}" title="${proyectoEsGestor ? 'Doble clic para asignar responsables' : ''}">${obtenerAvatarHTML(act.responsable)}</td>` 
+          : '';
+
+        // 2. Celda Estado
+        let tdEst = '';
+        if (visibilidadColumnas.estado) {
+          if (esMadre) {
+            tdEst = `<td class="p-2.5 border-r border-b border-gray-200 ${claseBloqueada} whitespace-nowrap" title="Estado consolidado automáticamente por sus componentes">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' : (act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700')}">${act.estado} ${lockIcon}</span>
+            </td>`;
+          } else {
+            tdEst = `<td class="p-2.5 border-r border-b border-gray-200 ${puedeEditarAvance ? claseEditable : ''} whitespace-nowrap" ondblclick="${puedeEditarAvance ? `editarEstado('${cod}')` : ''}" title="${puedeEditarAvance ? 'Doble clic para cambiar estado' : ''}">
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold ${act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' : (act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700')}">${act.estado}</span>
+            </td>`;
+          }
+        }
+
+        // 3. Celda Inicio
+        let tdIni = '';
+        if (visibilidadColumnas.inicio) {
+          if (esMadre) {
+            tdIni = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${claseBloqueada} whitespace-nowrap font-medium" title="Fecha de inicio calculada automáticamente a partir de la primera subtarea">${fechaIniVisual} ${lockIcon}</td>`;
+          } else {
+            tdIni = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaInicio('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para modificar fecha de inicio' : ''}">${fechaIniVisual}</td>`;
+          }
+        }
+
+        // 4. Celda Fin
+        let tdFin = '';
+        if (visibilidadColumnas.fin) {
+          if (esMadre) {
+            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${claseBloqueada} whitespace-nowrap font-medium" title="Fecha de finalización calculada automáticamente por el cierre de subtareas">${fechaFinVisual} ${lockIcon}</td>`;
+          } else {
+            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaFin('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para modificar fecha de fin' : ''}">${fechaFinVisual}</td>`;
+          }
+        }
+
+        // 5. Celda Días
+        let tdDias = '';
+        if (visibilidadColumnas.dias) {
+          if (esMadre) {
+            tdDias = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${claseBloqueada} whitespace-nowrap" title="Duración calculada por el marco total de ejecución">${act.dias} ${lockIcon}</td>`;
+          } else {
+            tdDias = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap" ondblclick="${puedeEditarTiempos ? `editarDias('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para ajustar días de duración' : ''}">${act.dias}</td>`;
+          }
+        }
+
+        // 6. Celda % Avance
+        let tdAvance = '';
+        if (visibilidadColumnas.avance) {
+          if (esMadre) {
+            tdAvance = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${claseBloqueada} whitespace-nowrap" title="Avance ponderado autocalculado por promedio de componentes hijas">${act.avance}% ${lockIcon}</td>`;
+          } else {
+            tdAvance = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${puedeEditarAvance ? claseEditable : ''} whitespace-nowrap" ondblclick="${puedeEditarAvance ? `editarAvance('${cod}')` : ''}" title="${puedeEditarAvance ? 'Doble clic para registrar avance porcentual' : ''}">${act.avance}%</td>`;
+          }
+        }
+
+        // 7. Celda Gantt
         const tdGantt = visibilidadColumnas.gantt ? `<td class="p-1 border-r border-b border-gray-200">${ganttHTML}</td>` : '';
 
         tr.innerHTML = `
           <td class="p-2.5 font-mono font-bold text-xs border-r border-b border-gray-200 whitespace-nowrap">
             ${iconoColapso}${cod}
           </td>
-          <td class="p-2.5 border-r border-b border-gray-200 ${puedeEditarTiempos ? 'cell-editable' : ''}" style="padding-left: ${paddingLeft}px;" ondblclick="${puedeEditarTiempos ? `editarDescripcion('${cod}')` : ''}" title="Doble clic para editar / Clic derecho para opciones">
+          <td class="p-2.5 border-r border-b border-gray-200 ${proyectoEsGestor ? 'cell-editable cursor-pointer' : ''}" style="padding-left: ${paddingLeft}px;" ondblclick="${proyectoEsGestor ? `editarDescripcion('${cod}')` : ''}" title="${proyectoEsGestor ? 'Doble clic para renombrar actividad' : ''}">
             ${act.descripcion}
           </td>
           ${tdResp}
