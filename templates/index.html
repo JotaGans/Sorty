@@ -3779,9 +3779,16 @@
         return;
       }
 
-      const coincidencias = (dataPersonalProyecto.todos_usuarios || []).filter(u => 
-        (u.nombre_completo && u.nombre_completo.toLowerCase().includes(term)) ||
-        (u.username && u.username.toLowerCase().includes(term))
+      // Buscar tanto en los usuarios del proyecto como en el catálogo global de cuentas TI
+      const fuenteUsuarios = (dataPersonalProyecto.todos_usuarios && dataPersonalProyecto.todos_usuarios.length > 0)
+        ? dataPersonalProyecto.todos_usuarios
+        : (usuariosTIGlobal || []);
+
+      const coincidencias = fuenteUsuarios.filter(u => 
+        (u.estado === 'ACTIVO' || !u.estado) && (
+          (u.nombre_completo && u.nombre_completo.toLowerCase().includes(term)) ||
+          (u.username && u.username.toLowerCase().includes(term))
+        )
       );
 
       divSugerencias.innerHTML = "";
@@ -3790,17 +3797,20 @@
       } else {
         coincidencias.slice(0, 6).forEach(u => {
           const item = document.createElement("div");
-          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition";
+          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0";
           item.innerHTML = `
             <span class="font-bold text-[#0f2a4a]">${u.nombre_completo || u.username}</span>
             <span class="font-mono text-gray-400 text-[11px]">@${u.username}</span>
           `;
           item.onclick = () => {
             usuarioSeleccionadoParaRol = u;
-            document.getElementById("inp-buscar-usuario-rol").value = `${u.nombre_completo || u.username} (@${u.username})`;
+            const inp = document.getElementById("inp-buscar-usuario-rol");
+            if (inp) {
+              inp.value = `${u.nombre_completo || u.username} (@${u.username})`;
+            }
             divSugerencias.classList.add("hidden");
           };
-          divSug.appendChild(item);
+          divSugerencias.appendChild(item);
         });
       }
       divSugerencias.classList.remove("hidden");
