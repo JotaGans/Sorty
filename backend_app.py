@@ -96,6 +96,24 @@ class UsuarioRolUpdate(BaseModel):
     usuario_id: int
     rol: str  # 'ADMIN_TI' | 'OPERADOR'
 
+class UnidadOrganicaModel(BaseModel):
+    nombre: str
+    sigla: str
+    tipo_organo: Optional[str] = "Órgano de Línea"
+
+class TrabajadorAltaModel(BaseModel):
+    nombres: str
+    apellidos: str
+    unidad_organica: str
+    correo_usuario: str  # parte antes del @imarpe.gob.pe
+
+class TrabajadorActualizarModel(BaseModel):
+    id: int
+    nombres: str
+    apellidos: str
+    unidad_organica: str
+    correo: str
+
 class PermisoProyectoUpdate(BaseModel):
     usuario_id: int
     nivel: str  # 'NINGUNO' | 'LECTURA' | 'GESTOR'
@@ -315,6 +333,95 @@ def init_db():
         WHERE rol NOT IN ('ADMIN_TI', 'OPERADOR')
     """)
 
+    # Tabla Unidades Orgánicas
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS unidades_organicas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            sigla TEXT UNIQUE NOT NULL,
+            tipo_organo TEXT NOT NULL,
+            estado TEXT DEFAULT 'ACTIVO'
+        )
+    """)
+
+    # Tabla Directorio de Trabajadores Institucionales
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS trabajadores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombres TEXT NOT NULL,
+            apellidos TEXT NOT NULL,
+            nombre_completo TEXT NOT NULL,
+            unidad_organica TEXT NOT NULL,
+            correo TEXT UNIQUE NOT NULL,
+            estado TEXT DEFAULT 'ACTIVO'
+        )
+    """)
+
+    # Índices seguros
+    for idx_sql in [
+        "CREATE INDEX IF NOT EXISTS idx_trabajadores_busq ON trabajadores(nombre_completo, unidad_organica)",
+        "CREATE INDEX IF NOT EXISTS idx_unidades_sigla ON unidades_organicas(sigla)"
+    ]:
+        try:
+            c.execute(idx_sql)
+        except sqlite3.OperationalError:
+            pass
+
+    # Semilla oficial de Unidades Orgánicas del IMARPE
+    c.execute("SELECT COUNT(*) FROM unidades_organicas")
+    if c.fetchone()[0] == 0:
+        unidades_semilla = [
+            ("Consejo Directivo", "CD", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
+            ("Presidencia Ejecutiva", "PE", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
+            ("Gerencia Científica", "GC", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
+            ("Gerencia General", "GG", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
+            ("Órgano de Control Institucional", "OCI", "ÓRGANOS DE CONTROL"),
+            ("Oficina de Asesoría Jurídica", "OAJ", "ÓRGANOS DE ASESORAMIENTO"),
+            ("Oficina de Planeamiento, Presupuesto y Modernización", "OPPM", "ÓRGANOS DE ASESORAMIENTO"),
+            ("Oficina de Administración", "OA", "ÓRGANOS DE APOYO"),
+            ("Unidad de Abastecimiento y Control Patrimonial", "UACP", "ÓRGANOS DE APOYO"),
+            ("Unidad de Gestión Financiera", "UGF", "ÓRGANOS DE APOYO"),
+            ("Oficina de Recursos Humanos", "ORH", "ÓRGANOS DE APOYO"),
+            ("Oficina de Tecnologías de la Información", "OTI", "ÓRGANOS DE APOYO"),
+            ("Dirección de Investigaciones del Subsistema Pelágico", "DISP", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Recursos Neríticos Pelágicos", "SIRNP", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Recursos Transzonales y Altamente Migratorios", "SIRTAM", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Dinámica Poblacional en Recursos Pelágicos", "SIDPRP", "ÓRGANOS DE LINEA"),
+            ("Dirección de Investigaciones del Subsistema Bentodemersal", "DISB", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Peces Demersales y Costeros", "SIPDC", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Biodiversidad Acuática", "SIBA", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Invertebrados y Macroalgas Marinas", "SIIMM", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Pesca Artesanal", "SIPA", "ÓRGANOS DE LINEA"),
+            ("Dirección de Investigaciones en Ciencias Marinas", "DICM", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Física y Modelado del Océano", "SIFMO", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Química y Geología", "SIQG", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Biología del Océano", "SIBO", "ÓRGANOS DE LINEA"),
+            ("Dirección de Investigaciones en Acuicultura", "DIA", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Sistemas Acuícolas", "SISA", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Recursos de Aguas Continentales", "SIRAC", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Calidad Acuática de Ambientes Litorales", "SICAAL", "ÓRGANOS DE LINEA"),
+            ("Dirección de Investigaciones en Pesca y Desarrollo Tecnológico", "DIPDT", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Tecnología Hidroacústica", "SITH", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Sensoramiento Remoto", "SISR", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Investigaciones en Sistemas y Métodos de Pesca", "SISMP", "ÓRGANOS DE LINEA"),
+            ("Subdirección de Ediciones y Difusión del Conocimiento Científico y Tecnológico", "SEDCCT", "ÓRGANOS DE LINEA"),
+            ("Sedes Desconcentrada Tumbes", "SD Tumbes", "ÓRGANOS DESCONCENTRADOS"),
+            ("Sedes Desconcentrada Paita", "SD Paita", "ÓRGANOS DESCONCENTRADOS"),
+            ("Sedes Desconcentrada Santa Rosa", "SD Santa Rosa", "ÓRGANOS DESCONCENTRADOS"),
+            ("Sedes Desconcentrada Huanchaco", "SD Huanchaco", "ÓRGANOS DESCONCENTRADOS"),
+            ("Sedes Desconcentrada Chimbote", "SD Chimbote", "ÓRGANOS DESCONCENTRADOS"),
+            ("Sedes Desconcentrada Huacho", "SD Huacho", "ÓRGANOS DESCONCENTRADOS"),
+            ("Sedes Desconcentrada Pisco", "SD Pisco", "ÓRGANOS DESCONCENTRADOS"),
+            ("Sedes Desconcentrada Camaná", "SD Camaná", "ÓRGANOS DESCONCENTRADOS"),
+            ("Sedes Desconcentrada Ilo", "SD Ilo", "ÓRGANOS DESCONCENTRADOS"),
+            ("Sedes Desconcentrada Puno", "SD Puno", "ÓRGANOS DESCONCENTRADOS"),
+            ("Centro de Plataformas Flotantes de Investigación Marina y Continental", "CPFIMC", "ÓRGANOS DESCONCENTRADOS")
+        ]
+        c.executemany("""
+            INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, estado)
+            VALUES (?, ?, ?, 'ACTIVO')
+        """, unidades_semilla)
+
     conn.commit()
     conn.close()
 
@@ -429,6 +536,71 @@ def actualizar_rol_global_usuario(
     db.execute("UPDATE usuarios SET rol = ? WHERE id = ?", (data.rol, data.usuario_id))
     db.commit()
     return {"mensaje": f"Rol actualizado a {data.rol}"}
+
+# --- DIRECTORIO DE TRABAJADORES Y UNIDADES ORGÁNICAS ---
+@app.get("/unidades-organicas")
+def listar_unidades_organicas(db: sqlite3.Connection = Depends(get_db)):
+    rows = db.execute("SELECT id, nombre, sigla, tipo_organo, estado FROM unidades_organicas WHERE estado = 'ACTIVO' ORDER BY tipo_organo ASC, nombre ASC").fetchall()
+    return [dict(r) for r in rows]
+
+@app.post("/unidades-organicas")
+def crear_unidad_organica(data: UnidadOrganicaModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede gestionar la estructura orgánica.")
+    try:
+        db.execute("INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, estado) VALUES (?, ?, ?, 'ACTIVO')",
+                   (data.nombre.strip(), data.sigla.strip().upper(), data.tipo_organo.strip()))
+        db.commit()
+        return {"mensaje": "Unidad Orgánica registrada exitosamente"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="La sigla ingresada ya existe.")
+
+@app.get("/trabajadores")
+def listar_trabajadores(db: sqlite3.Connection = Depends(get_db)):
+    rows = db.execute("SELECT id, nombres, apellidos, nombre_completo, unidad_organica, correo, estado FROM trabajadores ORDER BY nombre_completo ASC").fetchall()
+    return [dict(r) for r in rows]
+
+@app.post("/trabajadores")
+def crear_trabajador(data: TrabajadorAltaModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede registrar trabajadores.")
+    
+    nombres_limp = data.nombres.strip()
+    apellidos_limp = data.apellidos.strip()
+    nombre_completo = f"{apellidos_limp}, {nombres_limp}"
+    
+    usuario_correo = data.correo_usuario.strip().lower().replace("@imarpe.gob.pe", "")
+    correo_final = f"{usuario_correo}@imarpe.gob.pe"
+
+    try:
+        db.execute("""
+            INSERT INTO trabajadores (nombres, apellidos, nombre_completo, unidad_organica, correo, estado)
+            VALUES (?, ?, ?, ?, ?, 'ACTIVO')
+        """, (nombres_limp, apellidos_limp, nombre_completo, data.unidad_organica.strip(), correo_final))
+        
+        db.execute("""
+            INSERT OR REPLACE INTO responsables (nombre, cargo, correo)
+            VALUES (?, ?, ?)
+        """, (nombre_completo, data.unidad_organica.strip(), correo_final))
+        
+        db.commit()
+        return {"mensaje": "Trabajador registrado en el directorio institucional"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="El correo institucional ya se encuentra registrado.")
+
+@app.put("/trabajadores/estado/{trabajador_id}")
+def alternar_estado_trabajador(trabajador_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    actual = db.execute("SELECT estado FROM trabajadores WHERE id = ?", (trabajador_id,)).fetchone()
+    if not actual:
+        raise HTTPException(status_code=404, detail="Trabajador no encontrado")
+    
+    nuevo_estado = "INACTIVO" if actual["estado"] == "ACTIVO" else "ACTIVO"
+    db.execute("UPDATE trabajadores SET estado = ? WHERE id = ?", (nuevo_estado, trabajador_id))
+    db.commit()
+    return {"mensaje": f"Estado actualizado a {nuevo_estado}"}
 
 # --- HUB DE PROYECTOS ---
 @app.get("/proyectos")

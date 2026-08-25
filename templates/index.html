@@ -385,64 +385,76 @@
     </div>
   </div>
 
-  <!-- MODAL: ADMIN TI REPOTENCIADO -->
+  <!-- MODAL UNIFICADO: CENTRO DE GESTIÓN TI (3 PESTAÑAS) -->
   <div id="modal-admin-ti" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-300 flex flex-col max-h-[88vh]">
+      
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
         <div class="flex items-center space-x-2">
           <span class="text-xl">🛡️</span>
-          <h3 class="font-bold text-sm">Administración de Identidades y Cuentas (TI)</h3>
+          <h3 class="font-bold text-sm tracking-wide">Centro de Control y Gestión Institucional (TI)</h3>
         </div>
-        <button onclick="cerrarModalAdminTI()" class="text-white text-2xl font-bold hover:text-gray-200">&times;</button>
+        <button onclick="cerrarModalAdminTI()" class="text-white text-2xl font-bold hover:text-gray-200 leading-none">&times;</button>
       </div>
 
-      <div class="p-6 overflow-y-auto space-y-6">
-        <!-- Formulario Alta con Nombres y Apellidos Separados -->
+      <div class="flex border-b border-gray-200 bg-gray-100 text-xs font-bold px-4 pt-2 space-x-2 flex-shrink-0">
+        <button id="ti-tab-btn-cuentas" onclick="cambiarTabTI('cuentas')" class="px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs">
+          🔑 Cuentas de Acceso (Login)
+        </button>
+        <button id="ti-tab-btn-trabajadores" onclick="cambiarTabTI('trabajadores')" class="px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition">
+          👥 Directorio de Trabajadores
+        </button>
+        <button id="ti-tab-btn-unidades" onclick="cambiarTabTI('unidades')" class="px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition">
+          🏢 Unidades de Organización
+        </button>
+      </div>
+
+      <!-- Tab 1: Cuentas -->
+      <div id="ti-tab-content-cuentas" class="p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
         <form onsubmit="darAltaUsuario(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
-          <h4 class="text-xs font-black uppercase text-gray-700 tracking-wider">Alta de Nuevo Trabajador</h4>
+          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Alta de Usuario para Acceso al Sistema</h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div>
               <label class="block font-bold text-gray-600 mb-1">Nombres</label>
-              <input type="text" id="ti-input-nombres" required placeholder="Ej. Jesús Gianfranco" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
+              <input type="text" id="ti-input-nombres" required placeholder="Ej. Jesús Gianfranco" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
             <div>
               <label class="block font-bold text-gray-600 mb-1">Apellidos</label>
-              <input type="text" id="ti-input-apellidos" required placeholder="Ej. Salas Guerrero" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
+              <input type="text" id="ti-input-apellidos" required placeholder="Ej. Salas Guerrero" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Usuario (Login / Correo)</label>
-              <input type="text" id="ti-input-user" required placeholder="Ej. jsalas" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
+              <label class="block font-bold text-gray-600 mb-1">Usuario (Login)</label>
+              <input type="text" id="ti-input-user" required placeholder="Ej. jsalas" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
             <div>
               <label class="block font-bold text-gray-600 mb-1">Contraseña Inicial</label>
-              <input type="password" id="ti-input-pass" required placeholder="••••••••" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-teal-600">
+              <input type="password" id="ti-input-pass" required placeholder="••••••••" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
             <div class="sm:col-span-2">
-              <label class="block font-bold text-gray-600 mb-1">Rol Institucional Global</label>
+              <label class="block font-bold text-gray-600 mb-1">Rol Global en el Software</label>
               <select id="ti-input-rol" class="w-full p-2 border border-gray-300 rounded font-bold outline-none">
                 <option value="OPERADOR">OPERADOR (Gestor / Responsable de Proyectos)</option>
-                <option value="ADMIN_TI">ADMINISTRADOR TI (Gestión de Identidades)</option>
+                <option value="ADMIN_TI">ADMINISTRADOR TI (Gestión Institucional Total)</option>
               </select>
             </div>
           </div>
-          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2.5 rounded-lg transition shadow">Dar de Alta Trabajador</button>
+          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2 rounded-lg transition shadow">Dar de Alta Cuenta</button>
         </form>
 
-        <!-- Tabla con Buscador Reactivo y Acción de Baja/Alta -->
         <div>
           <div class="flex items-center justify-between mb-2">
-            <h4 class="text-xs font-black uppercase text-gray-700 tracking-wider">Cuentas Registradas</h4>
-            <input type="text" id="ti-filtro-usuarios" oninput="filtrarUsuariosTI()" placeholder="🔍 Buscar por nombre o usuario..." class="text-xs bg-white border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:border-[#0f2a4a] w-56 font-semibold">
+            <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Cuentas Registradas</h4>
+            <input type="text" id="ti-filtro-usuarios" oninput="filtrarUsuariosTI()" placeholder="🔍 Buscar por nombre o @usuario..." class="text-xs bg-white border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:border-[#0f2a4a] w-56 font-semibold">
           </div>
           <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
             <table class="w-full text-xs text-left">
               <thead class="bg-[#0f2a4a] text-white">
                 <tr>
-                  <th class="p-3 font-bold text-white border-b border-blue-900 min-w-[240px]">Apellidos y Nombres</th>
-                  <th class="p-3 font-bold text-white border-b border-blue-900 w-32 whitespace-nowrap">Usuario</th>
-                  <th class="p-3 font-bold text-white border-b border-blue-900 w-44 whitespace-nowrap">Rol</th>
-                  <th class="p-3 font-bold text-white border-b border-blue-900 text-center w-24 whitespace-nowrap">Estado</th>
-                  <th class="p-3 font-bold text-white border-b border-blue-900 text-center w-28 whitespace-nowrap">Acción</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 min-w-[200px]">Apellidos y Nombres</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-28 whitespace-nowrap">Usuario</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-36 whitespace-nowrap">Rol</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-20 whitespace-nowrap">Estado</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-24 whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
               <tbody id="ti-tabla-usuarios" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
@@ -450,12 +462,99 @@
           </div>
         </div>
       </div>
+
+      <!-- Tab 2: Trabajadores -->
+      <div id="ti-tab-content-trabajadores" class="hidden p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
+        <form onsubmit="registrarTrabajadorTI(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Nuevo Trabajador en Directorio Institucional</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Nombres</label>
+              <input type="text" id="tra-input-nombres" required placeholder="Ej. Luis Orlando" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+            </div>
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Apellidos</label>
+              <input type="text" id="tra-input-apellidos" required placeholder="Ej. Aguilar Villanueva" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+            </div>
+            
+            <div class="relative">
+              <label class="block font-bold text-gray-600 mb-1">Unidad de Organización (Sigla / Nombre)</label>
+              <input type="text" id="tra-input-uo-busq" oninput="autocompletarUnidadOrganica(this.value)" required placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <input type="hidden" id="tra-input-uo-valor">
+              <div id="tra-sugerencias-uo" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-44 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Correo Institucional</label>
+              <div class="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
+                <input type="text" id="tra-input-correo-user" required placeholder="laguilar" class="w-full p-2 font-semibold outline-none text-right">
+                <span class="bg-gray-100 px-2 py-2 text-gray-500 font-bold text-xs border-l border-gray-200">@imarpe.gob.pe</span>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg transition shadow">Registrar Trabajador</button>
+        </form>
+
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Directorio Institucional</h4>
+            <input type="text" id="tra-filtro-directorio" oninput="filtrarDirectorioTrabajadores()" placeholder="🔍 Buscar trabajador o unidad..." class="text-xs bg-white border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:border-[#0f2a4a] w-64 font-semibold">
+          </div>
+          <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-[#0f2a4a] text-white">
+                <tr>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Apellidos y Nombres</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad Orgánica</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Correo Electrónico</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-24">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tra-tabla-directorio" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Unidades -->
+      <div id="ti-tab-content-unidades" class="hidden p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
+        <form onsubmit="registrarNuevaUnidadOrganica(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Agregar Dependencia / Unidad Orgánica</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div class="sm:col-span-2">
+              <label class="block font-bold text-gray-600 mb-1">Nombre Completo de la Unidad</label>
+              <input type="text" id="uo-input-nombre" required placeholder="Ej. Subdirección de Investigaciones..." class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+            </div>
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Sigla Oficial</label>
+              <input type="text" id="uo-input-sigla" required placeholder="Ej. OPPM" class="w-full p-2 border border-gray-300 rounded font-bold outline-none focus:border-[#0f2a4a] uppercase">
+            </div>
+          </div>
+          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2 rounded-lg transition shadow">+ Guardar Unidad Orgánica</button>
+        </form>
+
+        <div>
+          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider mb-2">Relación de Unidades de Organización</h4>
+          <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="sticky top-0 bg-[#0f2a4a] text-white">
+                <tr>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-24">Sigla</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad de Organización</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Tipo de Órgano</th>
+                </tr>
+              </thead>
+              <tbody id="uo-tabla-cuerpo" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
         <button onclick="cerrarModalAdminTI()" class="px-5 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg">Cerrar</button>
       </div>
     </div>
   </div>
-
   <!-- MODAL: CREACIÓN GUIADA Y DINÁMICA -->
   <div id="modal-wizard-creacion" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300 transition-all">
@@ -566,19 +665,34 @@
     </div>
   </div>
 
-  <!-- MODAL: RESPONSABLES MULTIPLES -->
+  <!-- MODAL: ASIGNAR RESPONSABLE(S) A LA ACTIVIDAD -->
   <div id="modal-asignar-responsables" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
-    <div class="bg-[#f8f9fa] rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
-      <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
-        <h3 class="font-bold text-sm">Asignar Responsable(s)</h3>
-        <button onclick="cerrarAsignarResponsables()" class="text-white text-xl font-bold hover:text-gray-300">&times;</button>
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">👥</span>
+          <h3 class="font-bold text-sm">Asignar Responsable(s) a la Actividad</h3>
+        </div>
+        <button onclick="cerrarAsignarResponsables()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
       </div>
-      <div class="p-5 space-y-3">
-        <p class="text-xs text-gray-600 font-semibold">Marque uno o varios miembros para asignar a esta actividad:</p>
-        <div id="lista-checkbox-responsables" class="max-h-60 overflow-y-auto space-y-2 bg-white p-3 rounded-lg border border-gray-200"></div>
-        <div class="flex justify-end space-x-2 pt-2">
-          <button onclick="cerrarAsignarResponsables()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-[#2c3e50] text-xs font-bold rounded transition">Cancelar</button>
-          <button id="btn-guardar-multi-resp" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded transition shadow">Guardar Asignación</button>
+
+      <div class="p-5 overflow-y-auto space-y-4 flex-1 bg-[#f8f9fa]">
+        
+        <div class="relative bg-white p-3 rounded-xl border border-gray-200 shadow-xs">
+          <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Buscar y Agregar Trabajador del Directorio:</label>
+          <input type="text" id="inp-buscar-resp-actividad" oninput="autocompletarResponsableActividad(this.value)" placeholder="Escriba apellidos, nombres o sigla (ej. OPPM)..." class="w-full p-2 text-xs bg-gray-50 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a] focus:bg-white" autocomplete="off">
+          
+          <div id="sug-responsables-actividad" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1.5">Trabajadores Asignados a esta Actividad:</label>
+          <div id="lista-checkbox-responsables" class="max-h-56 overflow-y-auto space-y-1.5 bg-white p-2.5 rounded-xl border border-gray-200 shadow-xs"></div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-gray-200">
+          <button onclick="cerrarAsignarResponsables()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cancelar</button>
+          <button id="btn-guardar-multi-resp" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded-lg transition shadow">Guardar Asignación</button>
         </div>
       </div>
     </div>
@@ -2277,65 +2391,6 @@
       return `<div class="inline-flex items-center ml-1.5 align-middle select-none">${avataresHTML}</div>`;
     }
 
-    let responsablesPreviosActividad = [];
-
-    function editarResponsable(cod) {
-      if (!proyectoEsGestor) {
-        alert("Solo el Gestor del Proyecto puede asignar o modificar responsables.");
-        return;
-      }
-      actividadMultiRespActual = actividadesGlobal.find(a => a.codigo === cod);
-      if (!actividadMultiRespActual) return;
-
-      // Guardar lista de responsables previos antes de la modificación
-      responsablesPreviosActividad = obtenerListaResponsablesAsignados(actividadMultiRespActual.responsable);
-
-      const asignados = responsablesPreviosActividad;
-      const contenedor = document.getElementById("lista-checkbox-responsables");
-      contenedor.innerHTML = "";
-
-      responsablesGlobal.forEach(r => {
-        const isChecked = asignados.includes(r.nombre.trim()) ? "checked" : "";
-        contenedor.innerHTML += `
-          <label class="flex items-center justify-between p-2 rounded hover:bg-gray-50 border border-gray-100 cursor-pointer">
-            <div class="flex items-center space-x-2">
-              <input type="checkbox" value="${r.nombre}" ${isChecked} class="chk-multi-resp rounded text-[#0f2a4a] focus:ring-0">
-              <span class="text-xs font-bold text-gray-800">${r.nombre}</span>
-            </div>
-            <span class="text-[11px] text-gray-500">${r.cargo || 'Personal'}</span>
-          </label>
-        `;
-      });
-
-      document.getElementById("btn-guardar-multi-resp").onclick = async () => {
-        const seleccionados = Array.from(document.querySelectorAll(".chk-multi-resp:checked")).map(cb => cb.value);
-        actividadMultiRespActual.responsable = seleccionados.length > 0 ? seleccionados.join("; ") : "No asignado";
-        cerrarAsignarResponsables();
-        await guardarCambioDirecto(actividadMultiRespActual);
-
-        // Calcular exclusivamente los NUEVOS responsables agregados en esta modificación
-        const nuevosResponsables = seleccionados.filter(nom => !responsablesPreviosActividad.includes(nom));
-
-        // Solo preguntar si hay efectivamente miembros NUEVOS agregados
-        if (nuevosResponsables.length > 0) {
-          const mensajePregunta = nuevosResponsables.length === 1
-            ? `¿Desea enviar una notificación por correo electrónico al nuevo responsable asignado (${nuevosResponsables[0]})?`
-            : `¿Desea enviar una notificación por correo electrónico a los ${nuevosResponsables.length} nuevos responsables asignados (${nuevosResponsables.join(", ")})?`;
-
-          const deseaNotificar = await confirmModal(mensajePregunta, "Notificación Institucional");
-          if (deseaNotificar) {
-            abrirModalNotificacionCorreo(actividadMultiRespActual, nuevosResponsables);
-          }
-        }
-      };
-
-      document.getElementById("modal-asignar-responsables").classList.remove("hidden");
-    }
-
-    function cerrarAsignarResponsables() {
-      document.getElementById("modal-asignar-responsables").classList.add("hidden");
-    }
-
     // =========================================================================
     // MÓDULO DE NOTIFICACIONES Y ALERTAS PREVENTIVAS DE CIERRE (BLINDADO)
     // =========================================================================
@@ -2343,7 +2398,6 @@
     let destinatariosNuevosNotificacion = [];
 
     function abrirModalNotificacionCorreo(act, destinatariosNuevos = []) {
-      // Asegurar que el diálogo previo de confirmación esté cerrado por completo
       const modDialog = document.getElementById("modal-dialog-imarpe");
       if (modDialog) modDialog.classList.add("hidden");
 
@@ -2421,7 +2475,6 @@
       const actRef = actividadNotificacionActual;
       const nuevosRef = destinatariosNuevosNotificacion;
 
-      // Cerramos de inmediato la ventana para evitar bloqueos
       cerrarModalNotificacionCorreo();
 
       try {
@@ -2434,9 +2487,9 @@
 
         const res = await fetch("/notificaciones/asignacion", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${token}` 
           },
           body: JSON.stringify(payload)
         });
@@ -3272,152 +3325,199 @@
       document.getElementById("modal-historial").classList.add("hidden"); 
     }
 
-    // --- RESPONSABLES ---
-    async function abrirResponsables() {
-      if (!proyectoEsGestor) {
-        alert("Solo el Gestor del Proyecto puede administrar el personal.");
-        return;
-      }
-      await cargarResponsables();
-      renderizarTablaResponsables();
-      document.getElementById("modal-responsables").classList.remove("hidden");
-    }
-
-    function cerrarResponsables() {
-      document.getElementById("modal-responsables").classList.add("hidden");
-      cargarActividades();
-    }
-
-    function renderizarTablaResponsables() {
-      const tbody = document.getElementById("responsables-tabla-body");
-      tbody.innerHTML = "";
-
-      responsablesGlobal.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-blue-50/50 transition";
-        tr.innerHTML = `
-          <td class="p-2.5 font-bold text-[#2c3e50] border-r border-b border-gray-200 cell-editable" ondblclick="editarCampoResponsable('${r.nombre}', 'nombre', '${r.nombre}')" title="Doble clic para editar">${r.nombre}</td>
-          <td class="p-2.5 text-gray-700 border-r border-b border-gray-200 cell-editable" ondblclick="editarCampoResponsable('${r.nombre}', 'cargo', '${r.cargo || ''}')" title="Doble clic para editar">${r.cargo || '-'}</td>
-          <td class="p-2.5 text-blue-600 border-r border-b border-gray-200 cell-editable" ondblclick="editarCampoResponsable('${r.nombre}', 'correo', '${r.correo || ''}')" title="Doble clic para editar">${r.correo || '-'}</td>
-          <td class="p-2.5 text-center border-b border-gray-200">
-            <button onclick="eliminarResponsable('${r.nombre}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-1" title="Eliminar">🗑️</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function editarCampoResponsable(nombreActual, campo, valorActual) {
-      const labels = { nombre: "Apellidos y Nombres", cargo: "Cargo o Rol", correo: "Correo Electrónico" };
-      abrirInputCustom({
-        titulo: `Modificar ${labels[campo]}`,
-        mensaje: `Ingrese el nuevo valor para ${labels[campo]}:`,
-        tipo: "text",
-        valorActual: valorActual === '-' ? '' : valorActual,
-        onAceptar: async (nuevoValor) => {
-          if (campo === 'nombre' && (!nuevoValor || nuevoValor.trim() === '')) {
-            alert("El nombre no puede quedar vacío.");
-            return;
-          }
-          const resp = responsablesGlobal.find(r => r.nombre === nombreActual);
-          if (!resp) return;
-
-          const payload = {
-            nombre_original: nombreActual,
-            nombre_nuevo: campo === 'nombre' ? nuevoValor.trim() : resp.nombre,
-            cargo: campo === 'cargo' ? nuevoValor.trim() : (resp.cargo || ''),
-            correo: campo === 'correo' ? nuevoValor.trim() : (resp.correo || '')
-          };
-
-          const res = await fetch(`/responsables`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify(payload)
-          });
-
-          if (res.ok) {
-            await cargarResponsables();
-            renderizarTablaResponsables();
-          } else {
-            const err = await res.json().catch(() => ({}));
-            alert(err.detail || "Error al actualizar.");
-          }
-        }
-      });
-    }
-
-    function crearNuevoResponsable() {
-      abrirInputCustom({
-        titulo: "Nuevo Registro de Personal",
-        mensaje: "Ingrese Apellidos y Nombres:",
-        tipo: "text",
-        valorActual: "",
-        onAceptar: (nombre) => {
-          if (!nombre || !nombre.trim()) return;
-          abrirInputCustom({
-            titulo: "Nuevo Registro de Personal",
-            mensaje: "Ingrese Cargo o Rol:",
-            tipo: "text",
-            valorActual: "",
-            onAceptar: (cargo) => {
-              abrirInputCustom({
-                titulo: "Nuevo Registro de Personal",
-                mensaje: "Ingrese Correo Electrónico:",
-                tipo: "text",
-                valorActual: "",
-                onAceptar: async (correo) => {
-                  const payload = {
-                    nombre: nombre.trim(),
-                    cargo: (cargo || '').trim(),
-                    correo: (correo || '').trim()
-                  };
-                  const res = await fetch(`/responsables`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                    body: JSON.stringify(payload)
-                  });
-                  if (res.ok) {
-                    await cargarResponsables();
-                    renderizarTablaResponsables();
-                  } else {
-                    const err = await res.json().catch(() => ({}));
-                    alert(err.detail || "Error al registrar");
-                  }
-                }
-              });
-            }
-          });
-        }
-      });
-    }
-
-    async function eliminarResponsable(nombre) {
-      if (!confirm(`¿Eliminar a ${nombre} de los registros?`)) return;
-      const res = await fetch(`/responsables/${encodeURIComponent(nombre)}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        await cargarResponsables();
-        renderizarTablaResponsables();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        alert(err.detail || "Error al eliminar");
-      }
-    }
-
-    // --- GESTIÓN DE IDENTIDADES TI ---
+    // =========================================================================
+    // CENTRO DE GESTIÓN TI (CUENTAS, TRABAJADORES Y ESTRUCTURA ORGÁNICA)
+    // =========================================================================
+    let tabTIActiva = 'cuentas';
+    let catalogoUnidadesGlobal = [];
+    let catalogoTrabajadoresGlobal = [];
     let usuariosTIGlobal = [];
 
     function abrirModalAdminTI() {
       document.getElementById("modal-admin-ti").classList.remove("hidden");
+      cambiarTabTI('cuentas');
       cargarListaUsuariosTI();
+      cargarDirectorioTrabajadores();
+      cargarCatalogoUnidades();
     }
 
-    function cerrarModalAdminTI() { 
-      document.getElementById("modal-admin-ti").classList.add("hidden"); 
+    function cerrarModalAdminTI() {
+      document.getElementById("modal-admin-ti").classList.add("hidden");
     }
 
+    function cambiarTabTI(tab) {
+      tabTIActiva = tab;
+      const tabs = ['cuentas', 'trabajadores', 'unidades'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`ti-tab-btn-${t}`);
+        const content = document.getElementById(`ti-tab-content-${t}`);
+        if (t === tab) {
+          btn.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold";
+          content.classList.remove("hidden");
+        } else {
+          btn.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold";
+          content.classList.add("hidden");
+        }
+      });
+    }
+
+    // --- CARGA Y RENDERIZADO DE UNIDADES ORGÁNICAS ---
+    async function cargarCatalogoUnidades() {
+      try {
+        const res = await fetch("/unidades-organicas");
+        if (!res.ok) return;
+        catalogoUnidadesGlobal = await res.json();
+        const tbody = document.getElementById("uo-tabla-cuerpo");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        catalogoUnidadesGlobal.forEach(u => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-gray-50 border-b border-gray-100">
+              <td class="p-2.5 font-bold text-[#0f2a4a]">${u.sigla}</td>
+              <td class="p-2.5 font-semibold text-gray-700">${u.nombre}</td>
+              <td class="p-2.5 text-gray-500 text-[11px]">${u.tipo_organo}</td>
+            </tr>
+          `;
+        });
+      } catch (e) {}
+    }
+
+    function autocompletarUnidadOrganica(termino) {
+      const term = termino.toLowerCase().trim();
+      const divSug = document.getElementById("tra-sugerencias-uo");
+      if (!term) {
+        divSug.classList.add("hidden");
+        return;
+      }
+      const matches = catalogoUnidadesGlobal.filter(u => 
+        u.sigla.toLowerCase().includes(term) || u.nombre.toLowerCase().includes(term)
+      );
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = `<div class="p-2 text-gray-400">Sin coincidencias</div>`;
+      } else {
+        matches.slice(0, 5).forEach(u => {
+          const item = document.createElement("div");
+          item.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between font-semibold";
+          item.innerHTML = `<span>${u.nombre}</span><strong class="text-[#0f2a4a] ml-2">[${u.sigla}]</strong>`;
+          item.onclick = () => {
+            document.getElementById("tra-input-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+            document.getElementById("tra-input-uo-valor").value = u.sigla;
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
+
+    async function registrarNuevaUnidadOrganica(e) {
+      e.preventDefault();
+      const nombre = document.getElementById("uo-input-nombre").value.trim();
+      const sigla = document.getElementById("uo-input-sigla").value.trim().toUpperCase();
+      try {
+        const res = await fetch("/unidades-organicas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ nombre, sigla, tipo_organo: "ÓRGANO INSTITUCIONAL" })
+        });
+        if (res.ok) {
+          notificarToast(`Unidad [${sigla}] registrada exitosamente.`, "success");
+          document.getElementById("uo-input-nombre").value = "";
+          document.getElementById("uo-input-sigla").value = "";
+          await cargarCatalogoUnidades();
+        } else {
+          const err = await res.json();
+          alert(err.detail || "No se pudo registrar la unidad.");
+        }
+      } catch (err) {
+        alert("Error de conexión.");
+      }
+    }
+
+    // --- CARGA Y RENDERIZADO DE TRABAJADORES ---
+    async function cargarDirectorioTrabajadores() {
+      try {
+        const res = await fetch("/trabajadores");
+        if (!res.ok) return;
+        catalogoTrabajadoresGlobal = await res.json();
+        renderizarDirectorioTrabajadores(catalogoTrabajadoresGlobal);
+      } catch (e) {}
+    }
+
+    function renderizarDirectorioTrabajadores(lista) {
+      const tbody = document.getElementById("tra-tabla-directorio");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      lista.forEach(t => {
+        const esActivo = t.estado === "ACTIVO";
+        tbody.innerHTML += `
+          <tr class="hover:bg-gray-50 border-b border-gray-100">
+            <td class="p-2.5 font-bold text-gray-800">${t.nombre_completo}</td>
+            <td class="p-2.5 font-semibold text-teal-800"><span class="bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${t.unidad_organica}</span></td>
+            <td class="p-2.5 font-mono text-blue-600">${t.correo}</td>
+            <td class="p-2.5 text-center">
+              <button onclick="alternarEstadoTrabajador(${t.id})" class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${esActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200'}">
+                ${esActivo ? 'DAR DE BAJA' : 'ACTIVAR'}
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function filtrarDirectorioTrabajadores() {
+      const q = (document.getElementById("tra-filtro-directorio")?.value || "").toLowerCase().trim();
+      const filtrados = catalogoTrabajadoresGlobal.filter(t => 
+        t.nombre_completo.toLowerCase().includes(q) || t.unidad_organica.toLowerCase().includes(q) || t.correo.toLowerCase().includes(q)
+      );
+      renderizarDirectorioTrabajadores(filtrados);
+    }
+
+    async function registrarTrabajadorTI(e) {
+      e.preventDefault();
+      const nombres = document.getElementById("tra-input-nombres").value.trim();
+      const apellidos = document.getElementById("tra-input-apellidos").value.trim();
+      const uo = document.getElementById("tra-input-uo-valor").value || document.getElementById("tra-input-uo-busq").value.trim();
+      const correo_user = document.getElementById("tra-input-correo-user").value.trim();
+
+      try {
+        const res = await fetch("/trabajadores", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ nombres, apellidos, unidad_organica: uo, correo_usuario: correo_user })
+        });
+        if (res.ok) {
+          notificarToast("Trabajador registrado en el directorio.", "success");
+          document.getElementById("tra-input-nombres").value = "";
+          document.getElementById("tra-input-apellidos").value = "";
+          document.getElementById("tra-input-uo-busq").value = "";
+          document.getElementById("tra-input-uo-valor").value = "";
+          document.getElementById("tra-input-correo-user").value = "";
+          await cargarDirectorioTrabajadores();
+        } else {
+          const err = await res.json();
+          alert(err.detail || "Error al registrar trabajador.");
+        }
+      } catch (err) {
+        alert("Error de comunicación.");
+      }
+    }
+
+    async function alternarEstadoTrabajador(id) {
+      try {
+        const res = await fetch(`/trabajadores/estado/${id}`, {
+          method: "PUT",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          notificarToast("Estado de trabajador actualizado.", "info");
+          await cargarDirectorioTrabajadores();
+        }
+      } catch (e) {}
+    }
+
+    // --- CARGA Y RENDERIZADO DE CUENTAS TI ---
     async function cargarListaUsuariosTI() {
       const tbody = document.getElementById("ti-tabla-usuarios");
       if (tbody) {
@@ -3428,23 +3528,10 @@
         const res = await fetch("/usuarios", {
           headers: { "Authorization": `Bearer ${token}` }
         });
-        
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Error al obtener usuarios: ${err.detail || res.statusText}</td></tr>`;
-          }
-          return;
-        }
-
+        if (!res.ok) return;
         usuariosTIGlobal = await res.json();
         renderizarTablaUsuariosTI(usuariosTIGlobal);
-      } catch (err) {
-        console.error("Error al cargar usuarios TI:", err);
-        if (tbody) {
-          tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Error de conexión al cargar usuarios.</td></tr>`;
-        }
-      }
+      } catch (err) {}
     }
 
     function renderizarTablaUsuariosTI(lista) {
@@ -3482,31 +3569,6 @@
       });
     }
 
-    async function cambiarRolGlobalUsuario(usuarioId, nuevoRol) {
-      try {
-        const res = await fetch("/usuarios/rol", {
-          method: "PUT",
-          headers: { 
-            "Content-Type": "application/json", 
-            "Authorization": `Bearer ${token}` 
-          },
-          body: JSON.stringify({ usuario_id: usuarioId, rol: nuevoRol })
-        });
-
-        if (res.ok) {
-          notificarToast(`Rol institucional actualizado a ${nuevoRol === 'ADMIN_TI' ? 'ADMINISTRADOR TI' : 'OPERADOR'}.`, "success");
-          await cargarListaUsuariosTI();
-        } else {
-          const err = await res.json().catch(() => ({}));
-          alert(err.detail || "No se pudo actualizar el rol global.");
-          await cargarListaUsuariosTI();
-        }
-      } catch (e) {
-        alert("Error de comunicación con el servidor.");
-        await cargarListaUsuariosTI();
-      }
-    }
-
     function filtrarUsuariosTI() {
       const q = (document.getElementById("ti-filtro-usuarios")?.value || "").toLowerCase().trim();
       const filtrados = usuariosTIGlobal.filter(u => 
@@ -3534,7 +3596,7 @@
           const err = await res.json();
           throw new Error(err.detail || "Error al dar de alta");
         }
-        notificarToast("Trabajador registrado exitosamente.", "success");
+        notificarToast("Usuario creado con éxito", "success");
         document.getElementById("ti-input-nombres").value = "";
         document.getElementById("ti-input-apellidos").value = "";
         document.getElementById("ti-input-user").value = "";
@@ -3553,18 +3615,29 @@
           body: JSON.stringify({ usuario_id: usuarioId, estado: nuevoEstado })
         });
         if (res.ok) {
-          notificarToast(`Cuenta de usuario ${nuevoEstado === 'ACTIVO' ? 'reactivada' : 'dada de baja'}.`, "info");
+          notificarToast(`Estado actualizado a ${nuevoEstado}.`, "info");
           cargarListaUsuariosTI();
-        } else {
-          const err = await res.json().catch(() => ({}));
-          alert(err.detail || "No se pudo cambiar el estado.");
         }
-      } catch (e) {
-        alert("Error de comunicación con el servidor.");
-      }
+      } catch (e) {}
     }
 
-    // --- MÓDULO PERSONAL: GESTIÓN DE ROLES POR PROYECTO ---
+    async function cambiarRolGlobalUsuario(usuarioId, nuevoRol) {
+      try {
+        const res = await fetch("/usuarios/rol", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ usuario_id: usuarioId, rol: nuevoRol })
+        });
+        if (res.ok) {
+          notificarToast(`Rol actualizado a ${nuevoRol}.`, "success");
+          cargarListaUsuariosTI();
+        }
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // MÓDULO PERSONAL: GESTIÓN DE ROLES POR PROYECTO (GESTOR / VISUALIZADOR)
+    // =========================================================================
     let dataPersonalProyecto = { miembros: [], todos_usuarios: [], responsables_en_actividades: [] };
     let usuarioSeleccionadoParaRol = null;
 
@@ -3754,6 +3827,141 @@
       } catch (e) {
         alert("Error al remover permisos.");
       }
+    }
+
+    // =========================================================================
+    // MÓDULO DE ASIGNACIÓN INTERACTIVA DE RESPONSABLES A ACTIVIDADES
+    // =========================================================================
+    let listaAsignadosModal = [];
+
+    async function editarResponsable(cod) {
+      if (!proyectoEsGestor) {
+        alert("Solo el Gestor del Proyecto puede asignar o modificar responsables.");
+        return;
+      }
+      actividadMultiRespActual = actividadesGlobal.find(a => a.codigo === cod);
+      if (!actividadMultiRespActual) return;
+
+      if (catalogoTrabajadoresGlobal.length === 0) {
+        await cargarDirectorioTrabajadores();
+      }
+
+      const nombresActuales = obtenerListaResponsablesAsignados(actividadMultiRespActual.responsable);
+      listaAsignadosModal = [];
+
+      nombresActuales.forEach(nom => {
+        const tObj = catalogoTrabajadoresGlobal.find(t => t.nombre_completo === nom || nom.includes(t.nombre_completo));
+        listaAsignadosModal.push({
+          nombre_completo: nom,
+          unidad_organica: tObj ? tObj.unidad_organica : "Personal"
+        });
+      });
+
+      renderizarListaAsignadosModal();
+
+      document.getElementById("inp-buscar-resp-actividad").value = "";
+      document.getElementById("sug-responsables-actividad").classList.add("hidden");
+
+      document.getElementById("btn-guardar-multi-resp").onclick = async () => {
+        const seleccionados = listaAsignadosModal.map(r => r.nombre_completo);
+        const respFinal = seleccionados.length > 0 ? seleccionados.join("; ") : "No asignado";
+        
+        actividadMultiRespActual.responsable = respFinal;
+        cerrarAsignarResponsables();
+        await guardarCambioDirecto(actividadMultiRespActual);
+
+        const nuevos = seleccionados.filter(nom => !nombresActuales.includes(nom));
+        if (nuevos.length > 0) {
+          const deseaNotificar = await confirmModal(`¿Desea enviar una notificación automática por correo a los ${nuevos.length} nuevo(s) responsable(s) asignado(s)?`, "Notificación Institucional");
+          if (deseaNotificar) {
+            abrirModalNotificacionCorreo(actividadMultiRespActual, nuevos);
+          }
+        }
+      };
+
+      document.getElementById("modal-asignar-responsables").classList.remove("hidden");
+    }
+
+    function renderizarListaAsignadosModal() {
+      const contenedor = document.getElementById("lista-checkbox-responsables");
+      contenedor.innerHTML = "";
+
+      if (listaAsignadosModal.length === 0) {
+        contenedor.innerHTML = `<p class="text-xs text-gray-400 italic text-center p-3">No hay responsables asignados. Use el buscador superior para agregar.</p>`;
+        return;
+      }
+
+      listaAsignadosModal.forEach((r, idx) => {
+        contenedor.innerHTML += `
+          <div class="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-200">
+            <label class="flex items-center space-x-2.5 cursor-pointer">
+              <input type="checkbox" checked onchange="solicitarDesmarcarResponsable(${idx})" class="rounded text-[#0f2a4a] focus:ring-0">
+              <span class="text-xs font-bold text-gray-800">${r.nombre_completo}</span>
+            </label>
+            <span class="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${r.unidad_organica}</span>
+          </div>
+        `;
+      });
+    }
+
+    async function solicitarDesmarcarResponsable(idx) {
+      const r = listaAsignadosModal[idx];
+      const seguro = await confirmModal(`¿Está seguro de retirar a '${r.nombre_completo}' de los responsables de esta actividad?`, "Confirmar Retiro", "warning");
+      if (seguro) {
+        listaAsignadosModal.splice(idx, 1);
+        notificarToast(`Se retiró a ${r.nombre_completo}.`, "info");
+      }
+      renderizarListaAsignadosModal();
+    }
+
+    function autocompletarResponsableActividad(termino) {
+      const term = termino.toLowerCase().trim();
+      const divSug = document.getElementById("sug-responsables-actividad");
+      
+      if (!term) {
+        divSug.classList.add("hidden");
+        return;
+      }
+
+      const matches = catalogoTrabajadoresGlobal.filter(t => 
+        (t.estado === "ACTIVO") &&
+        (t.nombre_completo.toLowerCase().includes(term) || t.unidad_organica.toLowerCase().includes(term))
+      );
+
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">No se encontraron trabajadores con '${termino}'</div>`;
+      } else {
+        matches.slice(0, 6).forEach(t => {
+          const item = document.createElement("div");
+          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition";
+          item.innerHTML = `
+            <span class="font-bold text-[#0f2a4a]">${t.nombre_completo}</span>
+            <span class="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${t.unidad_organica}</span>
+          `;
+          item.onclick = () => {
+            if (!listaAsignadosModal.some(a => a.nombre_completo === t.nombre_completo)) {
+              listaAsignadosModal.push({
+                nombre_completo: t.nombre_completo,
+                unidad_organica: t.unidad_organica
+              });
+              renderizarListaAsignadosModal();
+              notificarToast(`Agregado: ${t.nombre_completo}`, "success");
+            } else {
+              alert(`El trabajador ${t.nombre_completo} ya está en la lista de asignados.`);
+            }
+            document.getElementById("inp-buscar-resp-actividad").value = "";
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
+
+    function cerrarAsignarResponsables() {
+      document.getElementById("modal-asignar-responsables").classList.add("hidden");
+      actividadMultiRespActual = null;
     }
   </script>
 </body>
