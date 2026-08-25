@@ -1872,19 +1872,23 @@
 
     async function cargarActividades() {
       if (!proyectoActualId) return;
+      
+      // Asegurar que el catálogo de trabajadores y unidades esté listo para resolver siglas y avatares
+      if (catalogoTrabajadoresGlobal.length === 0) {
+        cargarDirectorioTrabajadores();
+      }
+      
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/actividades`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
-        if (res.ok) {
-          actividadesGlobal = await res.json();
-          localStorage.setItem(`cache_acts_proj_${proyectoActualId}`, JSON.stringify(actividadesGlobal));
-          renderizarTabla();
-          actualizarKPIs();
-        } else if (res.status === 401) {
-          cerrarSesion();
-        }
-      } catch(e) {}
+        if (!res.ok) throw new Error("Error al cargar actividades");
+        actividadesGlobal = await res.json();
+        renderizarTabla();
+        actualizarKPIs();
+      } catch (e) {
+        console.error("Error al cargar actividades:", e);
+      }
     }
 
     function seleccionarFila(cod) {
@@ -3192,6 +3196,13 @@
       const fFinLimpia = formatearFechaLatina(act.fecha_fin);
       const pId = parseInt(proyectoActualId) || 1;
 
+      // 1. Actualizar inmediatamente en el arreglo local para respuesta visual a 0ms
+      const actLocal = actividadesGlobal.find(a => a.codigo === act.codigo);
+      if (actLocal) {
+        Object.assign(actLocal, act);
+        renderizarTabla();
+      }
+
       const payload = {
         proyecto_id: pId,
         codigo: String(act.codigo).trim(),
@@ -3224,6 +3235,7 @@
         } else {
           const err = await res.json().catch(() => ({}));
           alert(err.detail || `Error (${res.status}) al guardar.`);
+          await cargarActividades();
         }
       } catch (error) {
         console.error("Error de conexión:", error);

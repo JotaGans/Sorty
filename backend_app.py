@@ -741,18 +741,21 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         dias_val = int(act.dias if act.dias is not None else 1)
         pred = str(act.predecesores or "").strip()
 
+        # Validación amplia de permisos de Gestor o Admin TI
         es_gestor = db.execute("""
             SELECT 1 FROM proyectos p 
             LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
-            WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1)
+            WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1 OR pu.permiso = 'GESTOR')
         """, (user["id"], p_id, user["id"])).fetchone()
+
+        es_admin_o_gestor = bool(es_gestor or user.get("rol") == "ADMIN_TI")
 
         existe = db.execute("""
             SELECT * FROM actividades 
             WHERE proyecto_id = ? AND (codigo = ? OR codigo = ?)
         """, (p_id, cod, f"{cod}.")).fetchone()
 
-        if not es_gestor and user.get("rol") != "ADMIN_TI":
+        if not es_admin_o_gestor:
             if not existe or user.get("nombre_completo", user["username"]) not in (existe["responsable"] or ""):
                 raise HTTPException(status_code=403, detail="Permiso denegado: Solo puedes modificar tus actividades asignadas.")
 
@@ -773,7 +776,7 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
 
             detalle_cambio = f"Modificó [{cod}]: " + (", ".join(cambios) if cambios else "Actualización general")
 
-            if es_gestor or user.get("rol") == "ADMIN_TI":
+            if es_admin_o_gestor:
                 db.execute("""
                     UPDATE actividades 
                     SET descripcion = ?, responsable = ?, estado = ?, avance = ?, 
@@ -792,7 +795,7 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
                 VALUES (?, ?, ?, 'Modificación Actividad', ?)
             """, (p_id, ahora_str, user["username"], detalle_cambio))
         else:
-            if not es_gestor and user.get("rol") != "ADMIN_TI":
+            if not es_admin_o_gestor:
                 raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede crear nuevas actividades.")
             
             db.execute("""
