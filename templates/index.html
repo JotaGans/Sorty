@@ -2293,19 +2293,18 @@
       }
     }
 
+    // =========================================================================
+    // MOTOR DE AVATARES Y RESPONSABLES UNIFICADO (DIRECTORIO INSTITUCIONAL)
+    // =========================================================================
     function obtenerListaResponsablesAsignados(responsablesStr) {
-      if (!responsablesStr || responsablesStr === "No asignado" || responsablesStr === "-") return [];
-      if (responsablesStr.includes(";")) {
-        return responsablesStr.split(";").map(s => s.trim()).filter(Boolean);
+      if (!responsablesStr || responsablesStr === "No asignado" || responsablesStr === "-" || String(responsablesStr).trim() === "") return [];
+      
+      const str = String(responsablesStr).trim();
+      if (str.includes(";")) {
+        return str.split(";").map(s => s.trim()).filter(Boolean);
       }
-      const nombresEncontrados = [];
-      responsablesGlobal.forEach(r => {
-        if (r.nombre && responsablesStr.includes(r.nombre.trim())) {
-          nombresEncontrados.push(r.nombre.trim());
-        }
-      });
-      if (nombresEncontrados.length > 0) return nombresEncontrados;
-      return [responsablesStr.trim()];
+      
+      return [str];
     }
 
     function obtenerAvatarHTML(responsablesStr) {
@@ -2336,18 +2335,20 @@
         for (let i = 0; i < nom.length; i++) hash = nom.charCodeAt(i) + ((hash << 5) - hash);
         const colorBg = coloresAvatar[Math.abs(hash) % coloresAvatar.length];
 
-        const respObj = responsablesGlobal.find(r => r.nombre === nom) || {};
-        const cargo = respObj.cargo ? ` (${respObj.cargo})` : '';
-        tooltipsDetalle.push(`• ${nom}${cargo}`);
+        const tObj = (catalogoTrabajadoresGlobal || []).find(t => t.nombre_completo.trim().toLowerCase() === nom.trim().toLowerCase()) || 
+                     (responsablesGlobal || []).find(r => r.nombre.trim().toLowerCase() === nom.trim().toLowerCase()) || {};
+        const area = tObj.unidad_organica || tObj.cargo || '';
+        tooltipsDetalle.push(`• ${nom}${area ? ` [${area}]` : ''}`);
 
         avataresHTML += `<div class="avatar-circle" style="background-color: ${colorBg};">${iniciales}</div>`;
       });
 
       if (restantes > 0) {
         for (let j = maxMostrar; j < listaNombres.length; j++) {
-          const respObj = responsablesGlobal.find(r => r.nombre === listaNombres[j]) || {};
-          const cargo = respObj.cargo ? ` (${respObj.cargo})` : '';
-          tooltipsDetalle.push(`• ${listaNombres[j]}${cargo}`);
+          const nomRest = listaNombres[j];
+          const tObj = (catalogoTrabajadoresGlobal || []).find(t => t.nombre_completo.trim().toLowerCase() === nomRest.trim().toLowerCase()) || {};
+          const area = tObj.unidad_organica || '';
+          tooltipsDetalle.push(`• ${nomRest}${area ? ` [${area}]` : ''}`);
         }
         avataresHTML += `<div class="avatar-circle bg-gray-600 text-[9px] font-black">+${restantes}</div>`;
       }
@@ -3747,7 +3748,7 @@
             document.getElementById("inp-buscar-usuario-rol").value = `${u.nombre_completo || u.username} (@${u.username})`;
             divSugerencias.classList.add("hidden");
           };
-          divSugerencias.appendChild(item);
+          divSug.appendChild(item);
         });
       }
       divSugerencias.classList.remove("hidden");
@@ -3833,24 +3834,26 @@
     // MÓDULO DE ASIGNACIÓN INTERACTIVA DE RESPONSABLES A ACTIVIDADES
     // =========================================================================
     let listaAsignadosModal = [];
+    let responsablesInicialesEdicion = [];
 
     async function editarResponsable(cod) {
       if (!proyectoEsGestor) {
         alert("Solo el Gestor del Proyecto puede asignar o modificar responsables.");
         return;
       }
+
       actividadMultiRespActual = actividadesGlobal.find(a => a.codigo === cod);
       if (!actividadMultiRespActual) return;
 
-      if (catalogoTrabajadoresGlobal.length === 0) {
+      if (!catalogoTrabajadoresGlobal || catalogoTrabajadoresGlobal.length === 0) {
         await cargarDirectorioTrabajadores();
       }
 
-      const nombresActuales = obtenerListaResponsablesAsignados(actividadMultiRespActual.responsable);
+      responsablesInicialesEdicion = obtenerListaResponsablesAsignados(actividadMultiRespActual.responsable);
       listaAsignadosModal = [];
 
-      nombresActuales.forEach(nom => {
-        const tObj = catalogoTrabajadoresGlobal.find(t => t.nombre_completo === nom || nom.includes(t.nombre_completo));
+      responsablesInicialesEdicion.forEach(nom => {
+        const tObj = (catalogoTrabajadoresGlobal || []).find(t => t.nombre_completo.trim().toLowerCase() === nom.trim().toLowerCase());
         listaAsignadosModal.push({
           nombre_completo: nom,
           unidad_organica: tObj ? tObj.unidad_organica : "Personal"
@@ -3863,16 +3866,23 @@
       document.getElementById("sug-responsables-actividad").classList.add("hidden");
 
       document.getElementById("btn-guardar-multi-resp").onclick = async () => {
-        const seleccionados = listaAsignadosModal.map(r => r.nombre_completo);
+        const seleccionados = listaAsignadosModal.map(r => r.nombre_completo.trim()).filter(Boolean);
         const respFinal = seleccionados.length > 0 ? seleccionados.join("; ") : "No asignado";
         
         actividadMultiRespActual.responsable = respFinal;
         cerrarAsignarResponsables();
+        
         await guardarCambioDirecto(actividadMultiRespActual);
 
-        const nuevos = seleccionados.filter(nom => !nombresActuales.includes(nom));
+        const inicialesSet = new Set(responsablesInicialesEdicion.map(n => n.trim().toLowerCase()));
+        const nuevos = seleccionados.filter(nom => !inicialesSet.has(nom.toLowerCase()));
+
         if (nuevos.length > 0) {
-          const deseaNotificar = await confirmModal(`¿Desea enviar una notificación automática por correo a los ${nuevos.length} nuevo(s) responsable(s) asignado(s)?`, "Notificación Institucional");
+          const mensajeNotif = nuevos.length === 1
+            ? `¿Desea enviar una notificación por correo electrónico al nuevo responsable asignado (${nuevos[0]})?`
+            : `¿Desea enviar una notificación por correo electrónico a los ${nuevos.length} nuevos responsables asignados (${nuevos.join(", ")})?`;
+
+          const deseaNotificar = await confirmModal(mensajeNotif, "Notificación Institucional", "question");
           if (deseaNotificar) {
             abrirModalNotificacionCorreo(actividadMultiRespActual, nuevos);
           }
@@ -3884,21 +3894,22 @@
 
     function renderizarListaAsignadosModal() {
       const contenedor = document.getElementById("lista-checkbox-responsables");
+      if (!contenedor) return;
       contenedor.innerHTML = "";
 
       if (listaAsignadosModal.length === 0) {
-        contenedor.innerHTML = `<p class="text-xs text-gray-400 italic text-center p-3">No hay responsables asignados. Use el buscador superior para agregar.</p>`;
+        contenedor.innerHTML = `<p class="text-xs text-gray-400 italic text-center p-3">No hay responsables asignados. Use el buscador superior para agregar trabajadores.</p>`;
         return;
       }
 
       listaAsignadosModal.forEach((r, idx) => {
         contenedor.innerHTML += `
-          <div class="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-200">
-            <label class="flex items-center space-x-2.5 cursor-pointer">
+          <div class="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100/80 transition">
+            <label class="flex items-center space-x-2.5 cursor-pointer flex-1">
               <input type="checkbox" checked onchange="solicitarDesmarcarResponsable(${idx})" class="rounded text-[#0f2a4a] focus:ring-0">
               <span class="text-xs font-bold text-gray-800">${r.nombre_completo}</span>
             </label>
-            <span class="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${r.unidad_organica}</span>
+            <span class="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 whitespace-nowrap ml-2">${r.unidad_organica}</span>
           </div>
         `;
       });
@@ -3917,20 +3928,21 @@
     function autocompletarResponsableActividad(termino) {
       const term = termino.toLowerCase().trim();
       const divSug = document.getElementById("sug-responsables-actividad");
+      if (!divSug) return;
       
       if (!term) {
         divSug.classList.add("hidden");
         return;
       }
 
-      const matches = catalogoTrabajadoresGlobal.filter(t => 
+      const matches = (catalogoTrabajadoresGlobal || []).filter(t => 
         (t.estado === "ACTIVO") &&
         (t.nombre_completo.toLowerCase().includes(term) || t.unidad_organica.toLowerCase().includes(term))
       );
 
       divSug.innerHTML = "";
       if (matches.length === 0) {
-        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">No se encontraron trabajadores con '${termino}'</div>`;
+        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">No se encontraron coincidencias para '${termino}'</div>`;
       } else {
         matches.slice(0, 6).forEach(t => {
           const item = document.createElement("div");
@@ -3940,7 +3952,8 @@
             <span class="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${t.unidad_organica}</span>
           `;
           item.onclick = () => {
-            if (!listaAsignadosModal.some(a => a.nombre_completo === t.nombre_completo)) {
+            const yaExiste = listaAsignadosModal.some(a => a.nombre_completo.trim().toLowerCase() === t.nombre_completo.trim().toLowerCase());
+            if (!yaExiste) {
               listaAsignadosModal.push({
                 nombre_completo: t.nombre_completo,
                 unidad_organica: t.unidad_organica
@@ -3948,7 +3961,7 @@
               renderizarListaAsignadosModal();
               notificarToast(`Agregado: ${t.nombre_completo}`, "success");
             } else {
-              alert(`El trabajador ${t.nombre_completo} ya está en la lista de asignados.`);
+              alert(`El trabajador ${t.nombre_completo} ya se encuentra asignado.`);
             }
             document.getElementById("inp-buscar-resp-actividad").value = "";
             divSug.classList.add("hidden");
