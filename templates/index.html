@@ -3868,7 +3868,12 @@
     }
 
     async function removerRolProyecto(usuarioId, nombre) {
-      if (!confirm(`¿Desea remover los privilegios especiales de ${nombre} en este proyecto?`)) return;
+      const seguro = await confirmModal(
+        `¿Desea remover los privilegios especiales de ${nombre} en este proyecto?`,
+        "Confirmar Retiro de Rol",
+        "warning"
+      );
+      if (!seguro) return;
 
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/personal_permisos`, {
@@ -3885,10 +3890,10 @@
           await recargarDatosPersonalProyecto();
         } else {
           const err = await res.json().catch(() => ({}));
-          alert(err.detail || "No se pudo actualizar.");
+          notificarToast(err.detail || "No se pudo actualizar el permiso.", "error");
         }
       } catch (e) {
-        alert("Error al remover permisos.");
+        notificarToast("Error al remover permisos.", "error");
       }
     }
 
