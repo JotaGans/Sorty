@@ -3346,12 +3346,52 @@
     let catalogoTrabajadoresGlobal = [];
     let usuariosTIGlobal = [];
 
-    function abrirModalAdminTI() {
+    async function abrirModalAdminTI() {
+      // 1. Mostrar la ventana y seleccionar pestaña activa
       document.getElementById("modal-admin-ti").classList.remove("hidden");
       cambiarTabTI('cuentas');
-      cargarListaUsuariosTI();
+
+      // 2. Cargar datos de forma secuencial y limpia
+      await cargarListaUsuariosTI();
       cargarDirectorioTrabajadores();
       cargarCatalogoUnidades();
+    }
+
+    async function cargarListaUsuariosTI() {
+      const tbody = document.getElementById("ti-tabla-usuarios");
+      
+      // Solo mostrar mensaje de carga si la tabla no tiene datos previos en memoria
+      if (tbody && (!usuariosTIGlobal || usuariosTIGlobal.length === 0)) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 font-semibold animate-pulse">Cargando cuentas registradas...</td></tr>`;
+      }
+
+      try {
+        const res = await fetch("/usuarios", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Error al obtener usuarios: ${err.detail || res.statusText}</td></tr>`;
+          }
+          return;
+        }
+
+        usuariosTIGlobal = await res.json();
+        
+        // Limpiar el buscador por si había texto residual
+        const inpFiltro = document.getElementById("ti-filtro-usuarios");
+        if (inpFiltro) inpFiltro.value = "";
+
+        // Pintar la tabla de inmediato
+        renderizarTablaUsuariosTI(usuariosTIGlobal);
+      } catch (err) {
+        console.error("Error al cargar usuarios TI:", err);
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Error de conexión al cargar usuarios.</td></tr>`;
+        }
+      }
     }
 
     function cerrarModalAdminTI() {
