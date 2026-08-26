@@ -337,24 +337,24 @@
             <button id="btn-zoom-dias" onclick="fijarModoZoomDirecto('dias')" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition">Días</button>
           </div>
 
-          <div id="contenedor-spinbutton" class="flex items-center bg-[#0f2a4a] text-white rounded-lg px-2 py-1 space-x-1.5 shadow-sm">
-            <!-- Selector numérico de Semana (se oculta en vista Meses) -->
-            <div id="box-input-semana" class="flex items-center space-x-1.5">
-              <span class="text-[10px] md:text-[11px] font-bold uppercase tracking-tight">Semana</span>
+          <!-- Contenedor de Navegación Estable UX -->
+          <div id="contenedor-spinbutton" class="flex items-center bg-[#0f2a4a] text-white rounded-lg p-1 space-x-1.5 shadow-sm transition-all duration-200">
+            <!-- Input con transición suave de ancho para eliminar el parpadeo de layout -->
+            <div id="box-input-semana" class="flex items-center space-x-1.5 overflow-hidden transition-all duration-200">
+              <span class="text-[10px] md:text-[11px] font-bold uppercase tracking-tight pl-1">Semana</span>
               <div class="flex items-center bg-white rounded border border-gray-300 overflow-hidden">
                 <div class="flex flex-col border-r border-gray-300">
                   <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[8px] px-1 py-0.5 text-gray-800 font-black leading-none border-b border-gray-300">▲</button>
                   <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[8px] px-1 py-0.5 text-gray-800 font-black leading-none">▼</button>
                 </div>
-                <input type="number" id="input-semana-inicio" min="1" max="52" value="1" onchange="fijarSemanaInicio(this.value)" class="w-8 md:w-9 text-center text-xs font-extrabold text-[#0f2a4a] outline-none">
+                <input type="number" id="input-semana-inicio" min="1" max="150" value="1" onchange="fijarSemanaInicio(this.value)" class="w-8 md:w-9 text-center text-xs font-extrabold text-[#0f2a4a] outline-none">
               </div>
             </div>
 
-            <!-- Botones permanentes en todos los modos -->
-            <button onclick="irAInicioProyecto()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2.5 py-1 rounded transition shadow-xs" title="Ir a la fecha de inicio del proyecto">
+            <button onclick="irAInicioProyecto()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2.5 py-1 rounded transition shadow-xs whitespace-nowrap" title="Ir a la fecha de inicio del proyecto">
               Inicio
             </button>
-            <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2.5 py-1 rounded transition shadow-xs" title="Ir a hoy">
+            <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2.5 py-1 rounded transition shadow-xs whitespace-nowrap" title="Ir a hoy">
               Hoy
             </button>
           </div>
@@ -1094,8 +1094,8 @@
     let responsablesGlobal = [];
     let nivelFiltroActivo = 4;
     
-    let modoZoom = "semanas"; // 'dias' | 'semanas' | 'meses'
-    let zoomNivelEscala = 2;   // 1: Meses, 2: Semanas, 3: Días
+    let modoZoom = "semanas";
+    let zoomNivelEscala = 4;
     let diasTotalesAnio = [];
     let semanasTotales = [];
     let semanaInicioIndex = 0;
@@ -2856,13 +2856,14 @@
     }
 
     // =========================================================================
-    // MOTOR DE ZOOM Y ESCALA TEMPORAL CONTINUA (DÍAS / SEMANAS / MESES)
+    // MOTOR DE 5 NIVELES DE ZOOM (1:Semestres, 2:Trimestres, 3:Meses, 4:Semanas, 5:Días)
     // =========================================================================
+    
     function fijarModoZoomDirecto(modo) {
       modoZoom = modo;
-      if (modo === "dias") zoomNivelEscala = 3;
-      else if (modo === "semanas") zoomNivelEscala = 2;
-      else if (modo === "meses") zoomNivelEscala = 1;
+      if (modo === "dias") zoomNivelEscala = 5;
+      else if (modo === "semanas") zoomNivelEscala = 4;
+      else if (modo === "meses") zoomNivelEscala = 3;
 
       actualizarBotonesZoomUI();
       renderizarCabeceraGantt();
@@ -2870,10 +2871,10 @@
     }
 
     function ajustarNivelZoomPaso(delta) {
-      zoomNivelEscala = Math.max(1, Math.min(3, zoomNivelEscala + delta));
-      if (zoomNivelEscala === 3) modoZoom = "dias";
-      else if (zoomNivelEscala === 2) modoZoom = "semanas";
-      else modoZoom = "meses";
+      zoomNivelEscala = Math.max(1, Math.min(5, zoomNivelEscala + delta));
+      
+      const mapeoModos = { 1: "semestres", 2: "trimestres", 3: "meses", 4: "semanas", 5: "dias" };
+      modoZoom = mapeoModos[zoomNivelEscala];
 
       actualizarBotonesZoomUI();
       renderizarCabeceraGantt();
@@ -2881,27 +2882,41 @@
     }
 
     function actualizarBotonesZoomUI() {
-      const modos = ["meses", "semanas", "dias"];
-      modos.forEach(m => {
-        const btn = document.getElementById(`btn-zoom-${m}`);
-        if (!btn) return;
-        if (m === modoZoom) {
-          btn.className = "px-2.5 py-1 rounded-md bg-white shadow text-[#0f2a4a] font-bold";
-        } else {
-          btn.className = "px-2.5 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition";
-        }
-      });
+      const btnMeses = document.getElementById("btn-zoom-meses");
+      const btnSemanas = document.getElementById("btn-zoom-semanas");
+      const btnDias = document.getElementById("btn-zoom-dias");
 
-      const spinBox = document.getElementById("contenedor-spinbutton");
+      const resetBtn = (btn) => {
+        if (btn) btn.className = "px-2.5 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition";
+      };
+      const activeBtn = (btn) => {
+        if (btn) btn.className = "px-2.5 py-1 rounded-md bg-white shadow text-[#0f2a4a] font-bold";
+      };
+
+      resetBtn(btnMeses);
+      resetBtn(btnSemanas);
+      resetBtn(btnDias);
+
+      // Si el zoom está en Trimestres o Semestres, iluminar 'Meses' como grupo macro
+      if (modoZoom === "meses" || modoZoom === "trimestres" || modoZoom === "semestres") {
+        activeBtn(btnMeses);
+      } else if (modoZoom === "semanas") {
+        activeBtn(btnSemanas);
+      } else if (modoZoom === "dias") {
+        activeBtn(btnDias);
+      }
+
+      // Ocultar suavemente el input de semana en vistas macro sin alterar el contenedor azul
       const boxSemana = document.getElementById("box-input-semana");
-
-      if (spinBox && boxSemana) {
-        if (modoZoom === "meses") {
-          boxSemana.classList.add("hidden");
-          spinBox.className = "flex items-center space-x-1.5"; // Fondo transparente y sin marco azul
+      if (boxSemana) {
+        if (modoZoom === "semanas" || modoZoom === "dias") {
+          boxSemana.style.maxWidth = "140px";
+          boxSemana.style.opacity = "1";
+          boxSemana.style.marginRight = "4px";
         } else {
-          boxSemana.classList.remove("hidden");
-          spinBox.className = "flex items-center bg-[#0f2a4a] text-white rounded-lg px-2 py-1 space-x-1.5 shadow-sm"; // Vuelve el marco institucional
+          boxSemana.style.maxWidth = "0px";
+          boxSemana.style.opacity = "0";
+          boxSemana.style.marginRight = "0px";
         }
       }
     }
@@ -2972,7 +2987,6 @@
       let minAnio = anioActual;
       let maxAnio = anioActual;
 
-      // Detectar el rango multianual según las actividades existentes
       if (actividadesGlobal && actividadesGlobal.length > 0) {
         actividadesGlobal.forEach(a => {
           const dtIni = parsearFechaUniversal(a.fecha_inicio);
@@ -2990,7 +3004,6 @@
       const ahora = new Date();
       ahora.setHours(0, 0, 0, 0);
 
-      // 1. Días correlativos continuos
       while (currDia <= finCalendario) {
         const dNum = currDia.getDate();
         const mIdx = currDia.getMonth();
@@ -3009,7 +3022,6 @@
         currDia.setDate(currDia.getDate() + 1);
       }
 
-      // 2. Semanas correlativas continuas
       let currSem = new Date(minAnio, 0, 1);
       while (currSem.getDay() !== 1) currSem.setDate(currSem.getDate() - 1);
       let nroSemGlobal = 1;
@@ -3074,7 +3086,125 @@
       divMeses.innerHTML = "";
       divSemanas.innerHTML = "";
 
-      // MODO 1: MESES (Multianual con ventana de 12 meses visibles desplazables)
+      const anioHoy = new Date().getFullYear();
+      const mesHoy = new Date().getMonth();
+
+      // MODO 1: SEMESTRES (Zoom Mínimo - Vista Multianual de Largo Plazo)
+      if (modoZoom === "semestres") {
+        const mesesTotales = [];
+        let curM = new Date(diasTotalesAnio[0].fecha);
+        curM.setDate(1);
+        const ultFecha = diasTotalesAnio[diasTotalesAnio.length - 1].fecha;
+
+        while (curM <= ultFecha) {
+          mesesTotales.push({
+            mesIdx: curM.getMonth(),
+            semestre: curM.getMonth() < 6 ? "1S" : "2S",
+            anio: curM.getFullYear(),
+            fecha: new Date(curM)
+          });
+          curM.setMonth(curM.getMonth() + 1);
+        }
+
+        const ventanaSemestres = 4;
+        const semestresAgrupados = [];
+        let semActual = null;
+
+        mesesTotales.forEach(m => {
+          const key = `${m.anio}-${m.semestre}`;
+          if (!semActual || semActual.key !== key) {
+            semActual = { key, anio: m.anio, label: m.semestre, fecha: m.fecha };
+            semestresAgrupados.push(semActual);
+          }
+        });
+
+        const offsetSem = Math.max(0, Math.min(semestresAgrupados.length - ventanaSemestres, Math.floor(semanaInicioIndex / 26)));
+        const semsVisibles = semestresAgrupados.slice(offsetSem, offsetSem + ventanaSemestres);
+
+        const gruposAnio = [];
+        let aAct = null, cAct = 0;
+        semsVisibles.forEach(s => {
+          if (aAct === null || aAct !== s.anio) {
+            if (aAct !== null) gruposAnio.push({ anio: aAct, count: cAct });
+            aAct = s.anio;
+            cAct = 1;
+          } else cAct++;
+        });
+        if (aAct !== null) gruposAnio.push({ anio: aAct, count: cAct });
+
+        gruposAnio.forEach(g => {
+          const pct = (g.count / semsVisibles.length) * 100;
+          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] text-teal-200">${g.anio}</div>`;
+        });
+
+        const semHoy = mesHoy < 6 ? "1S" : "2S";
+        semsVisibles.forEach(s => {
+          const esActual = (s.label === semHoy && s.anio === anioHoy);
+          const claseSem = esActual ? "bg-teal-600 text-white font-black rounded-xs shadow-xs" : "text-gray-200";
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-bold ${claseSem}">${s.label} (${s.anio})</div>`;
+        });
+        return;
+      }
+
+      // MODO 2: TRIMESTRES (Vista T1..T4)
+      if (modoZoom === "trimestres") {
+        const mesesTotales = [];
+        let curM = new Date(diasTotalesAnio[0].fecha);
+        curM.setDate(1);
+        const ultFecha = diasTotalesAnio[diasTotalesAnio.length - 1].fecha;
+
+        while (curM <= ultFecha) {
+          const tNum = Math.floor(curM.getMonth() / 3) + 1;
+          mesesTotales.push({
+            mesIdx: curM.getMonth(),
+            trimestre: `T${tNum}`,
+            anio: curM.getFullYear(),
+            fecha: new Date(curM)
+          });
+          curM.setMonth(curM.getMonth() + 1);
+        }
+
+        const ventanaTrimestres = 6;
+        const trimAgrupados = [];
+        let trimActual = null;
+
+        mesesTotales.forEach(m => {
+          const key = `${m.anio}-${m.trimestre}`;
+          if (!trimActual || trimActual.key !== key) {
+            trimActual = { key, anio: m.anio, label: m.trimestre, fecha: m.fecha };
+            trimAgrupados.push(trimActual);
+          }
+        });
+
+        const offsetT = Math.max(0, Math.min(trimAgrupados.length - ventanaTrimestres, Math.floor(semanaInicioIndex / 13)));
+        const trimsVisibles = trimAgrupados.slice(offsetT, offsetT + ventanaTrimestres);
+
+        const gruposAnio = [];
+        let aAct = null, cAct = 0;
+        trimsVisibles.forEach(t => {
+          if (aAct === null || aAct !== t.anio) {
+            if (aAct !== null) gruposAnio.push({ anio: aAct, count: cAct });
+            aAct = t.anio;
+            cAct = 1;
+          } else cAct++;
+        });
+        if (aAct !== null) gruposAnio.push({ anio: aAct, count: cAct });
+
+        gruposAnio.forEach(g => {
+          const pct = (g.count / trimsVisibles.length) * 100;
+          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] text-teal-200">${g.anio}</div>`;
+        });
+
+        const trimHoy = `T${Math.floor(mesHoy / 3) + 1}`;
+        trimsVisibles.forEach(t => {
+          const esActual = (t.label === trimHoy && t.anio === anioHoy);
+          const claseTrim = esActual ? "bg-teal-600 text-white font-black rounded-xs shadow-xs" : "text-gray-200";
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-bold ${claseTrim}">${t.label}</div>`;
+        });
+        return;
+      }
+
+      // MODO 3: MESES (12 Meses)
       if (modoZoom === "meses") {
         const mesesTotales = [];
         let curM = new Date(diasTotalesAnio[0].fecha);
@@ -3095,18 +3225,14 @@
         const offsetM = Math.max(0, Math.min(mesesTotales.length - ventanaMeses, Math.floor(semanaInicioIndex / 4.33)));
         const mesesVisibles = mesesTotales.slice(offsetM, offsetM + ventanaMeses);
 
-        // Fila 1: Años
         const gruposAnio = [];
-        let anioActualGrp = null;
-        let countGrp = 0;
+        let anioActualGrp = null, countGrp = 0;
         mesesVisibles.forEach(m => {
           if (anioActualGrp === null || anioActualGrp !== m.anio) {
             if (anioActualGrp !== null) gruposAnio.push({ anio: anioActualGrp, count: countGrp });
             anioActualGrp = m.anio;
             countGrp = 1;
-          } else {
-            countGrp++;
-          }
+          } else countGrp++;
         });
         if (anioActualGrp !== null) gruposAnio.push({ anio: anioActualGrp, count: countGrp });
 
@@ -3114,10 +3240,6 @@
           const pct = (g.count / mesesVisibles.length) * 100;
           divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] text-teal-200">${g.anio}</div>`;
         });
-
-        // Fila 2: Nombres de Meses con resaltado del mes actual
-        const mesHoy = new Date().getMonth();
-        const anioHoy = new Date().getFullYear();
 
         mesesVisibles.forEach(m => {
           const esMesActual = (m.mesIdx === mesHoy && m.anio === anioHoy);
@@ -3127,23 +3249,53 @@
         return;
       }
 
-      // MODO 2: SEMANAS (Ventana de 16 Semanas - Ancho 100% sin scroll de pantalla)
+      // MODO 5: DÍAS (28 Días)
+      if (modoZoom === "dias") {
+        const ventanaDias = 28;
+        const offset = Math.max(0, Math.min(diasTotalesAnio.length - ventanaDias, semanaInicioIndex * 7));
+        const diasVisibles = diasTotalesAnio.slice(offset, offset + ventanaDias);
+
+        const gruposMes = [];
+        let mesActual = null, contador = 0;
+
+        diasVisibles.forEach(d => {
+          const label = `${d.mesNombre} ${d.anio}`;
+          if (mesActual === null || mesActual !== label) {
+            if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
+            mesActual = label;
+            contador = 1;
+          } else contador++;
+        });
+        if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
+
+        gruposMes.forEach(g => {
+          const pct = (g.count / diasVisibles.length) * 100;
+          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] tracking-wide text-teal-200 overflow-hidden">${g.nombre}</div>`;
+        });
+
+        diasVisibles.forEach(d => {
+          const esFinSemana = (d.diaSemana === 0 || d.diaSemana === 6);
+          const claseHoy = d.esHoy ? "bg-teal-500 text-white font-black rounded-xs shadow" : (esFinSemana ? "text-gray-400 bg-blue-950/40" : "text-teal-300 opacity-90");
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden ${claseHoy}" title="${d.dia} de ${d.mesNombre} ${d.anio}">${d.dia}</div>`;
+        });
+        return;
+      }
+
+      // MODO 4: SEMANAS (16 Semanas)
       const ventanaSemanas = 16;
       const offsetSem = Math.max(0, Math.min(semanasTotales.length - ventanaSemanas, semanaInicioIndex));
       const semanasVisibles = semanasTotales.slice(offsetSem, offsetSem + ventanaSemanas);
       
       const gruposMes = [];
-      let mesActual = null;
-      let contador = 0;
+      let mesActual = null, contador = 0;
 
       semanasVisibles.forEach(s => {
-        if (mesActual === null || mesActual !== s.mesNombre) {
+        const label = `${s.mesNombre} ${s.anio}`;
+        if (mesActual === null || mesActual !== label) {
           if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
-          mesActual = s.mesNombre;
+          mesActual = label;
           contador = 1;
-        } else {
-          contador++;
-        }
+        } else contador++;
       });
       if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
 
@@ -3154,7 +3306,7 @@
 
       semanasVisibles.forEach(s => {
         const claseHoy = s.esHoy ? "header-semana-actual rounded-sm shadow" : "opacity-90";
-        divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre})">${s.dia}</div>`;
+        divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre} ${s.anio})">${s.dia}</div>`;
       });
     }
 
@@ -3187,8 +3339,103 @@
 
       let tInicioVisible, tFinVisible, duracionVisibleMs, divisionesHTML = "";
       const anioActual = new Date().getFullYear();
+      const mesHoy = new Date().getMonth();
+      const anioHoy = new Date().getFullYear();
 
-      if (modoZoom === "meses") {
+      if (modoZoom === "semestres") {
+        const mesesTotales = [];
+        let curM = new Date(diasTotalesAnio[0].fecha);
+        curM.setDate(1);
+        const ultFecha = diasTotalesAnio[diasTotalesAnio.length - 1].fecha;
+
+        while (curM <= ultFecha) {
+          mesesTotales.push({
+            mesIdx: curM.getMonth(),
+            semestre: curM.getMonth() < 6 ? "1S" : "2S",
+            anio: curM.getFullYear(),
+            fecha: new Date(curM)
+          });
+          curM.setMonth(curM.getMonth() + 1);
+        }
+
+        const ventanaSemestres = 4;
+        const semestresAgrupados = [];
+        let semActual = null;
+        mesesTotales.forEach(m => {
+          const key = `${m.anio}-${m.semestre}`;
+          if (!semActual || semActual.key !== key) {
+            semActual = { key, anio: m.anio, label: m.semestre, fecha: m.fecha };
+            semestresAgrupados.push(semActual);
+          }
+        });
+
+        const offsetSem = Math.max(0, Math.min(semestresAgrupados.length - ventanaSemestres, Math.floor(semanaInicioIndex / 26)));
+        const semsVisibles = semestresAgrupados.slice(offsetSem, offsetSem + ventanaSemestres);
+        if (semsVisibles.length === 0) return;
+
+        tInicioVisible = semsVisibles[0].fecha.getTime();
+        const ultSemObj = new Date(semsVisibles[semsVisibles.length - 1].fecha);
+        ultSemObj.setMonth(ultSemObj.getMonth() + 6);
+        ultSemObj.setDate(0);
+        ultSemObj.setHours(23, 59, 59, 999);
+        tFinVisible = ultSemObj.getTime();
+        duracionVisibleMs = tFinVisible - tInicioVisible;
+
+        const semHoy = mesHoy < 6 ? "1S" : "2S";
+        divisionesHTML = semsVisibles.map(s => {
+          const esHoy = (s.label === semHoy && s.anio === anioHoy);
+          const colHoy = esHoy ? "col-semana-actual" : "";
+          return `<div class="flex-1 border-r border-slate-200/50 ${colHoy}"></div>`;
+        }).join("");
+
+      } else if (modoZoom === "trimestres") {
+        const mesesTotales = [];
+        let curM = new Date(diasTotalesAnio[0].fecha);
+        curM.setDate(1);
+        const ultFecha = diasTotalesAnio[diasTotalesAnio.length - 1].fecha;
+
+        while (curM <= ultFecha) {
+          const tNum = Math.floor(curM.getMonth() / 3) + 1;
+          mesesTotales.push({
+            mesIdx: curM.getMonth(),
+            trimestre: `T${tNum}`,
+            anio: curM.getFullYear(),
+            fecha: new Date(curM)
+          });
+          curM.setMonth(curM.getMonth() + 1);
+        }
+
+        const ventanaTrimestres = 6;
+        const trimAgrupados = [];
+        let trimActual = null;
+        mesesTotales.forEach(m => {
+          const key = `${m.anio}-${m.trimestre}`;
+          if (!trimActual || trimActual.key !== key) {
+            trimActual = { key, anio: m.anio, label: m.trimestre, fecha: m.fecha };
+            trimAgrupados.push(trimActual);
+          }
+        });
+
+        const offsetT = Math.max(0, Math.min(trimAgrupados.length - ventanaTrimestres, Math.floor(semanaInicioIndex / 13)));
+        const trimsVisibles = trimAgrupados.slice(offsetT, offsetT + ventanaTrimestres);
+        if (trimsVisibles.length === 0) return;
+
+        tInicioVisible = trimsVisibles[0].fecha.getTime();
+        const ultTrimObj = new Date(trimsVisibles[trimsVisibles.length - 1].fecha);
+        ultTrimObj.setMonth(ultTrimObj.getMonth() + 3);
+        ultTrimObj.setDate(0);
+        ultTrimObj.setHours(23, 59, 59, 999);
+        tFinVisible = ultTrimObj.getTime();
+        duracionVisibleMs = tFinVisible - tInicioVisible;
+
+        const trimHoy = `T${Math.floor(mesHoy / 3) + 1}`;
+        divisionesHTML = trimsVisibles.map(t => {
+          const esHoy = (t.label === trimHoy && t.anio === anioHoy);
+          const colHoy = esHoy ? "col-semana-actual" : "";
+          return `<div class="flex-1 border-r border-slate-200/50 ${colHoy}"></div>`;
+        }).join("");
+
+      } else if (modoZoom === "meses") {
         const mesesTotales = [];
         let curM = new Date(diasTotalesAnio[0].fecha);
         curM.setDate(1);
@@ -3217,14 +3464,12 @@
         tFinVisible = ultMesObj.getTime();
         duracionVisibleMs = tFinVisible - tInicioVisible;
 
-        const mesHoy = new Date().getMonth();
-        const anioHoy = new Date().getFullYear();
-
         divisionesHTML = mesesVisibles.map(m => {
           const esHoy = (m.mesIdx === mesHoy && m.anio === anioHoy);
           const colHoy = esHoy ? "col-semana-actual" : "";
           return `<div class="flex-1 border-r border-slate-200/50 ${colHoy}"></div>`;
         }).join("");
+
       } else if (modoZoom === "dias") {
         const ventanaDias = 28;
         const offset = Math.max(0, Math.min(diasTotalesAnio.length - ventanaDias, semanaInicioIndex * 7));
@@ -3241,6 +3486,7 @@
           const colHoy = d.esHoy ? "bg-teal-500/10" : (esFin ? "bg-slate-100/60" : "");
           return `<div class="flex-1 border-r border-slate-200/40 ${colHoy}"></div>`;
         }).join("");
+
       } else {
         const ventanaSemanas = 16;
         const offsetSem = Math.max(0, Math.min(semanasTotales.length - ventanaSemanas, semanaInicioIndex));
@@ -3256,10 +3502,6 @@
           return `<div class="flex-1 border-r border-slate-200/50 ${claseColHoy}"></div>`;
         }).join("");
       }
-
-      const ahora = new Date().getTime();
-      const hoyEstaVisible = (ahora >= tInicioVisible && ahora <= tFinVisible);
-      const pctHoy = hoyEstaVisible ? ((ahora - tInicioVisible) / duracionVisibleMs) * 100 : -10;
 
       actividadesGlobal.forEach(act => {
         act.codigo = String(act.codigo).replace(/\.+$/, "");
@@ -3366,7 +3608,6 @@
                       </div>
                     `;
                   }
-                  // Si la barra total es suficientemente ancha (>= 6%) y el avance es considerable, se lee adentro; de lo contrario va flotante
                   if (!esBarraDelgada && widthPct >= 7.0 && act.avance >= 35) {
                     textoDentroDeBarra = `<div class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-gray-900 drop-shadow-xs z-10 pointer-events-none">${act.avance}%</div>`;
                   } else {
@@ -3379,7 +3620,6 @@
                     textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">100%</span>`;
                   }
                 } else {
-                  // Pendiente
                   textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">0%</span>`;
                 }
 
@@ -3412,11 +3652,9 @@
         const cod = act.codigo;
         const esMio = act.responsable && act.responsable.includes(currentUser.username);
         
-        // --- REGLAS DE PRIVILEGIO Y EDICIÓN ---
         const puedeEditarTiempos = proyectoEsGestor && !esMadre;
         const puedeEditarAvance = (proyectoEsGestor || esMio) && !esMadre;
 
-        // Estilos diferenciados: Editables vs Calculadas / Bloqueadas
         const claseEditable = "cell-editable cursor-pointer";
         const claseBloqueada = "bg-slate-50/80 text-slate-500 cursor-not-allowed select-none";
         const lockIcon = `
@@ -3425,12 +3663,10 @@
           </svg>
         `;
 
-        // 1. Celda Responsable (siempre editable por Gestores)
         const tdResp = visibilidadColumnas.responsable 
           ? `<td class="p-2 border-r border-b border-gray-200 text-center whitespace-nowrap ${proyectoEsGestor ? 'cell-editable cursor-pointer' : ''}" ondblclick="${proyectoEsGestor ? `editarResponsable('${cod}')` : ''}" title="${proyectoEsGestor ? 'Doble clic para asignar responsables' : ''}">${obtenerAvatarHTML(act.responsable)}</td>` 
           : '';
 
-        // 2. Celda Estado
         let tdEst = '';
         if (visibilidadColumnas.estado) {
           if (esMadre) {
@@ -3444,7 +3680,6 @@
           }
         }
 
-        // 3. Celda Inicio
         let tdIni = '';
         if (visibilidadColumnas.inicio) {
           if (esMadre) {
@@ -3454,7 +3689,6 @@
           }
         }
 
-        // 4. Celda Fin
         let tdFin = '';
         if (visibilidadColumnas.fin) {
           if (esMadre) {
@@ -3464,7 +3698,6 @@
           }
         }
 
-        // 5. Celda Días
         let tdDias = '';
         if (visibilidadColumnas.dias) {
           if (esMadre) {
@@ -3474,7 +3707,6 @@
           }
         }
 
-        // 6. Celda % Avance
         let tdAvance = '';
         if (visibilidadColumnas.avance) {
           if (esMadre) {
@@ -3484,7 +3716,6 @@
           }
         }
 
-        // 7. Celda Gantt
         const tdGantt = visibilidadColumnas.gantt ? `<td class="p-1 border-r border-b border-gray-200">${ganttHTML}</td>` : '';
 
         tr.innerHTML = `
