@@ -1815,6 +1815,19 @@
         const estiloCursor = esGestor ? 'cursor-pointer hover:text-teal-700 hover:bg-teal-50/70 p-1 -m-1 rounded transition' : '';
         const textoDesc = (p.descripcion && p.descripcion.trim() !== "") ? p.descripcion.trim() : "Sin descripción adicional registrada.";
         const descEscapada = (p.descripcion || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const avanceVal = parseInt(p.avance_global) || 0;
+
+        // Estilos semánticos sincronizados con los estados del proyecto
+        let badgeAvanceClases = "bg-rose-50 text-rose-700 border border-rose-200"; // 0% - Pendiente
+        let barraColorClase = "bg-rose-500";
+
+        if (avanceVal === 100) {
+          badgeAvanceClases = "bg-emerald-50 text-emerald-800 border border-emerald-200"; // 100% - Ejecutado
+          barraColorClase = "bg-emerald-500";
+        } else if (avanceVal > 0) {
+          badgeAvanceClases = "bg-amber-50 text-amber-800 border border-amber-200"; // 1% a 99% - En Proceso
+          barraColorClase = "bg-amber-500";
+        }
 
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50";
@@ -1824,7 +1837,7 @@
               <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider ${esGestor ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-blue-50 text-blue-800 border border-blue-200/80'}">
                 ${esGestor ? '👑 Gestor' : '👤 Responsable'}
               </span>
-              <span class="text-xs font-black text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">${p.avance_global || 0}% Avance</span>
+              <span class="text-xs font-black px-2 py-0.5 rounded ${badgeAvanceClases}">${avanceVal}% Avance</span>
             </div>
             <h3 class="font-bold text-base text-[#0f2a4a] leading-snug min-h-[44px] flex items-center">${p.nombre}</h3>
             
@@ -1835,7 +1848,7 @@
             </p>
             
             <div class="w-full bg-gray-100 rounded-full h-2 mt-4 overflow-hidden shadow-inner">
-              <div class="bg-teal-500 h-2 rounded-full transition-all duration-500" style="width: ${p.avance_global || 0}%"></div>
+              <div class="${barraColorClase} h-2 rounded-full transition-all duration-500" style="width: ${avanceVal}%"></div>
             </div>
 
             <div class="grid grid-cols-3 gap-2 mt-5 text-center">
@@ -1854,7 +1867,7 @@
             </div>
           </div>
 
-          <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="w-full mt-6 py-2.5 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2">
+          <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="w-full mt-6 py-2.5 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2 cursor-pointer">
             <span>Ingresar al Proyecto</span>
             <span class="text-sm">→</span>
           </button>
