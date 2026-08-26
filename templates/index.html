@@ -1194,24 +1194,29 @@
 
         if (tipo === "error" || tipo === "warning" || tipo === "danger") {
           headerBg.className = "bg-[#c0392b] text-white px-5 py-3.5 flex items-center justify-between";
-          btnAceptar.className = "px-5 py-2 bg-[#c0392b] hover:bg-[#a93226] text-white text-xs font-bold rounded-lg transition shadow";
+          btnAceptar.className = "px-5 py-2 bg-[#c0392b] hover:bg-[#a93226] text-white text-xs font-bold rounded-lg transition shadow cursor-pointer";
           txtIcono.innerText = "⚠️";
         } else if (tipo === "question" || esConfirmacion) {
           headerBg.className = "bg-[#0f2a4a] text-white px-5 py-3.5 flex items-center justify-between";
-          btnAceptar.className = "px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow";
-          txtIcono.innerText = "📧";
+          btnAceptar.className = "px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow cursor-pointer";
+          txtIcono.innerText = "ℹ️";
         } else {
           headerBg.className = "bg-[#0f2a4a] text-white px-5 py-3.5 flex items-center justify-between";
-          btnAceptar.className = "px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded-lg transition shadow";
+          btnAceptar.className = "px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded-lg transition shadow cursor-pointer";
           txtIcono.innerText = "ℹ️";
         }
 
+        // Asignación directa y explícita de valores booleanos
+        btnAceptar.onclick = () => cerrarDialogoImarpe(true);
+        btnCancelar.onclick = () => cerrarDialogoImarpe(false);
+        if (btnX) btnX.onclick = () => cerrarDialogoImarpe(false);
+
         if (esConfirmacion) {
           btnCancelar.classList.remove("hidden");
-          btnX.classList.remove("hidden");
+          if (btnX) btnX.classList.remove("hidden");
         } else {
           btnCancelar.classList.add("hidden");
-          btnX.classList.add("hidden");
+          if (btnX) btnX.classList.add("hidden");
         }
 
         modal.classList.remove("hidden");
@@ -1219,10 +1224,12 @@
     }
 
     function cerrarDialogoImarpe(resultado) {
-      document.getElementById("modal-dialog-imarpe").classList.add("hidden");
-      if (resolverDialogoActual) {
-        resolverDialogoActual(resultado);
+      const modal = document.getElementById("modal-dialog-imarpe");
+      if (modal) modal.classList.add("hidden");
+      if (typeof resolverDialogoActual === "function") {
+        const fn = resolverDialogoActual;
         resolverDialogoActual = null;
+        fn(Boolean(resultado));
       }
     }
 
@@ -4165,56 +4172,63 @@
       }
     }
 
-    // --- MODAL DE GESTIÓN DE DEPENDENCIAS ---
+    // --- MODAL DE GESTIÓN DE DEPENDENCIAS (BLINDADO) ---
     function abrirModalDependencias() {
-      const esAdminOGestor = proyectoEsGestor || (currentUser && currentUser.rol === "ADMIN_TI");
-      if (!esAdminOGestor) {
-        alert("Solo el Gestor del Proyecto o Administrador TI puede modificar las dependencias.");
+      const modal = document.getElementById("modal-dependencias");
+      if (!modal) {
+        alert("Error: No se encontró el modal de dependencias en el DOM.");
         return;
       }
 
       const tbody = document.getElementById("tabla-config-dependencias-body");
-      if (!tbody) return;
+      if (!tbody) {
+        modal.classList.remove("hidden");
+        return;
+      }
       tbody.innerHTML = "";
 
-      const terminales = actividadesGlobal.filter(a => !tieneHijos(a.codigo));
-
-      if (terminales.length === 0) {
+      if (!actividadesGlobal || actividadesGlobal.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 font-semibold">No hay actividades registradas en este proyecto.</td></tr>`;
-      } else {
-        terminales.forEach(act => {
-          const codLimpio = String(act.codigo).replace(/\.+$/, "");
-          const posiblesPreds = terminales.filter(p => String(p.codigo).replace(/\.+$/, "") !== codLimpio);
-          const predsActuales = (act.predecesores || "").split(",").map(s => s.trim().replace(/\.+$/, "")).filter(Boolean);
-
-          let opcionesHTML = "";
-          posiblesPreds.forEach(p => {
-            const pCod = String(p.codigo).replace(/\.+$/, "");
-            const estaMarcado = predsActuales.includes(pCod);
-            opcionesHTML += `
-              <label class="inline-flex items-center space-x-1 bg-gray-50 hover:bg-teal-50 px-2 py-0.5 rounded border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700 mr-1.5 mb-1">
-                <input type="checkbox" data-act-cod="${codLimpio}" value="${pCod}" ${estaMarcado ? 'checked' : ''} class="chk-dep-item rounded text-[#0f2a4a] focus:ring-0 cursor-pointer">
-                <span>[${pCod}] ${p.descripcion.substring(0, 18)}...</span>
-              </label>
-            `;
-          });
-
-          if (posiblesPreds.length === 0) {
-            opcionesHTML = `<span class="text-gray-400 italic text-[11px]">Única actividad disponible</span>`;
-          }
-
-          tbody.innerHTML += `
-            <tr class="hover:bg-gray-50 border-b border-gray-100">
-              <td class="p-2.5 font-mono font-bold text-center text-[#0f2a4a]">${act.codigo}</td>
-              <td class="p-2.5 font-semibold text-gray-800">${act.descripcion}</td>
-              <td class="p-2.5 text-center font-bold text-teal-800">${act.dias}d</td>
-              <td class="p-2.5 flex flex-wrap items-center">${opcionesHTML}</td>
-            </tr>
-          `;
-        });
+        modal.classList.remove("hidden");
+        return;
       }
 
-      document.getElementById("modal-dependencias").classList.remove("hidden");
+      // Obtener tareas subordinadas/hojas (o todas si no tienen hijos)
+      const terminales = actividadesGlobal.filter(a => !tieneHijos(a.codigo));
+      const listaParaMostrar = terminales.length > 0 ? terminales : actividadesGlobal;
+
+      listaParaMostrar.forEach(act => {
+        const codLimpio = String(act.codigo).replace(/\.+$/, "");
+        const posiblesPreds = listaParaMostrar.filter(p => String(p.codigo).replace(/\.+$/, "") !== codLimpio);
+        const predsActuales = (act.predecesores || "").split(",").map(s => s.trim().replace(/\.+$/, "")).filter(Boolean);
+
+        let opcionesHTML = "";
+        posiblesPreds.forEach(p => {
+          const pCod = String(p.codigo).replace(/\.+$/, "");
+          const estaMarcado = predsActuales.includes(pCod);
+          opcionesHTML += `
+            <label class="inline-flex items-center space-x-1.5 bg-gray-50 hover:bg-teal-50 px-2 py-1 rounded border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700 mr-1.5 mb-1.5 shadow-xs">
+              <input type="checkbox" data-act-cod="${codLimpio}" value="${pCod}" ${estaMarcado ? 'checked' : ''} class="chk-dep-item rounded text-[#0f2a4a] focus:ring-0 cursor-pointer">
+              <span>[${pCod}] ${p.descripcion.substring(0, 20)}...</span>
+            </label>
+          `;
+        });
+
+        if (posiblesPreds.length === 0) {
+          opcionesHTML = `<span class="text-gray-400 italic text-[11px]">Sin otras actividades para enlazar</span>`;
+        }
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-gray-50 border-b border-gray-100">
+            <td class="p-2.5 font-mono font-bold text-center text-[#0f2a4a]">${act.codigo}</td>
+            <td class="p-2.5 font-semibold text-gray-800">${act.descripcion}</td>
+            <td class="p-2.5 text-center font-bold text-teal-800">${act.dias}d</td>
+            <td class="p-2.5 flex flex-wrap items-center">${opcionesHTML}</td>
+          </tr>
+        `;
+      });
+
+      modal.classList.remove("hidden");
     }
 
     function cerrarModalDependencias() {
