@@ -175,49 +175,57 @@
     </header>
 
     <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8 flex flex-col justify-start">
-      <div class="bg-white rounded-2xl p-6 mb-8 border border-gray-200/80 shadow-sm flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+      <!-- TARJETA CABECERA DEL HUB: INFORMACIÓN + KPIS RESUMEN -->
+      <div class="bg-white rounded-2xl p-6 mb-5 border border-gray-200/90 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <span class="text-[11px] font-black text-teal-600 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">Portal de Gestión Institucional</span>
+          <span class="text-[11px] font-black text-teal-700 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">Portal de Gestión Institucional</span>
           <h2 class="text-2xl md:text-3xl font-extrabold text-[#0f2a4a] mt-2 tracking-tight">Mis Proyectos y Programas</h2>
           <p class="text-xs text-gray-500 font-medium mt-1">Seleccione un espacio de trabajo para registrar avances o supervisar la ruta de actividades.</p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3 self-stretch xl:self-auto justify-between xl:justify-end">
-          <!-- Buscador Predictivo en Tiempo Real -->
-          <div class="relative min-w-[220px] flex-1 sm:flex-none">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🔍</span>
-            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar proyecto..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] focus:ring-1 focus:ring-[#0f2a4a] transition">
+        <!-- KPIs Resumen Agrupados en Cabecera -->
+        <div class="flex items-center space-x-2.5 self-start md:self-auto flex-shrink-0">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-center min-w-[85px] shadow-xs">
+            <span class="block text-[9px] font-black text-slate-500 uppercase tracking-wider">En Panel</span>
+            <span id="hub-kpi-total-proy" class="text-lg font-black text-[#0f2a4a] leading-tight">0</span>
+          </div>
+          <div class="bg-teal-50 border border-teal-200 rounded-xl px-4 py-2 text-center min-w-[85px] shadow-xs">
+            <span class="block text-[9px] font-black text-teal-700 uppercase tracking-wider">Avance Prom.</span>
+            <span id="hub-kpi-prom-avance" class="text-lg font-black text-teal-800 leading-tight">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BARRA OPERATIVA DE ACCIONES: FILTROS, VISTAS Y EXPORTACIÓN -->
+      <div class="bg-white rounded-xl p-3 mb-6 border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <!-- Buscador Rápido -->
+        <div class="relative flex-1 min-w-[240px] max-w-md">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🔍</span>
+          <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar proyecto por nombre o descripción..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] focus:ring-1 focus:ring-[#0f2a4a] transition">
+        </div>
+
+        <!-- Grupo Selector de Vista y Botón Excel -->
+        <div class="flex items-center space-x-3 self-end md:self-auto">
+          <!-- Conmutador con Label Descriptivo -->
+          <div class="flex items-center space-x-2 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-lg">
+            <span class="text-[10px] font-extrabold uppercase text-gray-500 tracking-wider hidden sm:inline">Tipo de vista:</span>
+            <div class="flex items-center bg-gray-200/80 p-0.5 rounded-md text-xs">
+              <button id="btn-vista-grid" onclick="cambiarVistaHub('cards')" class="px-2.5 py-1 rounded text-xs font-bold transition flex items-center space-x-1" title="Vista en cuadrícula de tarjetas">
+                <span>🔲</span>
+                <span>Tarjetas</span>
+              </button>
+              <button id="btn-vista-table" onclick="cambiarVistaHub('table')" class="px-2.5 py-1 rounded text-xs font-bold transition flex items-center space-x-1" title="Vista en tabla detallada">
+                <span>📑</span>
+                <span>Tabla</span>
+              </button>
+            </div>
           </div>
 
-          <!-- Selector de Vista (Tarjetas / Filas Tabular) -->
-          <div class="flex items-center bg-gray-100 border border-gray-300 rounded-lg p-0.5 shadow-xs">
-            <button id="btn-vista-grid" onclick="cambiarVistaHub('cards')" class="px-2.5 py-1.5 rounded-md text-xs font-bold transition flex items-center space-x-1" title="Vista en tarjetas">
-              <span>🔲</span>
-              <span class="hidden sm:inline">Tarjetas</span>
-            </button>
-            <button id="btn-vista-table" onclick="cambiarVistaHub('table')" class="px-2.5 py-1.5 rounded-md text-xs font-bold transition flex items-center space-x-1" title="Vista en tabla">
-              <span>📑</span>
-              <span class="hidden sm:inline">Tabla</span>
-            </button>
-          </div>
-
-          <!-- Botón Exportar Resumen a Excel -->
-          <button onclick="exportarResumenProyectosExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow flex items-center space-x-1.5" title="Descargar reporte consolidado en Excel">
+          <!-- Botón Exportar Excel -->
+          <button onclick="exportarResumenProyectosExcel()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow flex items-center space-x-1.5 cursor-pointer" title="Descargar reporte consolidado en Excel">
             <span>📊</span>
             <span>Excel</span>
           </button>
-
-          <!-- KPIs Resumen -->
-          <div class="flex items-center space-x-2">
-            <div class="bg-slate-50 border border-slate-200/70 rounded-lg px-3 py-1.5 text-center min-w-[75px]">
-              <span class="block text-[9px] font-black text-slate-500 uppercase">En Panel</span>
-              <span id="hub-kpi-total-proy" class="text-base font-black text-[#0f2a4a] leading-tight">0</span>
-            </div>
-            <div class="bg-teal-50 border border-teal-200/70 rounded-lg px-3 py-1.5 text-center min-w-[75px]">
-              <span class="block text-[9px] font-black text-teal-700 uppercase">Avance Prom.</span>
-              <span id="hub-kpi-prom-avance" class="text-base font-black text-teal-800 leading-tight">0%</span>
-            </div>
-          </div>
         </div>
       </div>
 
