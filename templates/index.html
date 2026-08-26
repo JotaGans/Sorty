@@ -94,15 +94,6 @@
       -moz-appearance: none;
       appearance: none;
     }
-
-    /* Cursor de arrastre para el lienzo del cronograma */
-    #th-gantt, #gantt-header-meses, #gantt-header-semanas, td:nth-child(9) {
-      cursor: grab;
-    }
-    #th-gantt:active, td:nth-child(9):active {
-      cursor: grabbing !important;
-    }
-
   </style>
 </head>
 <body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none" onclick="cerrarMenuContextual()">
@@ -1549,6 +1540,7 @@
           }
         });
       }
+      });
 
     // --- AUTENTICACIÓN ---
     document.getElementById("login-form").addEventListener("submit", async (e) => {
