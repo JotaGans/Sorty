@@ -210,13 +210,13 @@
           <div class="flex items-center space-x-2">
             <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider hidden sm:inline">Vista:</span>
             <div class="flex items-center bg-slate-100 border border-slate-200 p-1 rounded-xl shadow-inner">
-              <button id="btn-vista-grid" onclick="cambiarVistaHub('cards')" class="px-3 py-1.5 rounded-lg text-xs font-black transition-all duration-150 flex items-center space-x-1.5 cursor-pointer" title="Vista en cuadrícula de tarjetas">
+              <button id="btn-vista-grid" onclick="cambiarVistaHub('cards')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all duration-150 flex items-center space-x-1.5 cursor-pointer" title="Vista en cuadrícula de tarjetas">
                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                 </svg>
                 <span>Tarjetas</span>
               </button>
-              <button id="btn-vista-table" onclick="cambiarVistaHub('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 transition-all duration-150 flex items-center space-x-1.5 cursor-pointer" title="Vista en tabla detallada">
+              <button id="btn-vista-table" onclick="cambiarVistaHub('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-teal-700 hover:bg-slate-200/60 transition-all duration-150 flex items-center space-x-1.5 cursor-pointer" title="Vista en tabla detallada">
                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd"/>
                 </svg>
@@ -1789,8 +1789,8 @@
       const gridCont = document.getElementById("grid-proyectos-hub");
       const tableCont = document.getElementById("hub-proyectos-tabla-contenedor");
 
-      const estiloActivo = "px-3 py-1.5 rounded-lg text-xs font-black bg-[#0f2a4a] text-white shadow-sm flex items-center space-x-1.5 transition-all duration-150 cursor-pointer";
-      const estiloInactivo = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-[#0f2a4a] hover:bg-slate-200/60 transition-all duration-150 flex items-center space-x-1.5 cursor-pointer";
+      const estiloActivo = "px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm flex items-center space-x-1.5 transition-all duration-150 cursor-pointer";
+      const estiloInactivo = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-teal-700 hover:bg-slate-200/60 transition-all duration-150 flex items-center space-x-1.5 cursor-pointer";
 
       if (vistaHubActual === "table") {
         if (btnTable) btnTable.className = estiloActivo;
