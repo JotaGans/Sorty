@@ -2950,19 +2950,33 @@
     }
 
     function construirCalendarioAnual() {
-      const anio = new Date().getFullYear();
+      const anioActual = new Date().getFullYear();
+      let minAnio = anioActual;
+      let maxAnio = anioActual;
+
+      // Detectar el rango multianual según las actividades existentes
+      if (actividadesGlobal && actividadesGlobal.length > 0) {
+        actividadesGlobal.forEach(a => {
+          const dtIni = parsearFechaUniversal(a.fecha_inicio);
+          const dtFin = parsearFechaUniversal(a.fecha_fin);
+          if (dtIni) minAnio = Math.min(minAnio, dtIni.getFullYear());
+          if (dtFin) maxAnio = Math.max(maxAnio, dtFin.getFullYear());
+        });
+      }
+
       diasTotalesAnio = [];
       semanasTotales = [];
 
-      // 1. Catálogo de días correlativos del año
-      let currDia = new Date(anio, 0, 1);
-      const finAnio = new Date(anio, 11, 31);
+      let currDia = new Date(minAnio, 0, 1);
+      const finCalendario = new Date(maxAnio, 11, 31);
       const ahora = new Date();
       ahora.setHours(0, 0, 0, 0);
 
-      while (currDia <= finAnio) {
+      // 1. Días correlativos continuos
+      while (currDia <= finCalendario) {
         const dNum = currDia.getDate();
         const mIdx = currDia.getMonth();
+        const yNum = currDia.getFullYear();
         const esHoy = (currDia.getTime() === ahora.getTime());
 
         diasTotalesAnio.push({
@@ -2970,39 +2984,42 @@
           dia: String(dNum).padStart(2, '0'),
           mes: mIdx,
           mesNombre: nombresMeses[mIdx],
+          anio: yNum,
           diaSemana: currDia.getDay(),
           esHoy: esHoy
         });
         currDia.setDate(currDia.getDate() + 1);
       }
 
-      // 2. Catálogo de semanas correlativas
-      let curr = new Date(anio, 0, 1);
-      while (curr.getDay() !== 1) curr.setDate(curr.getDate() - 1);
-      let nroSem = 1;
+      // 2. Semanas correlativas continuas
+      let currSem = new Date(minAnio, 0, 1);
+      while (currSem.getDay() !== 1) currSem.setDate(currSem.getDate() - 1);
+      let nroSemGlobal = 1;
 
-      while (curr <= finAnio || curr.getFullYear() === anio) {
-        const dLunes = curr.getDate();
-        const mIndex = curr.getMonth();
-        const fechaIniSem = new Date(curr);
-        const fechaFinSem = new Date(curr.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+      while (currSem <= finCalendario || currSem.getFullYear() <= maxAnio) {
+        const dLunes = currSem.getDate();
+        const mIndex = currSem.getMonth();
+        const yIndex = currSem.getFullYear();
+        const fechaIniSem = new Date(currSem);
+        const fechaFinSem = new Date(currSem.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
 
         const esSemanaActual = (ahora >= fechaIniSem && ahora <= fechaFinSem);
-        if (esSemanaActual) indiceSemanaHoy = nroSem - 1;
+        if (esSemanaActual) indiceSemanaHoy = nroSemGlobal - 1;
 
         semanasTotales.push({
-          nro: nroSem,
+          nro: nroSemGlobal,
           fechaLunes: fechaIniSem,
           fechaDomingo: fechaFinSem,
           dia: String(dLunes).padStart(2, '0'),
           mes: mIndex,
           mesNombre: nombresMeses[mIndex],
+          anio: yIndex,
           esHoy: esSemanaActual
         });
 
-        curr.setDate(curr.getDate() + 7);
-        nroSem++;
-        if (curr.getFullYear() > anio && curr.getDate() > 7) break;
+        currSem.setDate(currSem.getDate() + 7);
+        nroSemGlobal++;
+        if (currSem > finCalendario && currSem.getDay() === 1) break;
       }
     }
 
@@ -3039,48 +3056,55 @@
       divMeses.innerHTML = "";
       divSemanas.innerHTML = "";
 
-      // MODO 1: MESES (12 Meses Consolidado con Resaltado del Mes Actual)
+      // MODO 1: MESES (Multianual con ventana de 12 meses visibles desplazables)
       if (modoZoom === "meses") {
-        const mesActualNum = new Date().getMonth();
-        nombresMeses.forEach((m, idx) => {
-          const esMesActual = (idx === mesActualNum);
-          const claseHeaderMes = esMesActual ? "bg-teal-600 text-white font-black rounded-xs shadow-xs" : "text-gray-200";
-          divMeses.innerHTML += `<div class="flex-1 text-center font-bold border-r border-blue-800/80 text-[10px] overflow-hidden py-0.5 ${claseHeaderMes}">${m}</div>`;
-        });
-        divSemanas.innerHTML = `<div class="w-full text-center text-teal-300 text-[10px] py-0.5 font-semibold">Vista Consolidada Anual</div>`;
-        return;
-      }
+        const mesesTotales = [];
+        let curM = new Date(diasTotalesAnio[0].fecha);
+        curM.setDate(1);
+        const ultFecha = diasTotalesAnio[diasTotalesAnio.length - 1].fecha;
 
-      // MODO 3: DÍAS (Ventana de 28 Días - Ancho 100% sin scroll de pantalla)
-      if (modoZoom === "dias") {
-        const ventanaDias = 28; // 4 semanas exactas
-        const offset = Math.max(0, Math.min(diasTotalesAnio.length - ventanaDias, semanaInicioIndex * 7));
-        const diasVisibles = diasTotalesAnio.slice(offset, offset + ventanaDias);
+        while (curM <= ultFecha) {
+          mesesTotales.push({
+            mesIdx: curM.getMonth(),
+            mesNombre: nombresMeses[curM.getMonth()],
+            anio: curM.getFullYear(),
+            fecha: new Date(curM)
+          });
+          curM.setMonth(curM.getMonth() + 1);
+        }
 
-        const gruposMes = [];
-        let mesActual = null;
-        let contador = 0;
+        const ventanaMeses = 12;
+        const offsetM = Math.max(0, Math.min(mesesTotales.length - ventanaMeses, Math.floor(semanaInicioIndex / 4.33)));
+        const mesesVisibles = mesesTotales.slice(offsetM, offsetM + ventanaMeses);
 
-        diasVisibles.forEach(d => {
-          if (mesActual === null || mesActual !== d.mesNombre) {
-            if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
-            mesActual = d.mesNombre;
-            contador = 1;
+        // Fila 1: Años
+        const gruposAnio = [];
+        let anioActualGrp = null;
+        let countGrp = 0;
+        mesesVisibles.forEach(m => {
+          if (anioActualGrp === null || anioActualGrp !== m.anio) {
+            if (anioActualGrp !== null) gruposAnio.push({ anio: anioActualGrp, count: countGrp });
+            anioActualGrp = m.anio;
+            countGrp = 1;
           } else {
-            contador++;
+            countGrp++;
           }
         });
-        if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
+        if (anioActualGrp !== null) gruposAnio.push({ anio: anioActualGrp, count: countGrp });
 
-        gruposMes.forEach(g => {
-          const pct = (g.count / diasVisibles.length) * 100;
-          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] tracking-wide text-teal-200 overflow-hidden">${g.nombre}</div>`;
+        gruposAnio.forEach(g => {
+          const pct = (g.count / mesesVisibles.length) * 100;
+          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] text-teal-200">${g.anio}</div>`;
         });
 
-        diasVisibles.forEach(d => {
-          const esFinSemana = (d.diaSemana === 0 || d.diaSemana === 6);
-          const claseHoy = d.esHoy ? "bg-teal-500 text-white font-black rounded-xs shadow" : (esFinSemana ? "text-gray-400 bg-blue-950/40" : "text-teal-300 opacity-90");
-          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden ${claseHoy}" title="${d.dia} de ${d.mesNombre}">${d.dia}</div>`;
+        // Fila 2: Nombres de Meses con resaltado del mes actual
+        const mesHoy = new Date().getMonth();
+        const anioHoy = new Date().getFullYear();
+
+        mesesVisibles.forEach(m => {
+          const esMesActual = (m.mesIdx === mesHoy && m.anio === anioHoy);
+          const claseMes = esMesActual ? "bg-teal-600 text-white font-black rounded-xs shadow-xs" : "text-gray-200";
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-bold ${claseMes}" title="${m.mesNombre} ${m.anio}">${m.mesNombre}</div>`;
         });
         return;
       }
@@ -3147,13 +3171,41 @@
       const anioActual = new Date().getFullYear();
 
       if (modoZoom === "meses") {
-        tInicioVisible = new Date(anioActual, 0, 1).getTime();
-        tFinVisible = new Date(anioActual, 11, 31, 23, 59, 59).getTime();
+        const mesesTotales = [];
+        let curM = new Date(diasTotalesAnio[0].fecha);
+        curM.setDate(1);
+        const ultFecha = diasTotalesAnio[diasTotalesAnio.length - 1].fecha;
+
+        while (curM <= ultFecha) {
+          mesesTotales.push({
+            mesIdx: curM.getMonth(),
+            mesNombre: nombresMeses[curM.getMonth()],
+            anio: curM.getFullYear(),
+            fecha: new Date(curM)
+          });
+          curM.setMonth(curM.getMonth() + 1);
+        }
+
+        const ventanaMeses = 12;
+        const offsetM = Math.max(0, Math.min(mesesTotales.length - ventanaMeses, Math.floor(semanaInicioIndex / 4.33)));
+        const mesesVisibles = mesesTotales.slice(offsetM, offsetM + ventanaMeses);
+        if (mesesVisibles.length === 0) return;
+
+        tInicioVisible = mesesVisibles[0].fecha.getTime();
+        const ultMesObj = new Date(mesesVisibles[mesesVisibles.length - 1].fecha);
+        ultMesObj.setMonth(ultMesObj.getMonth() + 1);
+        ultMesObj.setDate(0);
+        ultMesObj.setHours(23, 59, 59, 999);
+        tFinVisible = ultMesObj.getTime();
         duracionVisibleMs = tFinVisible - tInicioVisible;
-        const mesActualIdx = new Date().getMonth();
-        divisionesHTML = Array.from({ length: 12 }, (_, i) => {
-          const claseMesHoy = (i === mesActualIdx) ? "col-semana-actual" : "";
-          return `<div class="flex-1 border-r border-slate-200/50 ${claseMesHoy}"></div>`;
+
+        const mesHoy = new Date().getMonth();
+        const anioHoy = new Date().getFullYear();
+
+        divisionesHTML = mesesVisibles.map(m => {
+          const esHoy = (m.mesIdx === mesHoy && m.anio === anioHoy);
+          const colHoy = esHoy ? "col-semana-actual" : "";
+          return `<div class="flex-1 border-r border-slate-200/50 ${colHoy}"></div>`;
         }).join("");
       } else if (modoZoom === "dias") {
         const ventanaDias = 28;
