@@ -1309,7 +1309,7 @@ def crear_comentario(data: ComentarioCreate, user: dict = Depends(get_current_us
     autor_nombre = user.get("nombre_completo") or user["username"]
 
     t_row = db.execute("SELECT unidad_organica FROM trabajadores WHERE nombre_completo LIKE ? LIMIT 1", (f"%{autor_nombre}%",)).fetchone()
-    autor_unidad = t_row["unidad_organica"] if t_row and t_row["unidad_organica"] else "Sede Central"
+    autor_unidad = t_row["unidad_organica"] if t_row and t_row["unidad_organica"] else (user.get("rol") if user.get("rol") == "ADMIN_TI" else "")
     cod_limpio = str(data.codigo_actividad).strip().rstrip(".")
 
     db.execute("""
