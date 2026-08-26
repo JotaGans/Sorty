@@ -325,9 +325,14 @@
             <option value="">👤 Todo el Personal</option>
           </select>
 
-          <div class="flex items-center bg-gray-200 rounded p-0.5 text-xs font-bold">
-            <button id="btn-zoom-semanas" onclick="cambiarZoom('semanas')" class="px-2 py-1 rounded bg-white shadow text-[#0f2a4a]">Semanas</button>
-            <button id="btn-zoom-meses" onclick="cambiarZoom('meses')" class="px-2 py-1 rounded text-gray-600">Meses</button>
+          <!-- Selector de Periodicidad y Zoom Dinámico -->
+          <div class="flex items-center bg-gray-200 rounded-lg p-0.5 text-xs font-bold shadow-xs">
+            <button id="btn-zoom-dias" onclick="fijarModoZoomDirecto('dias')" class="px-2 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition">Días</button>
+            <button id="btn-zoom-semanas" onclick="fijarModoZoomDirecto('semanas')" class="px-2 py-1 rounded-md bg-white shadow text-[#0f2a4a] font-bold">Semanas</button>
+            <button id="btn-zoom-meses" onclick="fijarModoZoomDirecto('meses')" class="px-2 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition">Meses</button>
+            <div class="h-3.5 w-px bg-gray-300 mx-1"></div>
+            <button onclick="ajustarNivelZoomPaso(-1)" class="px-1.5 py-0.5 text-gray-600 hover:text-[#0f2a4a] text-xs font-black" title="Alejar zoom (Menor detalle)">−</button>
+            <button onclick="ajustarNivelZoomPaso(1)" class="px-1.5 py-0.5 text-gray-600 hover:text-[#0f2a4a] text-xs font-black" title="Acercar zoom (Mayor detalle)">+</button>
           </div>
 
           <div id="contenedor-spinbutton" class="flex items-center bg-[#0f2a4a] text-white rounded px-2 py-1 space-x-1.5 shadow">
@@ -1079,9 +1084,12 @@
     let responsablesGlobal = [];
     let nivelFiltroActivo = 4;
     
-    let modoZoom = "semanas";
+    let modoZoom = "semanas"; // 'dias' | 'semanas' | 'meses'
+    let zoomNivelEscala = 2;   // 1: Meses, 2: Semanas, 3: Días
+    let diasTotalesAnio = [];
     let semanasTotales = [];
     let semanaInicioIndex = 0;
+    let diaInicioIndex = 0;
     let indiceSemanaHoy = -1;
 
     let nodosColapsados = new Set();
@@ -1454,6 +1462,20 @@
             inputNombreProy.blur(); // Dispara el evento blur para guardar
           }
         });
+      }
+      // Listener para Zoom Dinámico fluido con la rueda del ratón (Ctrl + Scroll)
+      const contenedorGantt = document.getElementById("view-dashboard");
+      if (contenedorGantt) {
+        contenedorGantt.addEventListener("wheel", (e) => {
+          if (e.ctrlKey || e.shiftKey) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+              ajustarNivelZoomPaso(1); // Scroll Arriba -> Mayor detalle (Días)
+            } else if (e.deltaY > 0) {
+              ajustarNivelZoomPaso(-1); // Scroll Abajo -> Menor detalle (Meses)
+            }
+          }
+        }, { passive: false });
       }
     });
 
@@ -2706,22 +2728,48 @@
       return false;
     }
 
-    function cambiarZoom(modo) {
+    // =========================================================================
+    // MOTOR DE ZOOM Y ESCALA TEMPORAL CONTINUA (DÍAS / SEMANAS / MESES)
+    // =========================================================================
+    function fijarModoZoomDirecto(modo) {
       modoZoom = modo;
-      const btnSem = document.getElementById("btn-zoom-semanas");
-      const btnMes = document.getElementById("btn-zoom-meses");
-      const spinBox = document.getElementById("contenedor-spinbutton");
+      if (modo === "dias") zoomNivelEscala = 3;
+      else if (modo === "semanas") zoomNivelEscala = 2;
+      else if (modo === "meses") zoomNivelEscala = 1;
 
-      if (modo === "meses") {
-        btnMes.className = "px-2 py-1 rounded bg-white shadow text-[#0f2a4a]";
-        btnSem.className = "px-2 py-1 rounded text-gray-600";
-        spinBox.classList.add("hidden");
-      } else {
-        btnSem.className = "px-2 py-1 rounded bg-white shadow text-[#0f2a4a]";
-        btnMes.className = "px-2 py-1 rounded text-gray-600";
-        spinBox.classList.remove("hidden");
+      actualizarBotonesZoomUI();
+      renderizarCabeceraGantt();
+      renderizarTabla();
+    }
+
+    function ajustarNivelZoomPaso(delta) {
+      zoomNivelEscala = Math.max(1, Math.min(3, zoomNivelEscala + delta));
+      if (zoomNivelEscala === 3) modoZoom = "dias";
+      else if (zoomNivelEscala === 2) modoZoom = "semanas";
+      else modoZoom = "meses";
+
+      actualizarBotonesZoomUI();
+      renderizarCabeceraGantt();
+      renderizarTabla();
+    }
+
+    function actualizarBotonesZoomUI() {
+      const modos = ["dias", "semanas", "meses"];
+      modos.forEach(m => {
+        const btn = document.getElementById(`btn-zoom-${m}`);
+        if (!btn) return;
+        if (m === modoZoom) {
+          btn.className = "px-2 py-1 rounded-md bg-white shadow text-[#0f2a4a] font-bold";
+        } else {
+          btn.className = "px-2 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition";
+        }
+      });
+
+      const spinBox = document.getElementById("contenedor-spinbutton");
+      if (spinBox) {
+        if (modoZoom === "meses") spinBox.classList.add("hidden");
+        else spinBox.classList.remove("hidden");
       }
-      actualizarVistaGantt();
     }
 
     function exportarExcelCSV() {
@@ -2787,13 +2835,34 @@
 
     function construirCalendarioAnual() {
       const anio = new Date().getFullYear();
+      diasTotalesAnio = [];
       semanasTotales = [];
 
-      let curr = new Date(anio, 0, 1);
-      while (curr.getDay() !== 1) curr.setDate(curr.getDate() - 1);
-
+      // 1. Catálogo de días correlativos del año
+      let currDia = new Date(anio, 0, 1);
       const finAnio = new Date(anio, 11, 31);
       const ahora = new Date();
+      ahora.setHours(0, 0, 0, 0);
+
+      while (currDia <= finAnio) {
+        const dNum = currDia.getDate();
+        const mIdx = currDia.getMonth();
+        const esHoy = (currDia.getTime() === ahora.getTime());
+
+        diasTotalesAnio.push({
+          fecha: new Date(currDia),
+          dia: String(dNum).padStart(2, '0'),
+          mes: mIdx,
+          mesNombre: nombresMeses[mIdx],
+          diaSemana: currDia.getDay(),
+          esHoy: esHoy
+        });
+        currDia.setDate(currDia.getDate() + 1);
+      }
+
+      // 2. Catálogo de semanas correlativas
+      let curr = new Date(anio, 0, 1);
+      while (curr.getDay() !== 1) curr.setDate(curr.getDate() - 1);
       let nroSem = 1;
 
       while (curr <= finAnio || curr.getFullYear() === anio) {
@@ -2854,14 +2923,50 @@
       divMeses.innerHTML = "";
       divSemanas.innerHTML = "";
 
+      // MODO 1: MESES
       if (modoZoom === "meses") {
         nombresMeses.forEach(m => {
-          divMeses.innerHTML += `<div class="flex-1 text-center font-bold border-r border-blue-800/80">${m}</div>`;
+          divMeses.innerHTML += `<div class="flex-1 text-center font-bold border-r border-blue-800/80 text-[10px]">${m}</div>`;
         });
-        divSemanas.innerHTML = `<div class="w-full text-center text-teal-300 text-[10px] py-0.5">Vista Panorámica Anual (12 Meses)</div>`;
+        divSemanas.innerHTML = `<div class="w-full text-center text-teal-300 text-[10px] py-0.5">Vista Anual Consolidada (12 Meses)</div>`;
         return;
       }
 
+      // MODO 3: DÍAS
+      if (modoZoom === "dias") {
+        const ventanaDias = 45;
+        const offset = Math.max(0, Math.min(diasTotalesAnio.length - ventanaDias, semanaInicioIndex * 7));
+        const diasVisibles = diasTotalesAnio.slice(offset, offset + ventanaDias);
+
+        const gruposMes = [];
+        let mesActual = null;
+        let contador = 0;
+
+        diasVisibles.forEach(d => {
+          if (mesActual === null || mesActual !== d.mesNombre) {
+            if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
+            mesActual = d.mesNombre;
+            contador = 1;
+          } else {
+            contador++;
+          }
+        });
+        if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
+
+        gruposMes.forEach(g => {
+          const pct = (g.count / diasVisibles.length) * 100;
+          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] tracking-wide text-teal-200">${g.nombre}</div>`;
+        });
+
+        diasVisibles.forEach(d => {
+          const esFinSemana = (d.diaSemana === 0 || d.diaSemana === 6);
+          const claseHoy = d.esHoy ? "bg-teal-500 text-white font-black rounded-xs shadow" : (esFinSemana ? "text-gray-400 bg-blue-950/40" : "text-teal-300 opacity-90");
+          divSemanas.innerHTML += `<div class="flex-1 min-w-[20px] text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono ${claseHoy}" title="${d.dia} de ${d.mesNombre}">${d.dia}</div>`;
+        });
+        return;
+      }
+
+      // MODO 2: SEMANAS
       const semanasVisibles = semanasTotales.slice(semanaInicioIndex);
       const gruposMes = [];
       let mesActual = null;
@@ -2924,6 +3029,22 @@
         tFinVisible = new Date(anioActual, 11, 31, 23, 59, 59).getTime();
         duracionVisibleMs = tFinVisible - tInicioVisible;
         divisionesHTML = Array(12).fill('<div class="flex-1 border-r border-slate-200/50"></div>').join("");
+      } else if (modoZoom === "dias") {
+        const ventanaDias = 45;
+        const offset = Math.max(0, Math.min(diasTotalesAnio.length - ventanaDias, semanaInicioIndex * 7));
+        const diasVisibles = diasTotalesAnio.slice(offset, offset + ventanaDias);
+        if (diasVisibles.length === 0) return;
+
+        tInicioVisible = diasVisibles[0].fecha.getTime();
+        const ultDia = diasVisibles[diasVisibles.length - 1].fecha;
+        tFinVisible = new Date(ultDia.getFullYear(), ultDia.getMonth(), ultDia.getDate(), 23, 59, 59).getTime();
+        duracionVisibleMs = tFinVisible - tInicioVisible;
+
+        divisionesHTML = diasVisibles.map(d => {
+          const esFin = (d.diaSemana === 0 || d.diaSemana === 6);
+          const colHoy = d.esHoy ? "bg-teal-500/10" : (esFin ? "bg-slate-100/60" : "");
+          return `<div class="flex-1 border-r border-slate-200/40 ${colHoy}"></div>`;
+        }).join("");
       } else {
         const semanasVisibles = semanasTotales.slice(semanaInicioIndex);
         if (semanasVisibles.length === 0) return;
