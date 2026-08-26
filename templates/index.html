@@ -1122,9 +1122,9 @@
       <div class="p-3.5 bg-white border-t border-gray-200 flex-shrink-0 space-y-2">
         <div class="flex items-center justify-between text-[11px] font-bold text-gray-500">
           <span id="com-label-accion">✍️ Agregar un comentario:</span>
-          <span id="com-contador-chars" class="font-mono text-gray-400">0 / 3000 caracteres</span>
+          <span id="com-contador-chars" class="font-mono text-gray-400">0 / 500 caracteres</span>
         </div>
-        <textarea id="com-input-texto" rows="3" oninput="actualizarContadorComentario()" maxlength="3000" placeholder="Escriba un comentario o nota de avance (máx. 500 palabras)..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] focus:ring-1 focus:ring-[#0f2a4a] transition resize-none"></textarea>
+        <textarea id="com-input-texto" rows="3" oninput="actualizarContadorComentario()" maxlength="500" placeholder="Escriba un comentario o nota de avance (máx. 500 caracteres)..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] focus:ring-1 focus:ring-[#0f2a4a] transition resize-none"></textarea>
         <div class="flex justify-between items-center pt-1">
           <button id="com-btn-cancelar-edicion" onclick="cancelarEdicionComentario()" class="hidden px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cancelar Edición</button>
           <div class="flex-1"></div>
@@ -5321,7 +5321,7 @@
 
     function actualizarContadorComentario() {
       const txt = document.getElementById("com-input-texto").value;
-      document.getElementById("com-contador-chars").innerText = `${txt.length} / 3000 caracteres`;
+      document.getElementById("com-contador-chars").innerText = `${txt.length} / 500 caracteres`;
     }
 
     function iniciarEdicionComentario(id, texto) {

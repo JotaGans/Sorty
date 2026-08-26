@@ -1303,8 +1303,8 @@ def crear_comentario(data: ComentarioCreate, user: dict = Depends(get_current_us
     texto_limpio = data.texto.strip()
     if not texto_limpio:
         raise HTTPException(status_code=400, detail="El comentario no puede estar vacío.")
-    if len(texto_limpio) > 3000:
-        raise HTTPException(status_code=400, detail="El comentario excede el límite permitido (3000 caracteres).")
+    if len(texto_limpio) > 500:
+        raise HTTPException(status_code=400, detail="El comentario excede el límite permitido (500 caracteres).")
 
     autor_nombre = user.get("nombre_completo") or user["username"]
 
@@ -1331,8 +1331,8 @@ def editar_comentario(comentario_id: int, data: ComentarioUpdate, user: dict = D
     texto_limpio = data.texto.strip()
     if not texto_limpio:
         raise HTTPException(status_code=400, detail="El comentario no puede estar vacío.")
-    if len(texto_limpio) > 3000:
-        raise HTTPException(status_code=400, detail="El comentario excede el límite permitido.")
+    if len(texto_limpio) > 500:
+        raise HTTPException(status_code=400, detail="El comentario excede el límite permitido (500 caracteres).")
 
     row = db.execute("SELECT usuario_id, proyecto_id, codigo_actividad FROM comentarios_actividad WHERE id = ?", (int(comentario_id),)).fetchone()
     if not row:
