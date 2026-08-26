@@ -858,6 +858,47 @@
     </div>
   </div>
 
+  <!-- MODAL: CONFIGURADOR GUIADO DE DEPENDENCIAS (CPM) -->
+  <div id="modal-dependencias" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 max-h-[88vh] flex flex-col">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">🔗</span>
+          <h3 class="font-bold text-sm">Configuración de Dependencias y Predecesoras</h3>
+        </div>
+        <button onclick="cerrarModalDependencias()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+      </div>
+
+      <div class="p-4 bg-blue-50/80 border-b border-blue-100 text-xs text-blue-950 font-medium leading-relaxed">
+        Defina qué actividad debe culminar antes del inicio de otra. La secuencia de dependencias es la base matemática para calcular automáticamente la <strong>Ruta Crítica (CPM)</strong> y la duración total del proyecto.
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4 flex-1 bg-[#f8f9fa]">
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+          <table class="w-full text-xs text-left border-separate border-spacing-0">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white font-bold z-10">
+              <tr>
+                <th class="p-2.5 border-b border-blue-900 w-20 text-center">Código</th>
+                <th class="p-2.5 border-b border-blue-900">Actividad / Tarea</th>
+                <th class="p-2.5 border-b border-blue-900 text-center w-24">Duración</th>
+                <th class="p-2.5 border-b border-blue-900 min-w-[260px]">Predecesora(s) Directa(s)</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-config-dependencias-body" class="divide-y divide-gray-100 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-between items-center flex-shrink-0">
+        <span class="text-[11px] text-gray-500 font-semibold">Las actividades madre consolidan el tiempo de sus componentes automáticamente.</span>
+        <div class="space-x-2">
+          <button onclick="cerrarModalDependencias()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition">Cancelar</button>
+          <button onclick="guardarTodasDependencias()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow">Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL RUTA CRÍTICA (CPM) -->
   <div id="modal-cpm" class="hidden fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
@@ -4100,16 +4141,17 @@
     async function alternarCapaRutaCritica() {
       if (!proyectoActualId) return;
 
-      capaCpmActiva = !capaCpmActiva;
-
-      if (!capaCpmActiva) {
+      // Si ya está activa, desactivarla de inmediato
+      if (capaCpmActiva) {
+        capaCpmActiva = false;
         actualizarBotonCpmUI(false);
         renderizarTabla();
         notificarToast("Capa de Ruta Crítica desactivada.", "info");
         return;
       }
 
-      const tienePredecesoras = actividadesGlobal.some(a => a.predecesores && a.predecesores.trim() !== "");
+      // Validar si existen dependencias definidas
+      const tienePredecesoras = actividadesGlobal.some(a => a.predecesores && String(a.predecesores).trim() !== "");
       
       if (!tienePredecesoras) {
         const deseaConfigurar = await confirmModal(
@@ -4117,13 +4159,19 @@
           "Configuración Requerida",
           "question"
         );
-        if (deseaConfigurar) {
-          capaCpmActiva = false;
-          actualizarBotonCpmUI(false);
+
+        if (deseaConfigurar === true) {
           abrirModalDependencias();
-          return;
         }
+        
+        // Mantener la capa apagada tanto al aceptar como al cancelar
+        capaCpmActiva = false;
+        actualizarBotonCpmUI(false);
+        return;
       }
+
+      // Si hay dependencias, activamos la capa
+      capaCpmActiva = true;
 
       try {
         const res = await fetch(`/ruta-critica?proyecto_id=${proyectoActualId}`, {
