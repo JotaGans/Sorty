@@ -160,6 +160,14 @@ class NotificacionRequest(BaseModel):
     destinatarios_nuevos: Optional[List[str]] = []
     dias_recordatorio: Optional[List[int]] = []
 
+class ComentarioCreate(BaseModel):
+    proyecto_id: int
+    codigo_actividad: str
+    texto: str
+
+class ComentarioUpdate(BaseModel):
+    texto: str
+
 # --- INICIALIZACIÓN Y MIGRACIÓN DE BD ---
 def init_db():
     if os.path.exists("/data") and not os.path.exists(DB_PATH) and os.path.exists("imarpe_gantt.db"):
@@ -421,6 +429,28 @@ def init_db():
             INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, estado)
             VALUES (?, ?, ?, 'ACTIVO')
         """, unidades_semilla)
+
+# Tabla Comentarios de Actividad (Colaborativo tipo Word 365)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS comentarios_actividad (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            proyecto_id INTEGER NOT NULL,
+            codigo_actividad TEXT NOT NULL,
+            usuario_id INTEGER NOT NULL,
+            autor_nombre TEXT NOT NULL,
+            autor_unidad TEXT NOT NULL,
+            texto TEXT NOT NULL,
+            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            fecha_edicion TIMESTAMP,
+            FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        )
+    """)
+
+    try:
+        c.execute("CREATE INDEX IF NOT EXISTS idx_comentarios_proy_act ON comentarios_actividad(proyecto_id, codigo_actividad)")
+    except sqlite3.OperationalError:
+        pass
 
     conn.commit()
     conn.close()
@@ -1240,6 +1270,110 @@ def programar_notificacion_asignacion(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error en servidor: {str(e)}")
+
+# --- GESTIÓN DE COMENTARIOS COLABORATIVOS (TIPO WORD 365) ---
+@app.get("/proyectos/{proyecto_id}/comentarios")
+def listar_comentarios_proyecto(proyecto_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    rows = db.execute("""
+        SELECT id, proyecto_id, codigo_actividad, usuario_id, autor_nombre, autor_unidad, texto, 
+               strftime('%d/%m/%Y %H:%M', datetime(fecha_creacion, 'localtime')) as fecha_fmt,
+               strftime('%d/%m/%Y %H:%M', datetime(fecha_edicion, 'localtime')) as edit_fmt
+        FROM comentarios_actividad
+        WHERE proyecto_id = ?
+        ORDER BY fecha_creacion ASC
+    """, (int(proyecto_id),)).fetchall()
+    
+    return [
+        {
+            "id": r["id"],
+            "proyecto_id": r["proyecto_id"],
+            "codigo_actividad": r["codigo_actividad"],
+            "usuario_id": r["usuario_id"],
+            "autor_nombre": r["autor_nombre"],
+            "autor_unidad": r["autor_unidad"],
+            "texto": r["texto"],
+            "fecha_creacion": r["fecha_fmt"],
+            "fecha_edicion": r["edit_fmt"]
+        }
+        for r in rows
+    ]
+
+@app.post("/comentarios")
+def crear_comentario(data: ComentarioCreate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    texto_limpio = data.texto.strip()
+    if not texto_limpio:
+        raise HTTPException(status_code=400, detail="El comentario no puede estar vacío.")
+    if len(texto_limpio) > 3000:
+        raise HTTPException(status_code=400, detail="El comentario excede el límite permitido (3000 caracteres).")
+
+    autor_nombre = user.get("nombre_completo") or user["username"]
+
+    t_row = db.execute("SELECT unidad_organica FROM trabajadores WHERE nombre_completo LIKE ? LIMIT 1", (f"%{autor_nombre}%",)).fetchone()
+    autor_unidad = t_row["unidad_organica"] if t_row and t_row["unidad_organica"] else "Sede Central"
+    cod_limpio = str(data.codigo_actividad).strip().rstrip(".")
+
+    db.execute("""
+        INSERT INTO comentarios_actividad (proyecto_id, codigo_actividad, usuario_id, autor_nombre, autor_unidad, texto)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (int(data.proyecto_id), cod_limpio, user["id"], autor_nombre, autor_unidad, texto_limpio))
+
+    # Registro en historial de auditoría
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle)
+        VALUES (?, ?, ?, 'Nuevo Comentario', ?)
+    """, (int(data.proyecto_id), ahora_peru_str(), user["username"], f"Comentó en la actividad [{cod_limpio}]"))
+
+    db.commit()
+    return {"status": "success", "message": "Comentario registrado con éxito."}
+
+@app.put("/comentarios/{comentario_id}")
+def editar_comentario(comentario_id: int, data: ComentarioUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    texto_limpio = data.texto.strip()
+    if not texto_limpio:
+        raise HTTPException(status_code=400, detail="El comentario no puede estar vacío.")
+    if len(texto_limpio) > 3000:
+        raise HTTPException(status_code=400, detail="El comentario excede el límite permitido.")
+
+    row = db.execute("SELECT usuario_id, proyecto_id, codigo_actividad FROM comentarios_actividad WHERE id = ?", (int(comentario_id),)).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Comentario no encontrado.")
+
+    # Solo el autor o el Administrador TI puede editar el contenido
+    if row["usuario_id"] != user["id"] and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="No tiene permisos para editar este comentario.")
+
+    db.execute("""
+        UPDATE comentarios_actividad
+        SET texto = ?, fecha_edicion = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (texto_limpio, int(comentario_id)))
+    db.commit()
+
+    return {"status": "success", "message": "Comentario editado con éxito."}
+
+@app.delete("/comentarios/{comentario_id}")
+def eliminar_comentario(comentario_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    row = db.execute("SELECT usuario_id, proyecto_id, codigo_actividad FROM comentarios_actividad WHERE id = ?", (int(comentario_id),)).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Comentario no encontrado.")
+
+    es_autor = (row["usuario_id"] == user["id"])
+    es_admin = (user.get("rol") == "ADMIN_TI")
+    
+    # Verificar si es Gestor del proyecto
+    es_gestor = db.execute("""
+        SELECT 1 FROM proyectos p
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1 OR pu.permiso = 'GESTOR')
+    """, (user["id"], row["proyecto_id"], user["id"])).fetchone()
+
+    if not (es_autor or es_admin or es_gestor):
+        raise HTTPException(status_code=403, detail="No tiene permisos para eliminar este comentario.")
+
+    db.execute("DELETE FROM comentarios_actividad WHERE id = ?", (int(comentario_id),))
+    db.commit()
+
+    return {"status": "success", "message": "Comentario eliminado."}
 
 # Servir frontend estático
 app.mount("/static", StaticFiles(directory="static"), name="static")

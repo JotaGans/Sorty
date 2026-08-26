@@ -120,6 +120,11 @@
       <span>👥</span>
       <span>Asignar Responsables</span>
     </button>
+    <!-- Botón de Comentarios -->
+    <button id="mc-btn-comentarios" onclick="ejecutarAccionContextual('ver_comentarios')" class="w-full text-left px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-800 flex items-center space-x-2 text-indigo-700 font-bold">
+      <span>💬</span>
+      <span id="mc-txt-comentarios">Comentarios</span>
+    </button>
     <div class="border-t border-gray-100 my-1"></div>
     <button id="mc-btn-eliminar" onclick="ejecutarAccionContextual('eliminar')" class="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center space-x-2 font-bold">
       <span>🗑️</span>
@@ -1095,6 +1100,43 @@
     </div>
   </div>
 
+<!-- MODAL: HILO DE COMENTARIOS COLABORATIVO (TIPO WORD 365) -->
+  <div id="modal-comentarios" class="hidden fixed inset-0 bg-black/60 z-[90] flex items-center justify-center p-4">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-gray-300 max-h-[88vh] flex flex-col">
+      <!-- Cabecera -->
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2 min-w-0">
+          <span class="text-xl">💬</span>
+          <div class="truncate">
+            <h3 class="font-bold text-sm tracking-wide" id="com-modal-titulo">Comentarios de la Actividad</h3>
+            <p class="text-[11px] text-teal-300 font-medium truncate" id="com-modal-subtitulo">[1.1] Nombre</p>
+          </div>
+        </div>
+        <button onclick="cerrarModalComentarios()" class="text-white text-2xl font-bold hover:text-gray-200 leading-none">&times;</button>
+      </div>
+
+      <!-- Hilo de Tarjetas -->
+      <div class="p-4 overflow-y-auto space-y-3 flex-1 bg-[#f1f5f9]" id="com-lista-tarjetas"></div>
+
+      <!-- Formulario para Nuevo Comentario / Edición -->
+      <div class="p-3.5 bg-white border-t border-gray-200 flex-shrink-0 space-y-2">
+        <div class="flex items-center justify-between text-[11px] font-bold text-gray-500">
+          <span id="com-label-accion">✍️ Agregar un comentario:</span>
+          <span id="com-contador-chars" class="font-mono text-gray-400">0 / 3000 caracteres</span>
+        </div>
+        <textarea id="com-input-texto" rows="3" oninput="actualizarContadorComentario()" maxlength="3000" placeholder="Escriba un comentario o nota de avance (máx. 500 palabras)..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] focus:ring-1 focus:ring-[#0f2a4a] transition resize-none"></textarea>
+        <div class="flex justify-between items-center pt-1">
+          <button id="com-btn-cancelar-edicion" onclick="cancelarEdicionComentario()" class="hidden px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cancelar Edición</button>
+          <div class="flex-1"></div>
+          <button id="com-btn-publicar" onclick="publicarComentario()" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded-lg transition shadow flex items-center space-x-1.5">
+            <span>🚀</span>
+            <span id="com-txt-btn-publicar">Publicar Comentario</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= SISTEMA DE NOTIFICACIONES Y MODALES UX IMARPE ================= -->
   
   <!-- 1. CONTENEDOR TOAST (Avisos automáticos en esquina inferior derecha) -->
@@ -2035,6 +2077,7 @@
 
       document.getElementById("view-hub").classList.add("hidden");
       await sincronizarDatosProyecto(id, cacheKey);
+      await cargarComentariosProyecto();
     }
 
     function volverAlHub() {
@@ -2369,6 +2412,13 @@
         btnElim.classList.remove("hidden");
       }
 
+      const coms = obtenerComentariosDeActividad(cod);
+      const btnCom = document.getElementById("mc-btn-comentarios");
+      if (btnCom) {
+        btnCom.classList.remove("hidden");
+        document.getElementById("mc-txt-comentarios").innerText = coms.length > 0 ? `Ver Comentarios (${coms.length})` : "Agregar Comentario";
+      }
+      
       posicionarMenuContextual(event);
     }
 
@@ -2426,6 +2476,8 @@
         editarResponsable(cod);
       } else if (accion === 'eliminar' && cod) {
         eliminarActividad(cod);
+      } else if (accion === 'ver_comentarios' && cod) {
+        abrirModalComentarios(cod);
       }
     }
 
@@ -2993,15 +3045,30 @@
     }
 
     function exportarExcelCSV() {
-      let csv = "Codigo;Descripcion;Responsable;Estado;Fecha Inicio;Fecha Fin;Dias;% Avance;Predecesores\n";
+      let csv = "Codigo;Descripcion;Responsable;Estado;Fecha Inicio;Fecha Fin;Dias;% Avance;Predecesores;Nro Comentarios;Historial de Comentarios\n";
+      
       actividadesGlobal.forEach(a => {
-        csv += `"${a.codigo}";"${a.descripcion}";"${a.responsable || ''}";"${a.estado}";"${formatearFechaLatina(a.fecha_inicio)}";"${formatearFechaLatina(a.fecha_fin)}";${a.dias};${a.avance}%;"${a.predecesores || ''}"\n`;
+        const codLimpio = String(a.codigo).replace(/\.+$/, "");
+        const coms = obtenerComentariosDeActividad(codLimpio);
+        const cantComs = coms.length;
+        
+        let historialTexto = "";
+        if (cantComs > 0) {
+          historialTexto = coms.map(c => {
+            const txtLimpio = c.texto.replace(/"/g, '""').replace(/(\r\n|\n|\r)/gm, " ");
+            return `[${c.fecha_creacion} - ${c.autor_nombre} (${c.autor_unidad})]: ${txtLimpio}`;
+          }).join(" | ");
+        }
+
+        csv += `"${a.codigo}";"${a.descripcion.replace(/"/g, '""')}";"${a.responsable || ''}";"${a.estado}";"${formatearFechaLatina(a.fecha_inicio)}";"${formatearFechaLatina(a.fecha_fin)}";${a.dias};${a.avance}%;"${a.predecesores || ''}";${cantComs};"${historialTexto}"\n`;
       });
+
       const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = `IMARPE_Proyecto_${proyectoActualId}_${new Date().toISOString().split("T")[0]}.csv`;
       link.click();
+      notificarToast("Archivo Excel descargado con bitácora de comentarios.", "success");
     }
 
     function abrirModalColumnas() {
@@ -3821,13 +3888,30 @@
 
         const tdGantt = visibilidadColumnas.gantt ? `<td class="p-1 border-r border-b border-gray-200">${ganttHTML}</td>` : '';
 
+        const comsAct = obtenerComentariosDeActividad(cod);
+        const cantComs = comsAct.length;
+        const iconoComentarioHTML = cantComs > 0
+          ? `<button onclick="event.stopPropagation(); abrirModalComentarios('${cod}')" class="inline-flex items-center space-x-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full border border-indigo-200 text-[10px] font-extrabold ml-1.5 shadow-xs transition" title="Ver ${cantComs} comentario(s)">
+               <span>💬</span><span>${cantComs}</span>
+             </button>`
+          : `<button onclick="event.stopPropagation(); abrirModalComentarios('${cod}')" class="opacity-0 group-hover:opacity-100 hover:opacity-100 text-gray-400 hover:text-indigo-600 px-1 text-xs ml-1 transition" title="Agregar comentario">
+               💬
+             </button>`;
+
+        const tdDescHTML = `
+          <td class="p-2.5 border-r border-b border-gray-200 ${proyectoEsGestor ? 'cell-editable cursor-pointer' : ''} group" style="padding-left: ${paddingLeft}px;" ondblclick="${proyectoEsGestor ? `editarDescripcion('${cod}')` : ''}" title="${proyectoEsGestor ? 'Doble clic para renombrar actividad' : ''}">
+            <div class="flex items-center justify-between">
+              <span class="truncate">${act.descripcion}</span>
+              ${iconoComentarioHTML}
+            </div>
+          </td>
+        `;
+
         tr.innerHTML = `
           <td class="p-2.5 font-mono font-bold text-xs border-r border-b border-gray-200 whitespace-nowrap">
             ${iconoColapso}${cod}
           </td>
-          <td class="p-2.5 border-r border-b border-gray-200 ${proyectoEsGestor ? 'cell-editable cursor-pointer' : ''}" style="padding-left: ${paddingLeft}px;" ondblclick="${proyectoEsGestor ? `editarDescripcion('${cod}')` : ''}" title="${proyectoEsGestor ? 'Doble clic para renombrar actividad' : ''}">
-            ${act.descripcion}
-          </td>
+          ${tdDescHTML}
           ${tdResp}
           ${tdEst}
           ${tdIni}
@@ -5128,6 +5212,214 @@
     function cerrarAsignarResponsables() {
       document.getElementById("modal-asignar-responsables").classList.add("hidden");
       actividadMultiRespActual = null;
+    }
+    // =========================================================================
+    // MOTOR DE COMENTARIOS CONTEXTUALES TIPO WORD 365
+    // =========================================================================
+    let comentariosGlobal = [];
+    let actividadComentarioActual = null;
+    let comentarioEnEdicionId = null;
+
+    async function cargarComentariosProyecto() {
+      if (!proyectoActualId) return;
+      try {
+        const res = await fetch(`/proyectos/${proyectoActualId}/comentarios`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          comentariosGlobal = await res.json();
+          renderizarTabla();
+        }
+      } catch (e) {
+        console.error("Error al cargar comentarios:", e);
+      }
+    }
+
+    function abrirModalComentarios(cod) {
+      const codLimpio = String(cod).replace(/\.+$/, "");
+      actividadComentarioActual = actividadesGlobal.find(a => String(a.codigo).replace(/\.+$/, "") === codLimpio);
+      if (!actividadComentarioActual) return;
+
+      cancelarEdicionComentario();
+
+      document.getElementById("com-modal-titulo").innerText = `Comentarios (${obtenerComentariosDeActividad(codLimpio).length})`;
+      document.getElementById("com-modal-subtitulo").innerText = `[${actividadComentarioActual.codigo}] ${actividadComentarioActual.descripcion}`;
+
+      renderizarTarjetasComentarios();
+      document.getElementById("modal-comentarios").classList.remove("hidden");
+      setTimeout(() => document.getElementById("com-input-texto").focus(), 100);
+    }
+
+    function cerrarModalComentarios() {
+      document.getElementById("modal-comentarios").classList.add("hidden");
+      actividadComentarioActual = null;
+      cancelarEdicionComentario();
+    }
+
+    function obtenerComentariosDeActividad(codigo) {
+      const codLimpio = String(codigo).replace(/\.+$/, "");
+      return comentariosGlobal.filter(c => String(c.codigo_actividad).replace(/\.+$/, "") === codLimpio);
+    }
+
+    function renderizarTarjetasComentarios() {
+      const contenedor = document.getElementById("com-lista-tarjetas");
+      if (!contenedor || !actividadComentarioActual) return;
+      contenedor.innerHTML = "";
+
+      const lista = obtenerComentariosDeActividad(actividadComentarioActual.codigo);
+
+      if (lista.length === 0) {
+        contenedor.innerHTML = `
+          <div class="p-8 text-center text-gray-400 space-y-2">
+            <span class="text-3xl block">💬</span>
+            <p class="text-xs font-semibold">No hay comentarios en esta actividad.</p>
+            <p class="text-[11px] text-gray-400">Sea el primero en dejar una nota técnica o de seguimiento.</p>
+          </div>
+        `;
+        return;
+      }
+
+      lista.forEach(c => {
+        const esMio = (c.usuario_id === currentUser.id);
+        const puedeEliminar = esMio || proyectoEsGestor || (currentUser.rol === "ADMIN_TI");
+        const puedeEditar = esMio;
+
+        const partes = (c.autor_nombre || "U").split(" ");
+        const iniciales = (partes[0][0] + (partes[1] ? partes[1][0] : "")).toUpperCase();
+
+        let hash = 0;
+        for (let i = 0; i < c.autor_nombre.length; i++) hash = c.autor_nombre.charCodeAt(i) + ((hash << 5) - hash);
+        const colorBg = coloresAvatar[Math.abs(hash) % coloresAvatar.length];
+
+        const editadoTag = c.fecha_edicion ? `<span class="text-[10px] text-gray-400 italic ml-1.5" title="Editado: ${c.fecha_edicion}">(editado)</span>` : '';
+
+        const tarjeta = document.createElement("div");
+        tarjeta.className = "bg-white p-3.5 rounded-xl border border-gray-200/90 shadow-xs space-y-2";
+        tarjeta.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="avatar-circle font-black" style="background-color: ${colorBg}; width: 22px; height: 22px; font-size: 8px;">${iniciales}</div>
+              <div>
+                <span class="text-xs font-bold text-[#0f2a4a]">${c.autor_nombre}</span>
+                <span class="text-[10px] font-semibold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200 ml-1">${c.autor_unidad}</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1.5 text-gray-400">
+              <span class="text-[10px] font-medium text-gray-400">${c.fecha_creacion}</span>
+              ${editadoTag}
+              ${puedeEditar ? `<button onclick="iniciarEdicionComentario(${c.id}, '${c.texto.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" class="text-blue-600 hover:text-blue-800 p-1 text-xs font-bold ml-1 cursor-pointer" title="Editar comentario">✏️</button>` : ''}
+              ${puedeEliminar ? `<button onclick="eliminarComentario(${c.id})" class="text-rose-500 hover:text-rose-700 p-1 text-xs font-bold cursor-pointer" title="Eliminar comentario">🗑️</button>` : ''}
+            </div>
+          </div>
+          <p class="text-xs text-gray-700 leading-relaxed whitespace-pre-line pl-7">${c.texto}</p>
+        `;
+        contenedor.appendChild(tarjeta);
+      });
+
+      contenedor.scrollTop = contenedor.scrollHeight;
+    }
+
+    function actualizarContadorComentario() {
+      const txt = document.getElementById("com-input-texto").value;
+      document.getElementById("com-contador-chars").innerText = `${txt.length} / 3000 caracteres`;
+    }
+
+    function iniciarEdicionComentario(id, texto) {
+      comentarioEnEdicionId = id;
+      document.getElementById("com-input-texto").value = texto;
+      document.getElementById("com-label-accion").innerText = "✏️ Editando comentario:";
+      document.getElementById("com-txt-btn-publicar").innerText = "Guardar Cambios";
+      document.getElementById("com-btn-cancelar-edicion").classList.remove("hidden");
+      actualizarContadorComentario();
+      document.getElementById("com-input-texto").focus();
+    }
+
+    function cancelarEdicionComentario() {
+      comentarioEnEdicionId = null;
+      const inp = document.getElementById("com-input-texto");
+      if (inp) inp.value = "";
+      const lbl = document.getElementById("com-label-accion");
+      if (lbl) lbl.innerText = "✍️ Agregar un comentario:";
+      const btnTxt = document.getElementById("com-txt-btn-publicar");
+      if (btnTxt) btnTxt.innerText = "Publicar Comentario";
+      const btnCanc = document.getElementById("com-btn-cancelar-edicion");
+      if (btnCanc) btnCanc.classList.add("hidden");
+      actualizarContadorComentario();
+    }
+
+    async function publicarComentario() {
+      const texto = document.getElementById("com-input-texto").value.trim();
+      if (!texto) {
+        alert("Por favor escriba un texto antes de publicar.");
+        return;
+      }
+
+      if (comentarioEnEdicionId) {
+        try {
+          const res = await fetch(`/comentarios/${comentarioEnEdicionId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            body: JSON.stringify({ texto: texto })
+          });
+          if (res.ok) {
+            notificarToast("Comentario editado con éxito.", "success");
+            await cargarComentariosProyecto();
+            renderizarTarjetasComentarios();
+            cancelarEdicionComentario();
+          } else {
+            const err = await res.json();
+            alert(err.detail || "Error al editar comentario.");
+          }
+        } catch (e) {
+          alert("Error de conexión.");
+        }
+      } else {
+        try {
+          const res = await fetch(`/comentarios`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            body: JSON.stringify({
+              proyecto_id: proyectoActualId,
+              codigo_actividad: actividadComentarioActual.codigo,
+              texto: texto
+            })
+          });
+          if (res.ok) {
+            notificarToast("Comentario publicado.", "success");
+            await cargarComentariosProyecto();
+            renderizarTarjetasComentarios();
+            document.getElementById("com-input-texto").value = "";
+            actualizarContadorComentario();
+          } else {
+            const err = await res.json();
+            alert(err.detail || "Error al publicar.");
+          }
+        } catch (e) {
+          alert("Error de conexión.");
+        }
+      }
+    }
+
+    async function eliminarComentario(id) {
+      const seguro = await confirmModal("¿Está seguro de eliminar este comentario?", "Eliminar Comentario", "danger");
+      if (!seguro) return;
+
+      try {
+        const res = await fetch(`/comentarios/${id}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          notificarToast("Comentario eliminado.", "info");
+          await cargarComentariosProyecto();
+          renderizarTarjetasComentarios();
+        } else {
+          const err = await res.json();
+          alert(err.detail || "No se pudo eliminar.");
+        }
+      } catch (e) {
+        alert("Error de conexión.");
+      }
     }
   </script>
 </body>
