@@ -307,83 +307,81 @@
 
       </div>
 
-      <!-- Barra de Filtros y Herramientas -->
-      <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-2.5 rounded-lg shadow-sm border border-gray-200">
-        <div class="flex flex-wrap items-center gap-2">
-          <button id="btn-nueva-act-gantt" onclick="botonSuperiorNuevaActividad()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs md:text-sm font-bold px-3.5 py-1.5 rounded transition shadow flex items-center space-x-1.5">
-            <span class="text-base leading-none">+</span>
+      <!-- Barra de Filtros y Herramientas Unificada y Estable -->
+      <div class="flex flex-nowrap items-center justify-between gap-1.5 bg-white p-2 rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+        <!-- Grupo Izquierda: Acciones y Filtros Principales -->
+        <div class="flex flex-nowrap items-center gap-1.5 flex-shrink-0">
+          <button id="btn-nueva-act-gantt" onclick="botonSuperiorNuevaActividad()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 whitespace-nowrap">
+            <span class="text-sm leading-none">+</span>
             <span>Actividad</span>
           </button>
           
-          <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="bg-[#2c3e50] hover:bg-[#34495e] text-white text-xs md:text-sm font-bold px-3 py-1.5 rounded outline-none cursor-pointer">
-            <option value="4">👁️ Ver Todo (Nivel 4)</option>
-            <option value="1">Nivel 1: Actividades</option>
-            <option value="2">Nivel 2: Tareas</option>
-            <option value="3">Nivel 3: Subtareas</option>
+          <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="bg-[#2c3e50] hover:bg-[#34495e] text-white text-xs font-bold px-2 py-1.5 rounded outline-none cursor-pointer">
+            <option value="4">👁️ Todo (N4)</option>
+            <option value="1">Nivel 1</option>
+            <option value="2">Nivel 2</option>
+            <option value="3">Nivel 3</option>
           </select>
 
-          <div class="relative">
-            <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar actividad..." class="w-32 md:w-44 text-xs bg-gray-100 border border-gray-300 rounded px-2.5 py-1.5 outline-none focus:border-[#0f2a4a] font-semibold">
-          </div>
+          <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-24 md:w-32 text-xs bg-gray-100 border border-gray-300 rounded px-2 py-1.5 outline-none focus:border-[#0f2a4a] font-semibold">
 
-          <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="text-xs bg-gray-100 border border-gray-300 rounded py-1.5 pl-2.5 outline-none font-semibold text-gray-700 select-clean-arrow max-w-[150px] md:max-w-[170px]">
-            <option value="">👤 Todo el Personal</option>
+          <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="text-xs bg-gray-100 border border-gray-300 rounded py-1.5 pl-2 outline-none font-semibold text-gray-700 select-clean-arrow max-w-[130px]">
+            <option value="">👤 Personal</option>
           </select>
 
-          <!-- Selector de Periodicidad Ordenado (Meses / Semanas / Días) -->
+          <!-- Escala Zoom -->
           <div class="flex items-center bg-gray-200 rounded-lg p-0.5 text-xs font-bold shadow-xs">
-            <button id="btn-zoom-meses" onclick="fijarModoZoomDirecto('meses')" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition">Meses</button>
-            <button id="btn-zoom-semanas" onclick="fijarModoZoomDirecto('semanas')" class="px-2.5 py-1 rounded-md bg-white shadow text-[#0f2a4a] font-bold">Semanas</button>
-            <button id="btn-zoom-dias" onclick="fijarModoZoomDirecto('dias')" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition">Días</button>
+            <button id="btn-zoom-meses" onclick="fijarModoZoomDirecto('meses')" class="px-2 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition">Meses</button>
+            <button id="btn-zoom-semanas" onclick="fijarModoZoomDirecto('semanas')" class="px-2 py-1 rounded-md bg-white shadow text-[#0f2a4a] font-bold">Semanas</button>
+            <button id="btn-zoom-dias" onclick="fijarModoZoomDirecto('dias')" class="px-2 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition">Días</button>
           </div>
 
-          <!-- Contenedor de Navegación Estable UX -->
-          <div id="contenedor-spinbutton" class="flex items-center bg-[#0f2a4a] text-white rounded-lg p-1 space-x-1.5 shadow-sm transition-all duration-200">
-            <!-- Input con transición suave de ancho para eliminar el parpadeo de layout -->
-            <div id="box-input-semana" class="flex items-center space-x-1.5 overflow-hidden transition-all duration-200">
-              <span class="text-[10px] md:text-[11px] font-bold uppercase tracking-tight pl-1">Semana</span>
+          <!-- Navegación Temporal -->
+          <div id="contenedor-spinbutton" class="flex items-center bg-[#0f2a4a] text-white rounded-lg p-0.5 space-x-1 shadow-sm transition-all duration-200">
+            <div id="box-input-semana" class="flex items-center space-x-1 overflow-hidden transition-all duration-200">
+              <span class="text-[10px] font-bold uppercase tracking-tight pl-1">Sem</span>
               <div class="flex items-center bg-white rounded border border-gray-300 overflow-hidden">
                 <div class="flex flex-col border-r border-gray-300">
-                  <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[8px] px-1 py-0.5 text-gray-800 font-black leading-none border-b border-gray-300">▲</button>
-                  <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[8px] px-1 py-0.5 text-gray-800 font-black leading-none">▼</button>
+                  <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[7px] px-1 py-0.5 text-gray-800 font-black leading-none border-b border-gray-300">▲</button>
+                  <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[7px] px-1 py-0.5 text-gray-800 font-black leading-none">▼</button>
                 </div>
-                <input type="number" id="input-semana-inicio" min="1" max="150" value="1" onchange="fijarSemanaInicio(this.value)" class="w-8 md:w-9 text-center text-xs font-extrabold text-[#0f2a4a] outline-none">
+                <input type="number" id="input-semana-inicio" min="1" max="150" value="1" onchange="fijarSemanaInicio(this.value)" class="w-7 text-center text-xs font-extrabold text-[#0f2a4a] outline-none">
               </div>
             </div>
-
-            <button onclick="irAInicioProyecto()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2.5 py-1 rounded transition shadow-xs whitespace-nowrap" title="Ir a la fecha de inicio del proyecto">
-              Inicio
-            </button>
-            <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2.5 py-1 rounded transition shadow-xs whitespace-nowrap" title="Ir a hoy">
-              Hoy
-            </button>
+            <button onclick="irAInicioProyecto()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 py-1 rounded transition shadow-xs whitespace-nowrap" title="Ir a inicio">Inicio</button>
+            <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2 py-1 rounded transition shadow-xs whitespace-nowrap" title="Ir a hoy">Hoy</button>
           </div>
 
-          <button onclick="abrirModalColumnas()" class="bg-[#34495e] hover:bg-[#2c3e50] text-white text-xs md:text-sm font-bold px-2.5 md:px-3 py-1.5 rounded transition shadow flex items-center space-x-1">
-            <span>👁️ Columnas</span>
+          <button onclick="abrirModalColumnas()" class="bg-[#34495e] hover:bg-[#2c3e50] text-white text-xs font-bold px-2 py-1.5 rounded transition shadow flex items-center space-x-1 whitespace-nowrap">
+            <span>👁️</span>
+            <span>Columnas</span>
           </button>
         </div>
 
-        <div class="flex flex-wrap items-center gap-1.5 md:gap-2">
-          <button onclick="exportarExcelCSV()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs md:text-sm font-bold px-2.5 md:px-3 py-1.5 rounded transition shadow flex items-center space-x-1">
-            <span>📊 Excel</span>
-          </button>
-          <!-- Conmutador Visual de Ruta Crítica -->
-          <button id="btn-toggle-cpm" onclick="alternarCapaRutaCritica()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs md:text-sm font-bold px-2.5 md:px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5" title="Activar/Desactivar capa visual de Ruta Crítica en el Gantt">
-            <span>🔥</span>
-            <span id="txt-toggle-cpm">Ruta Crítica</span>
-            <span id="badge-duracion-cpm" class="hidden bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full ml-1">0d</span>
+        <!-- Grupo Derecha: Herramientas del Proyecto -->
+        <div class="flex flex-nowrap items-center gap-1.5 flex-shrink-0">
+          <button onclick="exportarExcelCSV()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs font-bold px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 whitespace-nowrap">
+            <span>📊</span>
+            <span>Excel</span>
           </button>
 
-          <!-- Configurador de Dependencias -->
-          <button id="btn-config-dependencias" onclick="abrirModalDependencias()" class="bg-[#34495e] hover:bg-[#2c3e50] text-white text-xs md:text-sm font-bold px-2.5 md:px-3 py-1.5 rounded transition shadow flex items-center space-x-1" title="Configurar predecesoras y relaciones de dependencia">
+          <!-- Botón Toggle CPM Compacto -->
+          <button id="btn-toggle-cpm" onclick="alternarCapaRutaCritica()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 border border-gray-300 whitespace-nowrap" title="Activar o desactivar resaltado de Ruta Crítica">
+            <span>🔥</span>
+            <span>Ruta Crítica</span>
+            <span id="badge-duracion-cpm" class="hidden bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-md">0d</span>
+          </button>
+
+          <button id="btn-config-dependencias" onclick="abrirModalDependencias()" class="bg-[#34495e] hover:bg-[#2c3e50] text-white text-xs font-bold px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 whitespace-nowrap" title="Configurar precedencias entre tareas">
             <span>🔗</span>
             <span>Dependencias</span>
           </button>
-          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="bg-[#718093] hover:bg-[#576574] text-white text-xs md:text-sm font-bold px-2 md:px-2.5 py-1.5 rounded transition">
+
+          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="bg-[#718093] hover:bg-[#576574] text-white text-xs font-bold px-2 py-1.5 rounded transition whitespace-nowrap">
             📜 Historial
           </button>
-          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="bg-[#2980b9] hover:bg-[#1f618d] text-white text-xs md:text-sm font-bold px-2 md:px-2.5 py-1.5 rounded transition">
+
+          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="bg-[#2980b9] hover:bg-[#1f618d] text-white text-xs font-bold px-2 py-1.5 rounded transition whitespace-nowrap">
             ⚙️ Personal
           </button>
         </div>
@@ -1081,10 +1079,10 @@
 
       <!-- Botones de Acción -->
       <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex justify-end items-center space-x-2.5">
-        <button id="dialog-btn-cancelar" onclick="cerrarDialogoImarpe(false)" class="hidden px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">
+        <button type="button" id="dialog-btn-cancelar" onclick="cerrarDialogoImarpe(false)" class="hidden px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition cursor-pointer">
           Cancelar
         </button>
-        <button id="dialog-btn-aceptar" onclick="cerrarDialogoImarpe(true)" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded-lg transition shadow">
+        <button type="button" id="dialog-btn-aceptar" onclick="cerrarDialogoImarpe(true)" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow cursor-pointer">
           Aceptar
         </button>
       </div>
@@ -4151,28 +4149,27 @@
 
     function actualizarBotonCpmUI(activo, duracionDias = 0) {
       const btn = document.getElementById("btn-toggle-cpm");
-      const txt = document.getElementById("txt-toggle-cpm");
       const badge = document.getElementById("badge-duracion-cpm");
       if (!btn) return;
 
       if (activo) {
-        btn.className = "bg-red-600 hover:bg-red-700 text-white text-xs md:text-sm font-black px-2.5 md:px-3 py-1.5 rounded transition shadow-md flex items-center space-x-1.5 border border-red-500 animate-pulse";
-        txt.innerText = "Ruta Crítica: ACTIVA";
+        btn.className = "bg-red-600 hover:bg-red-700 text-white text-xs font-black px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 border border-red-700 whitespace-nowrap";
         if (badge) {
           badge.innerText = `${duracionDias}d`;
+          badge.className = "bg-white text-red-700 text-[10px] font-black px-1.5 py-0.2 rounded-md shadow-xs";
           badge.classList.remove("hidden");
         }
       } else {
-        btn.className = "bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs md:text-sm font-bold px-2.5 md:px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5";
-        txt.innerText = "Ruta Crítica";
+        btn.className = "bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 border border-gray-300 whitespace-nowrap";
         if (badge) badge.classList.add("hidden");
       }
     }
 
     // --- MODAL DE GESTIÓN DE DEPENDENCIAS ---
     function abrirModalDependencias() {
-      if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
-        alert("Solo el Gestor del Proyecto puede modificar las dependencias.");
+      const esAdminOGestor = proyectoEsGestor || (currentUser && currentUser.rol === "ADMIN_TI");
+      if (!esAdminOGestor) {
+        alert("Solo el Gestor del Proyecto o Administrador TI puede modificar las dependencias.");
         return;
       }
 
@@ -4195,9 +4192,9 @@
             const pCod = String(p.codigo).replace(/\.+$/, "");
             const estaMarcado = predsActuales.includes(pCod);
             opcionesHTML += `
-              <label class="inline-flex items-center space-x-1.5 bg-gray-50 hover:bg-teal-50 px-2 py-1 rounded border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700 mr-1.5 mb-1.5">
-                <input type="checkbox" data-act-cod="${codLimpio}" value="${pCod}" ${estaMarcado ? 'checked' : ''} class="chk-dep-item rounded text-[#0f2a4a] focus:ring-0">
-                <span>[${pCod}] ${p.descripcion.substring(0, 20)}...</span>
+              <label class="inline-flex items-center space-x-1 bg-gray-50 hover:bg-teal-50 px-2 py-0.5 rounded border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700 mr-1.5 mb-1">
+                <input type="checkbox" data-act-cod="${codLimpio}" value="${pCod}" ${estaMarcado ? 'checked' : ''} class="chk-dep-item rounded text-[#0f2a4a] focus:ring-0 cursor-pointer">
+                <span>[${pCod}] ${p.descripcion.substring(0, 18)}...</span>
               </label>
             `;
           });
