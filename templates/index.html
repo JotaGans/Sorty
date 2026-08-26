@@ -333,18 +333,23 @@
           </div>
 
           <div id="contenedor-spinbutton" class="flex items-center bg-[#0f2a4a] text-white rounded-lg px-2 py-1 space-x-1.5 shadow-sm">
-            <span class="text-[10px] md:text-[11px] font-bold uppercase tracking-tight">Semana</span>
-            <div class="flex items-center bg-white rounded border border-gray-300 overflow-hidden">
-              <div class="flex flex-col border-r border-gray-300">
-                <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[8px] px-1 py-0.5 text-gray-800 font-black leading-none border-b border-gray-300">▲</button>
-                <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[8px] px-1 py-0.5 text-gray-800 font-black leading-none">▼</button>
+            <!-- Selector numérico de Semana (se oculta en vista Meses) -->
+            <div id="box-input-semana" class="flex items-center space-x-1.5">
+              <span class="text-[10px] md:text-[11px] font-bold uppercase tracking-tight">Semana</span>
+              <div class="flex items-center bg-white rounded border border-gray-300 overflow-hidden">
+                <div class="flex flex-col border-r border-gray-300">
+                  <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[8px] px-1 py-0.5 text-gray-800 font-black leading-none border-b border-gray-300">▲</button>
+                  <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[8px] px-1 py-0.5 text-gray-800 font-black leading-none">▼</button>
+                </div>
+                <input type="number" id="input-semana-inicio" min="1" max="52" value="1" onchange="fijarSemanaInicio(this.value)" class="w-8 md:w-9 text-center text-xs font-extrabold text-[#0f2a4a] outline-none">
               </div>
-              <input type="number" id="input-semana-inicio" min="1" max="52" value="1" onchange="fijarSemanaInicio(this.value)" class="w-8 md:w-9 text-center text-xs font-extrabold text-[#0f2a4a] outline-none">
             </div>
-            <button onclick="irAInicioProyecto()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 py-0.5 rounded transition" title="Ir a la fecha de inicio del proyecto">
+
+            <!-- Botones permanentes en todos los modos -->
+            <button onclick="irAInicioProyecto()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2.5 py-1 rounded transition shadow-xs" title="Ir a la fecha de inicio del proyecto">
               Inicio
             </button>
-            <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2 py-0.5 rounded transition" title="Ir a hoy">
+            <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2.5 py-1 rounded transition shadow-xs" title="Ir a hoy">
               Hoy
             </button>
           </div>
@@ -2869,10 +2874,11 @@
         }
       });
 
-      // Mantener SIEMPRE visible el contenedor de navegación
-      const spinBox = document.getElementById("contenedor-spinbutton");
-      if (spinBox) {
-        spinBox.classList.remove("hidden");
+      // En vista Meses ocultamos solo el selector numérico de Semana, pero mantenemos Inicio y Hoy
+      const boxSemana = document.getElementById("box-input-semana");
+      if (boxSemana) {
+        if (modoZoom === "meses") boxSemana.classList.add("hidden");
+        else boxSemana.classList.remove("hidden");
       }
     }
 
@@ -3273,27 +3279,32 @@
                   colorBorde = "border-yellow-500";
                 }
 
+                // Sub-barra de progreso parcial y etiqueta clara
                 let subAvanceHTML = "";
-                if (!esBarraDelgada) {
-                  if (act.estado === "En proceso" && act.avance > 0) {
-                    subAvanceHTML = `
-                      <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l-md flex items-center justify-center text-[9px] font-extrabold text-white shadow-inner" style="width: ${act.avance}%;">
-                        ${act.avance >= 25 ? act.avance + '%' : ''}
-                      </div>
-                    `;
-                  } else if (act.estado === "Ejecutado") {
-                    subAvanceHTML = `<div class="w-full h-full flex items-center justify-center text-[9px] font-extrabold text-white">100%</div>`;
+                let etiquetaInternaHTML = "";
+
+                if (act.estado === "En proceso" && act.avance > 0) {
+                  subAvanceHTML = `<div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l-md transition-all duration-300 shadow-xs" style="width: ${act.avance}%;"></div>`;
+                  if (!esBarraDelgada && widthPct >= 6.5) {
+                    etiquetaInternaHTML = `<div class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-gray-900 drop-shadow-xs z-10 select-none">${act.avance}%</div>`;
+                  }
+                } else if (act.estado === "Ejecutado") {
+                  if (!esBarraDelgada && widthPct >= 5.0) {
+                    etiquetaInternaHTML = `<div class="w-full h-full flex items-center justify-center text-[9px] font-black text-white select-none">100%</div>`;
                   }
                 }
 
+                const debeMostrarFlotante = esBarraDelgada || (act.estado === "En proceso" && widthPct < 6.5) || (act.estado === "Ejecutado" && widthPct < 5.0) || act.estado === "Pendiente";
+
                 barraOElementoHTML = `
                   <div class="absolute bg-slate-300/70 rounded h-[2px] bottom-0.5" style="left: ${leftPct}%; width: ${widthPct}%;"></div>
-                  <div class="absolute top-1 bottom-1 z-10 rounded-md border ${colorBorde} shadow-sm transition-all duration-200 overflow-hidden" 
+                  <div class="absolute top-1 bottom-1 z-10 rounded-md border ${colorBorde} shadow-sm transition-all duration-200 overflow-hidden relative" 
                        style="left: ${leftPct}%; width: ${widthPct}%; background-color: ${colorFondoRestante};">
                     ${subAvanceHTML}
+                    ${etiquetaInternaHTML}
                   </div>
                   <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct + widthPct}% + 4px);">
-                    ${esBarraDelgada ? `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">${act.avance}%</span>` : ''}
+                    ${debeMostrarFlotante ? `<span class="text-[9px] font-black text-gray-800 bg-white/95 px-1 py-0.2 rounded border border-gray-300 shadow-xs mr-1">${act.avance}%</span>` : ''}
                     ${miniAvataresHTML}
                   </div>
                 `;
