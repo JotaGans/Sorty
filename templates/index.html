@@ -1477,6 +1477,47 @@
           }
         }, { passive: false });
       }
+      // =========================================================================
+      // MOTOR DE ZOOM FLUIDO CON RUEDA DEL RATÓN (THROTTLED & CALIBRADO)
+      // =========================================================================
+      let ultimoTiempoZoom = 0;
+      const INTERVALO_ZOOM_MS = 250; // Evita saltos bruscos entre niveles
+
+      function ejecutarZoomRueda(e) {
+        const ahora = Date.now();
+        if (ahora - ultimoTiempoZoom < INTERVALO_ZOOM_MS) return;
+
+        if (e.deltaY < 0) {
+          // Scroll hacia ARRIBA -> Acercar zoom (Meses -> Semanas -> Días)
+          ultimoTiempoZoom = ahora;
+          ajustarNivelZoomPaso(1);
+        } else if (e.deltaY > 0) {
+          // Scroll hacia ABAJO -> Alejar zoom (Días -> Semanas -> Meses)
+          ultimoTiempoZoom = ahora;
+          ajustarNivelZoomPaso(-1);
+        }
+      }
+
+      // 1. Zoom directo al girar la rueda sobre el encabezado del Gantt
+      const thGantt = document.getElementById("th-gantt");
+      if (thGantt) {
+        thGantt.addEventListener("wheel", (e) => {
+          e.preventDefault();
+          ejecutarZoomRueda(e);
+        }, { passive: false });
+      }
+
+      // 2. Zoom con Ctrl + Rueda sobre toda la tabla del cronograma
+      const tablaGantt = document.getElementById("tabla-gantt-main");
+      if (tablaGantt) {
+        tablaGantt.addEventListener("wheel", (e) => {
+          // Si presiona Ctrl o está sobre las celdas del cronograma
+          if (e.ctrlKey || e.shiftKey || e.target.closest("#th-gantt")) {
+            e.preventDefault();
+            ejecutarZoomRueda(e);
+          }
+        }, { passive: false });
+      }
     });
 
     // --- AUTENTICACIÓN ---
