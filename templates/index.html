@@ -2863,16 +2863,16 @@
         const btn = document.getElementById(`btn-zoom-${m}`);
         if (!btn) return;
         if (m === modoZoom) {
-          btn.className = "px-2 py-1 rounded-md bg-white shadow text-[#0f2a4a] font-bold";
+          btn.className = "px-2.5 py-1 rounded-md bg-white shadow text-[#0f2a4a] font-bold";
         } else {
-          btn.className = "px-2 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition";
+          btn.className = "px-2.5 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition";
         }
       });
 
+      // Mantener SIEMPRE visible el contenedor de navegación
       const spinBox = document.getElementById("contenedor-spinbutton");
       if (spinBox) {
-        if (modoZoom === "meses") spinBox.classList.add("hidden");
-        else spinBox.classList.remove("hidden");
+        spinBox.classList.remove("hidden");
       }
     }
 
@@ -3027,12 +3027,15 @@
       divMeses.innerHTML = "";
       divSemanas.innerHTML = "";
 
-      // MODO 1: MESES (12 Meses Consolidado - Ancho 100%)
+      // MODO 1: MESES (12 Meses Consolidado con Resaltado del Mes Actual)
       if (modoZoom === "meses") {
-        nombresMeses.forEach(m => {
-          divMeses.innerHTML += `<div class="flex-1 text-center font-bold border-r border-blue-800/80 text-[10px] overflow-hidden">${m}</div>`;
+        const mesActualNum = new Date().getMonth();
+        nombresMeses.forEach((m, idx) => {
+          const esMesActual = (idx === mesActualNum);
+          const claseHeaderMes = esMesActual ? "bg-teal-600 text-white font-black rounded-xs shadow-xs" : "text-gray-200";
+          divMeses.innerHTML += `<div class="flex-1 text-center font-bold border-r border-blue-800/80 text-[10px] overflow-hidden py-0.5 ${claseHeaderMes}">${m}</div>`;
         });
-        divSemanas.innerHTML = `<div class="w-full text-center text-teal-300 text-[10px] py-0.5">Vista Anual Consolidada (12 Meses)</div>`;
+        divSemanas.innerHTML = `<div class="w-full text-center text-teal-300 text-[10px] py-0.5 font-semibold">Vista Consolidada Anual</div>`;
         return;
       }
 
@@ -3135,7 +3138,11 @@
         tInicioVisible = new Date(anioActual, 0, 1).getTime();
         tFinVisible = new Date(anioActual, 11, 31, 23, 59, 59).getTime();
         duracionVisibleMs = tFinVisible - tInicioVisible;
-        divisionesHTML = Array(12).fill('<div class="flex-1 border-r border-slate-200/50"></div>').join("");
+        const mesActualIdx = new Date().getMonth();
+        divisionesHTML = Array.from({ length: 12 }, (_, i) => {
+          const claseMesHoy = (i === mesActualIdx) ? "col-semana-actual" : "";
+          return `<div class="flex-1 border-r border-slate-200/50 ${claseMesHoy}"></div>`;
+        }).join("");
       } else if (modoZoom === "dias") {
         const ventanaDias = 28;
         const offset = Math.max(0, Math.min(diasTotalesAnio.length - ventanaDias, semanaInicioIndex * 7));
