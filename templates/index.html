@@ -94,6 +94,11 @@
       -moz-appearance: none;
       appearance: none;
     }
+    /* Evita el parpadeo de sombreado durante zoom y arrastre */
+    .is-zooming, .is-zooming tr, .is-zooming td {
+      pointer-events: none !important;
+      transition: none !important;
+    }
   </style>
 </head>
 <body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none" onclick="cerrarMenuContextual()">
@@ -1475,7 +1480,9 @@
       let ultimoTiempoZoom = 0;
       const INTERVALO_ZOOM_MS = 180;
 
-      // 1. Zoom dinámico continuo con Rueda del Ratón
+      // 1. Zoom dinámico continuo con Rueda del Ratón (Sin parpadeo de hover)
+      let timerDesactivarZoom = null;
+
       window.addEventListener("wheel", (e) => {
         const dashboard = document.getElementById("view-dashboard");
         if (!dashboard || dashboard.classList.contains("hidden")) return;
@@ -1486,6 +1493,14 @@
 
         if (sobreGantt) {
           e.preventDefault();
+
+          // Congelar hover durante el scroll de zoom
+          document.body.classList.add("is-zooming");
+          clearTimeout(timerDesactivarZoom);
+          timerDesactivarZoom = setTimeout(() => {
+            document.body.classList.remove("is-zooming");
+          }, 180);
+
           const ahora = Date.now();
           if (ahora - ultimoTiempoZoom < INTERVALO_ZOOM_MS) return;
 
@@ -3271,7 +3286,7 @@
 
         const tr = document.createElement("tr");
         tr.id = `fila-act-${act.codigo.replace(/\./g, '_')}`;
-        tr.className = `${esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50")} ${estaSeleccionada ? 'row-selected' : ''} transition-colors`;
+        tr.className = `${esNivel1 ? "tree-row-l1" : (nivel === 4 ? "tree-row-l4 hover:bg-gray-50" : "hover:bg-gray-50")} ${estaSeleccionada ? 'row-selected' : ''}`;
         
         tr.onclick = () => seleccionarFila(act.codigo);
         tr.oncontextmenu = (e) => abrirMenuContextual(e, act.codigo);
