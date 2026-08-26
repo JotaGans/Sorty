@@ -1475,52 +1475,52 @@
       }
 
       // =========================================================================
-      // MOTOR DE ZOOM DE ALTO RENDIMIENTO (60 FPS / REQUESTANIMATIONFRAME)
+      // MOTOR DE ZOOM CONTINUO DE ALTA SENSIBILIDAD (INSTANT GANTT STREAMING)
       // =========================================================================
+      let zoomActivoStream = false;
+      let timerFinZoom = null;
       let acumuladorZoom = 0;
-      let rafId = null;
-      let timerFreezeHover = null;
-      const SENSIBILIDAD_PULSO = 45; // Umbral calibrado de respuesta continua
+      const SENSIBILIDAD_PULSO = 18; // Sensibilidad ultra-reactiva para giros continuos
 
       window.addEventListener("wheel", (e) => {
         const dashboard = document.getElementById("view-dashboard");
         if (!dashboard || dashboard.classList.contains("hidden")) return;
 
-        const sobreGantt = e.target.closest("#th-gantt, #gantt-header-meses, #gantt-header-semanas, td:nth-child(9), .milestone-diamond, .gantt-avatar-circle") ||
-                           e.target.closest("td[class*='border-r']")?.querySelector(".milestone-diamond, .gantt-avatar-circle") ||
-                           e.ctrlKey;
+        // Si ya empezó a scrollear o el puntero está sobre el área del cronograma
+        const sobreAreaGantt = zoomActivoStream ||
+                               e.target.closest("#th-gantt, #gantt-header-meses, #gantt-header-semanas, td:nth-child(9), .milestone-diamond, .gantt-avatar-circle") ||
+                               e.target.closest("td[class*='border-r']")?.querySelector(".milestone-diamond, .gantt-avatar-circle") ||
+                               e.ctrlKey;
 
-        if (sobreGantt) {
+        if (sobreAreaGantt) {
           e.preventDefault();
 
-          // 1. Congelar hover temporalmente para eliminar fricción visual
+          // Mantener activo el flujo de zoom mientras el dedo siga en movimiento continuo
+          zoomActivoStream = true;
           document.body.classList.add("is-zooming");
-          clearTimeout(timerFreezeHover);
-          timerFreezeHover = setTimeout(() => {
+
+          clearTimeout(timerFinZoom);
+          timerFinZoom = setTimeout(() => {
+            zoomActivoStream = false;
             document.body.classList.remove("is-zooming");
             acumuladorZoom = 0;
-          }, 100);
+          }, 140);
 
-          // 2. Normalizar delta según dispositivo (Touchpad, Free-Wheel o Rueda estándar)
-          let deltaNormalizado = e.deltaY;
-          if (e.deltaMode === 1) deltaNormalizado *= 20; // Líneas a píxeles
-          else if (e.deltaMode === 2) deltaNormalizado *= 600; // Páginas a píxeles
+          // Normalización universal de giro
+          let rawDelta = e.deltaY;
+          if (e.deltaMode === 1) rawDelta *= 25;
+          else if (e.deltaMode === 2) rawDelta *= 500;
 
-          acumuladorZoom += deltaNormalizado;
+          acumuladorZoom += rawDelta;
 
-          // 3. Procesar en el siguiente ciclo de refresco del monitor (sin congelamiento)
-          if (!rafId) {
-            rafId = requestAnimationFrame(() => {
-              if (Math.abs(acumuladorZoom) >= SENSIBILIDAD_PULSO) {
-                const pasos = Math.trunc(acumuladorZoom / SENSIBILIDAD_PULSO);
-                acumuladorZoom = acumuladorZoom % SENSIBILIDAD_PULSO;
+          // Si el impulso acumulado supera el umbral, transiciona los niveles de inmediato
+          if (Math.abs(acumuladorZoom) >= SENSIBILIDAD_PULSO) {
+            const pasos = Math.trunc(acumuladorZoom / SENSIBILIDAD_PULSO);
+            acumuladorZoom = acumuladorZoom % SENSIBILIDAD_PULSO;
 
-                // Deslizar arriba (delta negativo) -> Acercar (+pasos)
-                // Deslizar abajo (delta positivo) -> Alejar (-pasos)
-                ajustarNivelZoomPaso(-pasos);
-              }
-              rafId = null;
-            });
+            // delta negativo (hacia arriba) -> Acercar (+pasos)
+            // delta positivo (hacia abajo)  -> Alejar (-pasos)
+            ajustarNivelZoomPaso(-pasos);
           }
         }
       }, { passive: false });
