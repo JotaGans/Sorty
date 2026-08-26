@@ -1475,15 +1475,12 @@
       }
 
       // =========================================================================
-      // MOTOR DE ZOOM CON RUEDA Y DESPLAZAMIENTO HORIZONTAL POR ARRASTRE (DRAG-TO-PAN)
+      // MOTOR DE ZOOM DE ALTO RENDIMIENTO (60 FPS / REQUESTANIMATIONFRAME)
       // =========================================================================
-      let ultimoTiempoZoom = 0;
-      const INTERVALO_ZOOM_MS = 180;
-
-      // 1. Zoom dinámico continuo y fluido con Rueda del Ratón (Acumulador de Inercia)
-      let timerDesactivarZoom = null;
-      let acumuladorZoomDelta = 0;
-      const UMBRAL_PASO_ZOOM = 60; // Sensibilidad calibrada: permite giros rápidos y continuos
+      let acumuladorZoom = 0;
+      let rafId = null;
+      let timerFreezeHover = null;
+      const SENSIBILIDAD_PULSO = 45; // Umbral calibrado de respuesta continua
 
       window.addEventListener("wheel", (e) => {
         const dashboard = document.getElementById("view-dashboard");
@@ -1496,23 +1493,34 @@
         if (sobreGantt) {
           e.preventDefault();
 
-          // Congelar hover durante el scroll de zoom
+          // 1. Congelar hover temporalmente para eliminar fricción visual
           document.body.classList.add("is-zooming");
-          clearTimeout(timerDesactivarZoom);
-          timerDesactivarZoom = setTimeout(() => {
+          clearTimeout(timerFreezeHover);
+          timerFreezeHover = setTimeout(() => {
             document.body.classList.remove("is-zooming");
-            acumuladorZoomDelta = 0; // Reset al detener el dedo
-          }, 120);
+            acumuladorZoom = 0;
+          }, 100);
 
-          acumuladorZoomDelta += e.deltaY;
+          // 2. Normalizar delta según dispositivo (Touchpad, Free-Wheel o Rueda estándar)
+          let deltaNormalizado = e.deltaY;
+          if (e.deltaMode === 1) deltaNormalizado *= 20; // Líneas a píxeles
+          else if (e.deltaMode === 2) deltaNormalizado *= 600; // Páginas a píxeles
 
-          if (Math.abs(acumuladorZoomDelta) >= UMBRAL_PASO_ZOOM) {
-            const pasos = Math.trunc(acumuladorZoomDelta / UMBRAL_PASO_ZOOM);
-            acumuladorZoomDelta = acumuladorZoomDelta % UMBRAL_PASO_ZOOM;
+          acumuladorZoom += deltaNormalizado;
 
-            // deltaY negativo = Scroll hacia ARRIBA (Acercar zoom)
-            // deltaY positivo = Scroll hacia ABAJO (Alejar zoom)
-            ajustarNivelZoomPaso(-pasos);
+          // 3. Procesar en el siguiente ciclo de refresco del monitor (sin congelamiento)
+          if (!rafId) {
+            rafId = requestAnimationFrame(() => {
+              if (Math.abs(acumuladorZoom) >= SENSIBILIDAD_PULSO) {
+                const pasos = Math.trunc(acumuladorZoom / SENSIBILIDAD_PULSO);
+                acumuladorZoom = acumuladorZoom % SENSIBILIDAD_PULSO;
+
+                // Deslizar arriba (delta negativo) -> Acercar (+pasos)
+                // Deslizar abajo (delta positivo) -> Alejar (-pasos)
+                ajustarNivelZoomPaso(-pasos);
+              }
+              rafId = null;
+            });
           }
         }
       }, { passive: false });
@@ -1563,7 +1571,7 @@
           }
         });
       }
-      });
+    });
 
     // --- AUTENTICACIÓN ---
     document.getElementById("login-form").addEventListener("submit", async (e) => {
