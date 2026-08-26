@@ -3891,11 +3891,11 @@
         const comsAct = obtenerComentariosDeActividad(cod);
         const cantComs = comsAct.length;
         const iconoComentarioHTML = cantComs > 0
-          ? `<button onclick="event.stopPropagation(); abrirModalComentarios('${cod}')" class="text-slate-400 hover:text-slate-700 p-0.5 text-xs ml-1.5 transition select-none leading-none cursor-pointer" title="Ver comentarios (${cantComs})">
-               💬
+          ? `<button onclick="event.stopPropagation(); abrirModalComentarios('${cod}')" class="opacity-0 group-hover:opacity-100 inline-flex items-center space-x-1 text-slate-500 hover:text-slate-900 px-1 py-0.5 text-xs ml-1.5 transition select-none leading-none cursor-pointer" title="Ver ${cantComs} comentario(s)">
+               <span class="text-[11px]">💬</span><span class="text-[10px] font-black text-slate-600">${cantComs}</span>
              </button>`
-          : `<button onclick="event.stopPropagation(); abrirModalComentarios('${cod}')" class="opacity-0 group-hover:opacity-40 hover:!opacity-100 text-slate-400 hover:text-slate-700 p-0.5 text-xs ml-1.5 transition select-none leading-none cursor-pointer" title="Agregar comentario">
-               💬
+          : `<button onclick="event.stopPropagation(); abrirModalComentarios('${cod}')" class="opacity-0 group-hover:opacity-30 hover:!opacity-90 text-slate-400 hover:text-slate-700 px-1 py-0.5 text-xs ml-1.5 transition select-none leading-none cursor-pointer" title="Agregar comentario">
+               <span class="text-[11px]">💬</span>
              </button>`;
 
         const tdDescHTML = `
