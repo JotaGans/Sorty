@@ -1511,7 +1511,6 @@
 
       if (tablaGanttEl) {
         tablaGanttEl.addEventListener("mousedown", (e) => {
-          if (modoZoom === "meses") return; // En vista meses ya se ve todo el año completo
           if (e.button !== 0) return; // Solo clic izquierdo principal
 
           const sobreGantt = e.target.closest("#th-gantt, #gantt-header-meses, #gantt-header-semanas, td:nth-child(9)");
@@ -1983,7 +1982,8 @@
           const freshActs = await resActs.json();
           actividadesGlobal = freshActs || [];
           localStorage.setItem(cacheKey, JSON.stringify(actividadesGlobal));
-          autoAjustarSemanaInicio(); // <-- Re-evalúa el inicio al llegar la respuesta del backend
+          construirCalendarioAnual(); // <-- Expande el calendario a los años de las actividades recibidas
+          autoAjustarSemanaInicio();
           actualizarKPIs();
         } 
         
@@ -2179,7 +2179,6 @@
     async function cargarActividades() {
       if (!proyectoActualId) return;
       
-      // Asegurar que el catálogo de trabajadores y unidades esté listo para resolver siglas y avatares
       if (catalogoTrabajadoresGlobal.length === 0) {
         cargarDirectorioTrabajadores();
       }
@@ -2190,6 +2189,10 @@
         });
         if (!res.ok) throw new Error("Error al cargar actividades");
         actividadesGlobal = await res.json();
+        
+        // Reconstruir el horizonte temporal para abarcar 2026, 2027 y años posteriores
+        construirCalendarioAnual();
+        renderizarCabeceraGantt();
         renderizarTabla();
         actualizarKPIs();
       } catch (e) {
