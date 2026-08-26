@@ -94,6 +94,15 @@
       -moz-appearance: none;
       appearance: none;
     }
+
+    /* Cursor de arrastre para el lienzo del cronograma */
+    #th-gantt, #gantt-header-meses, #gantt-header-semanas, td:nth-child(9) {
+      cursor: grab;
+    }
+    #th-gantt:active, td:nth-child(9):active {
+      cursor: grabbing !important;
+    }
+
   </style>
 </head>
 <body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none" onclick="cerrarMenuContextual()">
@@ -325,11 +334,11 @@
             <option value="">👤 Todo el Personal</option>
           </select>
 
-          <!-- Selector de Periodicidad (Días / Semanas / Meses) -->
+          <!-- Selector de Periodicidad Ordenado (Meses / Semanas / Días) -->
           <div class="flex items-center bg-gray-200 rounded-lg p-0.5 text-xs font-bold shadow-xs">
-            <button id="btn-zoom-dias" onclick="fijarModoZoomDirecto('dias')" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition">Días</button>
-            <button id="btn-zoom-semanas" onclick="fijarModoZoomDirecto('semanas')" class="px-2.5 py-1 rounded-md bg-white shadow text-[#0f2a4a] font-bold">Semanas</button>
             <button id="btn-zoom-meses" onclick="fijarModoZoomDirecto('meses')" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition">Meses</button>
+            <button id="btn-zoom-semanas" onclick="fijarModoZoomDirecto('semanas')" class="px-2.5 py-1 rounded-md bg-white shadow text-[#0f2a4a] font-bold">Semanas</button>
+            <button id="btn-zoom-dias" onclick="fijarModoZoomDirecto('dias')" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-[#0f2a4a] font-bold transition">Días</button>
           </div>
 
           <div id="contenedor-spinbutton" class="flex items-center bg-[#0f2a4a] text-white rounded px-2 py-1 space-x-1.5 shadow">
@@ -1462,24 +1471,22 @@
       }
 
       // =========================================================================
-      // MOTOR GLOBAL DE ZOOM CON RUEDA DEL RATÓN (SIN TECLAS, FLUIDO Y DIRECTO)
+      // MOTOR DE ZOOM CON RUEDA Y DESPLAZAMIENTO HORIZONTAL POR ARRASTRE (DRAG-TO-PAN)
       // =========================================================================
       let ultimoTiempoZoom = 0;
-      const INTERVALO_ZOOM_MS = 200;
+      const INTERVALO_ZOOM_MS = 180;
 
+      // 1. Zoom dinámico continuo con Rueda del Ratón
       window.addEventListener("wheel", (e) => {
-        // Solo actuar si estamos dentro de un proyecto abierto (Dashboard activo)
         const dashboard = document.getElementById("view-dashboard");
         if (!dashboard || dashboard.classList.contains("hidden")) return;
 
-        // Detectar si el cursor está sobre la cabecera Gantt, las barras o el cronograma
         const sobreGantt = e.target.closest("#th-gantt, #gantt-header-meses, #gantt-header-semanas, td:nth-child(9), .milestone-diamond, .gantt-avatar-circle") ||
                            e.target.closest("td[class*='border-r']")?.querySelector(".milestone-diamond, .gantt-avatar-circle") ||
                            e.ctrlKey;
 
         if (sobreGantt) {
           e.preventDefault();
-
           const ahora = Date.now();
           if (ahora - ultimoTiempoZoom < INTERVALO_ZOOM_MS) return;
 
@@ -1494,7 +1501,54 @@
           }
         }
       }, { passive: false });
-    });
+
+      // 2. Desplazamiento Temporal Horizontal por Arrastre (Click + Drag)
+      let estaArrastrando = false;
+      let inicioX = 0;
+      let acumuladorDeltaX = 0;
+      const SENSIBILIDAD_ARRASTRE_PX = 30; // Píxeles de arrastre para mover 1 unidad de tiempo
+
+      const tablaGanttEl = document.getElementById("tabla-gantt-main");
+
+      if (tablaGanttEl) {
+        tablaGanttEl.addEventListener("mousedown", (e) => {
+          if (modoZoom === "meses") return; // En vista meses ya se ve todo el año completo
+          if (e.button !== 0) return; // Solo clic izquierdo principal
+
+          const sobreGantt = e.target.closest("#th-gantt, #gantt-header-meses, #gantt-header-semanas, td:nth-child(9)");
+          if (sobreGantt) {
+            estaArrastrando = true;
+            inicioX = e.clientX;
+            acumuladorDeltaX = 0;
+            document.body.style.cursor = "grabbing";
+            document.body.style.userSelect = "none";
+          }
+        });
+
+        window.addEventListener("mousemove", (e) => {
+          if (!estaArrastrando) return;
+
+          const diffX = e.clientX - inicioX;
+          acumuladorDeltaX += diffX;
+          inicioX = e.clientX;
+
+          if (Math.abs(acumuladorDeltaX) >= SENSIBILIDAD_ARRASTRE_PX) {
+            // Arrastrar a la DERECHA = retroceder en el tiempo (-1 semana)
+            // Arrastrar a la IZQUIERDA = avanzar en el tiempo (+1 semana)
+            const pasos = Math.trunc(acumuladorDeltaX / SENSIBILIDAD_ARRASTRE_PX);
+            acumuladorDeltaX = acumuladorDeltaX % SENSIBILIDAD_ARRASTRE_PX;
+            cambiarSemanaInicio(-pasos);
+          }
+        });
+
+        window.addEventListener("mouseup", () => {
+          if (estaArrastrando) {
+            estaArrastrando = false;
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+          }
+        });
+      }
 
     // --- AUTENTICACIÓN ---
     document.getElementById("login-form").addEventListener("submit", async (e) => {
