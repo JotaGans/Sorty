@@ -3205,14 +3205,14 @@
 
         gruposAnio.forEach(g => {
           const pct = (g.count / semsVisibles.length) * 100;
-          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] text-teal-200">${g.anio}</div>`;
+          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] text-teal-200 whitespace-nowrap truncate">${g.anio}</div>`;
         });
 
         const semHoy = mesHoy < 6 ? "1S" : "2S";
         semsVisibles.forEach(s => {
           const esActual = (s.label === semHoy && s.anio === anioHoy);
           const claseSem = esActual ? "bg-teal-600 text-white font-black rounded-xs shadow-xs" : "text-gray-200";
-          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-bold ${claseSem}">${s.label} (${s.anio})</div>`;
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-bold ${claseSem} whitespace-nowrap">${s.label} (${s.anio})</div>`;
         });
         return;
       }
@@ -3263,14 +3263,14 @@
 
         gruposAnio.forEach(g => {
           const pct = (g.count / trimsVisibles.length) * 100;
-          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] text-teal-200">${g.anio}</div>`;
+          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] text-teal-200 whitespace-nowrap truncate">${g.anio}</div>`;
         });
 
         const trimHoy = `T${Math.floor(mesHoy / 3) + 1}`;
         trimsVisibles.forEach(t => {
           const esActual = (t.label === trimHoy && t.anio === anioHoy);
           const claseTrim = esActual ? "bg-teal-600 text-white font-black rounded-xs shadow-xs" : "text-gray-200";
-          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-bold ${claseTrim}">${t.label}</div>`;
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-bold ${claseTrim} whitespace-nowrap">${t.label}</div>`;
         });
         return;
       }
@@ -3309,75 +3309,94 @@
 
         gruposAnio.forEach(g => {
           const pct = (g.count / mesesVisibles.length) * 100;
-          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] text-teal-200">${g.anio}</div>`;
+          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] text-teal-200 whitespace-nowrap truncate">${g.anio}</div>`;
         });
 
         mesesVisibles.forEach(m => {
           const esMesActual = (m.mesIdx === mesHoy && m.anio === anioHoy);
           const claseMes = esMesActual ? "bg-teal-600 text-white font-black rounded-xs shadow-xs" : "text-gray-200";
-          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-bold ${claseMes}" title="${m.mesNombre} ${m.anio}">${m.mesNombre}</div>`;
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-bold ${claseMes} whitespace-nowrap" title="${m.mesNombre} ${m.anio}">${m.mesNombre}</div>`;
         });
         return;
       }
 
-      // MODO 5: DÍAS (28 Días)
+      // MODO 5: DÍAS (28 Días - Anti-quiebre de 2 líneas)
       if (modoZoom === "dias") {
         const ventanaDias = 28;
         const offset = Math.max(0, Math.min(diasTotalesAnio.length - ventanaDias, semanaInicioIndex * 7));
         const diasVisibles = diasTotalesAnio.slice(offset, offset + ventanaDias);
 
         const gruposMes = [];
-        let mesActual = null, contador = 0;
+        let mesActual = null, mesNombreSolo = null, anioSolo = null, contador = 0;
 
         diasVisibles.forEach(d => {
           const label = `${d.mesNombre} ${d.anio}`;
           if (mesActual === null || mesActual !== label) {
-            if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
+            if (mesActual !== null) gruposMes.push({ nombreCompleto: mesActual, mes: mesNombreSolo, anio: anioSolo, count: contador });
             mesActual = label;
+            mesNombreSolo = d.mesNombre;
+            anioSolo = d.anio;
             contador = 1;
           } else contador++;
         });
-        if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
+        if (mesActual !== null) gruposMes.push({ nombreCompleto: mesActual, mes: mesNombreSolo, anio: anioSolo, count: contador });
 
         gruposMes.forEach(g => {
           const pct = (g.count / diasVisibles.length) * 100;
-          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] tracking-wide text-teal-200 overflow-hidden">${g.nombre}</div>`;
+          // Si el bloque tiene menos del 12% del ancho (ej. 1 a 3 días en el borde), mostrar texto adaptativo
+          let textoCabecera = g.nombreCompleto;
+          if (pct < 8) {
+            textoCabecera = g.mes; // Solo 'Set'
+          } else if (pct < 15) {
+            textoCabecera = `${g.mes} '${String(g.anio).slice(-2)}`; // 'Set '27'
+          }
+
+          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] tracking-wide text-teal-200 overflow-hidden whitespace-nowrap truncate px-0.5" title="${g.nombreCompleto}">${textoCabecera}</div>`;
         });
 
         diasVisibles.forEach(d => {
           const esFinSemana = (d.diaSemana === 0 || d.diaSemana === 6);
           const claseHoy = d.esHoy ? "bg-teal-500 text-white font-black rounded-xs shadow" : (esFinSemana ? "text-gray-400 bg-blue-950/40" : "text-teal-300 opacity-90");
-          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden ${claseHoy}" title="${d.dia} de ${d.mesNombre} ${d.anio}">${d.dia}</div>`;
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}" title="${d.dia} de ${d.mesNombre} ${d.anio}">${d.dia}</div>`;
         });
         return;
       }
 
-      // MODO 4: SEMANAS (16 Semanas)
+      // MODO 4: SEMANAS (16 Semanas - Anti-quiebre de 2 líneas)
       const ventanaSemanas = 16;
       const offsetSem = Math.max(0, Math.min(semanasTotales.length - ventanaSemanas, semanaInicioIndex));
       const semanasVisibles = semanasTotales.slice(offsetSem, offsetSem + ventanaSemanas);
       
       const gruposMes = [];
-      let mesActual = null, contador = 0;
+      let mesActual = null, mesSolo = null, anioSolo = null, contador = 0;
 
       semanasVisibles.forEach(s => {
         const label = `${s.mesNombre} ${s.anio}`;
         if (mesActual === null || mesActual !== label) {
-          if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
+          if (mesActual !== null) gruposMes.push({ nombreCompleto: mesActual, mes: mesSolo, anio: anioSolo, count: contador });
           mesActual = label;
+          mesSolo = s.mesNombre;
+          anioSolo = s.anio;
           contador = 1;
         } else contador++;
       });
-      if (mesActual !== null) gruposMes.push({ nombre: mesActual, count: contador });
+      if (mesActual !== null) gruposMes.push({ nombreCompleto: mesActual, mes: mesSolo, anio: anioSolo, count: contador });
 
       gruposMes.forEach(g => {
         const pct = (g.count / semanasVisibles.length) * 100;
-        divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-blue-800/80 text-[10px] overflow-hidden">${g.nombre}</div>`;
+        let textoCabecera = g.nombreCompleto;
+        if (pct < 10) {
+          textoCabecera = g.mes;
+        } else if (pct < 18) {
+          textoCabecera = `${g.mes} '${String(g.anio).slice(-2)}`;
+        }
+
+        divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-blue-800/80 text-[10px] overflow-hidden whitespace-nowrap truncate px-0.5" title="${g.nombreCompleto}">${textoCabecera}</div>`;
       });
 
       semanasVisibles.forEach(s => {
         const claseHoy = s.esHoy ? "header-semana-actual rounded-sm shadow" : "opacity-90";
-        divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre} ${s.anio})">${s.dia}</div>`;
+        divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre} ${s.anio})">${s.dia}</div>`;
       });
     }
 
