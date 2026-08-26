@@ -368,8 +368,17 @@
           <button onclick="exportarExcelCSV()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs md:text-sm font-bold px-2.5 md:px-3 py-1.5 rounded transition shadow flex items-center space-x-1">
             <span>📊 Excel</span>
           </button>
-          <button onclick="verRutaCritica()" class="bg-[#c0392b] hover:bg-[#a93226] text-white text-xs md:text-sm font-bold px-2.5 md:px-3 py-1.5 rounded transition shadow">
-            🔥 CPM
+          <!-- Conmutador Visual de Ruta Crítica -->
+          <button id="btn-toggle-cpm" onclick="alternarCapaRutaCritica()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs md:text-sm font-bold px-2.5 md:px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5" title="Activar/Desactivar capa visual de Ruta Crítica en el Gantt">
+            <span>🔥</span>
+            <span id="txt-toggle-cpm">Ruta Crítica</span>
+            <span id="badge-duracion-cpm" class="hidden bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full ml-1">0d</span>
+          </button>
+
+          <!-- Configurador de Dependencias -->
+          <button id="btn-config-dependencias" onclick="abrirModalDependencias()" class="bg-[#34495e] hover:bg-[#2c3e50] text-white text-xs md:text-sm font-bold px-2.5 md:px-3 py-1.5 rounded transition shadow flex items-center space-x-1" title="Configurar predecesoras y relaciones de dependencia">
+            <span>🔗</span>
+            <span>Dependencias</span>
           </button>
           <button id="btn-historial-gantt" onclick="abrirHistorial()" class="bg-[#718093] hover:bg-[#576574] text-white text-xs md:text-sm font-bold px-2 md:px-2.5 py-1.5 rounded transition">
             📜 Historial
@@ -3604,13 +3613,24 @@
               } else {
                 let colorFondoRestante = "#e2e8f0";
                 let colorBorde = "border-slate-300";
+                const esActividadCritica = capaCpmActiva && datosCpmGlobal.actividadesCriticas.has(codLimpio);
 
-                if (act.estado === "Ejecutado") {
-                  colorFondoRestante = "#2ecc71";
-                  colorBorde = "border-green-600";
-                } else if (act.estado === "En proceso") {
-                  colorFondoRestante = "#fef08a";
-                  colorBorde = "border-yellow-500";
+                if (capaCpmActiva) {
+                  if (esActividadCritica) {
+                    colorFondoRestante = "#dc2626"; // Rojo Crítico Intenso
+                    colorBorde = "border-red-800";
+                  } else {
+                    colorFondoRestante = "#cbd5e1"; // Con holgura (atenuada)
+                    colorBorde = "border-slate-300";
+                  }
+                } else {
+                  if (act.estado === "Ejecutado") {
+                    colorFondoRestante = "#2ecc71";
+                    colorBorde = "border-green-600";
+                  } else if (act.estado === "En proceso") {
+                    colorFondoRestante = "#fef08a";
+                    colorBorde = "border-yellow-500";
+                  }
                 }
 
                 let subAvanceHTML = "";
@@ -3639,14 +3659,16 @@
                   textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">0%</span>`;
                 }
 
+                const opacidadCpm = (capaCpmActiva && !esActividadCritica && !esMadre) ? "opacity-35" : "opacity-100";
+
                 barraOElementoHTML = `
                   <div class="absolute bg-slate-300/70 rounded h-[2px] bottom-0.5" style="left: ${leftPct}%; width: ${widthPct}%;"></div>
-                  <div class="absolute top-1 bottom-1 z-10 rounded-md border ${colorBorde} shadow-sm transition-all duration-200 overflow-hidden" 
+                  <div class="absolute top-1 bottom-1 z-10 rounded-md border ${colorBorde} shadow-sm transition-all duration-200 overflow-hidden ${opacidadCpm}" 
                        style="left: ${leftPct}%; width: ${widthPct}%; background-color: ${colorFondoRestante};">
-                    ${subAvanceHTML}
-                    ${textoDentroDeBarra}
+                    ${!capaCpmActiva ? subAvanceHTML : ''}
+                    ${capaCpmActiva && esActividadCritica ? `<div class="w-full h-full flex items-center justify-center text-[9px] font-black text-white select-none">CRÍTICA (${act.dias}d)</div>` : textoDentroDeBarra}
                   </div>
-                  <div class="absolute flex items-center top-1 z-20 pointer-events-none" style="left: calc(${leftPct + widthPct}% + 4px);">
+                  <div class="absolute flex items-center top-1 z-20 pointer-events-none ${opacidadCpm}" style="left: calc(${leftPct + widthPct}% + 4px);">
                     ${textoFlotanteHTML}
                     ${miniAvataresHTML}
                   </div>
@@ -4064,53 +4086,176 @@
       }
     }
 
-    // --- RUTA CRÍTICA (CPM) ---
-    async function verRutaCritica() {
+    // =========================================================================
+    // MOTOR DE RUTA CRÍTICA (CPM) VISUAL INTERACTIVA Y DEPENDENCIAS
+    // =========================================================================
+    let capaCpmActiva = false;
+    let datosCpmGlobal = { actividadesCriticas: new Set(), duracionTotal: 0 };
+
+    async function alternarCapaRutaCritica() {
+      if (!proyectoActualId) return;
+
+      capaCpmActiva = !capaCpmActiva;
+
+      if (!capaCpmActiva) {
+        actualizarBotonCpmUI(false);
+        renderizarTabla();
+        notificarToast("Capa de Ruta Crítica desactivada.", "info");
+        return;
+      }
+
+      const tienePredecesoras = actividadesGlobal.some(a => a.predecesores && a.predecesores.trim() !== "");
+      
+      if (!tienePredecesoras) {
+        const deseaConfigurar = await confirmModal(
+          "ℹ️ Para calcular con precisión la Ruta Crítica (CPM), es necesario configurar las dependencias (predecesoras) entre sus actividades.\n\n¿Desea abrir el configurador de dependencias ahora?",
+          "Configuración Requerida",
+          "question"
+        );
+        if (deseaConfigurar) {
+          capaCpmActiva = false;
+          actualizarBotonCpmUI(false);
+          abrirModalDependencias();
+          return;
+        }
+      }
+
       try {
         const res = await fetch(`/ruta-critica?proyecto_id=${proyectoActualId}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error("Error al calcular CPM");
+        if (!res.ok) throw new Error("Error calculando CPM");
         const cpm = await res.json();
-        
-        const spanDuracion = document.getElementById("cpm-duracion");
-        if (spanDuracion) spanDuracion.innerText = cpm.duracion_proyecto_dias || 0;
-        
-        const tbody = document.getElementById("cpm-tabla-body");
-        tbody.innerHTML = "";
 
-        if (cpm.detalles && Object.keys(cpm.detalles).length > 0) {
+        datosCpmGlobal.duracionTotal = cpm.duracion_proyecto_dias || 0;
+        datosCpmGlobal.actividadesCriticas = new Set();
+
+        if (cpm.detalles) {
           Object.values(cpm.detalles).forEach(n => {
-            const tr = document.createElement("tr");
-            tr.className = n.es_critica ? "bg-red-50/80 font-bold text-red-900" : "hover:bg-gray-50";
-            tr.innerHTML = `
-              <td class="p-2.5 font-mono font-bold">${n.codigo}</td>
-              <td class="p-2.5">${n.descripcion}</td>
-              <td class="p-2.5 text-center">${n.duracion}d</td>
-              <td class="p-2.5 text-center font-mono">${n.ES} - ${n.EF}</td>
-              <td class="p-2.5 text-center font-mono">${n.LS} - ${n.LF}</td>
-              <td class="p-2.5 text-center font-bold">${n.holgura}</td>
-              <td class="p-2.5 text-center">
-                <span class="px-2 py-0.5 rounded text-[10px] font-black ${n.es_critica ? 'bg-red-600 text-white shadow-sm' : 'bg-gray-200 text-gray-700'}">
-                  ${n.es_critica ? 'CRÍTICA' : 'Normal'}
-                </span>
-              </td>
-            `;
-            tbody.appendChild(tr);
+            if (n.es_critica) {
+              datosCpmGlobal.actividadesCriticas.add(String(n.codigo).replace(/\.+$/, ""));
+            }
           });
-        } else {
-          tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500 font-semibold">No hay actividades suficientes para calcular la ruta crítica.</td></tr>`;
         }
 
-        document.getElementById("modal-cpm").classList.remove("hidden");
+        actualizarBotonCpmUI(true, datosCpmGlobal.duracionTotal);
+        renderizarTabla();
+        notificarToast(`Ruta Crítica activa: ${datosCpmGlobal.duracionTotal} días calculados.`, "success");
       } catch (err) {
-        console.error("Error CPM:", err);
-        alert("No se pudo cargar la Ruta Crítica en este momento.");
+        console.error("Error al calcular CPM:", err);
+        capaCpmActiva = false;
+        actualizarBotonCpmUI(false);
+        alert("No se pudo calcular la Ruta Crítica. Verifique las dependencias del proyecto.");
       }
     }
 
-    function cerrarModalCPM() { 
-      document.getElementById("modal-cpm").classList.add("hidden"); 
+    function actualizarBotonCpmUI(activo, duracionDias = 0) {
+      const btn = document.getElementById("btn-toggle-cpm");
+      const txt = document.getElementById("txt-toggle-cpm");
+      const badge = document.getElementById("badge-duracion-cpm");
+      if (!btn) return;
+
+      if (activo) {
+        btn.className = "bg-red-600 hover:bg-red-700 text-white text-xs md:text-sm font-black px-2.5 md:px-3 py-1.5 rounded transition shadow-md flex items-center space-x-1.5 border border-red-500 animate-pulse";
+        txt.innerText = "Ruta Crítica: ACTIVA";
+        if (badge) {
+          badge.innerText = `${duracionDias}d`;
+          badge.classList.remove("hidden");
+        }
+      } else {
+        btn.className = "bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs md:text-sm font-bold px-2.5 md:px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5";
+        txt.innerText = "Ruta Crítica";
+        if (badge) badge.classList.add("hidden");
+      }
+    }
+
+    // --- MODAL DE GESTIÓN DE DEPENDENCIAS ---
+    function abrirModalDependencias() {
+      if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
+        alert("Solo el Gestor del Proyecto puede modificar las dependencias.");
+        return;
+      }
+
+      const tbody = document.getElementById("tabla-config-dependencias-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      const terminales = actividadesGlobal.filter(a => !tieneHijos(a.codigo));
+
+      if (terminales.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 font-semibold">No hay actividades registradas en este proyecto.</td></tr>`;
+      } else {
+        terminales.forEach(act => {
+          const codLimpio = String(act.codigo).replace(/\.+$/, "");
+          const posiblesPreds = terminales.filter(p => String(p.codigo).replace(/\.+$/, "") !== codLimpio);
+          const predsActuales = (act.predecesores || "").split(",").map(s => s.trim().replace(/\.+$/, "")).filter(Boolean);
+
+          let opcionesHTML = "";
+          posiblesPreds.forEach(p => {
+            const pCod = String(p.codigo).replace(/\.+$/, "");
+            const estaMarcado = predsActuales.includes(pCod);
+            opcionesHTML += `
+              <label class="inline-flex items-center space-x-1.5 bg-gray-50 hover:bg-teal-50 px-2 py-1 rounded border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700 mr-1.5 mb-1.5">
+                <input type="checkbox" data-act-cod="${codLimpio}" value="${pCod}" ${estaMarcado ? 'checked' : ''} class="chk-dep-item rounded text-[#0f2a4a] focus:ring-0">
+                <span>[${pCod}] ${p.descripcion.substring(0, 20)}...</span>
+              </label>
+            `;
+          });
+
+          if (posiblesPreds.length === 0) {
+            opcionesHTML = `<span class="text-gray-400 italic text-[11px]">Única actividad disponible</span>`;
+          }
+
+          tbody.innerHTML += `
+            <tr class="hover:bg-gray-50 border-b border-gray-100">
+              <td class="p-2.5 font-mono font-bold text-center text-[#0f2a4a]">${act.codigo}</td>
+              <td class="p-2.5 font-semibold text-gray-800">${act.descripcion}</td>
+              <td class="p-2.5 text-center font-bold text-teal-800">${act.dias}d</td>
+              <td class="p-2.5 flex flex-wrap items-center">${opcionesHTML}</td>
+            </tr>
+          `;
+        });
+      }
+
+      document.getElementById("modal-dependencias").classList.remove("hidden");
+    }
+
+    function cerrarModalDependencias() {
+      document.getElementById("modal-dependencias").classList.add("hidden");
+    }
+
+    async function guardarTodasDependencias() {
+      const inputs = document.querySelectorAll(".chk-dep-item");
+      const mapaPreds = {};
+
+      inputs.forEach(chk => {
+        const actCod = chk.getAttribute("data-act-cod");
+        if (!mapaPreds[actCod]) mapaPreds[actCod] = [];
+        if (chk.checked) mapaPreds[actCod].push(chk.value);
+      });
+
+      let huboCambios = false;
+
+      for (const act of actividadesGlobal) {
+        const codLimpio = String(act.codigo).replace(/\.+$/, "");
+        if (mapaPreds.hasOwnProperty(codLimpio)) {
+          const nuevasPreds = mapaPreds[codLimpio].join(", ");
+          if (act.predecesores !== nuevasPreds) {
+            act.predecesores = nuevasPreds;
+            huboCambios = true;
+            await guardarCambioDirecto(act);
+          }
+        }
+      }
+
+      cerrarModalDependencias();
+
+      if (huboCambios) {
+        notificarToast("Dependencias actualizadas correctamente.", "success");
+        if (capaCpmActiva) {
+          alternarCapaRutaCritica();
+        }
+      }
     }
 
     // --- HISTORIAL DE AUDITORÍA (APERTURA INSTANTÁNEA) ---
