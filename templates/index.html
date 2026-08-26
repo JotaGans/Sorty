@@ -1475,18 +1475,21 @@
       }
 
       // =========================================================================
-      // MOTOR DE ZOOM CONTINUO DE ALTA SENSIBILIDAD (INSTANT GANTT STREAMING)
+      // MOTOR DE ZOOM DINÁMICO CALIBRADO (FÍSICA NATURAL / PROPORCIONAL A LA VELOCIDAD)
       // =========================================================================
-      let zoomActivoStream = false;
-      let timerFinZoom = null;
       let acumuladorZoom = 0;
-      const SENSIBILIDAD_PULSO = 18; // Sensibilidad ultra-reactiva para giros continuos
+      let ultimoPasoZoomTiempo = 0;
+      let timerFinInercia = null;
+      let zoomActivoStream = false;
+
+      // Constantes de física natural
+      const UMBRAL_MUESCA_PX = 95;    // Energía necesaria para disparar 1 nivel (1 giro pausado)
+      const CADENCIA_MINIMA_MS = 75;   // Cadencia entre niveles en giros rápidos (permite ver la secuencia a alta velocidad)
 
       window.addEventListener("wheel", (e) => {
         const dashboard = document.getElementById("view-dashboard");
         if (!dashboard || dashboard.classList.contains("hidden")) return;
 
-        // Si ya empezó a scrollear o el puntero está sobre el área del cronograma
         const sobreAreaGantt = zoomActivoStream ||
                                e.target.closest("#th-gantt, #gantt-header-meses, #gantt-header-semanas, td:nth-child(9), .milestone-diamond, .gantt-avatar-circle") ||
                                e.target.closest("td[class*='border-r']")?.querySelector(".milestone-diamond, .gantt-avatar-circle") ||
@@ -1495,32 +1498,36 @@
         if (sobreAreaGantt) {
           e.preventDefault();
 
-          // Mantener activo el flujo de zoom mientras el dedo siga en movimiento continuo
           zoomActivoStream = true;
           document.body.classList.add("is-zooming");
 
-          clearTimeout(timerFinZoom);
-          timerFinZoom = setTimeout(() => {
+          clearTimeout(timerFinInercia);
+          timerFinInercia = setTimeout(() => {
             zoomActivoStream = false;
             document.body.classList.remove("is-zooming");
             acumuladorZoom = 0;
-          }, 140);
+          }, 160);
 
-          // Normalización universal de giro
-          let rawDelta = e.deltaY;
-          if (e.deltaMode === 1) rawDelta *= 25;
-          else if (e.deltaMode === 2) rawDelta *= 500;
+          // Normalización universal de dispositivos (Mouse estándar, Touchpad, Free-wheel)
+          let deltaNormalizado = e.deltaY;
+          if (e.deltaMode === 1) deltaNormalizado *= 33; // Líneas a píxeles
+          else if (e.deltaMode === 2) deltaNormalizado *= 100; // Páginas a píxeles
 
-          acumuladorZoom += rawDelta;
+          acumuladorZoom += deltaNormalizado;
 
-          // Si el impulso acumulado supera el umbral, transiciona los niveles de inmediato
-          if (Math.abs(acumuladorZoom) >= SENSIBILIDAD_PULSO) {
-            const pasos = Math.trunc(acumuladorZoom / SENSIBILIDAD_PULSO);
-            acumuladorZoom = acumuladorZoom % SENSIBILIDAD_PULSO;
+          const ahora = Date.now();
 
-            // delta negativo (hacia arriba) -> Acercar (+pasos)
-            // delta positivo (hacia abajo)  -> Alejar (-pasos)
-            ajustarNivelZoomPaso(-pasos);
+          // Evaluar si superó la energía de 1 nivel y respetó la cadencia mínima de lectura visual
+          if (Math.abs(acumuladorZoom) >= UMBRAL_MUESCA_PX && (ahora - ultimoPasoZoomTiempo >= CADENCIA_MINIMA_MS)) {
+            const direccion = acumuladorZoom > 0 ? -1 : 1; // Arriba = Acercar (+1), Abajo = Alejar (-1)
+
+            // Reducir la energía consumida conservando el remanente para inercia continua
+            acumuladorZoom = acumuladorZoom > 0 
+              ? Math.max(0, acumuladorZoom - UMBRAL_MUESCA_PX) 
+              : Math.min(0, acumuladorZoom + UMBRAL_MUESCA_PX);
+
+            ultimoPasoZoomTiempo = ahora;
+            ajustarNivelZoomPaso(direccion);
           }
         }
       }, { passive: false });
