@@ -2940,18 +2940,18 @@
       divMeses.innerHTML = "";
       divSemanas.innerHTML = "";
 
-      // MODO 1: MESES
+      // MODO 1: MESES (12 Meses Consolidado - Ancho 100%)
       if (modoZoom === "meses") {
         nombresMeses.forEach(m => {
-          divMeses.innerHTML += `<div class="flex-1 text-center font-bold border-r border-blue-800/80 text-[10px]">${m}</div>`;
+          divMeses.innerHTML += `<div class="flex-1 text-center font-bold border-r border-blue-800/80 text-[10px] overflow-hidden">${m}</div>`;
         });
         divSemanas.innerHTML = `<div class="w-full text-center text-teal-300 text-[10px] py-0.5">Vista Anual Consolidada (12 Meses)</div>`;
         return;
       }
 
-      // MODO 3: DÍAS
+      // MODO 3: DÍAS (Ventana de 28 Días - Ancho 100% sin scroll de pantalla)
       if (modoZoom === "dias") {
-        const ventanaDias = 45;
+        const ventanaDias = 28; // 4 semanas exactas
         const offset = Math.max(0, Math.min(diasTotalesAnio.length - ventanaDias, semanaInicioIndex * 7));
         const diasVisibles = diasTotalesAnio.slice(offset, offset + ventanaDias);
 
@@ -2972,19 +2972,22 @@
 
         gruposMes.forEach(g => {
           const pct = (g.count / diasVisibles.length) * 100;
-          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] tracking-wide text-teal-200">${g.nombre}</div>`;
+          divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-black border-r border-blue-800/80 text-[10px] tracking-wide text-teal-200 overflow-hidden">${g.nombre}</div>`;
         });
 
         diasVisibles.forEach(d => {
           const esFinSemana = (d.diaSemana === 0 || d.diaSemana === 6);
           const claseHoy = d.esHoy ? "bg-teal-500 text-white font-black rounded-xs shadow" : (esFinSemana ? "text-gray-400 bg-blue-950/40" : "text-teal-300 opacity-90");
-          divSemanas.innerHTML += `<div class="flex-1 min-w-[20px] text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono ${claseHoy}" title="${d.dia} de ${d.mesNombre}">${d.dia}</div>`;
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden ${claseHoy}" title="${d.dia} de ${d.mesNombre}">${d.dia}</div>`;
         });
         return;
       }
 
-      // MODO 2: SEMANAS
-      const semanasVisibles = semanasTotales.slice(semanaInicioIndex);
+      // MODO 2: SEMANAS (Ventana de 16 Semanas - Ancho 100% sin scroll de pantalla)
+      const ventanaSemanas = 16;
+      const offsetSem = Math.max(0, Math.min(semanasTotales.length - ventanaSemanas, semanaInicioIndex));
+      const semanasVisibles = semanasTotales.slice(offsetSem, offsetSem + ventanaSemanas);
+      
       const gruposMes = [];
       let mesActual = null;
       let contador = 0;
@@ -3002,12 +3005,12 @@
 
       gruposMes.forEach(g => {
         const pct = (g.count / semanasVisibles.length) * 100;
-        divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-blue-800/80 text-[10px]">${g.nombre}</div>`;
+        divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-blue-800/80 text-[10px] overflow-hidden">${g.nombre}</div>`;
       });
 
       semanasVisibles.forEach(s => {
         const claseHoy = s.esHoy ? "header-semana-actual rounded-sm shadow" : "opacity-90";
-        divSemanas.innerHTML += `<div class="flex-1 min-w-[32px] text-center py-0.5 border-r border-blue-900/40 ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre})">${s.dia}</div>`;
+        divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre})">${s.dia}</div>`;
       });
     }
 
@@ -3047,7 +3050,7 @@
         duracionVisibleMs = tFinVisible - tInicioVisible;
         divisionesHTML = Array(12).fill('<div class="flex-1 border-r border-slate-200/50"></div>').join("");
       } else if (modoZoom === "dias") {
-        const ventanaDias = 45;
+        const ventanaDias = 28;
         const offset = Math.max(0, Math.min(diasTotalesAnio.length - ventanaDias, semanaInicioIndex * 7));
         const diasVisibles = diasTotalesAnio.slice(offset, offset + ventanaDias);
         if (diasVisibles.length === 0) return;
@@ -3063,11 +3066,15 @@
           return `<div class="flex-1 border-r border-slate-200/40 ${colHoy}"></div>`;
         }).join("");
       } else {
-        const semanasVisibles = semanasTotales.slice(semanaInicioIndex);
+        const ventanaSemanas = 16;
+        const offsetSem = Math.max(0, Math.min(semanasTotales.length - ventanaSemanas, semanaInicioIndex));
+        const semanasVisibles = semanasTotales.slice(offsetSem, offsetSem + ventanaSemanas);
         if (semanasVisibles.length === 0) return;
+
         tInicioVisible = semanasVisibles[0].fechaLunes.getTime();
         tFinVisible = new Date(semanasVisibles[semanasVisibles.length - 1].fechaDomingo).getTime();
         duracionVisibleMs = tFinVisible - tInicioVisible;
+
         divisionesHTML = semanasVisibles.map(s => {
           const claseColHoy = s.esHoy ? "col-semana-actual" : "";
           return `<div class="flex-1 border-r border-slate-200/50 ${claseColHoy}"></div>`;
