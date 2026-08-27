@@ -279,44 +279,54 @@
     </header>
 
     <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 pt-3 pb-2 space-y-2.5">
-      <div class="flex flex-col lg:flex-row items-center justify-between gap-3">
+      <!-- BARRA SUPERIOR DE ESTADO Y KPIS SINCRONIZADOS -->
+      <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5">
         
         <!-- Botón Retorno a Mis Proyectos -->
-        <div class="w-full lg:w-auto flex justify-start">
-          <button onclick="volverAlHub()" class="group bg-[#1e40af] hover:bg-[#1d4ed8] text-white text-xs font-black px-4 py-2 rounded-lg transition-all duration-150 shadow-md hover:shadow-lg flex items-center space-x-2 border border-blue-700 active:scale-95" title="Volver al panel principal de proyectos">
-            <svg class="w-4 h-4 text-blue-200 group-hover:text-white transition-transform duration-150 group-hover:-translate-x-1 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex-shrink-0">
+          <button onclick="volverAlHub()" class="h-10 group bg-[#1e40af] hover:bg-[#1d4ed8] text-white text-xs font-black px-3.5 rounded-xl transition-all duration-150 shadow-sm hover:shadow flex items-center space-x-2 border border-blue-700 active:scale-95 whitespace-nowrap cursor-pointer" title="Volver al panel principal de proyectos">
+            <svg class="w-4 h-4 text-blue-200 group-hover:text-white transition-transform duration-150 group-hover:-translate-x-0.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
             </svg>
             <span class="tracking-wide">Mis Proyectos</span>
-            <svg class="w-4 h-4 text-blue-200 group-hover:text-white transition-opacity duration-150 opacity-90 group-hover:opacity-100" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-3.5 h-3.5 text-blue-200 group-hover:text-white opacity-90" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
             </svg>
           </button>
         </div>
 
-        <!-- KPIs Centrales -->
-        <div class="flex-1 max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-2.5 w-full">
-          <div class="bg-[#1abc9c] text-white px-3 py-1.5 rounded-lg shadow flex items-center justify-between">
-            <span class="text-[11px] font-black uppercase tracking-wider">AVANCE</span>
-            <p id="kpi-avance" class="text-xl font-black">0%</p>
+        <!-- KPIs Centrales con Altura Fija y Protección Anti-Wrap -->
+        <div class="flex-1 max-w-4xl grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
+          
+          <!-- AVANCE -->
+          <div class="h-10 bg-[#1abc9c] text-white px-3 rounded-xl shadow-xs flex items-center justify-between min-w-0 overflow-hidden">
+            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">AVANCE</span>
+            <p id="kpi-avance" class="text-sm md:text-base font-black whitespace-nowrap">0%</p>
           </div>
-          <div class="bg-[#2ecc71] text-white px-3 py-1.5 rounded-lg shadow flex items-center justify-between">
-            <span class="text-[11px] font-black uppercase tracking-wider">EJECUTADO</span>
-            <p id="kpi-ejecutado" class="text-xl font-black">0 Items</p>
+
+          <!-- EJECUTADO -->
+          <div class="h-10 bg-[#2ecc71] text-white px-3 rounded-xl shadow-xs flex items-center justify-between min-w-0 overflow-hidden">
+            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">EJECUTADO</span>
+            <p id="kpi-ejecutado" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
           </div>
-          <div class="bg-[#f1c40f] text-[#2c3e50] px-3 py-1.5 rounded-lg shadow flex items-center justify-between">
-            <span class="text-[11px] font-black uppercase tracking-wider">EN PROCESO</span>
-            <p id="kpi-proceso" class="text-xl font-black">0 Items</p>
+
+          <!-- EN PROCESO -->
+          <div class="h-10 bg-[#f1c40f] text-[#2c3e50] px-3 rounded-xl shadow-xs flex items-center justify-between min-w-0 overflow-hidden">
+            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">PROCESO</span>
+            <p id="kpi-proceso" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
           </div>
-          <div class="bg-[#e74c3c] text-white px-3 py-1.5 rounded-lg shadow flex items-center justify-between">
-            <span class="text-[11px] font-black uppercase tracking-wider">PENDIENTE</span>
-            <p id="kpi-pendiente" class="text-xl font-black">0 Items</p>
+
+          <!-- PENDIENTE -->
+          <div class="h-10 bg-[#e74c3c] text-white px-3 rounded-xl shadow-xs flex items-center justify-between min-w-0 overflow-hidden">
+            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">PENDIENTE</span>
+            <p id="kpi-pendiente" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
           </div>
+
         </div>
 
         <!-- Etiqueta de Rol -->
-        <div class="w-full lg:w-auto flex justify-end">
-          <div id="badge-rol-gantt" class="bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-extrabold uppercase px-3 py-2 rounded-lg shadow-sm flex items-center space-x-1">
+        <div class="flex-shrink-0">
+          <div id="badge-rol-gantt" class="h-10 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-extrabold uppercase px-3.5 rounded-xl shadow-xs flex items-center space-x-1.5 whitespace-nowrap">
             <span>👑</span>
             <span>GESTOR DE PROYECTO</span>
           </div>
