@@ -3593,7 +3593,7 @@
       renderizarTabla();
     }
 
-    // --- RENDERIZADO DEL GANTT VISUAL RESPONSIVO CON AFFORDANCE UX ---
+   // --- RENDERIZADO DEL GANTT VISUAL RESPONSIVO CON AFFORDANCE UX ---
     function renderizarTabla() {
       recalcularJerarquiaWBS();
       const tbody = document.getElementById("lista-actividades");
@@ -3607,6 +3607,9 @@
 
       const txtBusqueda = (document.getElementById("filtro-busqueda")?.value || "").toLowerCase().trim();
       const respFiltro = document.getElementById("filtro-responsable-select")?.value || "";
+
+      const mostrarAvatares = (visibilidadColumnas.avatares_gantt !== false);
+      const mostrarPorcentajes = (visibilidadColumnas.porcentajes_gantt !== false);
 
       let tInicioVisible, tFinVisible, duracionVisibleMs, divisionesHTML = "";
       const anioActual = new Date().getFullYear();
@@ -3632,6 +3635,7 @@
         const ventanaSemestres = 4;
         const semestresAgrupados = [];
         let semActual = null;
+
         mesesTotales.forEach(m => {
           const key = `${m.anio}-${m.semestre}`;
           if (!semActual || semActual.key !== key) {
@@ -3679,6 +3683,7 @@
         const ventanaTrimestres = 6;
         const trimAgrupados = [];
         let trimActual = null;
+
         mesesTotales.forEach(m => {
           const key = `${m.anio}-${m.trimestre}`;
           if (!trimActual || trimActual.key !== key) {
@@ -3812,7 +3817,7 @@
         }
 
         let ganttHTML = `
-          <div class="relative w-full h-7 bg-[#f8fafc] rounded border border-slate-200/80 overflow-hidden" title="Sin fechas programadas">
+          <div class="relative w-full h-7 bg-[#f8fafc] rounded border border-slate-200/80 overflow-hidden">
             <div class="absolute inset-0 flex pointer-events-none opacity-60">${divisionesHTML}</div>
           </div>
         `;
@@ -3831,7 +3836,7 @@
 
               const esHito = (act.dias <= 1);
               let barraOElementoHTML = "";
-              const miniAvataresHTML = (visibilidadColumnas.avatares_gantt !== false) ? obtenerMiniAvataresGanttHTML(act.responsable) : '';
+              const miniAvataresHTML = mostrarAvatares ? obtenerMiniAvataresGanttHTML(act.responsable) : '';
               const esBarraDelgada = widthPct < 5.0;
 
               if (esHito) {
