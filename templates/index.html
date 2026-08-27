@@ -240,10 +240,10 @@
           <thead class="bg-[#0f2a4a] text-white">
             <tr>
               <th class="p-3 font-bold text-white border-b border-blue-900 w-12 text-center">#</th>
-              <th class="p-3 font-bold text-white border-b border-blue-900">Proyecto / Programa</th>
-              <th class="p-3 font-bold text-white border-b border-blue-900 w-32 text-center">Rol</th>
-              <th class="p-3 font-bold text-white border-b border-blue-900 w-36 text-center">% Avance</th>
-              <th class="p-3 font-bold text-white border-b border-blue-900 w-44 text-center">Estado de Tareas</th>
+              <th class="p-3 font-bold text-white border-b border-blue-900 min-w-[200px]">Proyecto / Programa</th>
+              <th class="p-3 font-bold text-white border-b border-blue-900 w-28 text-center">Rol</th>
+              <th class="p-3 font-bold text-white border-b border-blue-900 w-32 text-center">% Avance</th>
+              <th class="p-3 font-bold text-white border-b border-blue-900 min-w-[280px] text-center whitespace-nowrap">Estado de tareas</th>
               <th class="p-3 font-bold text-white border-b border-blue-900 w-28 text-center">Acción</th>
             </tr>
           </thead>
@@ -821,6 +821,7 @@
           <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="col-chk-avance" onchange="alternarColumna('avance', this.checked)" class="rounded text-[#0f2a4a]"><span>% Avance</span></label>
           <label class="flex items-center space-x-2 cursor-pointer col-span-2 border-t pt-2 mt-1"><input type="checkbox" id="col-chk-gantt" onchange="alternarColumna('gantt', this.checked)" class="rounded text-[#0f2a4a]"><span class="text-[#0f2a4a] font-bold">Cronograma Gantt</span></label>
           <label class="flex items-center space-x-2 cursor-pointer col-span-2 bg-slate-50 p-2 rounded border border-slate-200"><input type="checkbox" id="col-chk-avatares-gantt" onchange="alternarColumna('avatares_gantt', this.checked)" class="rounded text-[#0f2a4a]"><span>Avatares en barras del Gantt</span></label>
+          <label class="flex items-center space-x-2 cursor-pointer col-span-2 bg-slate-50 p-2 rounded border border-slate-200"><input type="checkbox" id="col-chk-porcentajes-gantt" onchange="alternarColumna('porcentajes_gantt', this.checked)" class="rounded text-[#0f2a4a]"><span>Valores porcentuales en barras del Gantt</span></label>
         </div>
         <div class="flex justify-between items-center pt-2">
           <button onclick="restablecerColumnas()" class="text-xs text-blue-600 hover:underline font-semibold">Restablecer todas</button>
@@ -1238,7 +1239,8 @@
       dias: true,
       avance: true,
       gantt: true,
-      avatares_gantt: true
+      avatares_gantt: true,
+      porcentajes_gantt: true
     }));
 
     const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"];
@@ -1878,11 +1880,12 @@
         card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50";
         card.innerHTML = `
           <div>
-            <div class="flex items-center justify-between mb-3.5">
-              <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider ${esGestor ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-blue-50 text-blue-800 border border-blue-200/80'}">
+            <div class="flex items-center justify-between mb-3.5 gap-2">
+              <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider whitespace-nowrap ${esGestor ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-blue-50 text-blue-800 border border-blue-200/80'}">
                 ${esGestor ? '👑 Gestor' : '👤 Responsable'}
               </span>
-              <span class="text-xs font-black px-2 py-0.5 rounded ${badgeAvanceClases}">${avanceVal}% Avance</span>
+              ${p.unidad_organica ? `<span class="text-[10px] font-black text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 uppercase tracking-tight truncate max-w-[120px]" title="Unidad Responsable: ${p.unidad_organica}">[${p.unidad_organica}]</span>` : '<span></span>'}
+              <span class="text-xs font-black px-2 py-0.5 rounded whitespace-nowrap ${badgeAvanceClases}">${avanceVal}% Avance</span>
             </div>
             <h3 class="font-bold text-base text-[#0f2a4a] leading-snug min-h-[44px] flex items-center">${p.nombre}</h3>
             
@@ -1974,10 +1977,16 @@
               </div>
             </td>
             <td class="p-3 text-center">
-              <div class="inline-flex space-x-1.5 text-[10px] font-bold">
-                <span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded" title="Ejecutadas">${p.ejecutadas || 0} Ejec.</span>
-                <span class="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded" title="En Proceso">${p.en_proceso || 0} En proc.</span>
-                <span class="bg-rose-50 text-rose-800 border border-rose-200 px-1.5 py-0.5 rounded" title="No iniciadas">${p.pendientes || 0} No inic.</span>
+              <div class="inline-flex items-center space-x-1.5 text-[10px] font-bold whitespace-nowrap">
+                <span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center space-x-1" title="Ejecutadas">
+                  <span>${p.ejecutadas || 0}</span><span>Ejec.</span>
+                </span>
+                <span class="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center space-x-1" title="En proceso">
+                  <span>${p.en_proceso || 0}</span><span>En proc.</span>
+                </span>
+                <span class="bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center space-x-1" title="No iniciadas">
+                  <span>${p.pendientes || 0}</span><span>No inic.</span>
+                </span>
               </div>
             </td>
             <td class="p-3 text-center">
@@ -3189,6 +3198,8 @@
       document.getElementById("col-chk-gantt").checked = visibilidadColumnas.gantt;
       const chkAv = document.getElementById("col-chk-avatares-gantt");
       if (chkAv) chkAv.checked = visibilidadColumnas.avatares_gantt !== false;
+      const chkPct = document.getElementById("col-chk-porcentajes-gantt");
+      if (chkPct) chkPct.checked = visibilidadColumnas.porcentajes_gantt !== false;
     }
 
     function alternarColumna(colKey, estado) {
@@ -3199,7 +3210,7 @@
     }
 
     function restablecerColumnas() {
-      visibilidadColumnas = { responsable: true, estado: true, inicio: true, fin: true, dias: true, avance: true, gantt: true, avatares_gantt: true };
+      visibilidadColumnas = { responsable: true, estado: true, inicio: true, fin: true, dias: true, avance: true, gantt: true, avatares_gantt: true, porcentajes_gantt: true };
       localStorage.setItem("visibilidad_columnas", JSON.stringify(visibilidadColumnas));
       sincronizarCheckboxesColumnas();
       aplicarVisibilidadColumnas();
@@ -3825,9 +3836,9 @@
 
               if (esHito) {
                 barraOElementoHTML = `
-                  <div class="milestone-diamond" style="left: ${leftPct}%;" title="HITO: ${act.descripcion} (${fechaIniVisual})"></div>
+                  <div class="milestone-diamond" style="left: ${leftPct}%;"></div>
                   <div class="absolute flex items-center top-1 z-20 pointer-events-none text-[9px] font-bold text-gray-700" style="left: calc(${leftPct}% + 18px);">
-                    <span class="mr-1">${act.avance}%</span>
+                    ${mostrarPorcentajes ? `<span class="mr-1">${act.avance}%</span>` : ''}
                     ${miniAvataresHTML}
                   </div>
                 `;
@@ -3837,11 +3848,11 @@
                     <div class="w-full h-full bg-[#0f2a4a] rounded-sm shadow relative">
                       <div class="absolute left-0 -bottom-1 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#0f2a4a]"></div>
                       <div class="absolute right-0 -bottom-1 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#0f2a4a]"></div>
-                      ${!esBarraDelgada ? `<div class="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white px-1 overflow-hidden whitespace-nowrap">${act.avance}%</div>` : ''}
+                      ${mostrarPorcentajes && !esBarraDelgada ? `<div class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white px-1 overflow-hidden whitespace-nowrap drop-shadow-xs">${act.avance}%</div>` : ''}
                     </div>
                   </div>
                   <div class="absolute flex items-center top-1 z-20 pointer-events-none text-[9px] font-black text-[#0f2a4a]" style="left: calc(${leftPct + widthPct}% + 4px);">
-                    ${esBarraDelgada ? `<span class="bg-blue-50 px-1 rounded border border-blue-200 mr-1 shadow-xs">${act.avance}%</span>` : ''}
+                    ${mostrarPorcentajes && esBarraDelgada ? `<span class="bg-blue-50 px-1 rounded border border-blue-200 mr-1 shadow-xs">${act.avance}%</span>` : ''}
                     ${miniAvataresHTML}
                   </div>
                 `;
@@ -3852,10 +3863,10 @@
 
                 if (capaCpmActiva) {
                   if (esActividadCritica) {
-                    colorFondoRestante = "#dc2626"; // Rojo Crítico Intenso
+                    colorFondoRestante = "#dc2626";
                     colorBorde = "border-red-800";
                   } else {
-                    colorFondoRestante = "#cbd5e1"; // Con holgura (atenuada)
+                    colorFondoRestante = "#cbd5e1";
                     colorBorde = "border-slate-300";
                   }
                 } else {
@@ -3872,26 +3883,27 @@
                 let textoDentroDeBarra = "";
                 let textoFlotanteHTML = "";
 
-                if (act.estado === "En proceso") {
-                  if (act.avance > 0) {
-                    subAvanceHTML = `
-                      <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l-md flex items-center justify-center text-[9px] font-extrabold text-white shadow-inner" style="width: ${act.avance}%;">
-                      </div>
-                    `;
-                  }
-                  if (!esBarraDelgada && widthPct >= 7.0 && act.avance >= 35) {
-                    textoDentroDeBarra = `<div class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-gray-900 drop-shadow-xs z-10 pointer-events-none">${act.avance}%</div>`;
+                if (mostrarPorcentajes && !capaCpmActiva) {
+                  if (act.estado === "En proceso") {
+                    if (act.avance > 0) {
+                      subAvanceHTML = `
+                        <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l-md flex items-center justify-center text-[9px] font-black text-white shadow-inner" style="width: ${act.avance}%;"></div>
+                      `;
+                    }
+                    if (!esBarraDelgada && widthPct >= 7.0) {
+                      textoDentroDeBarra = `<div class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] z-10 pointer-events-none">${act.avance}%</div>`;
+                    } else {
+                      textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">${act.avance}%</span>`;
+                    }
+                  } else if (act.estado === "Ejecutado") {
+                    if (!esBarraDelgada) {
+                      textoDentroDeBarra = `<div class="w-full h-full flex items-center justify-center text-[9px] font-black text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">100%</div>`;
+                    } else {
+                      textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">100%</span>`;
+                    }
                   } else {
-                    textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">${act.avance}%</span>`;
+                    textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">0%</span>`;
                   }
-                } else if (act.estado === "Ejecutado") {
-                  if (!esBarraDelgada) {
-                    textoDentroDeBarra = `<div class="w-full h-full flex items-center justify-center text-[9px] font-extrabold text-white">100%</div>`;
-                  } else {
-                    textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">100%</span>`;
-                  }
-                } else {
-                  textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">0%</span>`;
                 }
 
                 const opacidadCpm = (capaCpmActiva && !esActividadCritica && !esMadre) ? "opacity-35" : "opacity-100";
@@ -3901,18 +3913,17 @@
                   <div class="absolute top-1 bottom-1 z-10 rounded-md border ${colorBorde} shadow-sm transition-all duration-200 overflow-hidden ${opacidadCpm}" 
                        style="left: ${leftPct}%; width: ${widthPct}%; background-color: ${colorFondoRestante};">
                     ${!capaCpmActiva ? subAvanceHTML : ''}
-                    ${capaCpmActiva && esActividadCritica ? `<div class="w-full h-full flex items-center justify-center text-[9px] font-black text-white select-none">CRÍTICA (${act.dias}d)</div>` : textoDentroDeBarra}
+                    ${!capaCpmActiva ? textoDentroDeBarra : ''}
                   </div>
                   <div class="absolute flex items-center top-1 z-20 pointer-events-none ${opacidadCpm}" style="left: calc(${leftPct + widthPct}% + 4px);">
-                    ${textoFlotanteHTML}
+                    ${!capaCpmActiva ? textoFlotanteHTML : ''}
                     ${miniAvataresHTML}
                   </div>
                 `;
               }
 
               ganttHTML = `
-                <div class="relative w-full h-7 bg-[#f8fafc] rounded border border-slate-200/80 overflow-hidden" 
-                     title="${act.codigo}: ${act.descripcion}&#10;• Periodo: ${fechaIniVisual} al ${fechaFinVisual}&#10;• Duración: ${act.dias} días&#10;• Avance: ${act.avance}% (${act.estado})&#10;• Responsable(s): ${act.responsable || 'No asignado'}">
+                <div class="relative w-full h-7 bg-[#f8fafc] rounded border border-slate-200/80 overflow-hidden">
                   <div class="absolute inset-0 flex pointer-events-none opacity-60">${divisionesHTML}</div>
                   ${barraOElementoHTML}
                 </div>
