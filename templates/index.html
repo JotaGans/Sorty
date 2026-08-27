@@ -282,14 +282,14 @@
       <!-- BARRA SUPERIOR DE ESTADO Y KPIS SINCRONIZADOS -->
       <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5">
         
-        <!-- Botón Retorno a Mis Proyectos -->
+        <!-- Botón Retorno a Mis Proyectos (Turquesa Teal) -->
         <div class="flex-shrink-0">
-          <button onclick="volverAlHub()" class="h-10 group bg-[#1e40af] hover:bg-[#1d4ed8] text-white text-xs font-black px-3.5 rounded-xl transition-all duration-150 shadow-sm hover:shadow flex items-center space-x-2 border border-blue-700 active:scale-95 whitespace-nowrap cursor-pointer" title="Volver al panel principal de proyectos">
-            <svg class="w-4 h-4 text-blue-200 group-hover:text-white transition-transform duration-150 group-hover:-translate-x-0.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onclick="volverAlHub()" class="h-10 group bg-teal-600 hover:bg-teal-700 text-white text-xs font-black px-3.5 rounded-xl transition-all duration-150 shadow-sm hover:shadow flex items-center space-x-2 border border-teal-500 active:scale-95 whitespace-nowrap cursor-pointer" title="Volver al panel principal de proyectos">
+            <svg class="w-4 h-4 text-teal-100 group-hover:text-white transition-transform duration-150 group-hover:-translate-x-0.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
             </svg>
             <span class="tracking-wide">Mis Proyectos</span>
-            <svg class="w-3.5 h-3.5 text-blue-200 group-hover:text-white opacity-90" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-3.5 h-3.5 text-teal-100 group-hover:text-white opacity-90" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
             </svg>
           </button>
@@ -1865,7 +1865,7 @@
         const avanceVal = parseInt(p.avance_global) || 0;
 
         // Estilos semánticos sincronizados con los estados del proyecto
-        let badgeAvanceClases = "bg-rose-50 text-rose-700 border border-rose-200"; // 0% - Pendiente
+        let badgeAvanceClases = "bg-rose-50 text-rose-700 border border-rose-200"; // 0% - No iniciado
         let barraColorClase = "bg-rose-500";
 
         if (avanceVal === 100) {
@@ -1876,19 +1876,29 @@
           barraColorClase = "bg-amber-500";
         }
 
+        // Obtener el nombre descriptivo completo de la unidad orgánica
+        let textoUnidadCompleta = "";
+        if (p.unidad_organica && p.unidad_organica.trim() !== "") {
+          const uObj = (catalogoUnidadesGlobal || []).find(u => u.sigla.toUpperCase() === p.unidad_organica.trim().toUpperCase());
+          textoUnidadCompleta = uObj ? `${uObj.nombre} (${uObj.sigla})` : p.unidad_organica;
+        }
+
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50";
         card.innerHTML = `
           <div>
-            <div class="flex items-center justify-between mb-3.5 gap-2">
+            <div class="flex items-center justify-between mb-3.5">
               <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider whitespace-nowrap ${esGestor ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-blue-50 text-blue-800 border border-blue-200/80'}">
                 ${esGestor ? '👑 Gestor' : '👤 Responsable'}
               </span>
-              ${p.unidad_organica ? `<span class="text-[10px] font-black text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 uppercase tracking-tight truncate max-w-[120px]" title="Unidad Responsable: ${p.unidad_organica}">[${p.unidad_organica}]</span>` : '<span></span>'}
               <span class="text-xs font-black px-2 py-0.5 rounded whitespace-nowrap ${badgeAvanceClases}">${avanceVal}% Avance</span>
             </div>
-            <h3 class="font-bold text-base text-[#0f2a4a] leading-snug min-h-[44px] flex items-center">${p.nombre}</h3>
             
+            <h3 class="font-bold text-base text-[#0f2a4a] leading-snug flex items-center">${p.nombre}</h3>
+            
+            <!-- Nombre de la Unidad de Organización Responsable (Intermedio) -->
+            ${textoUnidadCompleta ? `<p class="text-[11px] font-bold text-teal-800 mt-1 truncate" title="Unidad de Organización Responsable: ${textoUnidadCompleta}">🏢 ${textoUnidadCompleta}</p>` : ''}
+
             <p ${tooltipEdit} 
                ondblclick="${esGestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" 
                class="text-xs text-gray-500 mt-2 line-clamp-2 min-h-[32px] leading-relaxed ${estiloCursor}">
@@ -1897,10 +1907,6 @@
             
             <div class="w-full bg-gray-100 rounded-full h-2 mt-4 overflow-hidden shadow-inner">
               <div class="${barraColorClase} h-2 rounded-full transition-all duration-500" style="width: ${avanceVal}%"></div>
-            </div>
-
-            <div class="flex items-center justify-between mt-2">
-              ${p.unidad_organica ? `<span class="text-[10px] font-black text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 uppercase">[${p.unidad_organica}]</span>` : '<span></span>'}
             </div>
 
             <div class="grid grid-cols-3 gap-2 mt-4 text-center">
@@ -3876,11 +3882,14 @@
                   }
                 } else {
                   if (act.estado === "Ejecutado") {
-                    colorFondoRestante = "#2ecc71";
-                    colorBorde = "border-green-600";
+                    colorFondoRestante = "#2ecc71"; // Verde KPI idéntico
+                    colorBorde = "border-emerald-600";
                   } else if (act.estado === "En proceso") {
-                    colorFondoRestante = "#fef08a";
-                    colorBorde = "border-yellow-500";
+                    colorFondoRestante = "#f1c40f"; // Amarillo KPI idéntico
+                    colorBorde = "border-amber-500";
+                  } else {
+                    colorFondoRestante = "#e2e8f0"; // Gris neutro no invasivo
+                    colorBorde = "border-slate-300";
                   }
                 }
 
@@ -3892,17 +3901,17 @@
                   if (act.estado === "En proceso") {
                     if (act.avance > 0) {
                       subAvanceHTML = `
-                        <div class="absolute top-0 bottom-0 left-0 bg-[#e67e22] rounded-l-md flex items-center justify-center text-[9px] font-black text-white shadow-inner" style="width: ${act.avance}%;"></div>
+                        <div class="absolute top-0 bottom-0 left-0 bg-[#d35400] rounded-l-md flex items-center justify-center text-[9px] font-black text-white shadow-inner" style="width: ${act.avance}%;"></div>
                       `;
                     }
                     if (!esBarraDelgada && widthPct >= 7.0) {
-                      textoDentroDeBarra = `<div class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] z-10 pointer-events-none">${act.avance}%</div>`;
+                      textoDentroDeBarra = `<div class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] z-10 pointer-events-none">${act.avance}%</div>`;
                     } else {
                       textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">${act.avance}%</span>`;
                     }
                   } else if (act.estado === "Ejecutado") {
                     if (!esBarraDelgada) {
-                      textoDentroDeBarra = `<div class="w-full h-full flex items-center justify-center text-[9px] font-black text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">100%</div>`;
+                      textoDentroDeBarra = `<div class="w-full h-full flex items-center justify-center text-[9px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">100%</div>`;
                     } else {
                       textoFlotanteHTML = `<span class="text-[9px] font-bold text-gray-700 bg-white/90 px-1 rounded border border-gray-200 shadow-xs mr-1">100%</span>`;
                     }
