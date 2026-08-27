@@ -178,8 +178,8 @@
       <!-- TARJETA CABECERA DEL HUB: INFORMACIÓN + KPIS RESUMEN -->
       <div class="bg-white rounded-2xl p-6 mb-5 border border-gray-200/90 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <span class="text-[11px] font-black text-teal-700 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">Portal de Gestión Institucional</span>
-          <h2 class="text-2xl md:text-3xl font-extrabold text-[#0f2a4a] mt-2 tracking-tight">Mis Proyectos y Programas</h2>
+          <span class="text-[11px] font-black text-teal-700 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">PORTAL DE GESTIÓN DE PROYECTOS</span>
+          <h2 id="hub-saludo-bienvenida" class="text-2xl md:text-3xl font-extrabold text-[#0f2a4a] mt-2 tracking-tight">Mis proyectos y programas</h2>
           <p class="text-xs text-gray-500 font-medium mt-1">Seleccione un espacio de trabajo para registrar avances o supervisar la ruta de actividades.</p>
         </div>
 
@@ -312,13 +312,13 @@
 
           <!-- EN PROCESO -->
           <div class="h-10 bg-[#f1c40f] text-[#2c3e50] px-3 rounded-xl shadow-xs flex items-center justify-between min-w-0 overflow-hidden">
-            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">PROCESO</span>
+            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">EN PROCESO</span>
             <p id="kpi-proceso" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
           </div>
 
-          <!-- PENDIENTE -->
+          <!-- NO INICIADO -->
           <div class="h-10 bg-[#e74c3c] text-white px-3 rounded-xl shadow-xs flex items-center justify-between min-w-0 overflow-hidden">
-            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">PENDIENTE</span>
+            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">NO INICIADO</span>
             <p id="kpi-pendiente" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
           </div>
 
@@ -469,6 +469,12 @@
         <div>
           <label class="text-[11px] font-bold text-gray-600 uppercase">Nombre del Proyecto / Programa:</label>
           <input type="text" id="input-nuevo-proy-nombre" required placeholder="Ej. SISTEMA DE GESTION AMBIENTAL" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded text-sm font-semibold outline-none focus:border-teal-600">
+        </div>
+        <div class="relative">
+          <label class="text-[11px] font-bold text-gray-600 uppercase">Unidad de Organización Responsable:</label>
+          <input type="text" id="input-nuevo-proy-uo-busq" oninput="autocompletarUOProyecto(this.value)" placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded text-xs font-semibold outline-none focus:border-teal-600" autocomplete="off">
+          <input type="hidden" id="input-nuevo-proy-uo-valor">
+          <div id="sugerencias-uo-proyecto" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
         </div>
         <div>
           <label class="text-[11px] font-bold text-gray-600 uppercase">Descripción / Alcance:</label>
@@ -801,7 +807,7 @@
       <div class="bg-[#0f2a4a] text-white p-3.5 flex justify-between items-center">
         <div class="flex items-center space-x-2">
           <span class="text-base">👁️</span>
-          <h3 class="font-bold text-sm">Configurar Columnas Visibles</h3>
+          <h3 class="font-bold text-sm">Configurar columnas visibles</h3>
         </div>
         <button onclick="cerrarModalColumnas()" class="text-white text-xl font-bold hover:text-gray-300">&times;</button>
       </div>
@@ -814,6 +820,7 @@
           <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="col-chk-dias" onchange="alternarColumna('dias', this.checked)" class="rounded text-[#0f2a4a]"><span>Días Duración</span></label>
           <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="col-chk-avance" onchange="alternarColumna('avance', this.checked)" class="rounded text-[#0f2a4a]"><span>% Avance</span></label>
           <label class="flex items-center space-x-2 cursor-pointer col-span-2 border-t pt-2 mt-1"><input type="checkbox" id="col-chk-gantt" onchange="alternarColumna('gantt', this.checked)" class="rounded text-[#0f2a4a]"><span class="text-[#0f2a4a] font-bold">Cronograma Gantt</span></label>
+          <label class="flex items-center space-x-2 cursor-pointer col-span-2 bg-slate-50 p-2 rounded border border-slate-200"><input type="checkbox" id="col-chk-avatares-gantt" onchange="alternarColumna('avatares_gantt', this.checked)" class="rounded text-[#0f2a4a]"><span>Avatares en barras del Gantt</span></label>
         </div>
         <div class="flex justify-between items-center pt-2">
           <button onclick="restablecerColumnas()" class="text-xs text-blue-600 hover:underline font-semibold">Restablecer todas</button>
@@ -1230,7 +1237,8 @@
       fin: true,
       dias: true,
       avance: true,
-      gantt: true
+      gantt: true,
+      avatares_gantt: true
     }));
 
     const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"];
@@ -1406,6 +1414,18 @@
       const userText = currentUser.username || "Usuario";
       const roleText = currentUser.rol === "ADMIN_TI" ? "ADMINISTRADOR TI" : "OPERADOR";
       
+      // Extraer el primer nombre limpio
+      let primerNombre = userText;
+      if (currentUser.nombre_completo) {
+        const nomLimpio = currentUser.nombre_completo.includes(",") 
+          ? currentUser.nombre_completo.split(",")[1].trim() 
+          : currentUser.nombre_completo.trim();
+        primerNombre = nomLimpio.split(" ")[0];
+      }
+
+      const saludoHub = document.getElementById("hub-saludo-bienvenida");
+      if (saludoHub) saludoHub.innerText = `Bienvenido(a), ${primerNombre}`;
+
       const uHub = document.getElementById("user-display-hub");
       const rHub = document.getElementById("role-display-hub");
       const uGantt = document.getElementById("user-display");
@@ -1876,17 +1896,21 @@
               <div class="${barraColorClase} h-2 rounded-full transition-all duration-500" style="width: ${avanceVal}%"></div>
             </div>
 
-            <div class="grid grid-cols-3 gap-2 mt-5 text-center">
+            <div class="flex items-center justify-between mt-2">
+              ${p.unidad_organica ? `<span class="text-[10px] font-black text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 uppercase">[${p.unidad_organica}]</span>` : '<span></span>'}
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mt-4 text-center">
               <div class="bg-emerald-50/80 p-2 rounded-xl border border-emerald-100">
                 <span class="block text-[9px] font-black text-emerald-700 uppercase">Ejecutado</span>
                 <span class="text-xs font-black text-emerald-900">${p.ejecutadas || 0}</span>
               </div>
               <div class="bg-amber-50/80 p-2 rounded-xl border border-amber-100">
-                <span class="block text-[9px] font-black text-amber-700 uppercase">Proceso</span>
+                <span class="block text-[9px] font-black text-amber-700 uppercase">En proceso</span>
                 <span class="text-xs font-black text-amber-900">${p.en_proceso || 0}</span>
               </div>
               <div class="bg-rose-50/80 p-2 rounded-xl border border-rose-100">
-                <span class="block text-[9px] font-black text-rose-700 uppercase">Pendiente</span>
+                <span class="block text-[9px] font-black text-rose-700 uppercase">No iniciado</span>
                 <span class="text-xs font-black text-rose-900">${p.pendientes || 0}</span>
               </div>
             </div>
@@ -1952,8 +1976,8 @@
             <td class="p-3 text-center">
               <div class="inline-flex space-x-1.5 text-[10px] font-bold">
                 <span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded" title="Ejecutadas">${p.ejecutadas || 0} Ejec.</span>
-                <span class="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded" title="En Proceso">${p.en_proceso || 0} Proc.</span>
-                <span class="bg-rose-50 text-rose-800 border border-rose-200 px-1.5 py-0.5 rounded" title="Pendientes">${p.pendientes || 0} Pend.</span>
+                <span class="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded" title="En Proceso">${p.en_proceso || 0} En proc.</span>
+                <span class="bg-rose-50 text-rose-800 border border-rose-200 px-1.5 py-0.5 rounded" title="No iniciadas">${p.pendientes || 0} No inic.</span>
               </div>
             </td>
             <td class="p-3 text-center">
@@ -1972,12 +1996,12 @@
         return;
       }
 
-      let csv = "ID;Proyecto / Programa;Descripcion;Rol Asignado;% Avance;Total Actividades;Ejecutadas;En Proceso;Pendientes;Fecha de Creacion\n";
+      let csv = "ID;Proyecto / Programa;Unidad Responsable;Descripcion;Rol Asignado;% Avance;Total Actividades;Ejecutadas;En Proceso;No Iniciadas;Fecha de Creacion\n";
       
       proyectosUsuarioGlobal.forEach(p => {
         const rol = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI") ? "GESTOR" : "RESPONSABLE";
         const desc = (p.descripcion || "").replace(/(\r\n|\n|\r|")/gm, " ");
-        csv += `"${p.id}";"${p.nombre.replace(/"/g, '""')}";"${desc}";"${rol}";${p.avance_global || 0}%;${p.total_actividades || 0};${p.ejecutadas || 0};${p.en_proceso || 0};${p.pendientes || 0};"${p.fecha_creacion || ''}"\n`;
+        csv += `"${p.id}";"${p.nombre.replace(/"/g, '""')}";"${p.unidad_organica || ''}";"${desc}";"${rol}";${p.avance_global || 0}%;${p.total_actividades || 0};${p.ejecutadas || 0};${p.en_proceso || 0};${p.pendientes || 0};"${p.fecha_creacion || ''}"\n`;
       });
 
       const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
@@ -1988,13 +2012,54 @@
       notificarToast("Resumen consolidado descargado en Excel.", "success");
     }
 
-    function abrirModalNuevoProyecto() { document.getElementById("modal-nuevo-proyecto").classList.remove("hidden"); }
-    function cerrarModalNuevoProyecto() { document.getElementById("modal-nuevo-proyecto").classList.add("hidden"); }
+    function abrirModalNuevoProyecto() { 
+      if (catalogoUnidadesGlobal.length === 0) cargarCatalogoUnidades();
+      document.getElementById("input-nuevo-proy-nombre").value = "";
+      document.getElementById("input-nuevo-proy-desc").value = "";
+      document.getElementById("input-nuevo-proy-uo-busq").value = "";
+      document.getElementById("input-nuevo-proy-uo-valor").value = "";
+      document.getElementById("sugerencias-uo-proyecto").classList.add("hidden");
+      document.getElementById("modal-nuevo-proyecto").classList.remove("hidden"); 
+    }
+
+    function cerrarModalNuevoProyecto() { 
+      document.getElementById("modal-nuevo-proyecto").classList.add("hidden"); 
+    }
+
+    function autocompletarUOProyecto(termino) {
+      const term = termino.toLowerCase().trim();
+      const divSug = document.getElementById("sugerencias-uo-proyecto");
+      if (!term) {
+        divSug.classList.add("hidden");
+        return;
+      }
+      const matches = catalogoUnidadesGlobal.filter(u => 
+        u.sigla.toLowerCase().includes(term) || u.nombre.toLowerCase().includes(term)
+      );
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = `<div class="p-2 text-gray-400">Sin coincidencias</div>`;
+      } else {
+        matches.slice(0, 5).forEach(u => {
+          const item = document.createElement("div");
+          item.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between font-semibold";
+          item.innerHTML = `<span>${u.nombre}</span><strong class="text-[#0f2a4a] ml-2">[${u.sigla}]</strong>`;
+          item.onclick = () => {
+            document.getElementById("input-nuevo-proy-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+            document.getElementById("input-nuevo-proy-uo-valor").value = u.sigla;
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
 
     async function guardarNuevoProyecto(e) {
       e.preventDefault();
       const nombre = document.getElementById("input-nuevo-proy-nombre").value.trim();
       const descripcion = document.getElementById("input-nuevo-proy-desc").value.trim();
+      const uo = document.getElementById("input-nuevo-proy-uo-valor").value || document.getElementById("input-nuevo-proy-uo-busq").value.trim();
 
       if (!nombre) {
         alert("Por favor ingresa un nombre para el proyecto.");
@@ -2008,7 +2073,7 @@
             "Content-Type": "application/json", 
             "Authorization": `Bearer ${token}` 
           },
-          body: JSON.stringify({ nombre, descripcion })
+          body: JSON.stringify({ nombre, descripcion, unidad_organica: uo })
         });
         
         if (!res.ok) {
@@ -2016,8 +2081,6 @@
           throw new Error(errData.detail || "No se pudo crear el proyecto en el servidor.");
         }
 
-        document.getElementById("input-nuevo-proy-nombre").value = "";
-        document.getElementById("input-nuevo-proy-desc").value = "";
         cerrarModalNuevoProyecto();
         await cargarHubProyectos();
       } catch (err) {
@@ -3124,6 +3187,8 @@
       document.getElementById("col-chk-dias").checked = visibilidadColumnas.dias;
       document.getElementById("col-chk-avance").checked = visibilidadColumnas.avance;
       document.getElementById("col-chk-gantt").checked = visibilidadColumnas.gantt;
+      const chkAv = document.getElementById("col-chk-avatares-gantt");
+      if (chkAv) chkAv.checked = visibilidadColumnas.avatares_gantt !== false;
     }
 
     function alternarColumna(colKey, estado) {
@@ -3134,7 +3199,7 @@
     }
 
     function restablecerColumnas() {
-      visibilidadColumnas = { responsable: true, estado: true, inicio: true, fin: true, dias: true, avance: true, gantt: true };
+      visibilidadColumnas = { responsable: true, estado: true, inicio: true, fin: true, dias: true, avance: true, gantt: true, avatares_gantt: true };
       localStorage.setItem("visibilidad_columnas", JSON.stringify(visibilidadColumnas));
       sincronizarCheckboxesColumnas();
       aplicarVisibilidadColumnas();
@@ -3755,7 +3820,7 @@
 
               const esHito = (act.dias <= 1);
               let barraOElementoHTML = "";
-              const miniAvataresHTML = obtenerMiniAvataresGanttHTML(act.responsable);
+              const miniAvataresHTML = (visibilidadColumnas.avatares_gantt !== false) ? obtenerMiniAvataresGanttHTML(act.responsable) : '';
               const esBarraDelgada = widthPct < 5.0;
 
               if (esHito) {
@@ -3897,12 +3962,19 @@
           }
         }
 
+        // Evaluación de fecha vencida respecto al día de hoy
+        const hoyMs = new Date().setHours(0, 0, 0, 0);
+        const finMs = dtFinObj ? dtFinObj.getTime() : null;
+        const estaVencida = (finMs !== null && finMs < hoyMs && act.estado !== "Ejecutado");
+        const claseFechaVencida = estaVencida ? "bg-rose-100/70 text-rose-800 font-bold border-rose-200" : "";
+        const badgeVencidoHTML = estaVencida ? `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-black ${claseFechaVencida}" title="¡Plazo vencido!">${fechaFinVisual}</span>` : fechaFinVisual;
+
         let tdFin = '';
         if (visibilidadColumnas.fin) {
           if (esMadre) {
-            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${claseBloqueada} whitespace-nowrap font-medium" title="Fecha de finalización calculada automáticamente por el cierre de subtareas">${fechaFinVisual} ${lockIcon}</td>`;
+            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${claseBloqueada} whitespace-nowrap font-medium" title="Fecha de finalización calculada automáticamente por el cierre de subtareas">${badgeVencidoHTML} ${lockIcon}</td>`;
           } else {
-            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaFin('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para modificar fecha de fin' : ''}">${fechaFinVisual}</td>`;
+            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaFin('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para modificar fecha de fin' : ''}">${badgeVencidoHTML}</td>`;
           }
         }
 
@@ -3983,7 +4055,7 @@
       document.getElementById("kpi-avance").innerText = `${globalPct}%`;
       document.getElementById("kpi-ejecutado").innerText = `${actividadesGlobal.filter(a => a.estado === 'Ejecutado').length} Items`;
       document.getElementById("kpi-proceso").innerText = `${actividadesGlobal.filter(a => a.estado === 'En proceso').length} Items`;
-      document.getElementById("kpi-pendiente").innerText = `${actividadesGlobal.filter(a => a.estado === 'Pendiente').length} Items`;
+      document.getElementById("kpi-pendiente").innerText = `${actividadesGlobal.filter(a => a.estado === 'No iniciado' || a.estado === 'Pendiente').length} Items`;
     }
 
     function abrirInputCustom({ titulo, mensaje, tipo = 'text', valorActual = '', opciones = [], onAceptar }) {
@@ -4057,14 +4129,14 @@
         mensaje: "Seleccione el estado de la actividad:",
         tipo: "select",
         valorActual: act.estado,
-        opciones: ["Pendiente", "En proceso", "Ejecutado"],
+        opciones: ["No iniciado", "En proceso", "Ejecutado"],
         onAceptar: async (nuevoEstado) => {
           if (nuevoEstado === "Ejecutado") {
             act.estado = "Ejecutado";
             act.avance = 100;
             await guardarCambioDirecto(act);
-          } else if (nuevoEstado === "Pendiente") {
-            act.estado = "Pendiente";
+          } else if (nuevoEstado === "No iniciado" || nuevoEstado === "Pendiente") {
+            act.estado = "No iniciado";
             act.avance = 0;
             await guardarCambioDirecto(act);
           } else if (nuevoEstado === "En proceso") {

@@ -121,6 +121,7 @@ class PermisoProyectoUpdate(BaseModel):
 class ProyectoCrearModel(BaseModel):
     nombre: str
     descripcion: Optional[str] = ""
+    unidad_organica: Optional[str] = ""
 
 class ProyectoDescripcionUpdate(BaseModel):
     descripcion: str
@@ -226,7 +227,7 @@ def init_db():
             FOREIGN KEY(creador_id) REFERENCES usuarios(id)
         )
     """)
-    for col, defn in [("descripcion", "TEXT"), ("creador_id", "INTEGER")]:
+    for col, defn in [("descripcion", "TEXT"), ("creador_id", "INTEGER"), ("unidad_organica", "TEXT")]:
         try:
             c.execute(f"ALTER TABLE proyectos ADD COLUMN {col} {defn}")
         except sqlite3.OperationalError:
@@ -639,7 +640,7 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
     u_nom = user.get("nombre_completo", "")
 
     query = """
-        SELECT DISTINCT p.id, p.nombre, p.descripcion, p.fecha_creacion,
+        SELECT DISTINCT p.id, p.nombre, p.descripcion, p.unidad_organica, p.fecha_creacion,
                CASE WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 1 ELSE 0 END as es_gestor
         FROM proyectos p
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
@@ -701,8 +702,8 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
 
 @app.post("/proyectos")
 def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    db.execute("INSERT INTO proyectos (nombre, descripcion, creador_id) VALUES (?, ?, ?)",
-               (p.nombre.strip(), p.descripcion.strip(), user["id"]))
+    db.execute("INSERT INTO proyectos (nombre, descripcion, unidad_organica, creador_id) VALUES (?, ?, ?, ?)",
+               (p.nombre.strip(), p.descripcion.strip(), (p.unidad_organica or "").strip(), user["id"]))
     nuevo_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (?, ?, 1)", (nuevo_id, user["id"]))
     db.execute("""
