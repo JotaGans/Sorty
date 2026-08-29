@@ -2452,113 +2452,13 @@
       }
     }
 
-    function abrirMenuContextual(event, cod) {
-      event.preventDefault();
-      event.stopPropagation();
-      seleccionarFila(cod);
-      actividadContextualSeleccionada = actividadesGlobal.find(a => a.codigo === cod);
-      if (!actividadContextualSeleccionada) return;
-
-      const partes = cod.replace(/\.+$/, "").split(".");
-      const nivel = partes.length;
-      const nombresSubnivel = ["", "Subtarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
-      
-      const menu = document.getElementById("menu-contextual");
-      const headerInfo = document.getElementById("mc-header-info");
-      headerInfo.classList.remove("hidden");
-      headerInfo.innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
-      
-      const btnAgregar = document.getElementById("mc-btn-agregar");
-      const btnResp = document.getElementById("mc-btn-resp");
-      const btnElim = document.getElementById("mc-btn-eliminar");
-
-      const esMiActividad = actividadContextualSeleccionada.responsable && actividadContextualSeleccionada.responsable.includes(currentUser.username);
-      const puedeCrear = proyectoEsGestor || esMiActividad;
-
-      if (btnAgregar) {
-        if (!puedeCrear) {
-          btnAgregar.classList.add("hidden");
-        } else {
-          btnAgregar.classList.remove("hidden");
-          document.getElementById("mc-txt-agregar").innerText = nivel < 4 ? `Agregar ${nombresSubnivel[nivel]}` : "Agregar Actividad Hermana";
-        }
-      }
-
-      if (!proyectoEsGestor) {
-        if (btnResp) btnResp.classList.add("hidden");
-        if (btnElim) btnElim.classList.add("hidden");
-      } else {
-        if (btnResp) btnResp.classList.remove("hidden");
-        if (btnElim) btnElim.classList.remove("hidden");
-      }
-
-      const coms = obtenerComentariosDeActividad(cod);
-      const btnCom = document.getElementById("mc-btn-comentarios");
-      if (btnCom) {
-        btnCom.classList.remove("hidden");
-        document.getElementById("mc-txt-comentarios").innerText = coms.length > 0 ? `Ver Comentarios (${coms.length})` : "Agregar Comentario";
-      }
-      
-      posicionarMenuContextual(event);
-    }
-
-    function abrirMenuContextualVacio(event) {
-      if (!proyectoEsGestor) return;
-      event.preventDefault();
-      event.stopPropagation();
-
-      // Limpiar selección previa
-      codigoFilaSeleccionada = null;
-      document.querySelectorAll("#lista-actividades tr").forEach(tr => tr.classList.remove("row-selected"));
-      actividadContextualSeleccionada = null;
-
-      const menu = document.getElementById("menu-contextual");
-      const headerInfo = document.getElementById("mc-header-info");
-      headerInfo.classList.add("hidden");
-
-      const btnAgregar = document.getElementById("mc-btn-agregar");
-      if (btnAgregar) {
-        btnAgregar.classList.remove("hidden");
-        document.getElementById("mc-txt-agregar").innerText = "Nueva Actividad Principal (Nivel 1)";
-      }
-      document.getElementById("mc-btn-resp").classList.add("hidden");
-      document.getElementById("mc-btn-eliminar").classList.add("hidden");
-      document.getElementById("mc-btn-comentarios").classList.add("hidden");
-
-      posicionarMenuContextual(event);
-    }
-
-    function posicionarMenuContextual(event) {
-      const menu = document.getElementById("menu-contextual");
-      let posX = event.clientX;
-      let posY = event.clientY;
-      if (posX + 230 > window.innerWidth) posX = window.innerWidth - 235;
-      if (posY + 190 > window.innerHeight) posY = window.innerHeight - 195;
-
-      menu.style.left = `${posX}px`;
-      menu.style.top = `${posY}px`;
-      menu.classList.remove("hidden");
-    }
-
-    function cerrarMenuContextual() {
-      const menu = document.getElementById("menu-contextual");
-      if (menu) menu.classList.add("hidden");
-    }
-
-    function ejecutarAccionContextual(accion) {
-      const act = actividadContextualSeleccionada;
-      const cod = act ? act.codigo : null;
-      cerrarMenuContextual();
-
-      if (accion === 'agregar_actividad') {
-        abrirWizardCreacionInteligente(cod);
-      } else if (accion === 'asignar_resp' && cod) {
-        editarResponsable(cod);
-      } else if (accion === 'eliminar' && cod) {
-        eliminarActividad(cod);
-      } else if (accion === 'ver_comentarios' && cod) {
-        abrirModalComentarios(cod);
-      }
+    function seleccionarFila(cod) {
+      codigoFilaSeleccionada = cod;
+      document.querySelectorAll("#lista-actividades tr").forEach(tr => {
+        tr.classList.remove("row-selected");
+      });
+      const el = document.getElementById(`fila-act-${cod.replace(/\./g, '_')}`);
+      if (el) el.classList.add("row-selected");
     }
 
     function botonSuperiorNuevaActividad() {
@@ -2597,8 +2497,10 @@
       
       const menu = document.getElementById("menu-contextual");
       const headerInfo = document.getElementById("mc-header-info");
-      headerInfo.classList.remove("hidden");
-      headerInfo.innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
+      if (headerInfo) {
+        headerInfo.classList.remove("hidden");
+        headerInfo.innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
+      }
       
       const btnHijo = document.getElementById("mc-btn-hijo");
       const btnRaiz = document.getElementById("mc-btn-raiz");
@@ -2675,6 +2577,7 @@
 
     function posicionarMenuContextual(event) {
       const menu = document.getElementById("menu-contextual");
+      if (!menu) return;
       let posX = event.clientX;
       let posY = event.clientY;
       if (posX + 230 > window.innerWidth) posX = window.innerWidth - 235;
