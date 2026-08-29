@@ -108,19 +108,15 @@
     <div id="mc-header-info" class="px-3 py-1.5 text-[11px] font-bold text-[#0f2a4a] bg-gray-100 border-b border-gray-200 mb-1 truncate">
       Actividad
     </div>
-    <button id="mc-btn-hijo" onclick="ejecutarAccionContextual('agregar_hijo')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2">
+    <!-- Acción Única Inteligente -->
+    <button id="mc-btn-agregar" onclick="ejecutarAccionContextual('agregar_actividad')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2">
       <span class="text-blue-600 font-bold">+</span>
-      <span id="mc-txt-hijo">Agregar Subtarea</span>
-    </button>
-    <button id="mc-btn-raiz" onclick="ejecutarAccionContextual('agregar_raiz')" class="w-full text-left px-3 py-1.5 hover:bg-teal-50 hover:text-teal-800 flex items-center space-x-2 text-teal-700 font-bold">
-      <span>✨</span>
-      <span>Nueva Actividad Principal (Nivel 1)</span>
+      <span id="mc-txt-agregar">Nueva Actividad</span>
     </button>
     <button id="mc-btn-resp" onclick="ejecutarAccionContextual('asignar_resp')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2">
       <span>👥</span>
       <span>Asignar Responsables</span>
     </button>
-    <!-- Botón de Comentarios -->
     <button id="mc-btn-comentarios" onclick="ejecutarAccionContextual('ver_comentarios')" class="w-full text-left px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-800 flex items-center space-x-2 text-indigo-700 font-bold">
       <span>💬</span>
       <span id="mc-txt-comentarios">Comentarios</span>
@@ -688,14 +684,14 @@
           </div>
           <div class="bg-blue-50 p-2.5 rounded-lg border border-blue-100 text-[11px] text-blue-900 font-medium flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center space-x-2">
-              <span class="font-bold">Código de Actividad:</span>
+              <span class="font-bold">Código generado:</span>
               <span id="wz-codigo-preview" class="font-mono font-black text-xs text-[#0f2a4a] bg-white px-2.5 py-1 rounded border shadow-xs">1.1</span>
             </div>
-            <!-- Selector contextual exclusivo cuando se selecciona una actividad Nivel 1 -->
-            <div id="wz-contenedor-selector-tipo" class="hidden">
-              <select id="wz-select-tipo-creacion" onchange="cambiarTipoCreacionDesdeNivel1(this.value)" class="text-xs font-bold bg-white border border-blue-300 text-[#0f2a4a] rounded px-2 py-1 outline-none cursor-pointer shadow-xs">
-                <option value="hijo">➕ Tarea dependiente (Nivel 2)</option>
-                <option value="raiz">✨ Nueva Actividad Principal (Nivel 1)</option>
+            <!-- Selector Contextual Inteligente Universal -->
+            <div id="wz-contenedor-selector-tipo" class="flex items-center space-x-1.5">
+              <span class="text-gray-600 font-semibold">Jerarquía:</span>
+              <select id="wz-select-tipo-creacion" onchange="cambiarJerarquiaWizard(this.value)" class="text-xs font-bold bg-white border border-blue-300 text-[#0f2a4a] rounded px-2 py-1 outline-none cursor-pointer shadow-xs">
+                <!-- Se llena dinámicamente con las opciones pertinentes al nivel actual -->
               </select>
             </div>
           </div>
@@ -2452,42 +2448,6 @@
       }
     }
 
-    function seleccionarFila(cod) {
-      codigoFilaSeleccionada = cod;
-      document.querySelectorAll("#lista-actividades tr").forEach(tr => {
-        tr.classList.remove("row-selected");
-      });
-      const el = document.getElementById(`fila-act-${cod.replace(/\./g, '_')}`);
-      if (el) el.classList.add("row-selected");
-    }
-
-    function botonSuperiorNuevaActividad() {
-      if (!proyectoEsGestor) {
-        alert("Solo el Gestor del Proyecto puede crear actividades.");
-        return;
-      }
-
-      if (!codigoFilaSeleccionada) {
-        // Sin selección previa -> Crear Nivel 1
-        abrirWizardCreacion(null);
-        return;
-      }
-
-      const codLimpio = String(codigoFilaSeleccionada).replace(/\.+$/, "");
-      const nivel = codLimpio.split(".").length;
-
-      if (nivel === 1) {
-        // Nivel 1 seleccionado -> Abrir permitiendo elegir entre Nivel 2 o nueva raíz
-        abrirWizardCreacion(codLimpio, true);
-      } else if (nivel < 4) {
-        // Nivel 2 o 3 -> Crear nivel inmediato inferior (Nivel 3 o 4)
-        abrirWizardCreacion(codLimpio, false);
-      } else {
-        // Si ya está en Nivel 4 (máximo nivel), crea otra actividad principal
-        abrirWizardCreacion(null);
-      }
-    }
-
     function abrirMenuContextual(event, cod) {
       event.preventDefault();
       event.stopPropagation();
@@ -2497,42 +2457,35 @@
 
       const partes = cod.replace(/\.+$/, "").split(".");
       const nivel = partes.length;
-      const nombresNivel = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
+      const nombresSubnivel = ["", "Subtarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
       
       const menu = document.getElementById("menu-contextual");
       const headerInfo = document.getElementById("mc-header-info");
       headerInfo.classList.remove("hidden");
       headerInfo.innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
       
-      const btnHijo = document.getElementById("mc-btn-hijo");
-      const btnRaiz = document.getElementById("mc-btn-raiz");
+      const btnAgregar = document.getElementById("mc-btn-agregar");
       const btnResp = document.getElementById("mc-btn-resp");
       const btnElim = document.getElementById("mc-btn-eliminar");
 
       const esMiActividad = actividadContextualSeleccionada.responsable && actividadContextualSeleccionada.responsable.includes(currentUser.username);
-      const puedeCrearHijo = proyectoEsGestor || esMiActividad;
+      const puedeCrear = proyectoEsGestor || esMiActividad;
 
-      // Subtarea según nivel
-      if (nivel >= 4 || !puedeCrearHijo) {
-        btnHijo.classList.add("hidden");
-      } else {
-        btnHijo.classList.remove("hidden");
-        document.getElementById("mc-txt-hijo").innerText = `Agregar ${nombresNivel[nivel]}`;
-      }
-
-      // 'Nueva Actividad Principal' SOLO visible si se hace clic derecho a una actividad de Nivel 1
-      if (proyectoEsGestor && nivel === 1) {
-        btnRaiz.classList.remove("hidden");
-      } else {
-        btnRaiz.classList.add("hidden");
+      if (btnAgregar) {
+        if (!puedeCrear) {
+          btnAgregar.classList.add("hidden");
+        } else {
+          btnAgregar.classList.remove("hidden");
+          document.getElementById("mc-txt-agregar").innerText = nivel < 4 ? `Agregar ${nombresSubnivel[nivel]}` : "Agregar Actividad Hermana";
+        }
       }
 
       if (!proyectoEsGestor) {
-        btnResp.classList.add("hidden");
-        btnElim.classList.add("hidden");
+        if (btnResp) btnResp.classList.add("hidden");
+        if (btnElim) btnElim.classList.add("hidden");
       } else {
-        btnResp.classList.remove("hidden");
-        btnElim.classList.remove("hidden");
+        if (btnResp) btnResp.classList.remove("hidden");
+        if (btnElim) btnElim.classList.remove("hidden");
       }
 
       const coms = obtenerComentariosDeActividad(cod);
@@ -2545,7 +2498,6 @@
       posicionarMenuContextual(event);
     }
 
-    // Menú contextual para el espacio vacío del lienzo/tabla
     function abrirMenuContextualVacio(event) {
       if (!proyectoEsGestor) return;
       event.preventDefault();
@@ -2560,10 +2512,14 @@
       const headerInfo = document.getElementById("mc-header-info");
       headerInfo.classList.add("hidden");
 
-      document.getElementById("mc-btn-hijo").classList.add("hidden");
+      const btnAgregar = document.getElementById("mc-btn-agregar");
+      if (btnAgregar) {
+        btnAgregar.classList.remove("hidden");
+        document.getElementById("mc-txt-agregar").innerText = "Nueva Actividad Principal (Nivel 1)";
+      }
       document.getElementById("mc-btn-resp").classList.add("hidden");
       document.getElementById("mc-btn-eliminar").classList.add("hidden");
-      document.getElementById("mc-btn-raiz").classList.remove("hidden");
+      document.getElementById("mc-btn-comentarios").classList.add("hidden");
 
       posicionarMenuContextual(event);
     }
@@ -2590,11 +2546,8 @@
       const cod = act ? act.codigo : null;
       cerrarMenuContextual();
 
-      if (accion === 'agregar_raiz') {
-        // Abre directamente el asistente para crear Nivel 1
-        abrirWizardCreacion(null);
-      } else if (accion === 'agregar_hijo' && cod) {
-        abrirWizardCreacion(cod);
+      if (accion === 'agregar_actividad') {
+        abrirWizardCreacionInteligente(cod);
       } else if (accion === 'asignar_resp' && cod) {
         editarResponsable(cod);
       } else if (accion === 'eliminar' && cod) {
@@ -2604,85 +2557,148 @@
       }
     }
 
-    function calcularSiguienteCorrelativo(codigoPadre) {
-      if (!codigoPadre) {
-        const raices = actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
-        let maxNum = 0;
-        raices.forEach(r => {
-          const n = parseInt(r.codigo.replace(/\.$/, ""));
-          if (!isNaN(n) && n > maxNum) maxNum = n;
-        });
-        return `${maxNum + 1}`;
+    function botonSuperiorNuevaActividad() {
+      if (!proyectoEsGestor) {
+        alert("Solo el Gestor del Proyecto puede crear actividades.");
+        return;
       }
+      abrirWizardCreacionInteligente(codigoFilaSeleccionada);
+    }
 
+    function calcularCorrelativoHijo(codigoPadre) {
       const codLimpio = codigoPadre.replace(/\.$/, "");
       const nivelPadre = codLimpio.split(".").length;
-      
-      const hijosDirectos = actividadesGlobal.filter(a => {
+      const hijos = actividadesGlobal.filter(a => {
         const c = a.codigo.replace(/\.$/, "");
         return c.startsWith(codLimpio + ".") && c.split(".").length === nivelPadre + 1;
       });
-
       let maxNum = 0;
-      hijosDirectos.forEach(h => {
+      hijos.forEach(h => {
         const partes = h.codigo.replace(/\.$/, "").split(".");
         const ult = parseInt(partes[partes.length - 1]);
         if (!isNaN(ult) && ult > maxNum) maxNum = ult;
       });
-
       return `${codLimpio}.${maxNum + 1}`;
     }
 
-    function evaluarEstadoWizard(estado) {
-      const boxAvance = document.getElementById("wz-box-avance");
-      const boxPred = document.getElementById("wz-box-pred");
-      const inpAvance = document.getElementById("wz-input-avance");
-
-      if (estado === "En proceso") {
-        boxAvance.classList.remove("hidden");
-        boxPred.className = "sm:col-span-1";
-        if (!inpAvance.value || parseInt(inpAvance.value) <= 0 || parseInt(inpAvance.value) >= 100) {
-          inpAvance.value = 50;
-        }
-      } else {
-        boxAvance.classList.add("hidden");
-        boxPred.className = "sm:col-span-2";
+    function calcularCorrelativoHermano(codigoBase) {
+      if (!codigoBase) return calcularCorrelativoRaiz();
+      const codLimpio = codigoBase.replace(/\.$/, "");
+      const partes = codLimpio.split(".");
+      if (partes.length === 1) {
+        return calcularCorrelativoRaiz();
       }
+      const padre = partes.slice(0, -1).join(".");
+      return calcularCorrelativoHijo(padre);
     }
 
-    function abrirWizardCreacion(codigoPadre = null, permitirToggleNivel1 = false) {
-      wizardCodigoPadre = codigoPadre;
-      
-      const contToggle = document.getElementById("wz-contenedor-selector-tipo");
-      const selToggle = document.getElementById("wz-select-tipo-creacion");
+    function calcularCorrelativoRaiz() {
+      const raices = actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
+      let maxNum = 0;
+      raices.forEach(r => {
+        const n = parseInt(r.codigo.replace(/\.$/, ""));
+        if (!isNaN(n) && n > maxNum) maxNum = n;
+      });
+      return `${maxNum + 1}`;
+    }
 
-      if (permitirToggleNivel1 && codigoPadre) {
-        contToggle.classList.remove("hidden");
-        selToggle.value = "hijo";
-        wizardCodigoGenerado = calcularSiguienteCorrelativo(codigoPadre);
+    // MAPA DE JERARQUÍAS DISPONIBLES EN EL WIZARD
+    let opcionesJerarquiaWizardActual = [];
+
+    function abrirWizardCreacionInteligente(codigoSeleccionado = null) {
+      const selJerarquia = document.getElementById("wz-select-tipo-creacion");
+      const contJerarquia = document.getElementById("wz-contenedor-selector-tipo");
+      opcionesJerarquiaWizardActual = [];
+
+      if (!codigoSeleccionado) {
+        // Lienzo vacío / sin selección previa -> Nivel 1 Principal
+        const codGenerado = calcularCorrelativoRaiz();
+        opcionesJerarquiaWizardActual.push({
+          valor: "raiz",
+          label: "✨ Actividad Principal (Nivel 1)",
+          codigo: codGenerado,
+          titulo: "Nueva Actividad Principal (Nivel 1)",
+          subtitulo: "Creando entregable principal independiente"
+        });
       } else {
-        contToggle.classList.add("hidden");
-        wizardCodigoGenerado = calcularSiguienteCorrelativo(codigoPadre);
+        const codLimpio = String(codigoSeleccionado).replace(/\.+$/, "");
+        const nivel = codLimpio.split(".").length;
+        const madreObj = actividadesGlobal.find(a => a.codigo.replace(/\.+$/, "") === codLimpio);
+        const descPadre = madreObj ? madreObj.descripcion : codLimpio;
+
+        if (nivel < 4) {
+          // Opción 1 (Por defecto): Subtarea dependiente
+          const nombresSub = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
+          const codHijo = calcularCorrelativoHijo(codLimpio);
+          opcionesJerarquiaWizardActual.push({
+            valor: "hijo",
+            label: `➕ ${nombresSub[nivel]} (dependiente de [${codLimpio}])`,
+            codigo: codHijo,
+            titulo: `Nueva ${nombresSub[nivel]} para [${codLimpio}]`,
+            subtitulo: `Depende de: ${descPadre}`
+          });
+
+          // Opción 2: Actividad Hermana del mismo nivel
+          const codHermano = calcularCorrelativoHermano(codLimpio);
+          const nombresMismo = ["", "Actividad Principal (Nivel 1)", "Tarea (Nivel 2)", "Subtarea (Nivel 3)"];
+          opcionesJerarquiaWizardActual.push({
+            valor: "hermano",
+            label: `📋 Actividad Hermana (${nombresMismo[nivel]})`,
+            codigo: codHermano,
+            titulo: `Nueva ${nombresMismo[nivel]}`,
+            subtitulo: `Al mismo nivel que [${codLimpio}]`
+          });
+        } else {
+          // Si es Nivel 4 (máximo), permite hermano o nueva raíz
+          const codHermano = calcularCorrelativoHermano(codLimpio);
+          opcionesJerarquiaWizardActual.push({
+            valor: "hermano",
+            label: `📋 Paso Hermano (Nivel 4)`,
+            codigo: codHermano,
+            titulo: `Nuevo Paso (Nivel 4)`,
+            subtitulo: `Al mismo nivel que [${codLimpio}]`
+          });
+          const codRaiz = calcularCorrelativoRaiz();
+          opcionesJerarquiaWizardActual.push({
+            valor: "raiz",
+            label: `✨ Nueva Actividad Principal (Nivel 1)`,
+            codigo: codRaiz,
+            titulo: `Nueva Actividad Principal (Nivel 1)`,
+            subtitulo: `Creando entregable principal independiente`
+          });
+        }
       }
 
-      actualizarTextosCabeceraWizard(codigoPadre);
+      // Renderizar selector de jerarquía en el Wizard
+      selJerarquia.innerHTML = "";
+      opcionesJerarquiaWizardActual.forEach((op, idx) => {
+        selJerarquia.innerHTML += `<option value="${op.valor}" ${idx === 0 ? 'selected' : ''}>${op.label}</option>`;
+      });
 
+      if (opcionesJerarquiaWizardActual.length > 1) {
+        contJerarquia.classList.remove("hidden");
+      } else {
+        contJerarquia.classList.add("hidden");
+      }
+
+      // Aplicar la primera opción
+      cambiarJerarquiaWizard(opcionesJerarquiaWizardActual[0].valor);
+
+      // Resetear campos del Wizard
       const anio = new Date().getFullYear();
       document.getElementById("wz-input-desc").value = "";
       document.getElementById("wz-input-ini").value = `${anio}-01-01`;
       document.getElementById("wz-input-dias").value = 5;
       
-      // Calcular fecha fin inicial por defecto (4 días después del inicio = 5 días totales)
       const dtIniDef = new Date(`${anio}-01-01T00:00:00`);
       dtIniDef.setDate(dtIniDef.getDate() + 4);
       document.getElementById("wz-input-fin").value = formatearFechaISO(dtIniDef.toISOString().split("T")[0]);
 
       document.getElementById("wz-input-estado").value = "No iniciado";
       evaluarEstadoWizard("No iniciado");
-
       document.getElementById("wz-input-pred").value = "";
-      document.getElementById("wz-codigo-preview").innerText = wizardCodigoGenerado;
 
+      // Listar trabajadores
       const contResp = document.getElementById("wz-lista-responsables");
       contResp.innerHTML = "";
       (catalogoTrabajadoresGlobal.length > 0 ? catalogoTrabajadoresGlobal : responsablesGlobal).forEach(r => {
@@ -2704,32 +2720,30 @@
       setTimeout(() => document.getElementById("wz-input-desc").focus(), 100);
     }
 
-    function cambiarTipoCreacionDesdeNivel1(opcion) {
-      if (opcion === "raiz") {
-        wizardCodigoPadre = null;
-        wizardCodigoGenerado = calcularSiguienteCorrelativo(null);
-        document.getElementById("wz-titulo").innerText = "Nueva Actividad Raíz (Nivel 1)";
-        document.getElementById("wz-subtitulo").innerText = "Creando actividad principal independiente";
-      } else {
-        wizardCodigoPadre = codigoFilaSeleccionada;
-        wizardCodigoGenerado = calcularSiguienteCorrelativo(codigoFilaSeleccionada);
-        actualizarTextosCabeceraWizard(codigoFilaSeleccionada);
-      }
-      document.getElementById("wz-codigo-preview").innerText = wizardCodigoGenerado;
+    function cambiarJerarquiaWizard(valorOpcion) {
+      const op = opcionesJerarquiaWizardActual.find(o => o.valor === valorOpcion) || opcionesJerarquiaWizardActual[0];
+      if (!op) return;
+
+      wizardCodigoGenerado = op.codigo;
+      document.getElementById("wz-codigo-preview").innerText = op.codigo;
+      document.getElementById("wz-titulo").innerText = op.titulo;
+      document.getElementById("wz-subtitulo").innerText = op.subtitulo;
     }
 
-    function actualizarTextosCabeceraWizard(codigoPadre) {
-      if (codigoPadre) {
-        const madre = actividadesGlobal.find(a => a.codigo === codigoPadre);
-        const partes = codigoPadre.replace(/\.+$/, "").split(".");
-        const nivelPadre = partes.length;
-        const nombresNivel = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
-        
-        document.getElementById("wz-titulo").innerText = `Nueva ${nombresNivel[nivelPadre] || 'Subtarea'} para [${codigoPadre}]`;
-        document.getElementById("wz-subtitulo").innerText = `Dependencia: ${madre ? madre.descripcion : codigoPadre}`;
+    function evaluarEstadoWizard(estado) {
+      const boxAvance = document.getElementById("wz-box-avance");
+      const boxPred = document.getElementById("wz-box-pred");
+      const inpAvance = document.getElementById("wz-input-avance");
+
+      if (estado === "En proceso") {
+        boxAvance.classList.remove("hidden");
+        boxPred.className = "sm:col-span-1";
+        if (!inpAvance.value || parseInt(inpAvance.value) <= 0 || parseInt(inpAvance.value) >= 100) {
+          inpAvance.value = 50;
+        }
       } else {
-        document.getElementById("wz-titulo").innerText = "Nueva Actividad Raíz (Nivel 1)";
-        document.getElementById("wz-subtitulo").innerText = "Creando actividad principal independiente";
+        boxAvance.classList.add("hidden");
+        boxPred.className = "sm:col-span-2";
       }
     }
 
