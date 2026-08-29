@@ -103,36 +103,59 @@
 </head>
 <body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none" onclick="cerrarMenuContextual()">
 
-  <!-- MENÚ CONTEXTUAL CLIC DERECHO FLOTANTE (INTELIGENTE) -->
-  <div id="menu-contextual" class="hidden fixed bg-white rounded-lg shadow-2xl border border-gray-200 py-1.5 z-[100] text-xs font-semibold text-gray-700 min-w-[240px]">
+  <!-- MENÚ CONTEXTUAL CLIC DERECHO FLOTANTE (CON SUBMENÚ EN CASCADA) -->
+  <div id="menu-contextual" class="hidden fixed bg-white rounded-xl shadow-2xl border border-gray-200 py-1.5 z-[100] text-xs font-semibold text-gray-700 min-w-[220px]">
     <div id="mc-header-info" class="px-3 py-1.5 text-[11px] font-bold text-[#0f2a4a] bg-gray-100 border-b border-gray-200 mb-1 truncate">
       Actividad
     </div>
-    <!-- 1. Opción Crear Hijo (Subtarea) -->
-    <button id="mc-btn-hijo" onclick="ejecutarAccionContextual('agregar_hijo')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2 font-bold">
-      <span class="text-blue-600 font-black">+</span>
-      <span id="mc-txt-hijo">Agregar Subtarea</span>
-    </button>
-    <!-- 2. Opción Crear Hermana (Mismo Nivel) -->
-    <button id="mc-btn-hermano" onclick="ejecutarAccionContextual('agregar_hermano')" class="w-full text-left px-3 py-1.5 hover:bg-teal-50 hover:text-teal-800 flex items-center space-x-2 text-teal-700 font-bold">
-      <span>📋</span>
-      <span id="mc-txt-hermano">Agregar Actividad Hermana</span>
-    </button>
-    <!-- 3. Opción Crear Nueva Raíz (Nivel 1) -->
-    <button id="mc-btn-raiz" onclick="ejecutarAccionContextual('agregar_raiz')" class="w-full text-left px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-800 flex items-center space-x-2 text-indigo-700 font-bold">
+
+    <!-- Opción Agrupadora con Submenú al pasar el cursor (Hover) -->
+    <div id="mc-grupo-agregar" class="relative group/sub">
+      <div class="w-full px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center justify-between cursor-pointer font-bold text-gray-700">
+        <div class="flex items-center space-x-2">
+          <span class="text-blue-600 font-black">+</span>
+          <span>Agregar actividad</span>
+        </div>
+        <span class="text-[10px] text-gray-400 group-hover/sub:text-blue-600 transition-transform group-hover/sub:translate-x-0.5">▶</span>
+      </div>
+
+      <!-- Submenú Desplegable Flotante -->
+      <div id="mc-submenu-desplegable" class="hidden group-hover/sub:block absolute left-full top-0 bg-white rounded-xl shadow-2xl border border-gray-200 py-1.5 min-w-[260px] z-[110] -ml-1">
+        <button id="mc-btn-hijo" onclick="ejecutarAccionContextual('agregar_hijo')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2 font-bold text-gray-700">
+          <span class="text-blue-600 font-black">+</span>
+          <span id="mc-txt-hijo">Agregar subtarea</span>
+        </button>
+        <button id="mc-btn-hermano" onclick="ejecutarAccionContextual('agregar_hermano')" class="w-full text-left px-3 py-1.5 hover:bg-teal-50 hover:text-teal-800 flex items-center space-x-2 text-teal-700 font-bold">
+          <span>📋</span>
+          <span id="mc-txt-hermano">Agregar actividad hermana</span>
+        </button>
+        <button id="mc-btn-raiz" onclick="ejecutarAccionContextual('agregar_raiz')" class="w-full text-left px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-800 flex items-center space-x-2 text-indigo-700 font-bold">
+          <span>✨</span>
+          <span>Nueva actividad principal (Nivel 1)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Botón directo cuando se hace clic derecho en el lienzo vacío -->
+    <button id="mc-btn-raiz-directo" onclick="ejecutarAccionContextual('agregar_raiz')" class="hidden w-full text-left px-3 py-1.5 hover:bg-teal-50 hover:text-teal-800 flex items-center space-x-2 text-teal-700 font-bold">
       <span>✨</span>
-      <span>Nueva Actividad Principal (Nivel 1)</span>
+      <span>Nueva actividad principal (Nivel 1)</span>
     </button>
+
     <div class="border-t border-gray-100 my-1"></div>
+
     <button id="mc-btn-resp" onclick="ejecutarAccionContextual('asignar_resp')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2">
       <span>👥</span>
       <span>Asignar Responsables</span>
     </button>
+    
     <button id="mc-btn-comentarios" onclick="ejecutarAccionContextual('ver_comentarios')" class="w-full text-left px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-800 flex items-center space-x-2 text-indigo-700 font-bold">
       <span>💬</span>
       <span id="mc-txt-comentarios">Comentarios</span>
     </button>
+    
     <div class="border-t border-gray-100 my-1"></div>
+    
     <button id="mc-btn-eliminar" onclick="ejecutarAccionContextual('eliminar')" class="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center space-x-2 font-bold">
       <span>🗑️</span>
       <span>Eliminar Actividad</span>
@@ -2565,6 +2588,95 @@
       posicionarMenuContextual(event);
     }
 
+    function abrirMenuContextual(event, cod) {
+      event.preventDefault();
+      event.stopPropagation();
+      seleccionarFila(cod);
+      actividadContextualSeleccionada = actividadesGlobal.find(a => a.codigo === cod);
+      if (!actividadContextualSeleccionada) return;
+
+      const partes = cod.replace(/\.+$/, "").split(".");
+      const nivel = partes.length;
+      const nombresSubnivel = ["", "subtarea (Nivel 2)", "subtarea (Nivel 3)", "paso (Nivel 4)"];
+      const nombresMismoNivel = ["", "actividad principal (Nivel 1)", "tarea (Nivel 2)", "subtarea (Nivel 3)", "paso (Nivel 4)"];
+      
+      const menu = document.getElementById("menu-contextual");
+      const headerInfo = document.getElementById("mc-header-info");
+      if (headerInfo) {
+        headerInfo.classList.remove("hidden");
+        headerInfo.innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
+      }
+      
+      const grupoAgregar = document.getElementById("mc-grupo-agregar");
+      const btnRaizDirecto = document.getElementById("mc-btn-raiz-directo");
+      const btnHijo = document.getElementById("mc-btn-hijo");
+      const btnHermano = document.getElementById("mc-btn-hermano");
+      const btnRaiz = document.getElementById("mc-btn-raiz");
+      const btnResp = document.getElementById("mc-btn-resp");
+      const btnElim = document.getElementById("mc-btn-eliminar");
+      const btnCom = document.getElementById("mc-btn-comentarios");
+
+      const esMiActividad = actividadContextualSeleccionada.responsable && actividadContextualSeleccionada.responsable.includes(currentUser.username);
+      const puedeCrear = proyectoEsGestor || esMiActividad;
+
+      // Mostrar contenedor agrupador y ocultar botón directo de lienzo vacío
+      if (grupoAgregar) {
+        if (!puedeCrear) grupoAgregar.classList.add("hidden");
+        else grupoAgregar.classList.remove("hidden");
+      }
+      if (btnRaizDirecto) btnRaizDirecto.classList.add("hidden");
+
+      // 1. Configurar opción Hijo en submenú
+      if (btnHijo) {
+        if (nivel >= 4 || !puedeCrear) {
+          btnHijo.classList.add("hidden");
+        } else {
+          btnHijo.classList.remove("hidden");
+          const txtHijo = document.getElementById("mc-txt-hijo");
+          if (txtHijo) txtHijo.innerText = `Agregar ${nombresSubnivel[nivel]}`;
+        }
+      }
+
+      // 2. Configurar opción Hermana en submenú
+      if (btnHermano) {
+        if (!puedeCrear) {
+          btnHermano.classList.add("hidden");
+        } else {
+          btnHermano.classList.remove("hidden");
+          const txtHermano = document.getElementById("mc-txt-hermano");
+          if (txtHermano) txtHermano.innerText = `Agregar actividad hermana (${nombresMismoNivel[nivel]})`;
+        }
+      }
+
+      // 3. Configurar opción Raíz en submenú (visible solo para Gestores si no es Nivel 1)
+      if (btnRaiz) {
+        if (proyectoEsGestor && nivel > 1) {
+          btnRaiz.classList.remove("hidden");
+        } else {
+          btnRaiz.classList.add("hidden");
+        }
+      }
+
+      // 4. Permisos de personal y eliminación
+      if (!proyectoEsGestor) {
+        if (btnResp) btnResp.classList.add("hidden");
+        if (btnElim) btnElim.classList.add("hidden");
+      } else {
+        if (btnResp) btnResp.classList.remove("hidden");
+        if (btnElim) btnElim.classList.remove("hidden");
+      }
+
+      // 5. Comentarios
+      if (btnCom) {
+        const coms = obtenerComentariosDeActividad(cod);
+        btnCom.classList.remove("hidden");
+        const txtCom = document.getElementById("mc-txt-comentarios");
+        if (txtCom) txtCom.innerText = coms.length > 0 ? `Ver Comentarios (${coms.length})` : "Agregar Comentario";
+      }
+      
+      posicionarMenuContextual(event);
+    }
+
     function abrirMenuContextualVacio(event) {
       if (!proyectoEsGestor) return;
       event.preventDefault();
@@ -2578,19 +2690,17 @@
       const headerInfo = document.getElementById("mc-header-info");
       if (headerInfo) headerInfo.classList.add("hidden");
 
-      const btnHijo = document.getElementById("mc-btn-hijo");
-      const btnHermano = document.getElementById("mc-btn-hermano");
+      const grupoAgregar = document.getElementById("mc-grupo-agregar");
+      const btnRaizDirecto = document.getElementById("mc-btn-raiz-directo");
       const btnResp = document.getElementById("mc-btn-resp");
       const btnElim = document.getElementById("mc-btn-eliminar");
-      const btnRaiz = document.getElementById("mc-btn-raiz");
       const btnCom = document.getElementById("mc-btn-comentarios");
 
-      if (btnHijo) btnHijo.classList.add("hidden");
-      if (btnHermano) btnHermano.classList.add("hidden");
+      if (grupoAgregar) grupoAgregar.classList.add("hidden");
+      if (btnRaizDirecto) btnRaizDirecto.classList.remove("hidden");
       if (btnResp) btnResp.classList.add("hidden");
       if (btnElim) btnElim.classList.add("hidden");
       if (btnCom) btnCom.classList.add("hidden");
-      if (btnRaiz) btnRaiz.classList.remove("hidden");
 
       posicionarMenuContextual(event);
     }
@@ -2600,7 +2710,9 @@
       if (!menu) return;
       let posX = event.clientX;
       let posY = event.clientY;
-      if (posX + 250 > window.innerWidth) posX = window.innerWidth - 255;
+      
+      // Control de bordes de pantalla considerando el ancho del submenú desplegable
+      if (posX + 480 > window.innerWidth) posX = window.innerWidth - 490;
       if (posY + 230 > window.innerHeight) posY = window.innerHeight - 235;
 
       menu.style.left = `${posX}px`;
@@ -2686,8 +2798,8 @@
         opcionesModoWizard.push({
           modo: "raiz",
           codigo: codRaiz,
-          label: "✨ Actividad Principal (Nivel 1)",
-          titulo: "Nueva Actividad Principal (Nivel 1)",
+          label: "✨ Nueva actividad principal (Nivel 1)",
+          titulo: "Nueva actividad principal (Nivel 1)",
           subtitulo: "Creando actividad principal independiente"
         });
       } else {
@@ -2696,7 +2808,7 @@
         const madre = actividadesGlobal.find(a => a.codigo.replace(/\.+$/, "") === codLimpio);
         const descBase = madre ? madre.descripcion : codLimpio;
         const nombresSub = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
-        const nombresMismo = ["", "Actividad Principal (Nivel 1)", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
+        const nombresMismo = ["", "actividad principal (Nivel 1)", "tarea (Nivel 2)", "subtarea (Nivel 3)", "paso (Nivel 4)"];
 
         if (nivel < 4) {
           const codHijo = calcularCorrelativoHijo(codLimpio);
@@ -2712,8 +2824,8 @@
           opcionesModoWizard.push({
             modo: "hermano",
             codigo: codHermano,
-            label: `📋 Actividad Hermana (${nombresMismo[nivel]})`,
-            titulo: `Nueva ${nombresMismo[nivel]}`,
+            label: `📋 Agregar actividad hermana (${nombresMismo[nivel]})`,
+            titulo: `Nueva actividad hermana (${nombresMismo[nivel]})`,
             subtitulo: `Al mismo nivel que [${codLimpio}]`
           });
         } else {
@@ -2721,16 +2833,16 @@
           opcionesModoWizard.push({
             modo: "hermano",
             codigo: codHermano,
-            label: `📋 Paso Hermano (Nivel 4)`,
-            titulo: `Nuevo Paso (Nivel 4)`,
+            label: `📋 Agregar actividad hermana (paso (Nivel 4))`,
+            titulo: `Nuevo paso (Nivel 4)`,
             subtitulo: `Al mismo nivel que [${codLimpio}]`
           });
           const codRaiz = calcularCorrelativoRaiz();
           opcionesModoWizard.push({
             modo: "raiz",
             codigo: codRaiz,
-            label: `✨ Nueva Actividad Principal (Nivel 1)`,
-            titulo: `Nueva Actividad Principal (Nivel 1)`,
+            label: `✨ Nueva actividad principal (Nivel 1)`,
+            titulo: `Nueva actividad principal (Nivel 1)`,
             subtitulo: `Creando actividad principal independiente`
           });
         }
