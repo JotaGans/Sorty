@@ -683,8 +683,7 @@
           <div>
             <label class="text-[11px] font-bold text-gray-500 uppercase">Descripción de la actividad:</label>
             <input type="text" id="wz-input-desc" placeholder="Ej: Elaboración del informe de auditoría preliminar..." 
-                   class="w-full mt-1.5 p-3 bg-white border border-gray-300 rounded-lg text-sm font-semibold outline-none focus:border-[#0f2a4a] shadow-sm"
-                   onkeydown="if(event.key==='Enter') irAPasoWizard(2)">
+                   class="w-full mt-1.5 p-3 bg-white border border-gray-300 rounded-lg text-sm font-semibold outline-none focus:border-[#0f2a4a] shadow-sm">
           </div>
           <div class="bg-blue-50 p-2.5 rounded-lg border border-blue-100 text-[11px] text-blue-900 font-medium flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center space-x-2">
@@ -2674,15 +2673,15 @@
 
       actualizarTextosCabeceraWizard(codigoPadre);
 
-      const anio = new Date().getFullYear();
+      const hoy = new Date();
       document.getElementById("wz-input-desc").value = "";
-      document.getElementById("wz-input-ini").value = `${anio}-01-01`;
+      document.getElementById("wz-input-ini").value = formatearFechaISO(hoy.toISOString().split("T")[0]);
       document.getElementById("wz-input-dias").value = 5;
       
-      const dtIniDef = new Date(`${anio}-01-01T00:00:00`);
-      dtIniDef.setDate(dtIniDef.getDate() + 4);
+      const dtFinDef = new Date(hoy);
+      dtFinDef.setDate(dtFinDef.getDate() + 4);
       const inpFin = document.getElementById("wz-input-fin");
-      if (inpFin) inpFin.value = formatearFechaISO(dtIniDef.toISOString().split("T")[0]);
+      if (inpFin) inpFin.value = formatearFechaISO(dtFinDef.toISOString().split("T")[0]);
 
       const selEst = document.getElementById("wz-input-estado");
       if (selEst) selEst.value = "No iniciado";
