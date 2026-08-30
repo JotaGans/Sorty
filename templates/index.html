@@ -161,13 +161,12 @@
     }
     .gantt-avatar-circle:first-child { margin-left: 0; }
 
-    /* Selector con Flecha Limpia */
-    .select-clean-arrow {
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%234b5563' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-      background-position: right 0.4rem center;
+    /* Selector con Flecha Blanca para Fondos Oscuros */
+    .select-clean-arrow-white {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%235eead4' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0 center;
       background-repeat: no-repeat;
-      background-size: 1.1em 1.1em;
-      padding-right: 1.8rem;
+      background-size: 1em 1em;
       -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
@@ -474,15 +473,15 @@
             <option value="">👤 Personal</option>
           </select>
 
-          <!-- Selector Unificado de Escala Temporal (5 Niveles) -->
-          <div class="flex items-center space-x-1 bg-gray-100 border border-gray-300 rounded-lg px-2 py-1 shadow-xs">
-            <span class="text-[11px] text-gray-500 font-bold select-none">Escala:</span>
-            <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="text-xs bg-transparent font-extrabold text-[#0f2a4a] outline-none cursor-pointer">
-              <option value="dias">Días</option>
-              <option value="semanas" selected>Semanas</option>
-              <option value="meses">Meses</option>
-              <option value="trimestres">Trimestres</option>
-              <option value="semestres">Semestres</option>
+          <!-- Selector Unificado de Escala Temporal Destacado -->
+          <div class="flex items-center bg-[#0f2a4a] hover:bg-[#1b4f8a] border border-blue-900/60 rounded-lg px-2.5 py-1 shadow-xs transition-colors group">
+            <span class="text-[10px] uppercase tracking-wider text-teal-300 font-black mr-1.5 select-none">Escala:</span>
+            <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="text-xs font-black text-white bg-transparent outline-none cursor-pointer pr-4 select-clean-arrow-white">
+              <option value="dias" class="bg-[#0f2a4a] text-white">Días</option>
+              <option value="semanas" class="bg-[#0f2a4a] text-white" selected>Semanas</option>
+              <option value="meses" class="bg-[#0f2a4a] text-white">Meses</option>
+              <option value="trimestres" class="bg-[#0f2a4a] text-white">Trimestres</option>
+              <option value="semestres" class="bg-[#0f2a4a] text-white">Semestres</option>
             </select>
           </div>
 
