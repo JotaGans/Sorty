@@ -15,19 +15,36 @@
     /* Fila Seleccionada */
     .row-selected { background-color: #e2eafc !important; border-left: 4px solid #0f2a4a !important; }
     
-    /* Estilos Drag and Drop WBS con Franja Indicadora Nítida */
+    /* Estilos Drag and Drop Jerárquico Profesional */
     .drag-handle { cursor: grab; user-select: none; }
-    .drag-handle:active { cursor: grabbing; }
-    .row-dragging { opacity: 0.35 !important; background-color: #f1f5f9 !important; }
-    
-    /* Franja indicadora superior e inferior sutil (2px) */
-    .drop-target-above td {
-      box-shadow: inset 0 2px 0 #2563eb !important;
-      background-color: rgba(240, 249, 255, 0.45) !important;
+    .drag-handle:active, body.is-dragging-row, body.is-dragging-row * { 
+      cursor: grabbing !important; 
     }
+    .row-dragging { 
+      opacity: 0.35 !important; 
+      background-color: #f8fafc !important; 
+      border-left: 3px dashed #94a3b8 !important;
+    }
+    
+    /* 1. Inserción Hermana Arriba (Línea superior completa) */
+    .drop-target-above td {
+      box-shadow: inset 0 2.5px 0 #2563eb !important;
+      background-color: rgba(239, 246, 255, 0.4) !important;
+    }
+
+    /* 2. Inserción Hermana Abajo (Línea inferior completa) */
     .drop-target-below td {
-      box-shadow: inset 0 -2px 0 #2563eb !important;
-      background-color: rgba(240, 249, 255, 0.45) !important;
+      box-shadow: inset 0 -2.5px 0 #2563eb !important;
+      background-color: rgba(239, 246, 255, 0.4) !important;
+    }
+
+    /* 3. Inserción como Subtarea Hija (Línea con sangría + sombra celeste suave) */
+    .drop-target-inside td {
+      background-color: rgba(219, 234, 254, 0.55) !important;
+      box-shadow: inset 0 -2.5px 0 #1d4ed8 !important;
+    }
+    .drop-target-inside td:first-child {
+      border-left: 4px solid #2563eb !important;
     }
 
     /* Control SpinButton */
@@ -3077,15 +3094,17 @@
     }
 
     // =========================================================================
-    // MOTOR DE ARRASTRE Y REUBICACIÓN JERÁRQUICA (DRAG & DROP WBS)
+    // MOTOR DE ARRASTRE Y REUBICACIÓN JERÁRQUICA (DRAG & DROP WBS EN 3 ZONAS)
     // =========================================================================
     let codigoActividadArrastrada = null;
-    let posicionInsercion = "below"; // "above" | "below"
+    let modoInsercion = "below"; // "above" (Hermana arriba) | "inside" (Como Hija) | "below" (Hermana abajo)
 
     function iniciarArrastreFila(e, cod) {
       codigoActividadArrastrada = cod;
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", cod);
+      
+      document.body.classList.add("is-dragging-row");
       const fila = document.getElementById(`fila-act-${cod.replace(/\./g, '_')}`);
       if (fila) fila.classList.add("row-dragging");
     }
@@ -3097,31 +3116,38 @@
       if (trElement.classList.contains("row-dragging")) return;
 
       const rect = trElement.getBoundingClientRect();
-      const puntoMedio = rect.top + (rect.height / 2);
+      const altura = rect.height;
+      const yRelativo = e.clientY - rect.top;
 
-      // Limpiar franjas previas de otras filas para evitar parpadeos
+      // Limpiar franjas previas en otras filas
       document.querySelectorAll("#lista-actividades tr").forEach(tr => {
-        if (tr !== trElement) tr.classList.remove("drop-target-above", "drop-target-below");
+        if (tr !== trElement) tr.classList.remove("drop-target-above", "drop-target-below", "drop-target-inside");
       });
 
-      if (e.clientY < puntoMedio) {
-        posicionInsercion = "above";
-        trElement.classList.remove("drop-target-below");
+      // Detección en 3 zonas: 25% Superior (Hermana Arriba), 50% Central (Subtarea), 25% Inferior (Hermana Abajo)
+      if (yRelativo < altura * 0.25) {
+        modoInsercion = "above";
+        trElement.classList.remove("drop-target-below", "drop-target-inside");
         trElement.classList.add("drop-target-above");
-      } else {
-        posicionInsercion = "below";
-        trElement.classList.remove("drop-target-above");
+      } else if (yRelativo > altura * 0.75) {
+        modoInsercion = "below";
+        trElement.classList.remove("drop-target-above", "drop-target-inside");
         trElement.classList.add("drop-target-below");
+      } else {
+        modoInsercion = "inside";
+        trElement.classList.remove("drop-target-above", "drop-target-below");
+        trElement.classList.add("drop-target-inside");
       }
     }
 
     function limpiarBordeArrastre(trElement) {
-      if (trElement) trElement.classList.remove("drop-target-above", "drop-target-below");
+      if (trElement) trElement.classList.remove("drop-target-above", "drop-target-below", "drop-target-inside");
     }
 
     function finalizarArrastre() {
+      document.body.classList.remove("is-dragging-row");
       document.querySelectorAll("#lista-actividades tr").forEach(tr => {
-        tr.classList.remove("row-dragging", "drop-target-above", "drop-target-below");
+        tr.classList.remove("row-dragging", "drop-target-above", "drop-target-below", "drop-target-inside");
       });
       codigoActividadArrastrada = null;
     }
@@ -3136,45 +3162,77 @@
         return;
       }
 
-      // Obtener el bloque completo de la actividad origen (padre + hijas subordinadas)
-      const codOrigenLimpio = codOrigen.replace(/\.+$/, "");
-      const bloqueOrigen = actividadesGlobal.filter(a => {
-        const c = a.codigo.replace(/\.+$/, "");
-        return c === codOrigenLimpio || c.startsWith(codOrigenLimpio + ".");
-      }).map(a => a.codigo);
+      const codOrigenLimpio = String(codOrigen).replace(/\.+$/, "");
+      const codDestinoLimpio = String(codigoDestino).replace(/\.+$/, "");
 
-      // Si el destino es una de sus propias hijas, cancelar
-      if (bloqueOrigen.includes(codigoDestino)) {
+      // Obtener bloque de actividades a mover (padre + hijas)
+      const bloqueOrigen = actividadesGlobal.filter(a => {
+        const c = String(a.codigo).replace(/\.+$/, "");
+        return c === codOrigenLimpio || c.startsWith(codOrigenLimpio + ".");
+      }).map(a => String(a.codigo).replace(/\.+$/, ""));
+
+      // Validación: no se puede mover una actividad dentro de sí misma o de sus componentes
+      if (bloqueOrigen.includes(codDestinoLimpio)) {
         alert("⚠️ No puedes mover una actividad dentro de sus propias componentes subordinadas.");
         finalizarArrastre();
         return;
       }
 
-      const actOrigenObj = actividadesGlobal.find(a => a.codigo === codOrigen);
-      const actDestinoObj = actividadesGlobal.find(a => a.codigo === codigoDestino);
-      const descOrigen = actOrigenObj ? actOrigenObj.descripcion : codOrigen;
-      const descDestino = actDestinoObj ? actDestinoObj.descripcion : codigoDestino;
+      // Validación de profundidad máxima (4 niveles)
+      const partesDestino = codDestinoLimpio.split(".");
+      const nivelDestino = partesDestino.length;
+      if (modoInsercion === "inside" && nivelDestino >= 4) {
+        alert("⚠️ La actividad destino ya está en el Nivel 4 (máxima profundidad permitida). Se ubicará como actividad hermana.");
+        modoInsercion = "below";
+      }
+
+      const actOrigenObj = actividadesGlobal.find(a => String(a.codigo).replace(/\.+$/, "") === codOrigenLimpio);
+      const actDestinoObj = actividadesGlobal.find(a => String(a.codigo).replace(/\.+$/, "") === codDestinoLimpio);
+      const descOrigen = actOrigenObj ? actOrigenObj.descripcion : codOrigenLimpio;
+      const descDestino = actDestinoObj ? actDestinoObj.descripcion : codDestinoLimpio;
 
       finalizarArrastre();
 
+      let textoAccion = "";
+      if (modoInsercion === "above") {
+        textoAccion = `encima de [${codDestinoLimpio}] (como actividad hermana)`;
+      } else if (modoInsercion === "inside") {
+        textoAccion = `dentro de [${codDestinoLimpio}] (como subtarea subordinada)`;
+      } else {
+        textoAccion = `debajo de [${codDestinoLimpio}] (como actividad hermana)`;
+      }
+
       const confirma = await confirmModal(
-        `¿Desea mover la actividad [${codOrigen}] ("${descOrigen}") ${posicionInsercion === 'above' ? 'encima' : 'debajo'} de [${codigoDestino}] ("${descDestino}")?\n\nEl sistema renumerará correlativamente la estructura WBS y sus dependencias.`,
+        `¿Desea mover la actividad [${codOrigenLimpio}] ("${descOrigen}") ${textoAccion}?\n\nEl sistema recalculará automáticamente la numeración WBS y las precedencias.`,
         "Reubicar Actividad",
         "question"
       );
 
       if (!confirma) return;
 
-      // Construir la nueva secuencia normalizando los códigos sin puntos finales
+      // Reconstruir la lista normalizada de códigos
       const todosCodigos = actividadesGlobal.map(a => String(a.codigo).replace(/\.+$/, ""));
-      const bloqueOrigenNorm = bloqueOrigen.map(c => String(c).replace(/\.+$/, ""));
-      const codDestinoNorm = String(codigoDestino).replace(/\.+$/, "");
+      const sinBloqueOrigen = todosCodigos.filter(c => !bloqueOrigen.includes(c));
 
-      const sinBloqueOrigen = todosCodigos.filter(c => !bloqueOrigenNorm.includes(c));
-      const indiceDestino = sinBloqueOrigen.indexOf(codDestinoNorm);
-      const puntoInsercion = (posicionInsercion === "above") ? Math.max(0, indiceDestino) : indiceDestino + 1;
+      const indiceDestino = sinBloqueOrigen.indexOf(codDestinoLimpio);
+      let puntoInsercion = indiceDestino;
 
-      sinBloqueOrigen.splice(puntoInsercion, 0, ...bloqueOrigenNorm);
+      if (modoInsercion === "above") {
+        puntoInsercion = Math.max(0, indiceDestino);
+      } else if (modoInsercion === "inside" || modoInsercion === "below") {
+        // Si tiene hijas existentes, colocar después de la última hija del destino
+        let ultimoIndiceHija = indiceDestino;
+        for (let i = indiceDestino + 1; i < sinBloqueOrigen.length; i++) {
+          if (sinBloqueOrigen[i].startsWith(codDestinoLimpio + ".")) {
+            ultimoIndiceHija = i;
+          } else {
+            break;
+          }
+        }
+        puntoInsercion = ultimoIndiceHija + 1;
+      }
+
+      sinBloqueOrigen.splice(puntoInsercion, 0, ...bloqueOrigen);
 
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/reordenar-actividades`, {
