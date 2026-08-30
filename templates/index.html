@@ -402,33 +402,33 @@
           </button>
         </div>
 
-        <!-- KPIs: AVANCE Separado (~2cm) + Trilogía de Estados con Valores y Anchos Ampliados -->
+        <!-- KPIs: AVANCE Separado + Trilogía Alineada con Pluralización Dinámica -->
         <div class="flex-1 flex items-center justify-center min-w-0 flex-wrap py-0.5">
           
-          <!-- KPI AVANCE (Separado ~2cm hacia la izquierda mediante mr-16) -->
-          <div class="h-10 bg-[#1abc9c] text-white px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[131px] max-w-[141px] flex-shrink-0 mr-12 lg:mr-16">
-            <span class="text-[12px] font-black uppercase tracking-wider whitespace-nowrap pr-2">AVANCE</span>
-            <p id="kpi-avance" class="text-base md:text-lg font-black whitespace-nowrap">0%</p>
+          <!-- KPI AVANCE -->
+          <div class="h-10 bg-[#1abc9c] text-white px-4 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[135px] flex-shrink-0 mr-8 lg:mr-14">
+            <span class="text-[12px] font-black uppercase tracking-wider whitespace-nowrap pr-2.5 leading-none">AVANCE</span>
+            <p id="kpi-avance" class="text-base font-black whitespace-nowrap leading-none">0%</p>
           </div>
 
-          <!-- Trilogía de Estados Agrupados Compactos con Texto/Valores (+2px) -->
-          <div class="flex items-center space-x-2 flex-shrink-0">
+          <!-- Trilogía de Estados Perfectamente Alineados -->
+          <div class="flex items-center space-x-2.5 flex-shrink-0">
             <!-- EJECUTADO -->
-            <div class="h-10 bg-[#2ecc71] text-white px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[138px] max-w-[148px]">
-              <span class="text-[13px] font-black uppercase tracking-tight whitespace-nowrap pr-1.5">EJECUTADO</span>
-              <p id="kpi-ejecutado" class="text-sm md:text-base font-black whitespace-nowrap">0 Items</p>
+            <div class="h-10 bg-[#2ecc71] text-white px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[150px] space-x-2">
+              <span class="text-[12px] font-black uppercase tracking-tight whitespace-nowrap leading-none">EJECUTADO</span>
+              <p id="kpi-ejecutado" class="text-xs font-black whitespace-nowrap leading-none">0 Items</p>
             </div>
 
             <!-- EN PROCESO -->
-            <div class="h-10 bg-[#f1c40f] text-[#2c3e50] px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[146px] max-w-[158px]">
-              <span class="text-[13px] font-black uppercase tracking-tight whitespace-nowrap pr-1.5">EN PROCESO</span>
-              <p id="kpi-proceso" class="text-sm md:text-base font-black whitespace-nowrap">0 Items</p>
+            <div class="h-10 bg-[#f1c40f] text-[#2c3e50] px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[165px] space-x-2">
+              <span class="text-[12px] font-black uppercase tracking-tight whitespace-nowrap leading-none">EN PROCESO</span>
+              <p id="kpi-proceso" class="text-xs font-black whitespace-nowrap leading-none">0 Items</p>
             </div>
 
             <!-- NO INICIADO -->
-            <div class="h-10 bg-[#e74c3c] text-white px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[146px] max-w-[158px]">
-              <span class="text-[13px] font-black uppercase tracking-tight whitespace-nowrap pr-1.5">NO INICIADO</span>
-              <p id="kpi-pendiente" class="text-sm md:text-base font-black whitespace-nowrap">0 Items</p>
+            <div class="h-10 bg-[#e74c3c] text-white px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[165px] space-x-2">
+              <span class="text-[12px] font-black uppercase tracking-tight whitespace-nowrap leading-none">NO INICIADO</span>
+              <p id="kpi-pendiente" class="text-xs font-black whitespace-nowrap leading-none">0 Items</p>
             </div>
           </div>
 
@@ -4616,11 +4616,13 @@
       const enProceso = muestraActividades.filter(a => a.estado === 'En proceso').length;
       const noIniciadas = muestraActividades.filter(a => a.estado === 'No iniciado' || a.estado === 'Pendiente').length;
 
-      // 5. Renderizar en el DOM
+      // 5. Renderizar en el DOM con concordancia de número (Singular: Item / Plural: Items)
+      const formatearItemsTexto = (cant) => `${cant} ${cant === 1 ? 'Item' : 'Items'}`;
+
       document.getElementById("kpi-avance").innerText = `${promAvance}%`;
-      document.getElementById("kpi-ejecutado").innerText = `${ejecutadas} Items`;
-      document.getElementById("kpi-proceso").innerText = `${enProceso} Items`;
-      document.getElementById("kpi-pendiente").innerText = `${noIniciadas} Items`;
+      document.getElementById("kpi-ejecutado").innerText = formatearItemsTexto(ejecutadas);
+      document.getElementById("kpi-proceso").innerText = formatearItemsTexto(enProceso);
+      document.getElementById("kpi-pendiente").innerText = formatearItemsTexto(noIniciadas);
     }
 
     // Función auxiliar para resetear filtros rápidamente desde el badge
