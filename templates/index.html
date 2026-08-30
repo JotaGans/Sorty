@@ -2049,11 +2049,16 @@
           barraColorClase = "bg-amber-500";
         }
 
-        // Obtener el nombre descriptivo completo de la unidad orgánica
-        let textoUnidadCompleta = "";
+        // Obtener sigla para visualización compacta y nombre completo para tooltip flotante
+        let siglaUnidad = "";
+        let tooltipUnidad = "";
         if (p.unidad_organica && p.unidad_organica.trim() !== "") {
-          const uObj = (catalogoUnidadesGlobal || []).find(u => u.sigla.toUpperCase() === p.unidad_organica.trim().toUpperCase());
-          textoUnidadCompleta = uObj ? `${uObj.nombre} (${uObj.sigla})` : p.unidad_organica;
+          const uObj = (catalogoUnidadesGlobal || []).find(u => 
+            u.sigla.toUpperCase() === p.unidad_organica.trim().toUpperCase() ||
+            u.nombre.toLowerCase() === p.unidad_organica.trim().toLowerCase()
+          );
+          siglaUnidad = uObj ? uObj.sigla : p.unidad_organica.trim();
+          tooltipUnidad = uObj ? `${uObj.nombre} (${uObj.sigla})` : p.unidad_organica.trim();
         }
 
         const card = document.createElement("div");
@@ -2069,8 +2074,15 @@
             
             <h3 class="font-bold text-base text-[#0f2a4a] leading-snug flex items-center">${p.nombre}</h3>
             
-            <!-- Nombre de la Unidad de Organización Responsable (Intermedio) -->
-            ${textoUnidadCompleta ? `<p class="text-[11px] font-bold text-teal-800 mt-1 truncate" title="Unidad de Organización Responsable: ${textoUnidadCompleta}">🏢 ${textoUnidadCompleta}</p>` : ''}
+            <!-- Sigla de la Unidad de Organización Responsable con Tooltip Flotante Institucional -->
+            ${siglaUnidad ? `
+              <div class="mt-1">
+                <span class="inline-flex items-center text-[11px] font-extrabold text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200/80 px-2 py-0.5 rounded-md cursor-help transition-all shadow-2xs" 
+                      title="Unidad de Organización Responsable:&#10;${tooltipUnidad}">
+                  🏢 ${siglaUnidad}
+                </span>
+              </div>
+            ` : ''}
 
             <p ${tooltipEdit} 
                ondblclick="${esGestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" 
