@@ -3246,7 +3246,9 @@
           },
           body: JSON.stringify({
             proyecto_id: parseInt(proyectoActualId),
-            codigos_ordenados: sinBloqueOrigen
+            codigo_origen: codOrigenLimpio,
+            codigo_destino: codDestinoLimpio,
+            modo: modoInsercion
           })
         });
 

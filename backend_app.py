@@ -176,7 +176,10 @@ class AsignacionResponsableModel(BaseModel):
 
 class ReordenarActividadesModel(BaseModel):
     proyecto_id: int
-    codigos_ordenados: List[str]
+    codigo_origen: Optional[str] = None
+    codigo_destino: Optional[str] = None
+    modo: Optional[str] = "below"  # 'above' | 'below' | 'inside'
+    codigos_ordenados: Optional[List[str]] = []
 
 # --- INICIALIZACIÓN Y MIGRACIÓN DE BD ---
 def init_db():
@@ -998,34 +1001,122 @@ def reordenar_actividades_proyecto(
     if not rows:
         return {"mensaje": "Sin actividades para reorganizar"}
 
-    # Mapa indexado con códigos normalizados sin punto
-    mapa_actual = {}
-    for r in rows:
-        c_norm = str(r["codigo"]).rstrip(".")
-        mapa_actual[c_norm] = dict(r)
+    # Ordenar filas naturalmente por sus códigos
+    def clave_wbs(r):
+        return [int(p) if p.isdigit() else p for p in str(r["codigo"]).rstrip(".").split(".")]
+    
+    filas_ordenadas = sorted(rows, key=clave_wbs)
 
-    # Reconstruir la lista en el orden exacto solicitado
-    lista_reorganizada = []
-    codigos_procesados = set()
+    # Construir árbol WBS en memoria
+    arbol_raices = []
+    mapa_nodos = {}
 
-    for cod in data.codigos_ordenados:
-        c_norm = str(cod).rstrip(".")
-        if c_norm in mapa_actual and c_norm not in codigos_procesados:
-            lista_reorganizada.append(mapa_actual[c_norm])
-            codigos_procesados.add(c_norm)
+    for r in filas_ordenadas:
+        cod = str(r["codigo"]).rstrip(".")
+        nodo = {"codigo": cod, "data": dict(r), "children": []}
+        mapa_nodos[cod] = nodo
+        partes = cod.split(".")
+        if len(partes) == 1:
+            arbol_raices.append(nodo)
+        else:
+            padre_cod = ".".join(partes[:-1])
+            if padre_cod in mapa_nodos:
+                mapa_nodos[padre_cod]["children"].append(nodo)
+            else:
+                arbol_raices.append(nodo)
 
-    # Incluir cualquier actividad remanente si existiera
-    for c_norm, act_dict in mapa_actual.items():
-        if c_norm not in codigos_procesados:
-            lista_reorganizada.append(act_dict)
+    cod_origen = str(data.codigo_origen or "").rstrip(".")
+    cod_destino = str(data.codigo_destino or "").rstrip(".")
+    modo = data.modo or "below"
 
-    # Reestructurar y renumerar pasando directamente la secuencia nueva
-    reestructurar_codigos_wbs(proyecto_id, db, lista_ordenada_manual=lista_reorganizada)
+    if cod_origen and cod_destino and cod_origen in mapa_nodos and cod_destino in mapa_nodos:
+        # 1. Extraer el subárbol origen de su posición actual
+        def extraer_nodo(lista, cod_buscar):
+            for idx, n in enumerate(lista):
+                if n["codigo"] == cod_buscar:
+                    return lista.pop(idx)
+                res = extraer_nodo(n["children"], cod_buscar)
+                if res is not None:
+                    return res
+            return None
+
+        nodo_movido = extraer_nodo(arbol_raices, cod_origen)
+
+        if nodo_movido:
+            # 2. Insertar en la nueva ubicación según el modo
+            if modo == "inside":
+                # Se convierte en hijo de la caja destino
+                mapa_nodos[cod_destino]["children"].append(nodo_movido)
+            else:
+                # Se inserta como hermano antes (above) o después (below)
+                def insertar_hermano(lista, cod_target, nodo_ins, pos):
+                    for idx, n in enumerate(lista):
+                        if n["codigo"] == cod_target:
+                            punto = idx if pos == "above" else idx + 1
+                            lista.insert(punto, nodo_ins)
+                            return True
+                        if insertar_hermano(n["children"], cod_target, nodo_ins, pos):
+                            return True
+                    return False
+
+                insertar_hermano(arbol_raices, cod_destino, nodo_movido, modo)
+
+    # 3. Aplanar y renumerar correlativamente todos los niveles
+    mapeo_codigos = {}
+    actividades_nuevas = []
+
+    def aplanar_y_renumerar(lista, prefijo=""):
+        for idx, n in enumerate(lista, start=1):
+            nuevo_cod = f"{prefijo}.{idx}" if prefijo else str(idx)
+            old_cod = n["codigo"]
+            mapeo_codigos[old_cod] = nuevo_cod
+
+            d = n["data"]
+            d["codigo"] = nuevo_cod
+            actividades_nuevas.append(d)
+
+            aplanar_y_renumerar(n["children"], nuevo_cod)
+
+    aplanar_y_renumerar(arbol_raices)
+
+    # 4. Validar límite de profundidad (máximo 4 niveles)
+    for act in actividades_nuevas:
+        if len(act["codigo"].split(".")) > 4:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"La actividad '{act['descripcion']}' excedería el límite máximo permitido de 4 niveles jerárquicos."
+            )
+
+    # 5. Mapear predecesores y persistir en la base de datos
+    actividades_finales_db = []
+    for act in actividades_nuevas:
+        preds = [p.strip().rstrip(".") for p in (act.get("predecesores") or "").split(",") if p.strip()]
+        preds_actualizados = [mapeo_codigos.get(p, p) for p in preds]
+        predecesores_str = ", ".join(preds_actualizados)
+
+        actividades_finales_db.append((
+            proyecto_id,
+            act["codigo"],
+            act["descripcion"],
+            act["responsable"],
+            act["estado"],
+            act["avance"],
+            act["fecha_inicio"],
+            act["fecha_fin"],
+            act["dias"],
+            predecesores_str
+        ))
+
+    db.execute("DELETE FROM actividades WHERE proyecto_id = ?", (proyecto_id,))
+    db.executemany("""
+        INSERT INTO actividades (proyecto_id, codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, actividades_finales_db)
 
     db.execute("""
         INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
         VALUES (?, ?, ?, 'Reorganización WBS', ?)
-    """, (proyecto_id, ahora_peru_str(), user["username"], "Reorganizó el orden de actividades en el cronograma"))
+    """, (proyecto_id, ahora_peru_str(), user["username"], f"Reorganizó la actividad [{cod_origen}] respecto a [{cod_destino}] ({modo})"))
 
     db.commit()
     return {"mensaje": "Actividades reubicadas y WBS recalculado con éxito"}
