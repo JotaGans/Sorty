@@ -2452,11 +2452,6 @@
             const resResp = await fetch(`/responsables`);
             if (resResp.ok) {
               responsablesGlobal = await resResp.json();
-              const selFiltro = document.getElementById("filtro-responsable-select");
-              selFiltro.innerHTML = '<option value="">👤 Todo el Personal</option>';
-              responsablesGlobal.forEach(r => {
-                selFiltro.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
-              });
             }
           } catch(e) {}
         }
@@ -2684,6 +2679,7 @@
         // Reconstruir horizonte y enfocar vista
         construirCalendarioAnual();
         autoAjustarSemanaInicio();
+        poblarFiltroResponsablesDinamico();
         renderizarCabeceraGantt();
         renderizarTabla();
         actualizarKPIs();
@@ -4820,6 +4816,43 @@
       notificarToast("Filtros restablecidos a la vista completa del proyecto.", "info");
     }
 
+    // =========================================================================
+    // FILTRO DINÁMICO DE PERSONAL SEGÚN ASIGNACIONES REALES DEL PROYECTO
+    // =========================================================================
+    function poblarFiltroResponsablesDinamico() {
+      const select = document.getElementById("filtro-responsable-select");
+      if (!select) return;
+
+      const valorSeleccionadoPrevio = select.value;
+      const setResponsables = new Set();
+
+      (actividadesGlobal || []).forEach(act => {
+        const respCampo = (act.responsable || "").trim();
+        if (respCampo && respCampo !== "No asignado" && respCampo !== "-") {
+          const listaSeparada = respCampo.split(/[,;\n]+/).map(r => r.trim()).filter(r => r.length > 0);
+          listaSeparada.forEach(r => setResponsables.add(r));
+        }
+      });
+
+      const responsablesOrdenados = Array.from(setResponsables).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+      select.innerHTML = '<option value="">👤 Todo el Personal</option>';
+
+      responsablesOrdenados.forEach(nombre => {
+        const option = document.createElement("option");
+        option.value = nombre;
+        option.innerText = nombre;
+        select.appendChild(option);
+      });
+
+      if (valorSeleccionadoPrevio && setResponsables.has(valorSeleccionadoPrevio)) {
+        select.value = valorSeleccionadoPrevio;
+      } else if (valorSeleccionadoPrevio && !setResponsables.has(valorSeleccionadoPrevio)) {
+        select.value = "";
+        aplicarFiltrosGlobales();
+      }
+    }
+
     function abrirInputCustom({ titulo, mensaje, tipo = 'text', valorActual = '', opciones = [], onAceptar }) {
       document.getElementById("mic-titulo").innerText = titulo;
       document.getElementById("mic-mensaje").innerText = mensaje;
@@ -5932,6 +5965,7 @@
 
         // 1. Actualizar memoria local de inmediato
         actRef.responsable = respFinal;
+        poblarFiltroResponsablesDinamico();
         renderizarTabla();
 
         // 2. Guardar en Backend mediante endpoint atómico
