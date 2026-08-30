@@ -2648,8 +2648,12 @@
         if (!res.ok) throw new Error("Error al cargar actividades");
         actividadesGlobal = await res.json();
         
-        // Reconstruir el horizonte temporal para abarcar 2026, 2027 y años posteriores
+        // Actualizar caché permanente del proyecto
+        localStorage.setItem(`cache_acts_proj_${proyectoActualId}`, JSON.stringify(actividadesGlobal));
+        
+        // Reconstruir horizonte y enfocar vista
         construirCalendarioAnual();
+        autoAjustarSemanaInicio();
         renderizarCabeceraGantt();
         renderizarTabla();
         actualizarKPIs();
@@ -3196,6 +3200,8 @@
         if (res.ok) {
           cerrarWizardCreacion();
           await cargarActividades();
+          renderizarTabla();
+          actualizarKPIs();
           notificarToast(`Actividad [${wizardCodigoGenerado}] creada exitosamente.`, "success");
         } else {
           const err = await res.json().catch(() => ({}));

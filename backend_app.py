@@ -721,7 +721,7 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
         p_dict["total_actividades"] = len(acts_finales)
         p_dict["ejecutadas"] = sum(1 for a in acts_finales if a["estado"] == "Ejecutado")
         p_dict["en_proceso"] = sum(1 for a in acts_finales if a["estado"] == "En proceso")
-        p_dict["pendientes"] = sum(1 for a in acts_finales if a["estado"] == "Pendiente")
+        p_dict["pendientes"] = sum(1 for a in acts_finales if a["estado"] in ["No iniciado", "Pendiente"])
         p_dict["avance_global"] = pct_global
         proyectos_resumen.append(p_dict)
 
