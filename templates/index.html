@@ -101,16 +101,14 @@
     .col-semana-actual { background-color: rgba(22, 160, 133, 0.12) !important; }
     .header-semana-actual { background-color: #16a085 !important; color: #ffffff !important; font-weight: bold; }
 
-    /* Cabecera Sticky Fija con Líneas Finas Sutiles (1px) */
+    /* Cabecera Sticky Fija con Líneas Delgadas Nítidas y Continuas (1px exacto) */
     thead th {
       position: sticky;
       top: 0;
       z-index: 30;
       background-color: #0f2a4a !important;
-      border-color: #172554 !important;
-      border-width: 0 1px 1px 0 !important;
-      background-clip: padding-box;
-      box-shadow: none !important;
+      box-shadow: inset -1px 0 0 #1e40af, inset 0 -1px 0 #1e40af !important;
+      border: none !important;
     }
 
     /* Rombo de Hito */
@@ -542,33 +540,33 @@
       <table class="w-full text-left text-xs md:text-sm border-separate border-spacing-0" id="tabla-gantt-main">
         <thead class="bg-[#0f2a4a] text-white select-none">
           <tr>
-            <th id="th-codigo" class="p-2.5 font-bold border-r border-b border-[#172554] w-20 md:w-24 whitespace-nowrap">Código</th>
-            <th id="th-descripcion" class="p-2.5 font-bold border-r border-b border-[#172554] min-w-[200px] md:min-w-[260px] whitespace-nowrap">
+            <th id="th-codigo" class="p-2.5 font-bold w-20 md:w-24 whitespace-nowrap">Código</th>
+            <th id="th-descripcion" class="p-2.5 font-bold min-w-[200px] md:min-w-[260px] whitespace-nowrap">
               Descripción de Actividad <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            <th id="th-responsable" class="p-2.5 font-bold border-r border-b border-[#172554] min-w-[90px] md:min-w-[110px] text-center whitespace-nowrap">
+            <th id="th-responsable" class="p-2.5 font-bold min-w-[90px] md:min-w-[110px] text-center whitespace-nowrap">
               Responsable(s) <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            <th id="th-estado" class="p-2.5 font-bold border-r border-b border-[#172554] min-w-[90px] md:min-w-[110px] whitespace-nowrap">
+            <th id="th-estado" class="p-2.5 font-bold min-w-[90px] md:min-w-[110px] whitespace-nowrap">
               Estado <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            <th id="th-inicio" class="p-2.5 font-bold border-r border-b border-[#172554] min-w-[85px] md:min-w-[95px] whitespace-nowrap">
+            <th id="th-inicio" class="p-2.5 font-bold min-w-[85px] md:min-w-[95px] whitespace-nowrap">
               Inicio <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            <th id="th-fin" class="p-2.5 font-bold border-r border-b border-[#172554] min-w-[85px] md:min-w-[95px] whitespace-nowrap">
+            <th id="th-fin" class="p-2.5 font-bold min-w-[85px] md:min-w-[95px] whitespace-nowrap">
               Fin <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            <th id="th-dias" class="p-2.5 font-bold border-r border-b border-[#172554] text-center min-w-[55px] md:min-w-[65px] whitespace-nowrap">
+            <th id="th-dias" class="p-2.5 font-bold text-center min-w-[55px] md:min-w-[65px] whitespace-nowrap">
               Días <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            <th id="th-avance" class="p-2.5 font-bold border-r border-b border-[#172554] text-center min-w-[65px] md:min-w-[75px] whitespace-nowrap">
+            <th id="th-avance" class="p-2.5 font-bold text-center min-w-[65px] md:min-w-[75px] whitespace-nowrap">
               % Avance <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
-            <th id="th-gantt" class="p-0 font-bold min-w-[420px] w-full border-r border-b border-[#172554]">
-              <div id="gantt-header-meses" class="flex text-center text-[10px] text-gray-200 border-b border-[#172554] py-1 font-bold"></div>
-              <div id="gantt-header-semanas" class="flex text-center text-[9px] text-teal-300 font-mono tracking-tighter py-0.5"></div>
+            <th id="th-gantt" class="p-0 font-bold min-w-[420px] w-full align-top">
+              <div id="gantt-header-meses" class="flex text-center text-[10px] text-gray-200 border-b border-[#1e40af] py-1 font-bold w-full"></div>
+              <div id="gantt-header-semanas" class="flex text-center text-[9px] text-teal-300 font-mono tracking-tighter py-0.5 w-full"></div>
             </th>
-            <th id="th-acciones" class="p-2.5 font-bold text-center border-b border-[#172554] w-16 md:w-20 whitespace-nowrap">Acciones</th>
+            <th id="th-acciones" class="p-2.5 font-bold text-center w-16 md:w-20 whitespace-nowrap">Acciones</th>
           </tr>
         </thead>
         <tbody id="lista-actividades" class="select-none bg-white"></tbody>
@@ -4038,7 +4036,7 @@
         diasVisibles.forEach(d => {
           const esFinSemana = (d.diaSemana === 0 || d.diaSemana === 6);
           const claseHoy = d.esHoy ? "bg-teal-500 text-white font-black rounded-xs shadow" : (esFinSemana ? "text-gray-400 bg-blue-950/40" : "text-teal-300 opacity-90");
-          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}" title="${d.dia} de ${d.mesNombre} ${d.anio}">${d.dia}</div>`;
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1e40af]/60 text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}" title="${d.dia} de ${d.mesNombre} ${d.anio}">${d.dia}</div>`;
         });
         return;
       }
@@ -4072,12 +4070,12 @@
           textoCabecera = `${g.mes} '${String(g.anio).slice(-2)}`;
         }
 
-        divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-blue-800/80 text-[10px] overflow-hidden whitespace-nowrap truncate px-0.5" title="${g.nombreCompleto}">${textoCabecera}</div>`;
+        divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-[#1e40af] text-[10px] overflow-hidden whitespace-nowrap truncate px-0.5" title="${g.nombreCompleto}">${textoCabecera}</div>`;
       });
 
       semanasVisibles.forEach(s => {
         const claseHoy = s.esHoy ? "header-semana-actual rounded-sm shadow" : "opacity-90";
-        divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre} ${s.anio})">${s.dia}</div>`;
+        divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1e40af]/60 text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre} ${s.anio})">${s.dia}</div>`;
       });
     }
 
