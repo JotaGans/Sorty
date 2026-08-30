@@ -1451,13 +1451,25 @@ def programar_notificacion_asignacion(
 def listar_comentarios_proyecto(proyecto_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     rows = db.execute("""
         SELECT id, proyecto_id, codigo_actividad, usuario_id, autor_nombre, autor_unidad, texto, 
-               strftime('%d/%m/%Y %H:%M', datetime(fecha_creacion, 'localtime')) as fecha_fmt,
-               strftime('%d/%m/%Y %H:%M', datetime(fecha_edicion, 'localtime')) as edit_fmt
+               fecha_creacion, fecha_edicion
         FROM comentarios_actividad
         WHERE proyecto_id = ?
-        ORDER BY fecha_creacion ASC
+        ORDER BY id ASC
     """, (int(proyecto_id),)).fetchall()
     
+    def formatear_fecha_peru(f_raw):
+        if not f_raw:
+            return ""
+        s = str(f_raw).strip()
+        # Formato ISO / SQLite 'YYYY-MM-DD HH:MM:SS'
+        if "-" in s and len(s) >= 16:
+            partes = s.split(" ")
+            f_partes = partes[0].split("-")
+            hora_partes = partes[1].split(":") if len(partes) > 1 else ["00", "00"]
+            if len(f_partes) == 3:
+                return f"{f_partes[2]}/{f_partes[1]}/{f_partes[0]} {hora_partes[0]}:{hora_partes[1]}"
+        return s
+
     return [
         {
             "id": r["id"],
@@ -1467,8 +1479,8 @@ def listar_comentarios_proyecto(proyecto_id: int, user: dict = Depends(get_curre
             "autor_nombre": r["autor_nombre"],
             "autor_unidad": r["autor_unidad"],
             "texto": r["texto"],
-            "fecha_creacion": r["fecha_fmt"],
-            "fecha_edicion": r["edit_fmt"]
+            "fecha_creacion": formatear_fecha_peru(r["fecha_creacion"]),
+            "fecha_edicion": formatear_fecha_peru(r["fecha_edicion"])
         }
         for r in rows
     ]
@@ -1487,10 +1499,11 @@ def crear_comentario(data: ComentarioCreate, user: dict = Depends(get_current_us
     autor_unidad = t_row["unidad_organica"] if t_row and t_row["unidad_organica"] else (user.get("rol") if user.get("rol") == "ADMIN_TI" else "")
     cod_limpio = str(data.codigo_actividad).strip().rstrip(".")
 
+    fecha_ahora_peru = ahora_peru_str()
     db.execute("""
-        INSERT INTO comentarios_actividad (proyecto_id, codigo_actividad, usuario_id, autor_nombre, autor_unidad, texto)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (int(data.proyecto_id), cod_limpio, user["id"], autor_nombre, autor_unidad, texto_limpio))
+        INSERT INTO comentarios_actividad (proyecto_id, codigo_actividad, usuario_id, autor_nombre, autor_unidad, texto, fecha_creacion)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (int(data.proyecto_id), cod_limpio, user["id"], autor_nombre, autor_unidad, texto_limpio, fecha_ahora_peru))
 
     # Registro en historial de auditoría
     db.execute("""
@@ -1517,11 +1530,12 @@ def editar_comentario(comentario_id: int, data: ComentarioUpdate, user: dict = D
     if row["usuario_id"] != user["id"] and user.get("rol") != "ADMIN_TI":
         raise HTTPException(status_code=403, detail="No tiene permisos para editar este comentario.")
 
+    fecha_ahora_peru = ahora_peru_str()
     db.execute("""
         UPDATE comentarios_actividad
-        SET texto = ?, fecha_edicion = CURRENT_TIMESTAMP
+        SET texto = ?, fecha_edicion = ?
         WHERE id = ?
-    """, (texto_limpio, int(comentario_id)))
+    """, (texto_limpio, fecha_ahora_peru, int(comentario_id)))
     db.commit()
 
     return {"status": "success", "message": "Comentario editado con éxito."}
