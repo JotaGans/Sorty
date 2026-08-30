@@ -2514,87 +2514,7 @@
         }
       }
     }
-
-    function abrirMenuContextual(event, cod) {
-      event.preventDefault();
-      event.stopPropagation();
-      seleccionarFila(cod);
-      actividadContextualSeleccionada = actividadesGlobal.find(a => a.codigo === cod);
-      if (!actividadContextualSeleccionada) return;
-
-      const partes = cod.replace(/\.+$/, "").split(".");
-      const nivel = partes.length;
-      const nombresSubnivel = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
-      const nombresMismoNivel = ["", "Actividad Principal (Nivel 1)", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
-      
-      const menu = document.getElementById("menu-contextual");
-      const headerInfo = document.getElementById("mc-header-info");
-      if (headerInfo) {
-        headerInfo.classList.remove("hidden");
-        headerInfo.innerText = `[${cod}] ${actividadContextualSeleccionada.descripcion}`;
-      }
-      
-      const btnHijo = document.getElementById("mc-btn-hijo");
-      const btnHermano = document.getElementById("mc-btn-hermano");
-      const btnRaiz = document.getElementById("mc-btn-raiz");
-      const btnResp = document.getElementById("mc-btn-resp");
-      const btnElim = document.getElementById("mc-btn-eliminar");
-      const btnCom = document.getElementById("mc-btn-comentarios");
-
-      const esMiActividad = actividadContextualSeleccionada.responsable && actividadContextualSeleccionada.responsable.includes(currentUser.username);
-      const puedeCrear = proyectoEsGestor || esMiActividad;
-
-      // 1. Configurar botón Hijo
-      if (btnHijo) {
-        if (nivel >= 4 || !puedeCrear) {
-          btnHijo.classList.add("hidden");
-        } else {
-          btnHijo.classList.remove("hidden");
-          const txtHijo = document.getElementById("mc-txt-hijo");
-          if (txtHijo) txtHijo.innerText = `Agregar ${nombresSubnivel[nivel]}`;
-        }
-      }
-
-      // 2. Configurar botón Hermano
-      if (btnHermano) {
-        if (!puedeCrear) {
-          btnHermano.classList.add("hidden");
-        } else {
-          btnHermano.classList.remove("hidden");
-          const txtHermano = document.getElementById("mc-txt-hermano");
-          if (txtHermano) txtHermano.innerText = `Agregar Hermana (${nombresMismoNivel[nivel]})`;
-        }
-      }
-
-      // 3. Botón Raíz (solo visible si no estamos ya en Nivel 1)
-      if (btnRaiz) {
-        if (proyectoEsGestor && nivel > 1) {
-          btnRaiz.classList.remove("hidden");
-        } else {
-          btnRaiz.classList.add("hidden");
-        }
-      }
-
-      // 4. Permisos de gestión
-      if (!proyectoEsGestor) {
-        if (btnResp) btnResp.classList.add("hidden");
-        if (btnElim) btnElim.classList.add("hidden");
-      } else {
-        if (btnResp) btnResp.classList.remove("hidden");
-        if (btnElim) btnElim.classList.remove("hidden");
-      }
-
-      // 5. Comentarios
-      if (btnCom) {
-        const coms = obtenerComentariosDeActividad(cod);
-        btnCom.classList.remove("hidden");
-        const txtCom = document.getElementById("mc-txt-comentarios");
-        if (txtCom) txtCom.innerText = coms.length > 0 ? `Ver Comentarios (${coms.length})` : "Agregar Comentario";
-      }
-      
-      posicionarMenuContextual(event);
-    }
-
+    
     function abrirMenuContextual(event, cod) {
       event.preventDefault();
       event.stopPropagation();
@@ -3252,8 +3172,9 @@
         });
 
         if (res.ok) {
-          notificarToast("Estructura WBS reorganizada con éxito.", "success");
+          localStorage.removeItem(`cache_acts_proj_${proyectoActualId}`);
           await cargarActividades();
+          notificarToast("Estructura WBS reorganizada y renumerada con éxito.", "success");
         } else {
           const err = await res.json().catch(() => ({}));
           alert(err.detail || "No se pudo completar el reordenamiento.");
@@ -4455,11 +4376,13 @@
           </td>
         `;
 
-        const handleDrag = proyectoEsGestor ? `<span class="drag-handle text-gray-400 hover:text-gray-700 mr-1.5 text-[11px] select-none" title="Arrastrar para reubicar">⠿</span>` : '';
+        const handleDrag = proyectoEsGestor ? `<span class="drag-handle text-slate-400 hover:text-slate-800 cursor-grab active:cursor-grabbing mr-2 text-xs select-none inline-block align-middle" title="Arrastrar fila para reubicar">⠿</span>` : '';
 
         tr.innerHTML = `
-          <td class="p-2.5 font-mono font-bold text-xs border-r border-b border-gray-200 whitespace-nowrap flex items-center">
-            ${handleDrag}${iconoColapso}<span>${cod}</span>
+          <td class="p-2.5 font-mono font-bold text-xs border-r border-b border-gray-200 whitespace-nowrap">
+            <div class="inline-flex items-center">
+              ${handleDrag}${iconoColapso}<span>${cod}</span>
+            </div>
           </td>
           ${tdDescHTML}
           ${tdResp}

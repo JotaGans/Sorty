@@ -166,11 +166,6 @@ class ComentarioCreate(BaseModel):
     codigo_actividad: str
     texto: str
 
-class ComentarioCreate(BaseModel):
-    proyecto_id: int
-    codigo_actividad: str
-    texto: str
-
 class ComentarioUpdate(BaseModel):
     texto: str
 
@@ -862,64 +857,68 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         raise HTTPException(status_code=500, detail=f"Error en base de datos: {str(e)}")
 
 # --- FUNCIÓN AUXILIAR DE REESTRUCTURACIÓN JERÁRQUICA WBS ---
-def reestructurar_codigos_wbs(proyecto_id: int, db: sqlite3.Connection):
-    # Obtener todas las actividades restantes del proyecto
-    rows = db.execute("""
-        SELECT codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores 
-        FROM actividades 
-        WHERE proyecto_id = ?
-    """, (proyecto_id,)).fetchall()
+def reestructurar_codigos_wbs(proyecto_id: int, db: sqlite3.Connection, lista_ordenada_manual: Optional[List[dict]] = None):
+    if lista_ordenada_manual is not None:
+        actividades_secuencia = lista_ordenada_manual
+    else:
+        rows = db.execute("""
+            SELECT codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores 
+            FROM actividades 
+            WHERE proyecto_id = ?
+        """, (proyecto_id,)).fetchall()
 
-    if not rows:
+        if not rows:
+            return
+
+        def clave_orden_wbs(row):
+            cod_limpio = str(row["codigo"]).rstrip(".")
+            partes = []
+            for p in cod_limpio.split("."):
+                try:
+                    partes.append(int(p))
+                except ValueError:
+                    partes.append(p)
+            return partes
+
+        actividades_secuencia = sorted(rows, key=clave_orden_wbs)
+
+    if not actividades_secuencia:
         return
 
-    # Convertir a lista y ordenar de forma natural por jerarquía numérica (1, 1.1, 1.2, 2, 2.1...)
-    def clave_orden_wbs(row):
-        cod_limpio = str(row["codigo"]).rstrip(".")
-        partes = []
-        for p in cod_limpio.split("."):
-            try:
-                partes.append(int(p))
-            except ValueError:
-                partes.append(p)
-        return partes
-
-    actividades_ordenadas = sorted(rows, key=clave_orden_wbs)
-
-    # Construir mapa de reasignación correlativa
+    # Construir nuevo árbol WBS correlativo respetando la profundidad relativa
     mapeo_nuevos_codigos = {}
-    conteo_por_padre = {}
+    stack_jerarquia = [] # [(nivel_original, nuevo_codigo_generado)]
+    conteo_hijos = {}    # { codigo_padre: cantidad_hijos }
 
-    for act in actividades_ordenadas:
+    for act in actividades_secuencia:
         cod_antiguo = str(act["codigo"]).rstrip(".")
         partes = cod_antiguo.split(".")
-        
-        if len(partes) == 1:
-            padre = ""
-        else:
-            padre = ".".join(partes[:-1])
-        
-        # Obtener el nuevo prefijo del padre si ya fue reasignado
-        nuevo_padre = mapeo_nuevos_codigos.get(padre, padre) if padre else ""
-        
-        # Correlativo continuo para este grupo de hermanos
-        conteo_por_padre[padre] = conteo_por_padre.get(padre, 0) + 1
-        indice_hermano = conteo_por_padre[padre]
+        nivel_orig = len(partes)
 
-        if nuevo_padre:
-            nuevo_cod = f"{nuevo_padre}.{indice_hermano}"
-        else:
-            nuevo_cod = f"{indice_hermano}"
+        # Ajustar el stack a la profundidad correspondiente
+        while stack_jerarquia and stack_jerarquia[-1][0] >= nivel_orig:
+            stack_jerarquia.pop()
 
+        if not stack_jerarquia:
+            # Es una actividad raíz (Nivel 1)
+            padre_nuevo = ""
+            conteo_hijos[""] = conteo_hijos.get("", 0) + 1
+            nuevo_cod = str(conteo_hijos[""])
+        else:
+            # Es hija del elemento en la cima del stack
+            padre_nuevo = stack_jerarquia[-1][1]
+            conteo_hijos[padre_nuevo] = conteo_hijos.get(padre_nuevo, 0) + 1
+            nuevo_cod = f"{padre_nuevo}.{conteo_hijos[padre_nuevo]}"
+
+        stack_jerarquia.append((nivel_orig, nuevo_cod))
         mapeo_nuevos_codigos[cod_antiguo] = nuevo_cod
 
-    # Reemplazar los registros con los nuevos códigos y mapear predecesores
+    # Mapear predecesores y persistir con los nuevos códigos
     actividades_renumeradas = []
-    for act in actividades_ordenadas:
+    for act in actividades_secuencia:
         cod_ant = str(act["codigo"]).rstrip(".")
         nuevo_cod = mapeo_nuevos_codigos[cod_ant]
 
-        # Actualizar predecesores si apuntaban a códigos que cambiaron
         preds_antiguos = [p.strip().rstrip(".") for p in (act["predecesores"] or "").split(",") if p.strip()]
         preds_nuevos = [mapeo_nuevos_codigos[p] for p in preds_antiguos if p in mapeo_nuevos_codigos]
         predecesores_str = ", ".join(preds_nuevos)
@@ -937,7 +936,6 @@ def reestructurar_codigos_wbs(proyecto_id: int, db: sqlite3.Connection):
             predecesores_str
         ))
 
-    # Sobrescribir la tabla de actividades del proyecto de forma atómica
     db.execute("DELETE FROM actividades WHERE proyecto_id = ?", (proyecto_id,))
     db.executemany("""
         INSERT INTO actividades (proyecto_id, codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
@@ -1012,18 +1010,8 @@ def reordenar_actividades_proyecto(
     if len(lista_reorganizada) != len(rows):
         raise HTTPException(status_code=400, detail="La lista enviada no coincide con el total de actividades.")
 
-    # Reestructuración WBS preservando el nuevo orden secuencial
-    db.execute("DELETE FROM actividades WHERE proyecto_id = ?", (proyecto_id,))
-    
-    # Insertar temporalmente con un índice plano
-    for idx, act in enumerate(lista_reorganizada, start=1):
-        db.execute("""
-            INSERT INTO actividades (proyecto_id, codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (proyecto_id, str(act["codigo"]), act["descripcion"], act["responsable"], act["estado"], act["avance"], act["fecha_inicio"], act["fecha_fin"], act["dias"], act["predecesores"]))
-
-    # Renumerar de forma consistente
-    reestructurar_codigos_wbs(proyecto_id, db)
+    # Reestructurar y renumerar pasando directamente la secuencia nueva
+    reestructurar_codigos_wbs(proyecto_id, db, lista_ordenada_manual=lista_reorganizada)
 
     db.execute("""
         INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
