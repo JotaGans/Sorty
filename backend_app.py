@@ -998,17 +998,26 @@ def reordenar_actividades_proyecto(
     if not rows:
         return {"mensaje": "Sin actividades para reorganizar"}
 
-    mapa_actual = {str(r["codigo"]).rstrip("."): dict(r) for r in rows}
-    
-    # Validar que todos los códigos enviados existan
-    lista_reorganizada = []
-    for cod in data.codigos_ordenados:
-        cod_limpio = str(cod).rstrip(".")
-        if cod_limpio in mapa_actual:
-            lista_reorganizada.append(mapa_actual[cod_limpio])
+    # Mapa indexado con códigos normalizados sin punto
+    mapa_actual = {}
+    for r in rows:
+        c_norm = str(r["codigo"]).rstrip(".")
+        mapa_actual[c_norm] = dict(r)
 
-    if len(lista_reorganizada) != len(rows):
-        raise HTTPException(status_code=400, detail="La lista enviada no coincide con el total de actividades.")
+    # Reconstruir la lista en el orden exacto solicitado
+    lista_reorganizada = []
+    codigos_procesados = set()
+
+    for cod in data.codigos_ordenados:
+        c_norm = str(cod).rstrip(".")
+        if c_norm in mapa_actual and c_norm not in codigos_procesados:
+            lista_reorganizada.append(mapa_actual[c_norm])
+            codigos_procesados.add(c_norm)
+
+    # Incluir cualquier actividad remanente si existiera
+    for c_norm, act_dict in mapa_actual.items():
+        if c_norm not in codigos_procesados:
+            lista_reorganizada.append(act_dict)
 
     # Reestructurar y renumerar pasando directamente la secuencia nueva
     reestructurar_codigos_wbs(proyecto_id, db, lista_ordenada_manual=lista_reorganizada)

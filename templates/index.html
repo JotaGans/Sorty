@@ -20,14 +20,14 @@
     .drag-handle:active { cursor: grabbing; }
     .row-dragging { opacity: 0.35 !important; background-color: #f1f5f9 !important; }
     
-    /* Franja indicadora superior e inferior en todas las celdas de la fila */
+    /* Franja indicadora superior e inferior sutil (2px) */
     .drop-target-above td {
-      box-shadow: inset 0 4px 0 #1d4ed8 !important;
-      background-color: rgba(239, 246, 255, 0.7) !important;
+      box-shadow: inset 0 2px 0 #2563eb !important;
+      background-color: rgba(240, 249, 255, 0.45) !important;
     }
     .drop-target-below td {
-      box-shadow: inset 0 -4px 0 #1d4ed8 !important;
-      background-color: rgba(239, 246, 255, 0.7) !important;
+      box-shadow: inset 0 -2px 0 #2563eb !important;
+      background-color: rgba(240, 249, 255, 0.45) !important;
     }
 
     /* Control SpinButton */
@@ -3165,14 +3165,16 @@
 
       if (!confirma) return;
 
-      // Construir la nueva secuencia de códigos
-      const todosCodigos = actividadesGlobal.map(a => a.codigo);
-      const sinBloqueOrigen = todosCodigos.filter(c => !bloqueOrigen.includes(c));
+      // Construir la nueva secuencia normalizando los códigos sin puntos finales
+      const todosCodigos = actividadesGlobal.map(a => String(a.codigo).replace(/\.+$/, ""));
+      const bloqueOrigenNorm = bloqueOrigen.map(c => String(c).replace(/\.+$/, ""));
+      const codDestinoNorm = String(codigoDestino).replace(/\.+$/, "");
 
-      const indiceDestino = sinBloqueOrigen.indexOf(codigoDestino);
-      const puntoInsercion = (posicionInsercion === "above") ? indiceDestino : indiceDestino + 1;
+      const sinBloqueOrigen = todosCodigos.filter(c => !bloqueOrigenNorm.includes(c));
+      const indiceDestino = sinBloqueOrigen.indexOf(codDestinoNorm);
+      const puntoInsercion = (posicionInsercion === "above") ? Math.max(0, indiceDestino) : indiceDestino + 1;
 
-      sinBloqueOrigen.splice(puntoInsercion, 0, ...bloqueOrigen);
+      sinBloqueOrigen.splice(puntoInsercion, 0, ...bloqueOrigenNorm);
 
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/reordenar-actividades`, {
