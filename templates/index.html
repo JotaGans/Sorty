@@ -2422,12 +2422,16 @@
       if (cachedActs) {
         try {
           actividadesGlobal = JSON.parse(cachedActs);
-          autoAjustarSemanaInicio(); // <-- Ajusta la semana automáticamente
+          autoAjustarSemanaInicio();
+          poblarFiltroResponsablesDinamico();
           actualizarKPIs();
         } catch(e) {
           actividadesGlobal = [];
+          poblarFiltroResponsablesDinamico();
           irASemanaActual();
         }
+      } else {
+        poblarFiltroResponsablesDinamico();
       } else {
         actividadesGlobal = [];
         const tbody = document.getElementById("lista-actividades");
@@ -2465,10 +2469,11 @@
           const freshActs = await resActs.json();
           actividadesGlobal = freshActs || [];
           localStorage.setItem(cacheKey, JSON.stringify(actividadesGlobal));
-          construirCalendarioAnual(); // <-- Expande el calendario a los años de las actividades recibidas
+          construirCalendarioAnual();
           autoAjustarSemanaInicio();
+          poblarFiltroResponsablesDinamico();
           actualizarKPIs();
-        } 
+        }
         
         else if (resActs.status === 401) {
           cerrarSesion();
@@ -4829,7 +4834,8 @@
       (actividadesGlobal || []).forEach(act => {
         const respCampo = (act.responsable || "").trim();
         if (respCampo && respCampo !== "No asignado" && respCampo !== "-") {
-          const listaSeparada = respCampo.split(/[,;\n]+/).map(r => r.trim()).filter(r => r.length > 0);
+          // Separar estrictamente por punto y coma (;) o saltos de línea para respetar "Apellidos, Nombres"
+          const listaSeparada = respCampo.split(/[;\n]+/).map(r => r.trim()).filter(r => r.length > 0 && r !== "No asignado" && r !== "-");
           listaSeparada.forEach(r => setResponsables.add(r));
         }
       });
@@ -4847,9 +4853,8 @@
 
       if (valorSeleccionadoPrevio && setResponsables.has(valorSeleccionadoPrevio)) {
         select.value = valorSeleccionadoPrevio;
-      } else if (valorSeleccionadoPrevio && !setResponsables.has(valorSeleccionadoPrevio)) {
+      } else {
         select.value = "";
-        aplicarFiltrosGlobales();
       }
     }
 
