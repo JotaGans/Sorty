@@ -15,6 +15,13 @@
     /* Fila Seleccionada */
     .row-selected { background-color: #e2eafc !important; border-left: 4px solid #0f2a4a !important; }
     
+    /* Estilos Drag and Drop WBS */
+    .drag-handle { cursor: grab; user-select: none; }
+    .drag-handle:active { cursor: grabbing; }
+    .row-dragging { opacity: 0.45; background-color: #f1f5f9 !important; }
+    .drop-target-above { border-top: 3px solid #0f2a4a !important; }
+    .drop-target-below { border-bottom: 3px solid #0f2a4a !important; }
+
     /* Control SpinButton */
     .spin-btn { background: #e0e0e0; transition: background 0.1s; }
     .spin-btn:hover { background: #cfcfcf; }
@@ -3142,6 +3149,121 @@
     }
 
     // =========================================================================
+    // MOTOR DE ARRASTRE Y REUBICACIÓN JERÁRQUICA (DRAG & DROP WBS)
+    // =========================================================================
+    let codigoActividadArrastrada = null;
+    let posicionInsercion = "below"; // "above" | "below"
+
+    function iniciarArrastreFila(e, cod) {
+      codigoActividadArrastrada = cod;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", cod);
+      const fila = document.getElementById(`fila-act-${cod.replace(/\./g, '_')}`);
+      if (fila) fila.classList.add("row-dragging");
+    }
+
+    function sobrevolarFilaArrastre(e, trElement) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+
+      const rect = trElement.getBoundingClientRect();
+      const puntoMedio = rect.top + rect.height / 2;
+
+      trElement.classList.remove("drop-target-above", "drop-target-below");
+      if (e.clientY < puntoMedio) {
+        posicionInsercion = "above";
+        trElement.classList.add("drop-target-above");
+      } else {
+        posicionInsercion = "below";
+        trElement.classList.add("drop-target-below");
+      }
+    }
+
+    function limpiarBordeArrastre(trElement) {
+      if (trElement) trElement.classList.remove("drop-target-above", "drop-target-below");
+    }
+
+    function finalizarArrastre() {
+      document.querySelectorAll("#lista-actividades tr").forEach(tr => {
+        tr.classList.remove("row-dragging", "drop-target-above", "drop-target-below");
+      });
+      codigoActividadArrastrada = null;
+    }
+
+    async function soltarFilaArrastre(e, codigoDestino, trElement) {
+      e.preventDefault();
+      limpiarBordeArrastre(trElement);
+
+      const codOrigen = codigoActividadArrastrada;
+      if (!codOrigen || codOrigen === codigoDestino) {
+        finalizarArrastre();
+        return;
+      }
+
+      // Obtener el bloque completo de la actividad origen (padre + hijas subordinadas)
+      const codOrigenLimpio = codOrigen.replace(/\.+$/, "");
+      const bloqueOrigen = actividadesGlobal.filter(a => {
+        const c = a.codigo.replace(/\.+$/, "");
+        return c === codOrigenLimpio || c.startsWith(codOrigenLimpio + ".");
+      }).map(a => a.codigo);
+
+      // Si el destino es una de sus propias hijas, cancelar
+      if (bloqueOrigen.includes(codigoDestino)) {
+        alert("⚠️ No puedes mover una actividad dentro de sus propias componentes subordinadas.");
+        finalizarArrastre();
+        return;
+      }
+
+      const actOrigenObj = actividadesGlobal.find(a => a.codigo === codOrigen);
+      const actDestinoObj = actividadesGlobal.find(a => a.codigo === codigoDestino);
+      const descOrigen = actOrigenObj ? actOrigenObj.descripcion : codOrigen;
+      const descDestino = actDestinoObj ? actDestinoObj.descripcion : codigoDestino;
+
+      finalizarArrastre();
+
+      const confirma = await confirmModal(
+        `¿Desea mover la actividad [${codOrigen}] ("${descOrigen}") ${posicionInsercion === 'above' ? 'encima' : 'debajo'} de [${codigoDestino}] ("${descDestino}")?\n\nEl sistema renumerará correlativamente la estructura WBS y sus dependencias.`,
+        "Reubicar Actividad",
+        "question"
+      );
+
+      if (!confirma) return;
+
+      // Construir la nueva secuencia de códigos
+      const todosCodigos = actividadesGlobal.map(a => a.codigo);
+      const sinBloqueOrigen = todosCodigos.filter(c => !bloqueOrigen.includes(c));
+
+      const indiceDestino = sinBloqueOrigen.indexOf(codigoDestino);
+      const puntoInsercion = (posicionInsercion === "above") ? indiceDestino : indiceDestino + 1;
+
+      sinBloqueOrigen.splice(puntoInsercion, 0, ...bloqueOrigen);
+
+      try {
+        const res = await fetch(`/proyectos/${proyectoActualId}/reordenar-actividades`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            proyecto_id: parseInt(proyectoActualId),
+            codigos_ordenados: sinBloqueOrigen
+          })
+        });
+
+        if (res.ok) {
+          notificarToast("Estructura WBS reorganizada con éxito.", "success");
+          await cargarActividades();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "No se pudo completar el reordenamiento.");
+        }
+      } catch (err) {
+        alert("Error de conexión al reordenar actividades.");
+      }
+    }
+
+    // =========================================================================
     // MOTOR DE AVATARES Y RESPONSABLES UNIFICADO (DIRECTORIO INSTITUCIONAL)
     // =========================================================================
     function obtenerListaResponsablesAsignados(responsablesStr) {
@@ -4096,6 +4218,16 @@
         tr.onclick = () => seleccionarFila(act.codigo);
         tr.oncontextmenu = (e) => abrirMenuContextual(e, act.codigo);
 
+        // Atributos de arrastre nativo para gestores
+        if (proyectoEsGestor) {
+          tr.draggable = true;
+          tr.ondragstart = (e) => iniciarArrastreFila(e, act.codigo);
+          tr.ondragover = (e) => sobrevolarFilaArrastre(e, tr);
+          tr.ondragleave = () => limpiarBordeArrastre(tr);
+          tr.ondrop = (e) => soltarFilaArrastre(e, act.codigo, tr);
+          tr.ondragend = () => finalizarArrastre();
+        }
+
         let iconoColapso = "";
         if (esMadre) {
           iconoColapso = `<button onclick="event.stopPropagation(); alternarColapsoNodo('${act.codigo}')" class="text-[10px] font-black text-[#0f2a4a] mr-1.5 w-4 h-4 rounded hover:bg-blue-200 transition">${estaColapsado ? '▶' : '▼'}</button>`;
@@ -4323,9 +4455,11 @@
           </td>
         `;
 
+        const handleDrag = proyectoEsGestor ? `<span class="drag-handle text-gray-400 hover:text-gray-700 mr-1.5 text-[11px] select-none" title="Arrastrar para reubicar">⠿</span>` : '';
+
         tr.innerHTML = `
-          <td class="p-2.5 font-mono font-bold text-xs border-r border-b border-gray-200 whitespace-nowrap">
-            ${iconoColapso}${cod}
+          <td class="p-2.5 font-mono font-bold text-xs border-r border-b border-gray-200 whitespace-nowrap flex items-center">
+            ${handleDrag}${iconoColapso}<span>${cod}</span>
           </td>
           ${tdDescHTML}
           ${tdResp}
@@ -4336,7 +4470,7 @@
           ${tdAvance}
           ${tdGantt}
           <td class="p-2 text-center border-b border-gray-200 space-x-1 whitespace-nowrap">
-            ${(proyectoEsGestor || esMio) && nivel < 4 ? `<button onclick="event.stopPropagation(); abrirWizardCreacion('${cod}')" class="text-blue-600 hover:text-blue-800 font-bold px-1 text-sm" title="Agregar subtarea jerárquica">+</button>` : ''}
+            ${(proyectoEsGestor || esMio) && nivel < 4 ? `<button onclick="event.stopPropagation(); abrirWizardCreacion('${cod}', 'hijo')" class="text-blue-600 hover:text-blue-800 font-bold px-1 text-sm" title="Agregar subtarea jerárquica">+</button>` : ''}
             ${proyectoEsGestor ? `<button onclick="event.stopPropagation(); eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>` : ''}
           </td>
         `;

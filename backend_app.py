@@ -966,10 +966,67 @@ def eliminar_actividad(
     db.commit()
     return {"mensaje": "Actividad eliminada y jerarquía reestructurada correlativamente"}
 
+@app.put("/proyectos/{proyecto_id}/reordenar-actividades")
+def reordenar_actividades_proyecto(
+    proyecto_id: int,
+    data: ReordenarActividadesModel,
+    user: dict = Depends(get_current_user),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    es_gestor = db.execute("""
+        SELECT 1 FROM proyectos p 
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1 OR pu.permiso = 'GESTOR')
+    """, (user["id"], proyecto_id, user["id"])).fetchone()
+
+    if not es_gestor and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede reorganizar actividades.")
+
+    rows = db.execute("SELECT * FROM actividades WHERE proyecto_id = ?", (proyecto_id,)).fetchall()
+    if not rows:
+        return {"mensaje": "Sin actividades para reorganizar"}
+
+    mapa_actual = {str(r["codigo"]).rstrip("."): dict(r) for r in rows}
+    
+    # Validar que todos los códigos enviados existan
+    lista_reorganizada = []
+    for cod in data.codigos_ordenados:
+        cod_limpio = str(cod).rstrip(".")
+        if cod_limpio in mapa_actual:
+            lista_reorganizada.append(mapa_actual[cod_limpio])
+
+    if len(lista_reorganizada) != len(rows):
+        raise HTTPException(status_code=400, detail="La lista enviada no coincide con el total de actividades.")
+
+    # Reestructuración WBS preservando el nuevo orden secuencial
+    db.execute("DELETE FROM actividades WHERE proyecto_id = ?", (proyecto_id,))
+    
+    # Insertar temporalmente con un índice plano
+    for idx, act in enumerate(lista_reorganizada, start=1):
+        db.execute("""
+            INSERT INTO actividades (proyecto_id, codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (proyecto_id, str(act["codigo"]), act["descripcion"], act["responsable"], act["estado"], act["avance"], act["fecha_inicio"], act["fecha_fin"], act["dias"], act["predecesores"]))
+
+    # Renumerar de forma consistente
+    reestructurar_codigos_wbs(proyecto_id, db)
+
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
+        VALUES (?, ?, ?, 'Reorganización WBS', ?)
+    """, (proyecto_id, ahora_peru_str(), user["username"], "Reorganizó el orden de actividades en el cronograma"))
+
+    db.commit()
+    return {"mensaje": "Actividades reubicadas y WBS recalculado con éxito"}
+
 class AsignacionResponsableModel(BaseModel):
     proyecto_id: int
     codigo: str
     responsable: str
+
+class ReordenarActividadesModel(BaseModel):
+    proyecto_id: int
+    codigos_ordenados: List[str]
 
 @app.put("/actividades/responsable")
 def actualizar_responsable_actividad(
