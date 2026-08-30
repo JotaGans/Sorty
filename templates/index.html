@@ -402,31 +402,43 @@
           </button>
         </div>
 
-        <!-- KPIs Centrales con Altura Fija y Protección Anti-Wrap -->
-        <div class="flex-1 max-w-4xl grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
+        <!-- KPIs Dinámicos con Separación Semántica y Aviso de Filtro -->
+        <div class="flex-1 flex flex-wrap items-center justify-between gap-3 min-w-0">
           
-          <!-- AVANCE -->
-          <div class="h-10 bg-[#1abc9c] text-white px-3 rounded-xl shadow-xs flex items-center justify-between min-w-0 overflow-hidden">
-            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">AVANCE</span>
-            <p id="kpi-avance" class="text-sm md:text-base font-black whitespace-nowrap">0%</p>
+          <!-- Bloque Izquierdo: % AVANCE + Indicador de Filtro -->
+          <div class="flex items-center space-x-2 flex-shrink-0">
+            <div class="h-10 bg-[#1abc9c] text-white px-3 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[125px] max-w-[135px]">
+              <span class="text-[11px] font-black uppercase tracking-wider whitespace-nowrap pr-2">AVANCE</span>
+              <p id="kpi-avance" class="text-base md:text-lg font-black whitespace-nowrap">0%</p>
+            </div>
+
+            <!-- Badge Indicador de Filtro Activo (Aparece automáticamente si hay filtro) -->
+            <div id="badge-filtro-activo" class="hidden items-center bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-xs space-x-1.5 animate-pulse">
+              <span>🔍</span>
+              <span id="badge-filtro-texto" class="truncate max-w-[200px]">Filtrado</span>
+              <button onclick="limpiarTodosFiltros()" class="text-amber-800 hover:text-amber-950 font-black ml-1 text-xs hover:scale-110 transition cursor-pointer" title="Quitar filtro y ver todo">✕</button>
+            </div>
           </div>
 
-          <!-- EJECUTADO -->
-          <div class="h-10 bg-[#2ecc71] text-white px-3 rounded-xl shadow-xs flex items-center justify-between min-w-0 overflow-hidden">
-            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">EJECUTADO</span>
-            <p id="kpi-ejecutado" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
-          </div>
+          <!-- Bloque Derecho: Trilogía de Estados Agrupados Compactos -->
+          <div class="flex items-center space-x-2 flex-shrink-0">
+            <!-- EJECUTADO -->
+            <div class="h-10 bg-[#2ecc71] text-white px-2.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[120px] max-w-[135px]">
+              <span class="text-[10px] font-black uppercase tracking-tight whitespace-nowrap pr-1.5">EJECUTADO</span>
+              <p id="kpi-ejecutado" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
+            </div>
 
-          <!-- EN PROCESO -->
-          <div class="h-10 bg-[#f1c40f] text-[#2c3e50] px-3 rounded-xl shadow-xs flex items-center justify-between min-w-0 overflow-hidden">
-            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">EN PROCESO</span>
-            <p id="kpi-proceso" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
-          </div>
+            <!-- EN PROCESO -->
+            <div class="h-10 bg-[#f1c40f] text-[#2c3e50] px-2.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[120px] max-w-[135px]">
+              <span class="text-[10px] font-black uppercase tracking-tight whitespace-nowrap pr-1.5">EN PROCESO</span>
+              <p id="kpi-proceso" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
+            </div>
 
-          <!-- NO INICIADO -->
-          <div class="h-10 bg-[#e74c3c] text-white px-3 rounded-xl shadow-xs flex items-center justify-between min-w-0 overflow-hidden">
-            <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pr-1">NO INICIADO</span>
-            <p id="kpi-pendiente" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
+            <!-- NO INICIADO -->
+            <div class="h-10 bg-[#e74c3c] text-white px-2.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[120px] max-w-[135px]">
+              <span class="text-[10px] font-black uppercase tracking-tight whitespace-nowrap pr-1.5">NO INICIADO</span>
+              <p id="kpi-pendiente" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
+            </div>
           </div>
 
         </div>
@@ -4515,6 +4527,7 @@
         `;
         tbody.appendChild(tr);
       });
+      actualizarKPIs();
     }
 
     function filtrarNivelJerarquico(val) {
@@ -4523,18 +4536,109 @@
     }
 
     function actualizarKPIs() {
-      actividadesGlobal.forEach(a => {
-        a.codigo = String(a.codigo).replace(/\.+$/, "");
-      });
+      if (!actividadesGlobal || actividadesGlobal.length === 0) {
+        document.getElementById("kpi-avance").innerText = "0%";
+        document.getElementById("kpi-ejecutado").innerText = "0 Items";
+        document.getElementById("kpi-proceso").innerText = "0 Items";
+        document.getElementById("kpi-pendiente").innerText = "0 Items";
+        return;
+      }
 
       recalcularJerarquiaWBS();
-      const raices = actividadesGlobal.filter(a => !a.codigo.includes("."));
-      const globalPct = raices.length > 0 ? Math.round(raices.reduce((acc, a) => acc + (a.avance || 0), 0) / raices.length) : 0;
-      
-      document.getElementById("kpi-avance").innerText = `${globalPct}%`;
-      document.getElementById("kpi-ejecutado").innerText = `${actividadesGlobal.filter(a => a.estado === 'Ejecutado').length} Items`;
-      document.getElementById("kpi-proceso").innerText = `${actividadesGlobal.filter(a => a.estado === 'En proceso').length} Items`;
-      document.getElementById("kpi-pendiente").innerText = `${actividadesGlobal.filter(a => a.estado === 'No iniciado' || a.estado === 'Pendiente').length} Items`;
+
+      // 1. Obtener los valores actuales de los 3 filtros
+      const selNivel = parseInt(document.getElementById("sel-filtro-nivel")?.value || "4");
+      const txtBusq = (document.getElementById("filtro-busqueda")?.value || "").toLowerCase().trim();
+      const selResp = document.getElementById("filtro-responsable-select")?.value || "";
+
+      // 2. Evaluar si hay algún filtro activo y construir el texto de aviso
+      const hayFiltroNivel = (selNivel !== 4);
+      const hayFiltroTexto = (txtBusq !== "");
+      const hayFiltroResp = (selResp !== "");
+      const hayFiltroActivo = (hayFiltroNivel || hayFiltroTexto || hayFiltroResp);
+
+      const badgeFiltro = document.getElementById("badge-filtro-activo");
+      const badgeTexto = document.getElementById("badge-filtro-texto");
+
+      if (badgeFiltro && badgeTexto) {
+        if (hayFiltroActivo) {
+          const criterios = [];
+          if (hayFiltroNivel) criterios.push(`Nivel ${selNivel}`);
+          if (hayFiltroResp) {
+            const nomCorto = selResp.includes(",") ? selResp.split(",")[0].trim() : selResp.split(" ")[0];
+            criterios.push(`👤 ${nomCorto}`);
+          }
+          if (hayFiltroTexto) criterios.push(`"${txtBusq}"`);
+
+          badgeTexto.innerText = `Filtrado por: ${criterios.join(" + ")}`;
+          badgeFiltro.classList.remove("hidden");
+          badgeFiltro.classList.add("flex");
+        } else {
+          badgeFiltro.classList.add("hidden");
+          badgeFiltro.classList.remove("flex");
+        }
+      }
+
+      // 3. Seleccionar la muestra de actividades correspondiente
+      let muestraActividades = [];
+
+      if (!hayFiltroActivo) {
+        // Modo "Todo (N4)": solo actividades terminales/hojas (las que no tienen candado)
+        muestraActividades = actividadesGlobal.filter(a => !tieneHijos(a.codigo));
+        if (muestraActividades.length === 0) muestraActividades = actividadesGlobal;
+      } else {
+        // Filtrar actividades según los criterios aplicados
+        muestraActividades = actividadesGlobal.filter(act => {
+          const codLimpio = String(act.codigo).replace(/\.+$/, "");
+          const nivel = codLimpio.split(".").length;
+
+          // Filtro por Nivel
+          if (hayFiltroNivel && nivel !== selNivel) return false;
+
+          // Filtro por Texto
+          if (hayFiltroTexto && !act.descripcion.toLowerCase().includes(txtBusq) && !codLimpio.toLowerCase().includes(txtBusq)) return false;
+
+          // Filtro por Responsable
+          if (hayFiltroResp && !(act.responsable || "").includes(selResp)) return false;
+
+          return true;
+        });
+      }
+
+      // 4. Calcular métricas sobre la muestra filtrada
+      const total = muestraActividades.length;
+      let promAvance = 0;
+
+      if (total > 0) {
+        const sumaAvances = muestraActividades.reduce((acc, a) => acc + (parseInt(a.avance) || 0), 0);
+        promAvance = Math.round(sumaAvances / total);
+      }
+
+      const ejecutadas = muestraActividades.filter(a => a.estado === 'Ejecutado').length;
+      const enProceso = muestraActividades.filter(a => a.estado === 'En proceso').length;
+      const noIniciadas = muestraActividades.filter(a => a.estado === 'No iniciado' || a.estado === 'Pendiente').length;
+
+      // 5. Renderizar en el DOM
+      document.getElementById("kpi-avance").innerText = `${promAvance}%`;
+      document.getElementById("kpi-ejecutado").innerText = `${ejecutadas} Items`;
+      document.getElementById("kpi-proceso").innerText = `${enProceso} Items`;
+      document.getElementById("kpi-pendiente").innerText = `${noIniciadas} Items`;
+    }
+
+    // Función auxiliar para resetear filtros rápidamente desde el badge
+    function limpiarTodosFiltros() {
+      const selNivel = document.getElementById("sel-filtro-nivel");
+      const inpBusq = document.getElementById("filtro-busqueda");
+      const selResp = document.getElementById("filtro-responsable-select");
+
+      if (selNivel) selNivel.value = "4";
+      if (inpBusq) inpBusq.value = "";
+      if (selResp) selResp.value = "";
+
+      nivelFiltroActivo = 4;
+      renderizarTabla();
+      actualizarKPIs();
+      notificarToast("Filtros restablecidos a la vista completa del proyecto.", "info");
     }
 
     function abrirInputCustom({ titulo, mensaje, tipo = 'text', valorActual = '', opciones = [], onAceptar }) {
