@@ -101,13 +101,13 @@
     .col-semana-actual { background-color: rgba(22, 160, 133, 0.12) !important; }
     .header-semana-actual { background-color: #16a085 !important; color: #ffffff !important; font-weight: bold; }
 
-    /* Cabecera Sticky Fija con Líneas Delgadas Nítidas y Continuas (1px exacto) */
+    /* Cabecera Sticky Fija con Líneas Tenues Originales (1px Sutil) */
     thead th {
       position: sticky;
       top: 0;
       z-index: 30;
       background-color: #0f2a4a !important;
-      box-shadow: inset -1px 0 0 #1e40af, inset 0 -1px 0 #1e40af !important;
+      box-shadow: inset -1px 0 0 #1e3a8a, inset 0 -1px 0 #1e3a8a !important;
       border: none !important;
     }
 
@@ -563,7 +563,7 @@
               % Avance <span class="text-[10px] text-teal-300 opacity-80">✎</span>
             </th>
             <th id="th-gantt" class="p-0 font-bold min-w-[420px] w-full align-top">
-              <div id="gantt-header-meses" class="flex text-center text-[10px] text-gray-200 border-b border-[#1e40af] py-1 font-bold w-full"></div>
+              <div id="gantt-header-meses" class="flex text-center text-[10px] text-gray-200 border-b border-[#1e3a8a] py-1 font-bold w-full"></div>
               <div id="gantt-header-semanas" class="flex text-center text-[9px] text-teal-300 font-mono tracking-tighter py-0.5 w-full"></div>
             </th>
             <th id="th-acciones" class="p-2.5 font-bold text-center w-16 md:w-20 whitespace-nowrap">Acciones</th>
@@ -4036,7 +4036,7 @@
         diasVisibles.forEach(d => {
           const esFinSemana = (d.diaSemana === 0 || d.diaSemana === 6);
           const claseHoy = d.esHoy ? "bg-teal-500 text-white font-black rounded-xs shadow" : (esFinSemana ? "text-gray-400 bg-blue-950/40" : "text-teal-300 opacity-90");
-          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1e40af]/60 text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}" title="${d.dia} de ${d.mesNombre} ${d.anio}">${d.dia}</div>`;
+          divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1e3a8a] text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}" title="${d.dia} de ${d.mesNombre} ${d.anio}">${d.dia}</div>`;
         });
         return;
       }
@@ -4070,12 +4070,12 @@
           textoCabecera = `${g.mes} '${String(g.anio).slice(-2)}`;
         }
 
-        divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-[#1e40af] text-[10px] overflow-hidden whitespace-nowrap truncate px-0.5" title="${g.nombreCompleto}">${textoCabecera}</div>`;
+        divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-[#1e3a8a] text-[10px] overflow-hidden whitespace-nowrap truncate px-0.5" title="${g.nombreCompleto}">${textoCabecera}</div>`;
       });
 
       semanasVisibles.forEach(s => {
         const claseHoy = s.esHoy ? "header-semana-actual rounded-sm shadow" : "opacity-90";
-        divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1e40af]/60 text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre} ${s.anio})">${s.dia}</div>`;
+        divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1e3a8a] text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}" title="Semana ${s.nro} (Lun ${s.dia} ${s.mesNombre} ${s.anio})">${s.dia}</div>`;
       });
     }
 
