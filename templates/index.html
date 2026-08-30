@@ -402,38 +402,38 @@
           </button>
         </div>
 
-        <!-- KPIs Centralizados con Etiquetas de Estado Ampliadas (+3px) -->
-        <div class="flex-1 flex items-center justify-center gap-2.5 min-w-0 flex-wrap">
+        <!-- KPIs: AVANCE Separado (~2cm) + Trilogía de Estados con Valores y Anchos Ampliados -->
+        <div class="flex-1 flex items-center justify-center min-w-0 flex-wrap py-0.5">
           
-          <!-- AVANCE (Alineado junto al bloque central) -->
-          <div class="h-10 bg-[#1abc9c] text-white px-3 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[128px] max-w-[138px] flex-shrink-0">
+          <!-- KPI AVANCE (Separado ~2cm hacia la izquierda mediante mr-16) -->
+          <div class="h-10 bg-[#1abc9c] text-white px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[131px] max-w-[141px] flex-shrink-0 mr-12 lg:mr-16">
             <span class="text-[12px] font-black uppercase tracking-wider whitespace-nowrap pr-2">AVANCE</span>
             <p id="kpi-avance" class="text-base md:text-lg font-black whitespace-nowrap">0%</p>
           </div>
 
-          <!-- Trilogía de Estados Agrupados al Centro -->
+          <!-- Trilogía de Estados Agrupados Compactos con Texto/Valores (+2px) -->
           <div class="flex items-center space-x-2 flex-shrink-0">
             <!-- EJECUTADO -->
-            <div class="h-10 bg-[#2ecc71] text-white px-3 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[135px] max-w-[145px]">
+            <div class="h-10 bg-[#2ecc71] text-white px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[138px] max-w-[148px]">
               <span class="text-[13px] font-black uppercase tracking-tight whitespace-nowrap pr-1.5">EJECUTADO</span>
-              <p id="kpi-ejecutado" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
+              <p id="kpi-ejecutado" class="text-sm md:text-base font-black whitespace-nowrap">0 Items</p>
             </div>
 
             <!-- EN PROCESO -->
-            <div class="h-10 bg-[#f1c40f] text-[#2c3e50] px-3 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[143px] max-w-[155px]">
+            <div class="h-10 bg-[#f1c40f] text-[#2c3e50] px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[146px] max-w-[158px]">
               <span class="text-[13px] font-black uppercase tracking-tight whitespace-nowrap pr-1.5">EN PROCESO</span>
-              <p id="kpi-proceso" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
+              <p id="kpi-proceso" class="text-sm md:text-base font-black whitespace-nowrap">0 Items</p>
             </div>
 
             <!-- NO INICIADO -->
-            <div class="h-10 bg-[#e74c3c] text-white px-3 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[143px] max-w-[155px]">
+            <div class="h-10 bg-[#e74c3c] text-white px-3.5 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[146px] max-w-[158px]">
               <span class="text-[13px] font-black uppercase tracking-tight whitespace-nowrap pr-1.5">NO INICIADO</span>
-              <p id="kpi-pendiente" class="text-xs md:text-sm font-black whitespace-nowrap">0 Items</p>
+              <p id="kpi-pendiente" class="text-sm md:text-base font-black whitespace-nowrap">0 Items</p>
             </div>
           </div>
 
-          <!-- Badge Indicador de Filtro Activo (Flotante y no invasivo) -->
-          <div id="badge-filtro-activo" class="hidden items-center bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-xs space-x-1.5 animate-pulse flex-shrink-0">
+          <!-- Badge Indicador de Filtro Activo (Acompañando discretamente al bloque) -->
+          <div id="badge-filtro-activo" class="hidden items-center bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-xs space-x-1.5 animate-pulse ml-3 flex-shrink-0">
             <span>🔍</span>
             <span id="badge-filtro-texto" class="truncate max-w-[190px]">Filtrado</span>
             <button onclick="limpiarTodosFiltros()" class="text-amber-800 hover:text-amber-950 font-black ml-1 text-xs hover:scale-110 transition cursor-pointer" title="Quitar filtro y ver todo">✕</button>
