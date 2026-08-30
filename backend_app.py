@@ -166,8 +166,22 @@ class ComentarioCreate(BaseModel):
     codigo_actividad: str
     texto: str
 
+class ComentarioCreate(BaseModel):
+    proyecto_id: int
+    codigo_actividad: str
+    texto: str
+
 class ComentarioUpdate(BaseModel):
     texto: str
+
+class AsignacionResponsableModel(BaseModel):
+    proyecto_id: int
+    codigo: str
+    responsable: str
+
+class ReordenarActividadesModel(BaseModel):
+    proyecto_id: int
+    codigos_ordenados: List[str]
 
 # --- INICIALIZACIÓN Y MIGRACIÓN DE BD ---
 def init_db():
@@ -1018,15 +1032,6 @@ def reordenar_actividades_proyecto(
 
     db.commit()
     return {"mensaje": "Actividades reubicadas y WBS recalculado con éxito"}
-
-class AsignacionResponsableModel(BaseModel):
-    proyecto_id: int
-    codigo: str
-    responsable: str
-
-class ReordenarActividadesModel(BaseModel):
-    proyecto_id: int
-    codigos_ordenados: List[str]
 
 @app.put("/actividades/responsable")
 def actualizar_responsable_actividad(
