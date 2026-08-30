@@ -2431,9 +2431,8 @@
           irASemanaActual();
         }
       } else {
-        poblarFiltroResponsablesDinamico();
-      } else {
         actividadesGlobal = [];
+        poblarFiltroResponsablesDinamico();
         const tbody = document.getElementById("lista-actividades");
         tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold">Cargando actividades del proyecto...</td></tr>`;
       }
