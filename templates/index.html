@@ -1535,22 +1535,45 @@
       return `${y}-${m}-${d}`;
     }
 
-    function actualizarDisplaysUsuario() {
-      const userText = currentUser.username || "Usuario";
-      const roleText = currentUser.rol === "ADMIN_TI" ? "ADMINISTRADOR TI" : "OPERADOR";
+    function obtenerPrimerNombre(nombreCompleto, usernameFallback) {
+      if (!nombreCompleto && !usernameFallback) return "Usuario";
       
-      // Extraer el primer nombre limpio
-      let primerNombre = userText;
-      if (currentUser.nombre_completo) {
-        const nomLimpio = currentUser.nombre_completo.includes(",") 
-          ? currentUser.nombre_completo.split(",")[1].trim() 
-          : currentUser.nombre_completo.trim();
-        primerNombre = nomLimpio.split(" ")[0];
+      const texto = String(nombreCompleto || "").trim();
+      let nombresParte = texto;
+
+      // Si tiene formato "Apellidos, Nombres"
+      if (texto.includes(",")) {
+        nombresParte = texto.split(",")[1].trim();
       }
 
+      // Extraer la primera palabra
+      const palabras = nombresParte.split(/\s+/).filter(Boolean);
+      let primerNombre = palabras.length > 0 ? palabras[0] : "";
+
+      // Si no se obtuvo un nombre válido, usar el username
+      if (!primerNombre) {
+        primerNombre = String(usernameFallback || "Usuario").trim();
+      }
+
+      // Caso especial para la cuenta de administración
+      if (primerNombre.toLowerCase() === "admin") {
+        return "Administrador";
+      }
+
+      // Capitalizar: Primera letra mayúscula, resto minúsculas (ej: Jesus, Luis)
+      return primerNombre.charAt(0).toUpperCase() + primerNombre.slice(1).toLowerCase();
+    }
+
+    function actualizarDisplaysUsuario() {
+      const primerNombre = obtenerPrimerNombre(currentUser.nombre_completo, currentUser.username);
+      const userText = currentUser.username || "admin";
+      const roleText = currentUser.rol === "ADMIN_TI" ? "ADMINISTRADOR TI" : "USUARIO INSTITUCIONAL";
+
+      // 1. Saludo Principal con Primer Nombre
       const saludoHub = document.getElementById("hub-saludo-bienvenida");
       if (saludoHub) saludoHub.innerText = `Bienvenido(a), ${primerNombre}`;
 
+      // 2. Indicadores de Cabecera en Hub y Gantt
       const uHub = document.getElementById("user-display-hub");
       const rHub = document.getElementById("role-display-hub");
       const uGantt = document.getElementById("user-display");
@@ -1561,6 +1584,7 @@
       if (uGantt) uGantt.innerText = userText;
       if (rGantt) rGantt.innerText = roleText;
 
+      // 3. Control de Acceso Botón TI
       const btnTI = document.getElementById("btn-admin-ti-hub");
       if (btnTI) {
         if (currentUser.rol === "ADMIN_TI") btnTI.classList.remove("hidden");
@@ -1869,7 +1893,12 @@
 
         const data = await res.json();
         token = data.access_token;
-        currentUser = { username: data.username, rol: data.rol, id: data.user_id };
+        currentUser = { 
+          id: data.user_id || (data.user && data.user.id),
+          username: data.username || (data.user && data.user.username), 
+          rol: data.rol || (data.user && data.user.rol), 
+          nombre_completo: data.nombre_completo || (data.user && data.user.nombre_completo) || "" 
+        };
         localStorage.setItem("token", token);
         localStorage.setItem("currentUser", JSON.stringify(currentUser));
         
@@ -5399,23 +5428,6 @@
           await cargarDirectorioTrabajadores();
         }
       } catch (e) {}
-    }
-
-    // --- CARGA Y RENDERIZADO DE CUENTAS TI ---
-    async function cargarListaUsuariosTI() {
-      const tbody = document.getElementById("ti-tabla-usuarios");
-      if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 font-semibold">Cargando cuentas registradas...</td></tr>`;
-      }
-
-      try {
-        const res = await fetch("/usuarios", {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (!res.ok) return;
-        usuariosTIGlobal = await res.json();
-        renderizarTablaUsuariosTI(usuariosTIGlobal);
-      } catch (err) {}
     }
 
     function renderizarTablaUsuariosTI(lista) {

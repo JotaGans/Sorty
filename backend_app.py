@@ -80,6 +80,7 @@ class Token(BaseModel):
     username: str
     rol: str
     user_id: int
+    nombre_completo: Optional[str] = ""
 
 class UsuarioAltaModel(BaseModel):
     nombres: str
@@ -505,7 +506,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: sqlite3.Connecti
         "token_type": "bearer",
         "username": user["username"],
         "rol": user["rol"],
-        "user_id": user["id"]
+        "user_id": user["id"],
+        "nombre_completo": user["nombre_completo"] or user["username"]
     }
 
 # --- GESTIÓN DE USUARIOS (ADMIN TI) ---
