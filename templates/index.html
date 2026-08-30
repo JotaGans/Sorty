@@ -1776,12 +1776,14 @@
       }
 
       // =========================================================================
-      // MOTOR DE DESPLAZAMIENTO TEMPORAL POR SCROLL CONTINUO (FLUIDEZ CALIBRADA)
+      // MOTOR DE DESPLAZAMIENTO TEMPORAL POR SCROLL ULTRA-FLUIDO (INERCIA 0ms)
       // =========================================================================
       let acumuladorScrollGantt = 0;
       let ultimoPasoScrollGantt = 0;
-      const UMBRAL_PASO_SCROLL_PX = 55; // Sensibilidad de paso óptima
-      const CADENCIA_SCROLL_MS = 30;    // Respuesta fluida a 60fps
+      let timerInerciaScroll = null;
+
+      const UMBRAL_SCROLL_NATURAL_PX = 40; // Sensibilidad reactiva (1 muesca = 1 desplazamiento inmediato)
+      const CADENCIA_SCROLL_MS = 16;        // Refresco a 60 FPS reales
 
       window.addEventListener("wheel", (e) => {
         const dashboard = document.getElementById("view-dashboard");
@@ -1800,22 +1802,31 @@
             return;
           }
 
-          // Desplazamiento temporal estándar por Rueda
+          // Reiniciar el acumulador residual si el usuario se detuvo más de 120ms
+          clearTimeout(timerInerciaScroll);
+          timerInerciaScroll = setTimeout(() => {
+            acumuladorScrollGantt = 0;
+          }, 120);
+
+          // Normalización para mouse tradicional, touchpad y ruedas libres
           let delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-          if (e.deltaMode === 1) delta *= 25;
-          else if (e.deltaMode === 2) delta *= 80;
+          if (e.deltaMode === 1) delta *= 33;
+          else if (e.deltaMode === 2) delta *= 100;
+
+          // Si el usuario cambia de dirección bruscamente, purgar el acumulador previo
+          if ((delta > 0 && acumuladorScrollGantt < 0) || (delta < 0 && acumuladorScrollGantt > 0)) {
+            acumuladorScrollGantt = 0;
+          }
 
           acumuladorScrollGantt += delta;
           const ahora = Date.now();
 
-          if (Math.abs(acumuladorScrollGantt) >= UMBRAL_PASO_SCROLL_PX && (ahora - ultimoPasoScrollGantt >= CADENCIA_SCROLL_MS)) {
-            // Delta > 0 = Rueda hacia abajo / derecha = Avanzar en el tiempo (+1)
-            // Delta < 0 = Rueda hacia arriba / izquierda = Retroceder en el tiempo (-1)
+          if (Math.abs(acumuladorScrollGantt) >= UMBRAL_SCROLL_NATURAL_PX && (ahora - ultimoPasoScrollGantt >= CADENCIA_SCROLL_MS)) {
             const pasos = acumuladorScrollGantt > 0 ? 1 : -1;
 
             acumuladorScrollGantt = acumuladorScrollGantt > 0
-              ? Math.max(0, acumuladorScrollGantt - UMBRAL_PASO_SCROLL_PX)
-              : Math.min(0, acumuladorScrollGantt + UMBRAL_PASO_SCROLL_PX);
+              ? Math.max(0, acumuladorScrollGantt - UMBRAL_SCROLL_NATURAL_PX)
+              : Math.min(0, acumuladorScrollGantt + UMBRAL_SCROLL_NATURAL_PX);
 
             ultimoPasoScrollGantt = ahora;
             cambiarSemanaInicio(pasos);
