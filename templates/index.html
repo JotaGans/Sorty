@@ -40,7 +40,7 @@
       pointer-events: none !important;
     }
 
-    /* 1. Borde Superior: Hermana Arriba (Flecha Verde Visible) */
+    /* 1. Borde Superior: Hermana Arriba (Flecha Verde Visible sobre la Línea) */
     .drop-target-above td {
       box-shadow: inset 0 3px 0 #2563eb !important;
       background-color: rgba(239, 246, 255, 0.5) !important;
@@ -49,18 +49,18 @@
     .drop-target-above td:first-child::before {
       content: "▲";
       position: absolute;
-      left: -8px;
-      top: -1px;
-      font-size: 20px;
+      left: 8px;
+      top: -12px;
+      font-size: 22px;
       line-height: 1;
-      color: #15803d; /* Verde esmeralda vivo */
+      color: #16a34a; /* Verde esmeralda vivo */
       font-weight: 900;
       z-index: 80;
       pointer-events: none;
       filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
     }
 
-    /* 2. Borde Inferior: Hermana Abajo (Flecha Roja Visible) */
+    /* 2. Borde Inferior: Hermana Abajo (Flecha Roja Visible sobre la Línea) */
     .drop-target-below td {
       box-shadow: inset 0 -3px 0 #2563eb !important;
       background-color: rgba(239, 246, 255, 0.5) !important;
@@ -69,9 +69,9 @@
     .drop-target-below td:first-child::before {
       content: "▼";
       position: absolute;
-      left: -8px;
-      bottom: -1px;
-      font-size: 20px;
+      left: 8px;
+      bottom: -12px;
+      font-size: 22px;
       line-height: 1;
       color: #dc2626; /* Rojo vivo */
       font-weight: 900;
