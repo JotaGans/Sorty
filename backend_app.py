@@ -136,7 +136,7 @@ class ActividadModel(BaseModel):
     codigo: str
     descripcion: str
     responsable: Optional[str] = "No asignado"
-    estado: Optional[str] = "Pendiente"
+    estado: Optional[str] = "No iniciado"
     avance: Optional[int] = 0
     fecha_inicio: Optional[str] = ""
     fecha_fin: Optional[str] = ""
@@ -712,7 +712,7 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
                     if hijos:
                         prom_av = round_half_up(sum(h["avance"] for h in hijos) / len(hijos))
                         act["avance"] = prom_av
-                        act["estado"] = "Ejecutado" if prom_av == 100 else ("En proceso" if prom_av > 0 else "Pendiente")
+                        act["estado"] = "Ejecutado" if prom_av == 100 else ("En proceso" if prom_av > 0 else "No iniciado")
 
         acts_finales = list(acts_dict.values())
         raices = [a for a in acts_finales if "." not in a["codigo"]]
@@ -792,7 +792,9 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         cod = str(act.codigo).strip().rstrip(".")
         desc = str(act.descripcion).strip()
         resp = str(act.responsable or "No asignado").strip()
-        est = str(act.estado or "Pendiente").strip()
+        est = str(act.estado or "No iniciado").strip()
+        if est == "Pendiente":
+            est = "No iniciado"
         av = int(act.avance if act.avance is not None else 0)
         f_ini = str(act.fecha_inicio or "").strip()
         f_fin = str(act.fecha_fin or "").strip()

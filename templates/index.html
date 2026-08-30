@@ -2615,7 +2615,7 @@
               } else if (promAvance > 0) {
                 madre.estado = "En proceso";
               } else {
-                madre.estado = "Pendiente";
+                madre.estado = "No iniciado";
               }
 
               let minIni = null;
@@ -4948,7 +4948,7 @@
                 const pct = parseInt(pctStr);
                 if (!isNaN(pct) && pct >= 0 && pct <= 100) {
                   act.avance = pct;
-                  act.estado = (pct === 100) ? "Ejecutado" : (pct === 0 ? "Pendiente" : "En proceso");
+                  act.estado = (pct === 100) ? "Ejecutado" : (pct === 0 ? "No iniciado" : "En proceso");
                   await guardarCambioDirecto(act);
                 }
               }
@@ -5081,7 +5081,7 @@
           const num = parseInt(avStr);
           if (!isNaN(num) && num >= 0 && num <= 100) {
             act.avance = num;
-            act.estado = (num === 100) ? "Ejecutado" : (num === 0 ? "Pendiente" : "En proceso");
+            act.estado = (num === 100) ? "Ejecutado" : (num === 0 ? "No iniciado" : "En proceso");
             await guardarCambioDirecto(act);
           }
         }
@@ -5105,12 +5105,15 @@
         renderizarTabla();
       }
 
+      let estadoLimpio = String(act.estado || 'No iniciado').trim();
+      if (estadoLimpio === "Pendiente") estadoLimpio = "No iniciado";
+
       const payload = {
         proyecto_id: pId,
         codigo: String(act.codigo).trim(),
         descripcion: String(act.descripcion || '').trim(),
         responsable: String(act.responsable || 'No asignado').trim(),
-        estado: String(act.estado || 'Pendiente').trim(),
+        estado: estadoLimpio,
         avance: parseInt(act.avance) || 0,
         fecha_inicio: fIniLimpia,
         fecha_fin: fFinLimpia,
