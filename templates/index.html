@@ -1822,7 +1822,21 @@
           const ahora = Date.now();
 
           if (Math.abs(acumuladorScrollGantt) >= UMBRAL_SCROLL_NATURAL_PX && (ahora - ultimoPasoScrollGantt >= CADENCIA_SCROLL_MS)) {
-            const pasos = acumuladorScrollGantt > 0 ? 1 : -1;
+            const direccion = acumuladorScrollGantt > 0 ? 1 : -1;
+
+            // Multiplicador dinámico para que 1 muesca del scroll desplace 1 unidad visual completa en cada escala
+            let saltoTemporal = 1; // Semanas por defecto
+            if (modoZoom === "dias") {
+              saltoTemporal = 1; // 1 semana (~7 días)
+            } else if (modoZoom === "meses") {
+              saltoTemporal = 4; // ~1 mes
+            } else if (modoZoom === "trimestres") {
+              saltoTemporal = 13; // ~1 trimestre (3 meses)
+            } else if (modoZoom === "semestres") {
+              saltoTemporal = 26; // ~1 semestre (6 meses)
+            }
+
+            const pasos = direccion * saltoTemporal;
 
             acumuladorScrollGantt = acumuladorScrollGantt > 0
               ? Math.max(0, acumuladorScrollGantt - UMBRAL_SCROLL_NATURAL_PX)
