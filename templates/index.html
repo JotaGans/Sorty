@@ -15,13 +15,23 @@
     /* Fila Seleccionada */
     .row-selected { background-color: #e2eafc !important; border-left: 4px solid #0f2a4a !important; }
     
-    /* Estilos Drag and Drop WBS Nítidos en 1 Solo Tiempo */
-    .drag-handle { cursor: grab; user-select: none; }
-    .drag-handle:active, body.is-dragging-row, body.is-dragging-row * { 
-      cursor: grabbing !important; 
+    /* Estilos Drag and Drop WBS con Cursor Forzado de Agarre */
+    .drag-handle { 
+      cursor: grab; 
+      user-select: none; 
     }
+    
+    /* Cursor de puño cerrado visible en todo el documento durante el arrastre */
+    .drag-handle:active, 
+    body.is-dragging-row, 
+    body.is-dragging-row * { 
+      cursor: grabbing !important;
+      cursor: -webkit-grabbing !important;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%230f2a4a' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M9 11V6a2 2 0 0 1 4 0v5h1a2 2 0 0 1 2 2v2a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6v-3a2 2 0 0 1 2-2h4z'/%3E%3C/svg%3E") 12 12, grabbing !important;
+    }
+    
     .row-dragging { 
-      opacity: 0.3 !important; 
+      opacity: 0.25 !important; 
       background-color: #f1f5f9 !important; 
     }
     
@@ -30,56 +40,56 @@
       pointer-events: none !important;
     }
 
-    /* 1. Borde Superior: Hermana Arriba (Línea Azul + Flecha Verde Ampliada) */
+    /* 1. Borde Superior: Hermana Arriba (Flecha Verde Mayor Tamaño) */
     .drop-target-above td {
-      box-shadow: inset 0 2.5px 0 #2563eb !important;
-      background-color: rgba(239, 246, 255, 0.45) !important;
+      box-shadow: inset 0 3px 0 #2563eb !important;
+      background-color: rgba(239, 246, 255, 0.5) !important;
       position: relative;
     }
     .drop-target-above td:first-child::before {
       content: "▲";
       position: absolute;
-      left: 3px;
-      top: -10px;
-      font-size: 15px;
+      left: 1px;
+      top: -12px;
+      font-size: 19px;
       line-height: 1;
       color: #15803d; /* Verde esmeralda vivo */
       font-weight: 900;
-      z-index: 50;
+      z-index: 60;
       pointer-events: none;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
     }
 
-    /* 2. Borde Inferior: Hermana Abajo (Línea Azul + Flecha Roja Ampliada) */
+    /* 2. Borde Inferior: Hermana Abajo (Flecha Roja Mayor Tamaño) */
     .drop-target-below td {
-      box-shadow: inset 0 -2.5px 0 #2563eb !important;
-      background-color: rgba(239, 246, 255, 0.45) !important;
+      box-shadow: inset 0 -3px 0 #2563eb !important;
+      background-color: rgba(239, 246, 255, 0.5) !important;
       position: relative;
     }
     .drop-target-below td:first-child::before {
       content: "▼";
       position: absolute;
-      left: 3px;
-      bottom: -10px;
-      font-size: 15px;
+      left: 1px;
+      bottom: -12px;
+      font-size: 19px;
       line-height: 1;
       color: #dc2626; /* Rojo vivo */
       font-weight: 900;
-      z-index: 50;
+      z-index: 60;
       pointer-events: none;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
     }
 
     /* 3. Caja Rectangular Completa: Convertir en Hija/Subtarea */
     .drop-target-inside td {
       background-color: rgba(219, 234, 254, 0.7) !important;
-      box-shadow: inset 0 2px 0 #1d4ed8, inset 0 -2px 0 #1d4ed8 !important;
+      box-shadow: inset 0 2.5px 0 #1d4ed8, inset 0 -2.5px 0 #1d4ed8 !important;
     }
     .drop-target-inside td:first-child {
-      box-shadow: inset 3px 0 0 #1d4ed8, inset 0 2px 0 #1d4ed8, inset 0 -2px 0 #1d4ed8 !important;
+      box-shadow: inset 3.5px 0 0 #1d4ed8, inset 0 2.5px 0 #1d4ed8, inset 0 -2.5px 0 #1d4ed8 !important;
     }
     .drop-target-inside td:last-child {
-      box-shadow: inset -3px 0 0 #1d4ed8, inset 0 2px 0 #1d4ed8, inset 0 -2px 0 #1d4ed8 !important;
+      box-shadow: inset -3.5px 0 0 #1d4ed8, inset 0 2.5px 0 #1d4ed8, inset 0 -2.5px 0 #1d4ed8 !important;
     }
 
     /* Control SpinButton */
@@ -3142,6 +3152,19 @@
       document.body.classList.add("is-dragging-row");
       const fila = document.getElementById(`fila-act-${cod.replace(/\./g, '_')}`);
       if (fila) fila.classList.add("row-dragging");
+
+      // Distintivo flotante semitransparente que acompaña al cursor de agarre
+      const actObj = actividadesGlobal.find(a => String(a.codigo).replace(/\.+$/, "") === String(cod).replace(/\.+$/, ""));
+      const descCorta = actObj ? actObj.descripcion.substring(0, 24) + '...' : cod;
+
+      const dragBadge = document.createElement("div");
+      dragBadge.id = "ghost-drag-badge";
+      dragBadge.className = "fixed top-[-1000px] left-[-1000px] bg-[#0f2a4a] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-2xl border border-teal-400 flex items-center space-x-2 z-[9999] pointer-events-none";
+      dragBadge.innerHTML = `<span>✊ [${cod}]</span> <span class="font-normal opacity-90">${descCorta}</span>`;
+      document.body.appendChild(dragBadge);
+
+      e.dataTransfer.setDragImage(dragBadge, 15, 15);
+      setTimeout(() => dragBadge.remove(), 0);
     }
 
     function sobrevolarFilaArrastre(e, trElement) {
