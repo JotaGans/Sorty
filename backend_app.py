@@ -81,6 +81,7 @@ class Token(BaseModel):
     rol: str
     user_id: int
     nombre_completo: Optional[str] = ""
+    unidad_organica: Optional[str] = ""
 
 class UsuarioAltaModel(BaseModel):
     nombres: str
@@ -491,10 +492,21 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: sqlite3.Connection
         raise credentials_exception
     return dict(user)
 
-# --- AUTENTICACIÓN ---
+# --- AUTENTICACIÓN CON VINCULACIÓN DE UNIDAD ORGÁNICA ---
 @app.post("/token", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: sqlite3.Connection = Depends(get_db)):
-    user = db.execute("SELECT id, username, password, nombre_completo, rol, estado FROM usuarios WHERE username = ?", (form_data.username,)).fetchone()
+    user = db.execute("""
+        SELECT u.id, u.username, u.password, u.nombre_completo, u.rol, u.estado,
+               COALESCE(t.unidad_organica, '') as unidad_organica
+        FROM usuarios u
+        LEFT JOIN trabajadores t ON (
+            u.nombre_completo = t.nombre_completo 
+            OR t.correo LIKE u.username || '@%'
+            OR u.username = t.correo
+        )
+        WHERE u.username = ?
+    """, (form_data.username,)).fetchone()
+
     if not user or not verify_password(user["password"], form_data.password):
         raise HTTPException(status_code=400, detail="Usuario o contraseña incorrectos")
     if user["estado"] != "ACTIVO":
@@ -507,7 +519,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: sqlite3.Connecti
         "username": user["username"],
         "rol": user["rol"],
         "user_id": user["id"],
-        "nombre_completo": user["nombre_completo"] or user["username"]
+        "nombre_completo": user["nombre_completo"] or user["username"],
+        "unidad_organica": user["unidad_organica"] or ""
     }
 
 # --- GESTIÓN DE USUARIOS (ADMIN TI) ---

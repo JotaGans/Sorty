@@ -1568,7 +1568,14 @@
     function actualizarDisplaysUsuario() {
       const primerNombre = obtenerPrimerNombre(currentUser.nombre_completo, currentUser.username);
       const userText = currentUser.username || "admin";
-      const roleText = currentUser.rol === "ADMIN_TI" ? "ADMINISTRADOR TI" : "USUARIO INSTITUCIONAL";
+
+      // Determinar texto bajo el username: Rol de TI o Sigla de su Unidad de Organización
+      let roleText = "PERSONAL IMARPE";
+      if (currentUser.rol === "ADMIN_TI") {
+        roleText = "ADMINISTRADOR TI";
+      } else if (currentUser.unidad_organica && currentUser.unidad_organica.trim() !== "") {
+        roleText = currentUser.unidad_organica.trim();
+      }
 
       // 1. Saludo Principal con Primer Nombre
       const saludoHub = document.getElementById("hub-saludo-bienvenida");
@@ -1898,7 +1905,8 @@
           id: data.user_id || (data.user && data.user.id),
           username: data.username || (data.user && data.user.username), 
           rol: data.rol || (data.user && data.user.rol), 
-          nombre_completo: data.nombre_completo || (data.user && data.user.nombre_completo) || "" 
+          nombre_completo: data.nombre_completo || (data.user && data.user.nombre_completo) || "",
+          unidad_organica: data.unidad_organica || (data.user && data.user.unidad_organica) || ""
         };
         localStorage.setItem("token", token);
         localStorage.setItem("currentUser", JSON.stringify(currentUser));
