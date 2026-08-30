@@ -15,39 +15,43 @@
     /* Fila Seleccionada */
     .row-selected { background-color: #e2eafc !important; border-left: 4px solid #0f2a4a !important; }
     
-    /* Estilos Drag and Drop Jerárquico Profesional */
+    /* Estilos Drag and Drop WBS Nítidos en 1 Solo Tiempo */
     .drag-handle { cursor: grab; user-select: none; }
     .drag-handle:active, body.is-dragging-row, body.is-dragging-row * { 
       cursor: grabbing !important; 
     }
     .row-dragging { 
-      opacity: 0.35 !important; 
-      background-color: #f8fafc !important; 
-      border-left: 3px dashed #94a3b8 !important;
+      opacity: 0.3 !important; 
+      background-color: #f1f5f9 !important; 
     }
     
-    /* 1. Borde Superior (Hermana Arriba) */
+    /* Evita que los hijos internos disparen eventos múltiples en cascada */
+    body.is-dragging-row #lista-actividades td * {
+      pointer-events: none !important;
+    }
+
+    /* 1. Borde Superior: Hermana Arriba */
     .drop-target-above td {
-      box-shadow: inset 0 2.5px 0 #2563eb !important;
-      background-color: rgba(239, 246, 255, 0.35) !important;
+      box-shadow: inset 0 3px 0 #1d4ed8 !important;
+      background-color: rgba(239, 246, 255, 0.45) !important;
     }
 
-    /* 2. Borde Inferior (Hermana Abajo) */
+    /* 2. Borde Inferior: Hermana Abajo */
     .drop-target-below td {
-      box-shadow: inset 0 -2.5px 0 #2563eb !important;
-      background-color: rgba(239, 246, 255, 0.35) !important;
+      box-shadow: inset 0 -3px 0 #1d4ed8 !important;
+      background-color: rgba(239, 246, 255, 0.45) !important;
     }
 
-    /* 3. Caja Rectangular Completa (Reordenar como Hijo) */
+    /* 3. Caja Rectangular Completa: Convertir en Hija/Subtarea */
     .drop-target-inside td {
-      background-color: rgba(219, 234, 254, 0.6) !important;
-      box-shadow: inset 0 2px 0 #2563eb, inset 0 -2px 0 #2563eb !important;
+      background-color: rgba(219, 234, 254, 0.7) !important;
+      box-shadow: inset 0 2px 0 #1d4ed8, inset 0 -2px 0 #1d4ed8 !important;
     }
     .drop-target-inside td:first-child {
-      box-shadow: inset 2.5px 0 0 #2563eb, inset 0 2px 0 #2563eb, inset 0 -2px 0 #2563eb !important;
+      box-shadow: inset 3px 0 0 #1d4ed8, inset 0 2px 0 #1d4ed8, inset 0 -2px 0 #1d4ed8 !important;
     }
     .drop-target-inside td:last-child {
-      box-shadow: inset -2.5px 0 0 #2563eb, inset 0 2px 0 #2563eb, inset 0 -2px 0 #2563eb !important;
+      box-shadow: inset -3px 0 0 #1d4ed8, inset 0 2px 0 #1d4ed8, inset 0 -2px 0 #1d4ed8 !important;
     }
 
     /* Control SpinButton */
@@ -3122,29 +3126,28 @@
       const altura = rect.height;
       const yRelativo = e.clientY - rect.top;
 
-      // Limpiar estados en todas las demás filas
+      // Limpiar estados en todas las filas distintas
       document.querySelectorAll("#lista-actividades tr").forEach(tr => {
-        if (tr !== trElement) tr.classList.remove("drop-target-above", "drop-target-below", "drop-target-inside");
+        if (tr !== trElement) {
+          tr.classList.remove("drop-target-above", "drop-target-below", "drop-target-inside");
+        }
       });
 
-      // Umbrales directos: 
-      // - Primeros 8px del borde superior -> Línea única (Hermana Arriba)
-      // - Últimos 8px del borde inferior  -> Línea única (Hermana Abajo)
-      // - Todo el cuerpo central          -> Caja Rectangular (Hijo)
-      const umbralBordePx = Math.min(10, altura * 0.25);
+      // 15% Borde Superior (Hermana Arriba) | 70% Centro (Caja Hija) | 15% Borde Inferior (Hermana Abajo)
+      const margenBorde = Math.max(5, altura * 0.15);
 
-      if (yRelativo <= umbralBordePx) {
+      if (yRelativo <= margenBorde) {
         modoInsercion = "above";
-        trElement.className = trElement.className.replace(/\bdrop-target-(below|inside)\b/g, "").trim();
-        if (!trElement.classList.contains("drop-target-above")) trElement.classList.add("drop-target-above");
-      } else if (yRelativo >= altura - umbralBordePx) {
+        trElement.classList.remove("drop-target-below", "drop-target-inside");
+        trElement.classList.add("drop-target-above");
+      } else if (yRelativo >= altura - margenBorde) {
         modoInsercion = "below";
-        trElement.className = trElement.className.replace(/\bdrop-target-(above|inside)\b/g, "").trim();
-        if (!trElement.classList.contains("drop-target-below")) trElement.classList.add("drop-target-below");
+        trElement.classList.remove("drop-target-above", "drop-target-inside");
+        trElement.classList.add("drop-target-below");
       } else {
         modoInsercion = "inside";
-        trElement.className = trElement.className.replace(/\bdrop-target-(above|below)\b/g, "").trim();
-        if (!trElement.classList.contains("drop-target-inside")) trElement.classList.add("drop-target-inside");
+        trElement.classList.remove("drop-target-above", "drop-target-below");
+        trElement.classList.add("drop-target-inside");
       }
     }
 
@@ -3173,24 +3176,24 @@
       const codOrigenLimpio = String(codOrigen).replace(/\.+$/, "");
       const codDestinoLimpio = String(codigoDestino).replace(/\.+$/, "");
 
-      // 1. Obtener bloque completo de origen (padre + hijas)
+      // 1. Obtener bloque de actividades a mover (padre + hijas)
       const bloqueOrigen = actividadesGlobal.filter(a => {
         const c = String(a.codigo).replace(/\.+$/, "");
         return c === codOrigenLimpio || c.startsWith(codOrigenLimpio + ".");
       }).map(a => String(a.codigo).replace(/\.+$/, ""));
 
-      // 2. Validación: evitar mover una actividad dentro de sus hijas
+      // 2. Validación: no se puede mover una actividad dentro de sí misma o de sus componentes
       if (bloqueOrigen.includes(codDestinoLimpio)) {
         alert("⚠️ No puedes mover una actividad dentro de sus propias componentes subordinadas.");
         finalizarArrastre();
         return;
       }
 
-      // 3. Validación de profundidad máxima (Nivel 4)
+      // 3. Validación de profundidad máxima (4 niveles)
       const partesDestino = codDestinoLimpio.split(".");
       const nivelDestino = partesDestino.length;
       if (modoInsercion === "inside" && nivelDestino >= 4) {
-        alert("⚠️ La actividad destino ya se encuentra en el Nivel 4 (máximo permitido). Se reordenará como actividad hermana.");
+        alert("⚠️ La actividad destino ya está en el Nivel 4 (máxima profundidad permitida). Se ubicará como actividad hermana.");
         modoInsercion = "below";
       }
 
@@ -3203,44 +3206,20 @@
 
       let textoAccion = "";
       if (modoInsercion === "above") {
-        textoAccion = `encima de [${codDestinoLimpio}] (como actividad hermana)`;
+        textoAccion = `ARRIBA de [${codDestinoLimpio}] (como actividad hermana al mismo nivel)`;
       } else if (modoInsercion === "inside") {
-        textoAccion = `DENTRO de [${codDestinoLimpio}] (como subtarea subordinada)`;
+        textoAccion = `DENTRO de [${codDestinoLimpio}] (como subtarea subordinada / hijo directo)`;
       } else {
-        textoAccion = `debajo de [${codDestinoLimpio}] (como actividad hermana)`;
+        textoAccion = `DEBAJO de [${codDestinoLimpio}] (como actividad hermana al mismo nivel)`;
       }
 
       const confirma = await confirmModal(
-        `¿Desea reubicar la actividad [${codOrigenLimpio}] ("${descOrigen}") ${textoAccion}?\n\nEl sistema recalculará automáticamente la numeración WBS y las precedencias.`,
-        "Reubicar Actividad",
+        `¿Desea mover la actividad [${codOrigenLimpio}] ("${descOrigen}") ${textoAccion}?\n\nEl sistema renumerará correlativamente la estructura WBS y sus dependencias.`,
+        "Confirmar Reubicación",
         "question"
       );
 
       if (!confirma) return;
-
-      // 4. Reconstrucción de la secuencia para el backend
-      const todosCodigos = actividadesGlobal.map(a => String(a.codigo).replace(/\.+$/, ""));
-      const sinBloqueOrigen = todosCodigos.filter(c => !bloqueOrigen.includes(c));
-
-      const indiceDestino = sinBloqueOrigen.indexOf(codDestinoLimpio);
-      let puntoInsercion = indiceDestino;
-
-      if (modoInsercion === "above") {
-        puntoInsercion = Math.max(0, indiceDestino);
-      } else {
-        // Para "inside" o "below": se ubica tras la última hija que ya tenga el destino
-        let ultimoIndice = indiceDestino;
-        for (let i = indiceDestino + 1; i < sinBloqueOrigen.length; i++) {
-          if (sinBloqueOrigen[i].startsWith(codDestinoLimpio + ".")) {
-            ultimoIndice = i;
-          } else {
-            break;
-          }
-        }
-        puntoInsercion = ultimoIndice + 1;
-      }
-
-      sinBloqueOrigen.splice(puntoInsercion, 0, ...bloqueOrigen);
 
       try {
         const res = await fetch(`/proyectos/${proyectoActualId}/reordenar-actividades`, {
