@@ -3239,10 +3239,12 @@
     }
 
     // =========================================================================
-    // MOTOR DE ARRASTRE Y REUBICACIÓN JERÁRQUICA (DRAG & DROP WBS EN 3 ZONAS)
+    // MOTOR DE ARRASTRE Y REUBICACIÓN JERÁRQUICA CON AUTO-SCROLL VERTICAL CONTINUO
     // =========================================================================
     let codigoActividadArrastrada = null;
-    let modoInsercion = "below"; // "above" (Hermana arriba) | "inside" (Como Hija) | "below" (Hermana abajo)
+    let modoInsercion = "below"; // "above" | "inside" | "below"
+    let animacionAutoScrollId = null;
+    let velocidadAutoScroll = 0;
 
     function iniciarArrastreFila(e, cod) {
       codigoActividadArrastrada = cod;
@@ -3253,7 +3255,7 @@
       const fila = document.getElementById(`fila-act-${cod.replace(/\./g, '_')}`);
       if (fila) fila.classList.add("row-dragging");
 
-      // Distintivo flotante semitransparente que acompaña al cursor de agarre
+      // Distintivo flotante
       const actObj = actividadesGlobal.find(a => String(a.codigo).replace(/\.+$/, "") === String(cod).replace(/\.+$/, ""));
       const descCorta = actObj ? actObj.descripcion.substring(0, 24) + '...' : cod;
 
@@ -3265,27 +3267,68 @@
 
       e.dataTransfer.setDragImage(dragBadge, 15, 15);
       setTimeout(() => dragBadge.remove(), 0);
+
+      iniciarBucleAutoScroll();
+    }
+
+    function iniciarBucleAutoScroll() {
+      if (animacionAutoScrollId) return;
+
+      const pasoScroll = () => {
+        if (codigoActividadArrastrada && velocidadAutoScroll !== 0) {
+          const contenedorScroll = document.querySelector("#view-dashboard > div.overflow-auto") || document.getElementById("view-dashboard");
+          if (contenedorScroll) {
+            contenedorScroll.scrollTop += velocidadAutoScroll;
+          }
+        }
+        if (codigoActividadArrastrada) {
+          animacionAutoScrollId = requestAnimationFrame(pasoScroll);
+        } else {
+          animacionAutoScrollId = null;
+        }
+      };
+
+      animacionAutoScrollId = requestAnimationFrame(pasoScroll);
     }
 
     function sobrevolarFilaArrastre(e, trElement) {
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
 
+      // 1. Detección de proximidad de bordes para Auto-Scroll Vertical
+      const contenedorScroll = document.querySelector("#view-dashboard > div.overflow-auto") || document.getElementById("view-dashboard");
+      if (contenedorScroll) {
+        const cRect = contenedorScroll.getBoundingClientRect();
+        const umbralBordePx = 75; // Zona sensible de borde (75px superior e inferior)
+        const yMouse = e.clientY;
+
+        if (yMouse < cRect.top + umbralBordePx) {
+          // Cerca del borde superior -> Auto-Scroll hacia ARRIBA
+          const factorProximidad = Math.max(0.2, (cRect.top + umbralBordePx - yMouse) / umbralBordePx);
+          velocidadAutoScroll = -Math.round(14 * factorProximidad); // Velocidad adaptativa
+        } else if (yMouse > cRect.bottom - umbralBordePx) {
+          // Cerca del borde inferior -> Auto-Scroll hacia ABAJO
+          const factorProximidad = Math.max(0.2, (yMouse - (cRect.bottom - umbralBordePx)) / umbralBordePx);
+          velocidadAutoScroll = Math.round(14 * factorProximidad);
+        } else {
+          velocidadAutoScroll = 0; // Zona central neutra
+        }
+      }
+
       if (trElement.classList.contains("row-dragging")) return;
 
+      // 2. Determinación de modo de inserción (above, inside, below)
       const rect = trElement.getBoundingClientRect();
       const altura = rect.height;
       const yRelativo = e.clientY - rect.top;
 
-      // Limpiar estados en todas las filas distintas
       document.querySelectorAll("#lista-actividades tr").forEach(tr => {
         if (tr !== trElement) {
           tr.classList.remove("drop-target-above", "drop-target-below", "drop-target-inside");
         }
       });
 
-      // 15% Borde Superior (Hermana Arriba) | 70% Centro (Caja Hija) | 15% Borde Inferior (Hermana Abajo)
-      const margenBorde = Math.max(5, altura * 0.15);
+      const margenBorde = Math.max(5, altura * 0.18);
 
       if (yRelativo <= margenBorde) {
         modoInsercion = "above";
@@ -3307,6 +3350,11 @@
     }
 
     function finalizarArrastre() {
+      velocidadAutoScroll = 0;
+      if (animacionAutoScrollId) {
+        cancelAnimationFrame(animacionAutoScrollId);
+        animacionAutoScrollId = null;
+      }
       document.body.classList.remove("is-dragging-row");
       document.querySelectorAll("#lista-actividades tr").forEach(tr => {
         tr.classList.remove("row-dragging", "drop-target-above", "drop-target-below", "drop-target-inside");
