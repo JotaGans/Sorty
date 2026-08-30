@@ -30,16 +30,44 @@
       pointer-events: none !important;
     }
 
-    /* 1. Borde Superior: Hermana Arriba */
+    /* 1. Borde Superior: Hermana Arriba (Línea Azul + Flecha Verde Sutil) */
     .drop-target-above td {
-      box-shadow: inset 0 3px 0 #1d4ed8 !important;
+      box-shadow: inset 0 2.5px 0 #2563eb !important;
       background-color: rgba(239, 246, 255, 0.45) !important;
+      position: relative;
+    }
+    .drop-target-above td:first-child::before {
+      content: "▲";
+      position: absolute;
+      left: 2px;
+      top: -7px;
+      font-size: 11px;
+      line-height: 1;
+      color: #16a34a; /* Verde esmeralda sutil */
+      font-weight: 900;
+      z-index: 50;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
     }
 
-    /* 2. Borde Inferior: Hermana Abajo */
+    /* 2. Borde Inferior: Hermana Abajo (Línea Azul + Flecha Roja Sutil) */
     .drop-target-below td {
-      box-shadow: inset 0 -3px 0 #1d4ed8 !important;
+      box-shadow: inset 0 -2.5px 0 #2563eb !important;
       background-color: rgba(239, 246, 255, 0.45) !important;
+      position: relative;
+    }
+    .drop-target-below td:first-child::before {
+      content: "▼";
+      position: absolute;
+      left: 2px;
+      bottom: -7px;
+      font-size: 11px;
+      line-height: 1;
+      color: #dc2626; /* Rojo sutil */
+      font-weight: 900;
+      z-index: 50;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
     }
 
     /* 3. Caja Rectangular Completa: Convertir en Hija/Subtarea */
