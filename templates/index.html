@@ -176,6 +176,15 @@
       pointer-events: none !important;
       transition: none !important;
     }
+
+    /* Sangría y espaciado para opciones del menú desplegable */
+    #sel-escala-temporal option {
+      padding: 8px 16px !important;
+      font-weight: 600;
+      background-color: #0f2a4a;
+      color: #ffffff;
+    }
+
   </style>
 </head>
 <body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none" onclick="cerrarMenuContextual()">
@@ -473,15 +482,24 @@
             <option value="">👤 Personal</option>
           </select>
 
-          <!-- Selector Unificado de Escala Temporal Calibrado -->
-          <div class="flex items-center h-[29px] bg-[#0f2a4a] hover:bg-[#1b4f8a] border border-blue-900/60 rounded-lg px-2.5 py-1.5 shadow-xs transition-colors group">
-            <span class="text-[10px] uppercase tracking-wider text-teal-300 font-black mr-1.5 select-none leading-none">ESCALA:</span>
-            <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="text-xs font-black text-white bg-transparent outline-none cursor-pointer pr-4 -mt-[1px] leading-none select-clean-arrow-white">
-              <option value="dias" class="bg-[#0f2a4a] text-white">Días</option>
-              <option value="semanas" class="bg-[#0f2a4a] text-white" selected>Semanas</option>
-              <option value="meses" class="bg-[#0f2a4a] text-white">Meses</option>
-              <option value="trimestres" class="bg-[#0f2a4a] text-white">Trimestres</option>
-              <option value="semestres" class="bg-[#0f2a4a] text-white">Semestres</option>
+          <!-- Selector Unificado de Escala Temporal con Área de Clic Total (100%) -->
+          <div class="relative flex items-center h-[29px] bg-[#0f2a4a] hover:bg-[#1b4f8a] border border-blue-900/60 rounded-lg px-3 py-1 shadow-xs transition-colors cursor-pointer group">
+            <!-- Capa Visual Nítida y Alineada -->
+            <div class="flex items-center space-x-1.5 pointer-events-none select-none">
+              <span class="text-[10px] uppercase tracking-wider text-teal-300 font-black leading-none">ESCALA:</span>
+              <span id="txt-escala-activa-label" class="text-xs font-black text-white leading-none">Días</span>
+              <svg class="w-3.5 h-3.5 text-teal-300 ml-1 transform group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+
+            <!-- Select Invisible Superpuesto en todo el Contenedor (100% área de clic activa) -->
+            <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold">
+              <option value="dias" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Días</option>
+              <option value="semanas" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold" selected>&nbsp;&nbsp;Semanas</option>
+              <option value="meses" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Meses</option>
+              <option value="trimestres" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Trimestres</option>
+              <option value="semestres" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Semestres</option>
             </select>
           </div>
 
@@ -3715,6 +3733,19 @@
       const selEscala = document.getElementById("sel-escala-temporal");
       if (selEscala && selEscala.value !== modoZoom) {
         selEscala.value = modoZoom;
+      }
+
+      // Actualizar el texto visible de la escala activa
+      const labelEscala = document.getElementById("txt-escala-activa-label");
+      if (labelEscala) {
+        const nombresEscala = {
+          "dias": "Días",
+          "semanas": "Semanas",
+          "meses": "Meses",
+          "trimestres": "Trimestres",
+          "semestres": "Semestres"
+        };
+        labelEscala.innerText = nombresEscala[modoZoom] || "Semanas";
       }
 
       const boxSemana = document.getElementById("box-input-semana");
