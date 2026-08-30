@@ -15,12 +15,20 @@
     /* Fila Seleccionada */
     .row-selected { background-color: #e2eafc !important; border-left: 4px solid #0f2a4a !important; }
     
-    /* Estilos Drag and Drop WBS */
+    /* Estilos Drag and Drop WBS con Franja Indicadora Nítida */
     .drag-handle { cursor: grab; user-select: none; }
     .drag-handle:active { cursor: grabbing; }
-    .row-dragging { opacity: 0.45; background-color: #f1f5f9 !important; }
-    .drop-target-above { border-top: 3px solid #0f2a4a !important; }
-    .drop-target-below { border-bottom: 3px solid #0f2a4a !important; }
+    .row-dragging { opacity: 0.35 !important; background-color: #f1f5f9 !important; }
+    
+    /* Franja indicadora superior e inferior en todas las celdas de la fila */
+    .drop-target-above td {
+      box-shadow: inset 0 4px 0 #1d4ed8 !important;
+      background-color: rgba(239, 246, 255, 0.7) !important;
+    }
+    .drop-target-below td {
+      box-shadow: inset 0 -4px 0 #1d4ed8 !important;
+      background-color: rgba(239, 246, 255, 0.7) !important;
+    }
 
     /* Control SpinButton */
     .spin-btn { background: #e0e0e0; transition: background 0.1s; }
@@ -3086,15 +3094,23 @@
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
 
-      const rect = trElement.getBoundingClientRect();
-      const puntoMedio = rect.top + rect.height / 2;
+      if (trElement.classList.contains("row-dragging")) return;
 
-      trElement.classList.remove("drop-target-above", "drop-target-below");
+      const rect = trElement.getBoundingClientRect();
+      const puntoMedio = rect.top + (rect.height / 2);
+
+      // Limpiar franjas previas de otras filas para evitar parpadeos
+      document.querySelectorAll("#lista-actividades tr").forEach(tr => {
+        if (tr !== trElement) tr.classList.remove("drop-target-above", "drop-target-below");
+      });
+
       if (e.clientY < puntoMedio) {
         posicionInsercion = "above";
+        trElement.classList.remove("drop-target-below");
         trElement.classList.add("drop-target-above");
       } else {
         posicionInsercion = "below";
+        trElement.classList.remove("drop-target-above");
         trElement.classList.add("drop-target-below");
       }
     }
