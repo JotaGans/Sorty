@@ -469,18 +469,31 @@
             <span>Actividad</span>
           </button>
           
-          <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="bg-[#2c3e50] hover:bg-[#34495e] text-white text-xs font-bold px-2 py-1.5 rounded outline-none cursor-pointer">
-            <option value="4">👁️ Todo (N4)</option>
-            <option value="1">Nivel 1</option>
-            <option value="2">Nivel 2</option>
-            <option value="3">Nivel 3</option>
-          </select>
+          <!-- Selector de Nivel Jerárquico con Área de Clic Total (100%) y Cápsula Institucional -->
+          <div class="relative flex items-center h-[29px] bg-[#0f2a4a] hover:bg-[#1b4f8a] border border-blue-900/60 rounded-lg px-2.5 py-1 shadow-xs transition-colors cursor-pointer group">
+            <div class="flex items-center space-x-1 pointer-events-none select-none">
+              <span class="text-xs">👁️</span>
+              <span id="txt-nivel-activo-label" class="text-xs font-black text-white leading-none">Todo (N4)</span>
+              <svg class="w-3.5 h-3.5 text-teal-300 ml-0.5 transform group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold">
+              <option value="4" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold" selected>&nbsp;&nbsp;👁️ Todo (N4)</option>
+              <option value="1" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Nivel 1</option>
+              <option value="2" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Nivel 2</option>
+              <option value="3" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Nivel 3</option>
+            </select>
+          </div>
 
-          <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-24 md:w-32 text-xs bg-gray-100 border border-gray-300 rounded px-2 py-1.5 outline-none focus:border-[#0f2a4a] font-semibold">
+          <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-24 md:w-32 text-xs bg-gray-100 border border-gray-300 rounded-lg px-2.5 py-1 h-[29px] outline-none focus:border-[#0f2a4a] font-semibold">
 
-          <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="text-xs bg-gray-100 border border-gray-300 rounded py-1.5 pl-2 outline-none font-semibold text-gray-700 select-clean-arrow max-w-[130px]">
-            <option value="">👤 Personal</option>
-          </select>
+          <!-- Selector de Personal con Ancho Adecuado -->
+          <div class="relative flex items-center">
+            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="text-xs bg-gray-100 border border-gray-300 rounded-lg pl-2 pr-6 py-1 h-[29px] min-w-[150px] outline-none font-semibold text-gray-700 select-clean-arrow cursor-pointer">
+              <option value="">👤 Todo el Personal</option>
+            </select>
+          </div>
 
           <!-- Selector Unificado de Escala Temporal con Área de Clic Total (100%) -->
           <div class="relative flex items-center h-[29px] bg-[#0f2a4a] hover:bg-[#1b4f8a] border border-blue-900/60 rounded-lg px-3 py-1 shadow-xs transition-colors cursor-pointer group">
@@ -4681,7 +4694,21 @@
     }
 
     function filtrarNivelJerarquico(val) {
-      nivelFiltroActivo = parseInt(val);
+      const nivelInt = parseInt(val) || 4;
+      nivelFiltroActivo = nivelInt;
+
+      // Sincronizar el texto visible en la nueva cápsula institucional
+      const labelNivel = document.getElementById("txt-nivel-activo-label");
+      if (labelNivel) {
+        const nombresNivel = {
+          1: "Nivel 1",
+          2: "Nivel 2",
+          3: "Nivel 3",
+          4: "Todo (N4)"
+        };
+        labelNivel.innerText = nombresNivel[nivelInt] || "Todo (N4)";
+      }
+
       renderizarTabla();
     }
 
