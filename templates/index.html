@@ -26,28 +26,28 @@
       border-left: 3px dashed #94a3b8 !important;
     }
     
-    /* 1. Hermana Arriba: Franja continua en el borde superior */
+    /* 1. Borde Superior (Hermana Arriba) */
     .drop-target-above td {
-      box-shadow: inset 0 3px 0 #2563eb !important;
-      background-color: rgba(239, 246, 255, 0.5) !important;
+      box-shadow: inset 0 2.5px 0 #2563eb !important;
+      background-color: rgba(239, 246, 255, 0.35) !important;
     }
 
-    /* 2. Hermana Abajo: Franja continua en el borde inferior */
+    /* 2. Borde Inferior (Hermana Abajo) */
     .drop-target-below td {
-      box-shadow: inset 0 -3px 0 #2563eb !important;
-      background-color: rgba(239, 246, 255, 0.5) !important;
+      box-shadow: inset 0 -2.5px 0 #2563eb !important;
+      background-color: rgba(239, 246, 255, 0.35) !important;
     }
 
-    /* 3. Caja Rectangular Completa (Meter como Hija/Subtarea) */
+    /* 3. Caja Rectangular Completa (Reordenar como Hijo) */
     .drop-target-inside td {
-      background-color: rgba(219, 234, 254, 0.65) !important;
+      background-color: rgba(219, 234, 254, 0.6) !important;
       box-shadow: inset 0 2px 0 #2563eb, inset 0 -2px 0 #2563eb !important;
     }
     .drop-target-inside td:first-child {
-      box-shadow: inset 3px 0 0 #2563eb, inset 0 2px 0 #2563eb, inset 0 -2px 0 #2563eb !important;
+      box-shadow: inset 2.5px 0 0 #2563eb, inset 0 2px 0 #2563eb, inset 0 -2px 0 #2563eb !important;
     }
     .drop-target-inside td:last-child {
-      box-shadow: inset -3px 0 0 #2563eb, inset 0 2px 0 #2563eb, inset 0 -2px 0 #2563eb !important;
+      box-shadow: inset -2.5px 0 0 #2563eb, inset 0 2px 0 #2563eb, inset 0 -2px 0 #2563eb !important;
     }
 
     /* Control SpinButton */
@@ -3122,24 +3122,29 @@
       const altura = rect.height;
       const yRelativo = e.clientY - rect.top;
 
-      // Limpiar estados previos en otras filas
+      // Limpiar estados en todas las demás filas
       document.querySelectorAll("#lista-actividades tr").forEach(tr => {
         if (tr !== trElement) tr.classList.remove("drop-target-above", "drop-target-below", "drop-target-inside");
       });
 
-      // Zonas: 20% Borde Superior | 60% Centro (Caja Hija) | 20% Borde Inferior
-      if (yRelativo < altura * 0.20) {
+      // Umbrales directos: 
+      // - Primeros 8px del borde superior -> Línea única (Hermana Arriba)
+      // - Últimos 8px del borde inferior  -> Línea única (Hermana Abajo)
+      // - Todo el cuerpo central          -> Caja Rectangular (Hijo)
+      const umbralBordePx = Math.min(10, altura * 0.25);
+
+      if (yRelativo <= umbralBordePx) {
         modoInsercion = "above";
-        trElement.classList.remove("drop-target-below", "drop-target-inside");
-        trElement.classList.add("drop-target-above");
-      } else if (yRelativo > altura * 0.80) {
+        trElement.className = trElement.className.replace(/\bdrop-target-(below|inside)\b/g, "").trim();
+        if (!trElement.classList.contains("drop-target-above")) trElement.classList.add("drop-target-above");
+      } else if (yRelativo >= altura - umbralBordePx) {
         modoInsercion = "below";
-        trElement.classList.remove("drop-target-above", "drop-target-inside");
-        trElement.classList.add("drop-target-below");
+        trElement.className = trElement.className.replace(/\bdrop-target-(above|inside)\b/g, "").trim();
+        if (!trElement.classList.contains("drop-target-below")) trElement.classList.add("drop-target-below");
       } else {
         modoInsercion = "inside";
-        trElement.classList.remove("drop-target-above", "drop-target-below");
-        trElement.classList.add("drop-target-inside");
+        trElement.className = trElement.className.replace(/\bdrop-target-(above|below)\b/g, "").trim();
+        if (!trElement.classList.contains("drop-target-inside")) trElement.classList.add("drop-target-inside");
       }
     }
 
