@@ -37,10 +37,14 @@ app.add_middleware(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
-# --- CONEXIÓN A BASE DE DATOS ---
+# --- CONEXIÓN A BASE DE DATOS ROBUSTA (WAL + MULTIHILO + BUSY TIMEOUT) ---
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30.0, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    # Activar WAL y optimizaciones de concurrencia en cada conexión
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout = 30000;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
     try:
         yield conn
     finally:
@@ -192,7 +196,10 @@ def init_db():
         except Exception:
             pass
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30.0, check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout = 30000;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
     c = conn.cursor()
 
     # 1. Tabla Usuarios

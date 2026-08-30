@@ -5397,12 +5397,10 @@
       document.getElementById("modal-admin-ti").classList.remove("hidden");
       cambiarTabTI('cuentas');
 
-      // Carga paralela con manejo individual de errores
-      await Promise.allSettled([
-        cargarListaUsuariosTI(),
-        cargarDirectorioTrabajadores(),
-        cargarCatalogoUnidades()
-      ]);
+      // Carga secuencial limpia y fluida para evitar saturar conexiones
+      await cargarListaUsuariosTI();
+      await cargarDirectorioTrabajadores();
+      await cargarCatalogoUnidades();
     }
 
     async function cargarListaUsuariosTI() {
