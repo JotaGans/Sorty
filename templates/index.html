@@ -4511,6 +4511,8 @@
 
       if (!actividadesGlobal || actividadesGlobal.length === 0) {
         tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-bold">No hay actividades creadas en este proyecto. Utilice el botón "+ Actividad" para comenzar.</td></tr>`;
+        actualizarKPIs();
+        actualizarBotonPlantillaDinamico();
         return;
       }
 
