@@ -191,6 +191,23 @@
       color: #ffffff;
     }
 
+    /* Tirador de Redimensión Manual de Columna */
+    .col-resizer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 6px;
+      cursor: col-resize;
+      user-select: none;
+      height: 100%;
+      z-index: 40;
+      transition: background-color 0.15s ease;
+    }
+    .col-resizer:hover,
+    .col-resizer.is-resizing {
+      background-color: #5eead4 !important; /* Turquesa reactivo al arrastrar */
+    }
+
   </style>
 </head>
 <body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none" onclick="cerrarMenuContextual()">
@@ -594,8 +611,13 @@
         <thead class="bg-[#0f2a4a] text-white select-none">
           <tr>
             <th id="th-codigo" class="p-2.5 font-bold w-20 md:w-24 whitespace-nowrap">Código</th>
-            <th id="th-descripcion" class="p-2.5 font-bold min-w-[200px] md:min-w-[260px] whitespace-nowrap">
-              Descripción de Actividad <span class="text-[10px] text-teal-300 opacity-80">✎</span>
+            <th id="th-descripcion" class="p-2.5 font-bold min-w-[180px] max-w-[600px] whitespace-nowrap relative select-none">
+              <div class="flex items-center justify-between pr-2">
+                <span>Descripción de Actividad</span>
+                <span class="text-[10px] text-teal-300 opacity-80">✎</span>
+              </div>
+              <!-- Tirador interactivo exclusivo para esta columna -->
+              <div id="resizer-col-descripcion" class="col-resizer" title="Arrastra para ajustar el ancho"></div>
             </th>
             <th id="th-responsable" class="p-2.5 font-bold min-w-[90px] md:min-w-[110px] text-center whitespace-nowrap">
               Responsable(s) <span class="text-[10px] text-teal-300 opacity-80">✎</span>
@@ -1921,6 +1943,7 @@
       construirCalendarioAnual();
       sincronizarCheckboxesColumnas();
       aplicarVisibilidadColumnas();
+      inicializarRedimensionDescripcion(); // <-- Inicializa el tirador de redimensión
 
       // Guardado automático del Nombre del Proyecto desde la barra superior
       const inputNombreProy = document.getElementById("txt-nombre-proyecto");
@@ -7015,6 +7038,64 @@
       } catch (e) {
         alert("Error de conexión al importar plantilla.");
       }
+    }
+
+    // =========================================================================
+    // REDIMENSIÓN MANUAL Y PERSISTENTE DE LA COLUMNA "DESCRIPCIÓN DE ACTIVIDAD"
+    // =========================================================================
+    function inicializarRedimensionDescripcion() {
+      const thDesc = document.getElementById("th-descripcion");
+      const resizer = document.getElementById("resizer-col-descripcion");
+      if (!thDesc || !resizer) return;
+
+      // Recuperar ancho previamente personalizado por el usuario
+      const anchoGuardado = localStorage.getItem("ancho_col_descripcion_px");
+      if (anchoGuardado) {
+        thDesc.style.width = `${anchoGuardado}px`;
+        thDesc.style.minWidth = `${anchoGuardado}px`;
+      }
+
+      let inicioX = 0;
+      let anchoInicial = 0;
+
+      const alMoverMouse = (e) => {
+        const deltaX = e.clientX - inicioX;
+        // Límites ergonómicos: mínimo 180px, máximo 650px
+        const nuevoAncho = Math.min(650, Math.max(180, anchoInicial + deltaX));
+        
+        thDesc.style.width = `${nuevoAncho}px`;
+        thDesc.style.minWidth = `${nuevoAncho}px`;
+      };
+
+      const alSoltarMouse = () => {
+        resizer.classList.remove("is-resizing");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        
+        // Guardar la preferencia del usuario
+        const anchoFinal = parseInt(thDesc.style.width);
+        if (anchoFinal) {
+          localStorage.setItem("ancho_col_descripcion_px", anchoFinal);
+        }
+
+        window.removeEventListener("mousemove", alMoverMouse);
+        window.removeEventListener("mouseup", alSoltarMouse);
+      };
+
+      resizer.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        inicioX = e.clientX;
+        anchoInicial = thDesc.offsetWidth;
+        resizer.classList.add("is-resizing");
+        
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+
+        window.addEventListener("mousemove", alMoverMouse);
+        window.addEventListener("mouseup", alSoltarMouse);
+      });
     }
 
   </script>
