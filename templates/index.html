@@ -191,21 +191,29 @@
       color: #ffffff;
     }
 
-    /* Tirador de Redimensión Manual de Columna */
+    /* Tirador de Redimensión Manual: Guía Fina de 2px con Área Activa */
     .col-resizer {
       position: absolute;
       top: 0;
       right: 0;
-      width: 6px;
+      width: 8px; /* Área de captura del mouse */
       cursor: col-resize;
       user-select: none;
       height: 100%;
-      z-index: 40;
+      z-index: 50;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .col-resizer::after {
+      content: "";
+      width: 2px; /* Línea visible ultra-fina */
+      height: 100%;
+      background-color: transparent;
       transition: background-color 0.15s ease;
     }
-    .col-resizer:hover,
-    .col-resizer.is-resizing {
-      background-color: #5eead4 !important; /* Turquesa reactivo al arrastrar */
+    .col-resizer:hover::after,
+    .col-resizer.is-resizing::after {
+      background-color: #5eead4 !important; /* Línea fina turquesa reactiva */
     }
 
   </style>
@@ -611,13 +619,13 @@
         <thead class="bg-[#0f2a4a] text-white select-none">
           <tr>
             <th id="th-codigo" class="p-2.5 font-bold w-20 md:w-24 whitespace-nowrap">Código</th>
-            <th id="th-descripcion" class="p-2.5 font-bold min-w-[180px] max-w-[600px] whitespace-nowrap relative select-none">
-              <div class="flex items-center justify-between pr-2">
-                <span>Descripción de Actividad</span>
-                <span class="text-[10px] text-teal-300 opacity-80">✎</span>
+            <th id="th-descripcion" class="p-2.5 font-bold min-w-[180px] whitespace-nowrap select-none" style="position: sticky !important; top: 0 !important; z-index: 35 !important; background-color: #0f2a4a !important;">
+              <div class="flex items-center justify-between pr-3">
+                <span class="truncate">Descripción de Actividad</span>
+                <span class="text-[10px] text-teal-300 opacity-80 flex-shrink-0">✎</span>
               </div>
-              <!-- Tirador interactivo exclusivo para esta columna -->
-              <div id="resizer-col-descripcion" class="col-resizer" title="Arrastra para ajustar el ancho"></div>
+              <!-- Tirador interactivo con línea ultra-fina -->
+              <div id="resizer-col-descripcion" class="col-resizer" title="Arrastra para ajustar el ancho de la columna"></div>
             </th>
             <th id="th-responsable" class="p-2.5 font-bold min-w-[90px] md:min-w-[110px] text-center whitespace-nowrap">
               Responsable(s) <span class="text-[10px] text-teal-300 opacity-80">✎</span>
@@ -7048,11 +7056,19 @@
       const resizer = document.getElementById("resizer-col-descripcion");
       if (!thDesc || !resizer) return;
 
-      // Recuperar ancho previamente personalizado por el usuario
+      const aplicarAncho = (anchoPx) => {
+        thDesc.style.width = `${anchoPx}px`;
+        thDesc.style.minWidth = `${anchoPx}px`;
+        thDesc.style.maxWidth = `${anchoPx}px`;
+        document.querySelectorAll("#lista-actividades td:nth-child(2)").forEach(td => {
+          td.style.maxWidth = `${anchoPx}px`;
+        });
+      };
+
+      // Recuperar ancho previamente personalizado
       const anchoGuardado = localStorage.getItem("ancho_col_descripcion_px");
       if (anchoGuardado) {
-        thDesc.style.width = `${anchoGuardado}px`;
-        thDesc.style.minWidth = `${anchoGuardado}px`;
+        aplicarAncho(parseInt(anchoGuardado));
       }
 
       let inicioX = 0;
@@ -7060,11 +7076,9 @@
 
       const alMoverMouse = (e) => {
         const deltaX = e.clientX - inicioX;
-        // Límites ergonómicos: mínimo 180px, máximo 650px
-        const nuevoAncho = Math.min(650, Math.max(180, anchoInicial + deltaX));
-        
-        thDesc.style.width = `${nuevoAncho}px`;
-        thDesc.style.minWidth = `${nuevoAncho}px`;
+        // Rango amplio: desde 140px hasta 1400px
+        const nuevoAncho = Math.min(1400, Math.max(140, anchoInicial + deltaX));
+        aplicarAncho(nuevoAncho);
       };
 
       const alSoltarMouse = () => {
@@ -7072,7 +7086,6 @@
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
         
-        // Guardar la preferencia del usuario
         const anchoFinal = parseInt(thDesc.style.width);
         if (anchoFinal) {
           localStorage.setItem("ancho_col_descripcion_px", anchoFinal);
