@@ -328,9 +328,11 @@
 
         <!-- Grupo Selector de Vista, Botón Ocultos y Botón Excel -->
         <div class="flex items-center space-x-3 self-end md:self-auto">
-          <!-- Botón Indicador de Proyectos Ocultos (Aparece automáticamente si hay proyectos ocultados) -->
+          <!-- Botón Indicador de Proyectos Ocultos (Con Ícono de Ojo Cerrado SVG) -->
           <button id="btn-toggle-proyectos-ocultos" onclick="alternarVerProyectosOcultos()" class="hidden px-3 py-1.5 rounded-lg text-xs font-black bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center space-x-1.5 cursor-pointer" title="Ver o gestionar proyectos ocultos">
-            <span>🙈</span>
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+            </svg>
             <span id="txt-contador-ocultos">Ocultos (0)</span>
           </button>
           <!-- Conmutador de Vista Estilizado (Segmented Control UX) -->
@@ -499,9 +501,9 @@
 
           <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-24 md:w-32 text-xs bg-gray-100 border border-gray-300 rounded-lg px-2.5 py-1 h-[29px] outline-none focus:border-[#0f2a4a] font-semibold">
 
-          <!-- Selector de Personal con Ancho Fijo Calibrado (No crece ni descuadra) -->
-          <div class="relative flex items-center w-[130px] max-w-[130px] flex-shrink-0">
-            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-100 border border-gray-300 rounded-lg pl-2 pr-5 py-1 h-[29px] outline-none font-semibold text-gray-700 select-clean-arrow cursor-pointer truncate" title="Filtrar por personal asignado">
+          <!-- Selector de Personal con Ancho Calibrado (Texto Completo y Estable) -->
+          <div class="relative flex items-center w-[170px] max-w-[170px] flex-shrink-0">
+            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-100 border border-gray-300 rounded-lg pl-2.5 pr-6 py-1 h-[29px] outline-none font-semibold text-gray-700 select-clean-arrow cursor-pointer whitespace-nowrap" title="Filtrar por personal asignado">
               <option value="">👤 Todo el Personal</option>
             </select>
           </div>
@@ -574,9 +576,10 @@
           </button>
 
           <!-- Botón Cuadrado Dinámico de Plantilla (Importar cuando está vacío / Guardar cuando tiene tareas) -->
-          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="w-[29px] h-[29px] bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-black rounded-lg transition-all shadow flex items-center justify-center flex-shrink-0 cursor-pointer" title="Guardar Plantilla">
-            <span id="ico-accion-plantilla">📥</span>
+          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="w-[29px] h-[29px] bg-teal-600 hover:bg-teal-700 text-white text-sm font-black rounded-lg transition-all shadow flex items-center justify-center flex-shrink-0 cursor-pointer animate-pulse" title="Importar Plantilla">
+            <span id="ico-accion-plantilla">📂</span>
           </button>
+        </div>
         </div>
         </div>
       </div>
@@ -2238,6 +2241,21 @@
     let idsProyectosOcultos = new Set(JSON.parse(localStorage.getItem("proyectos_ocultos_ids") || "[]"));
     let mostrandoOcultosHub = false;
 
+    // SVG Ojo Abierto (Visible)
+    const SVG_OJO_ABIERTO = `
+      <svg class="w-4 h-4 text-gray-500 hover:text-[#0f2a4a] transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </svg>
+    `;
+
+    // SVG Ojo Cerrado (Ocultar / Oculto)
+    const SVG_OJO_CERRADO = `
+      <svg class="w-4 h-4 text-amber-600 hover:text-amber-800 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+      </svg>
+    `;
+
     function guardarOcultosLocalStorage() {
       localStorage.setItem("proyectos_ocultos_ids", JSON.stringify(Array.from(idsProyectosOcultos)));
       actualizarBotonOcultosHubUI();
@@ -2254,6 +2272,7 @@
         txtCont.innerText = mostrandoOcultosHub ? `Ocultar archivados (${cant})` : `Ver Ocultos (${cant})`;
       } else {
         btnOcultos.classList.add("hidden");
+        mostrandoOcultosHub = false; // Restablecer automáticamente si no quedan ocultos
       }
     }
 
@@ -2267,7 +2286,11 @@
       if (event) event.stopPropagation();
       if (idsProyectosOcultos.has(id)) {
         idsProyectosOcultos.delete(id);
-        notificarToast("Proyecto restaurado en su panel principal.", "success");
+        notificarToast("Proyecto restaurado al panel principal.", "success");
+        // Si ya no quedan proyectos ocultos, regresar automáticamente a la vista normal
+        if (idsProyectosOcultos.size === 0) {
+          mostrandoOcultosHub = false;
+        }
       } else {
         idsProyectosOcultos.add(id);
         notificarToast("Proyecto ocultado de la vista principal.", "info");
@@ -2322,6 +2345,7 @@
 
       actualizarBotonOcultosHubUI();
 
+      // Filtrar proyectos según el estado de la vista
       const listaFinal = lista.filter(p => mostrandoOcultosHub ? idsProyectosOcultos.has(p.id) : !idsProyectosOcultos.has(p.id));
 
       listaFinal.forEach(p => {
@@ -2364,13 +2388,15 @@
               <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider whitespace-nowrap ${esGestor ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-blue-50 text-blue-800 border border-blue-200/80'}">
                 ${esGestor ? '👑 Gestor' : '👤 Responsable'}
               </span>
-              <div class="flex items-center space-x-1.5">
-                <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition" title="${estaOculto ? 'Restaurar al panel principal' : 'Ocultar proyecto de la vista'}">
-                  ${estaOculto ? '👁️' : '🙈'}
+              <div class="flex items-center space-x-1">
+                <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-100 transition cursor-pointer" title="${estaOculto ? 'Restaurar al panel principal' : 'Ocultar proyecto de la vista'}">
+                  ${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}
                 </button>
                 ${esGestor ? `
-                  <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-400 hover:text-rose-700 hover:bg-rose-50 transition" title="Eliminar proyecto (solo si está vacío)">
-                    🗑️
+                  <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-400 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer" title="Eliminar proyecto (solo si está vacío)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                   </button>
                 ` : ''}
                 <span class="text-xs font-black px-2 py-0.5 rounded whitespace-nowrap ${badgeAvanceClases}">${avanceVal}% Avance</span>
@@ -2488,16 +2514,18 @@
                 </span>
               </div>
             </td>
-            <td class="p-3 text-center whitespace-nowrap space-x-1">
-              <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 text-gray-400 hover:text-gray-700" title="${estaOculto ? 'Restaurar' : 'Ocultar'}">
-                ${estaOculto ? '👁️' : '🙈'}
+            <td class="p-3 text-center whitespace-nowrap space-x-1.5">
+              <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-200 transition cursor-pointer inline-block align-middle" title="${estaOculto ? 'Restaurar' : 'Ocultar'}">
+                ${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}
               </button>
               ${esGestor ? `
-                <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 text-rose-500 hover:text-rose-700 font-bold" title="Eliminar proyecto (solo si está vacío)">
-                  🗑️
+                <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-400 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer inline-block align-middle" title="Eliminar proyecto (solo si está vacío)">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
                 </button>
               ` : ''}
-              <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-[11px] font-bold px-3 py-1 rounded-lg transition shadow">
+              <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-[11px] font-bold px-3 py-1 rounded-lg transition shadow cursor-pointer inline-block align-middle">
                 Ingresar →
               </button>
             </td>
@@ -2683,14 +2711,17 @@
           autoAjustarSemanaInicio();
           poblarFiltroResponsablesDinamico();
           actualizarKPIs();
+          actualizarBotonPlantillaDinamico();
         } catch(e) {
           actividadesGlobal = [];
           poblarFiltroResponsablesDinamico();
+          actualizarBotonPlantillaDinamico();
           irASemanaActual();
         }
       } else {
         actividadesGlobal = [];
         poblarFiltroResponsablesDinamico();
+        actualizarBotonPlantillaDinamico();
         const tbody = document.getElementById("lista-actividades");
         tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold">Cargando actividades del proyecto...</td></tr>`;
       }
