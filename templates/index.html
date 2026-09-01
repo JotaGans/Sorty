@@ -5490,6 +5490,46 @@
       }
     }
 
+    function autocompletarUnidadOrganica(termino) {
+      const term = (termino || "").toLowerCase().trim();
+      const divSug = document.getElementById("tra-sugerencias-uo");
+      if (!divSug) return;
+
+      if (!term) {
+        divSug.innerHTML = "";
+        divSug.classList.add("hidden");
+        return;
+      }
+
+      const matches = (catalogoUnidadesGlobal || []).filter(u => 
+        (u.estado === 'ACTIVO' || !u.estado) && (
+          u.sigla.toLowerCase().includes(term) || 
+          u.nombre.toLowerCase().includes(term)
+        )
+      );
+
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">Sin coincidencias</div>`;
+      } else {
+        matches.slice(0, 6).forEach(u => {
+          const item = document.createElement("div");
+          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
+          item.innerHTML = `
+            <span class="text-gray-800">${u.nombre}</span>
+            <strong class="text-[#0f2a4a] ml-2 bg-slate-100 px-1.5 py-0.5 rounded border text-[11px]">[${u.sigla}]</strong>
+          `;
+          item.onclick = () => {
+            document.getElementById("tra-input-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+            document.getElementById("tra-input-uo-valor").value = u.sigla;
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
+
     // --- CARGA Y RENDERIZADO DE TRABAJADORES ---
     async function cargarDirectorioTrabajadores() {
       const tbody = document.getElementById("tra-tabla-directorio");
