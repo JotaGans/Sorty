@@ -373,7 +373,7 @@
               <th class="p-3 font-bold text-white border-b border-blue-900 w-36 text-center whitespace-nowrap">Rol</th>
               <th class="p-3 font-bold text-white border-b border-blue-900 w-32 text-center">% Avance</th>
               <th class="p-3 font-bold text-white border-b border-blue-900 min-w-[280px] text-center whitespace-nowrap">Estado de tareas</th>
-              <th class="p-3 font-bold text-white border-b border-blue-900 w-28 text-center">Acción</th>
+              <th class="p-3 font-bold text-white border-b border-blue-900 w-44 text-center whitespace-nowrap">Acción</th>
             </tr>
           </thead>
           <tbody id="hub-proyectos-tabla-body" class="divide-y divide-gray-100 font-medium"></tbody>
@@ -2345,11 +2345,14 @@
 
       actualizarBotonOcultosHubUI();
 
-      // Filtrar proyectos según el estado de la vista
       const listaFinal = lista.filter(p => mostrandoOcultosHub ? idsProyectosOcultos.has(p.id) : !idsProyectosOcultos.has(p.id));
 
       listaFinal.forEach(p => {
         const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI");
+        const totalActs = p.total_actividades || 0;
+        const esProyectoVacio = totalActs === 0;
+        const puedeEliminar = esGestor && esProyectoVacio;
+
         const tooltipEdit = esGestor ? 'title="Doble clic para editar descripción"' : '';
         const estiloCursor = esGestor ? 'cursor-pointer hover:text-teal-700 hover:bg-teal-50/70 p-1 -m-1 rounded transition' : '';
         const textoDesc = (p.descripcion && p.descripcion.trim() !== "") ? p.descripcion.trim() : "Sin descripción adicional registrada.";
@@ -2392,8 +2395,8 @@
                 <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-100 transition cursor-pointer" title="${estaOculto ? 'Restaurar al panel principal' : 'Ocultar proyecto de la vista'}">
                   ${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}
                 </button>
-                ${esGestor ? `
-                  <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-400 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer" title="Eliminar proyecto (solo si está vacío)">
+                ${puedeEliminar ? `
+                  <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-400 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer" title="Eliminar proyecto vacío">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -2477,6 +2480,10 @@
 
       listaFinal.forEach((p, idx) => {
         const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI");
+        const totalActs = p.total_actividades || 0;
+        const esProyectoVacio = totalActs === 0;
+        const puedeEliminar = esGestor && esProyectoVacio;
+
         const pct = p.avance_global || 0;
         const estaOculto = idsProyectosOcultos.has(p.id);
 
@@ -2514,20 +2521,27 @@
                 </span>
               </div>
             </td>
-            <td class="p-3 text-center whitespace-nowrap space-x-1.5">
-              <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-200 transition cursor-pointer inline-block align-middle" title="${estaOculto ? 'Restaurar' : 'Ocultar'}">
-                ${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}
-              </button>
-              ${esGestor ? `
-                <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-400 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer inline-block align-middle" title="Eliminar proyecto (solo si está vacío)">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+            <td class="p-3 text-right whitespace-nowrap">
+              <div class="inline-flex items-center justify-end space-x-1.5 w-full">
+                <!-- Espacio reservado para iconos de control -->
+                <div class="inline-flex items-center justify-end space-x-1 min-w-[52px]">
+                  <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-200 transition cursor-pointer inline-flex items-center justify-center" title="${estaOculto ? 'Restaurar al panel' : 'Ocultar vista'}">
+                    ${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}
+                  </button>
+                  ${puedeEliminar ? `
+                    <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer inline-flex items-center justify-center" title="Eliminar proyecto vacío">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  ` : ''}
+                </div>
+                
+                <!-- Botón Ingresar fijo e inamovible -->
+                <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition shadow cursor-pointer whitespace-nowrap">
+                  Ingresar →
                 </button>
-              ` : ''}
-              <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-[11px] font-bold px-3 py-1 rounded-lg transition shadow cursor-pointer inline-block align-middle">
-                Ingresar →
-              </button>
+              </div>
             </td>
           </tr>
         `;
