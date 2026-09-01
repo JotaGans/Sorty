@@ -2815,8 +2815,22 @@
           construirCalendarioAnual();
           autoAjustarSemanaInicio();
           poblarFiltroResponsablesDinamico();
+          renderizarCabeceraGantt();
+          renderizarTabla();
           actualizarKPIs();
+          actualizarBotonPlantillaDinamico();
         }
+        else if (resActs.status === 401) {
+          cerrarSesion();
+        } 
+        else {
+          actualizarVistaGantt();
+        }
+      } catch (err) {
+        console.error("Error sincronizando actividades:", err);
+        renderizarTabla();
+      }
+    }
         
         else if (resActs.status === 401) {
           cerrarSesion();
@@ -2860,11 +2874,11 @@
         }
 
         if (indexEncontrado >= 0) {
-          // Centrar en la semana calculada (con 1 semana de resguardo si es posible)
-          const semElegida = Math.max(1, indexEncontrado);
+          // Enfocar directamente la semana de la primera tarea del proyecto
+          const semElegida = Math.max(1, indexEncontrado + 1);
           fijarSemanaInicio(semElegida);
         } else {
-          fijarSemanaInicio(1);
+          irASemanaActual();
         }
       } else {
         irASemanaActual();
