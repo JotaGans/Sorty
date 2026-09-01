@@ -566,6 +566,12 @@
           <button id="btn-personal-gantt" onclick="abrirResponsables()" class="bg-[#2980b9] hover:bg-[#1f618d] text-white text-xs font-bold px-2 py-1.5 rounded transition whitespace-nowrap">
             ⚙️ Personal
           </button>
+
+          <!-- Botón Guardar como Plantilla Institucional -->
+          <button id="btn-guardar-plantilla" onclick="abrirModalGuardarPlantilla()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-black px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 whitespace-nowrap" title="Guardar este proyecto como plantilla en la biblioteca">
+            <span>📥</span>
+            <span>Guardar Plantilla</span>
+          </button>
         </div>
       </div>
     </div>
@@ -613,31 +619,137 @@
 
   <!-- ================= MODALES AUXILIARES ================= -->
 
-  <!-- MODAL: NUEVO PROYECTO -->
-  <div id="modal-nuevo-proyecto" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
-    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
-      <div class="bg-teal-700 text-white p-4 flex justify-between items-center">
-        <h3 class="font-bold text-sm">Nuevo Proyecto o Programa</h3>
-        <button onclick="cerrarModalNuevoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300">&times;</button>
+  <!-- MODAL: CREACIÓN DE PROYECTO (EN BLANCO O DESDE PLANTILLA) -->
+  <div id="modal-nuevo-proyecto" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4 backdrop-blur-[1px]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-300 flex flex-col max-h-[90vh]">
+      
+      <!-- Cabecera -->
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">🚀</span>
+          <h3 class="font-black text-sm tracking-wide">Crear Nuevo Proyecto o Programa</h3>
+        </div>
+        <button onclick="cerrarModalNuevoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
       </div>
-      <form onsubmit="guardarNuevoProyecto(event)" class="p-6 space-y-4">
+
+      <!-- Segmented Tabs -->
+      <div class="flex border-b border-gray-200 bg-gray-100 text-xs font-bold px-4 pt-2 space-x-2 flex-shrink-0">
+        <button id="np-tab-btn-blanco" onclick="cambiarTabNuevoProyecto('blanco')" class="px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs flex items-center space-x-1.5 font-bold">
+          <span>✨</span>
+          <span>Proyecto en Blanco</span>
+        </button>
+        <button id="np-tab-btn-plantilla" onclick="cambiarTabNuevoProyecto('plantilla')" class="px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold">
+          <span>📋</span>
+          <span>Desde Plantilla Institucional</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Proyecto en Blanco -->
+      <div id="np-tab-content-blanco" class="p-6 space-y-4 overflow-y-auto flex-1 bg-[#f8f9fa]">
+        <form onsubmit="guardarNuevoProyecto(event)" class="space-y-4">
+          <div>
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Nombre del Proyecto / Programa:</label>
+            <input type="text" id="input-nuevo-proy-nombre" required placeholder="Ej. SISTEMA DE GESTION AMBIENTAL" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="relative">
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Unidad de Organización Responsable:</label>
+            <input type="text" id="input-nuevo-proy-uo-busq" oninput="autocompletarUOProyecto(this.value)" placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+            <input type="hidden" id="input-nuevo-proy-uo-valor">
+            <div id="sugerencias-uo-proyecto" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Descripción / Alcance:</label>
+            <textarea id="input-nuevo-proy-desc" rows="3" placeholder="Detalles u objetivos del proyecto..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]"></textarea>
+          </div>
+          <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+            <button type="button" onclick="cerrarModalNuevoProyecto()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cancelar</button>
+            <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg shadow transition">Crear en Blanco →</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tab 2: Desde Plantilla -->
+      <div id="np-tab-content-plantilla" class="hidden p-5 space-y-4 overflow-y-auto flex-1 bg-[#f8f9fa]">
+        <!-- Filtro Rápido de Plantillas -->
+        <div class="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-gray-200 shadow-xs">
+          <input type="text" id="filtro-plantillas-input" oninput="filtrarGaleriaPlantillas()" placeholder="🔍 Buscar plantilla por nombre, proceso o categoría..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-semibold outline-none focus:bg-white focus:border-[#0f2a4a]">
+        </div>
+
+        <!-- Galería de Tarjetas de Plantillas -->
+        <div id="galeria-plantillas-contenedor" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[280px] overflow-y-auto pr-1"></div>
+
+        <!-- Formulario de Configuración del Proyecto Clonado -->
+        <div id="bloque-config-clonacion" class="hidden bg-white p-4 rounded-xl border-2 border-teal-600 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+            <span class="text-xs font-black text-[#0f2a4a]" id="txt-plantilla-elegida-tit">Plantilla Seleccionada</span>
+            <span class="text-[10px] bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded font-bold" id="txt-plantilla-elegida-cat">Categoría</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="sm:col-span-2">
+              <label class="block font-bold text-gray-600 mb-1">Nombre de su Nuevo Proyecto:</label>
+              <input type="text" id="np-input-clon-nombre" required placeholder="Ej. IMPLEMENTACIÓN DEL MODELO DE GESTIÓN POR PROCESOS" class="w-full p-2 border border-gray-300 rounded-lg font-bold text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
+            </div>
+
+            <div class="relative">
+              <label class="block font-bold text-gray-600 mb-1">Unidad de Organización Responsable:</label>
+              <input type="text" id="np-input-clon-uo-busq" oninput="autocompletarUOClonacion(this.value)" placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <input type="hidden" id="np-input-clon-uo-valor">
+              <div id="sugerencias-uo-clonacion" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-36 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Fecha de Inicio del Proyecto:</label>
+              <input type="date" id="np-input-clon-fechaini" class="w-full p-2 border border-gray-300 rounded-lg font-bold text-teal-800 outline-none focus:border-[#0f2a4a]">
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-2 pt-2 border-t border-gray-100">
+            <button type="button" onclick="cancelarSeleccionPlantilla()" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cambiar Plantilla</button>
+            <button type="button" onclick="ejecutarCreacionDesdePlantilla()" class="px-5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black rounded-lg shadow transition">✨ Generar Proyecto Completo</button>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-2 border-t border-gray-200">
+          <button type="button" onclick="cerrarModalNuevoProyecto()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cerrar</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: GUARDAR PROYECTO ACTUAL COMO PLANTILLA -->
+  <div id="modal-guardar-plantilla" class="hidden fixed inset-0 bg-black/60 z-[85] flex items-center justify-center p-4 backdrop-blur-[1px]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📥</span>
+          <h3 class="font-black text-sm">Guardar como Plantilla Institucional</h3>
+        </div>
+        <button onclick="cerrarModalGuardarPlantilla()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+      </div>
+
+      <form onsubmit="guardarProyectoComoPlantilla(event)" class="p-6 space-y-4 text-xs">
         <div>
-          <label class="text-[11px] font-bold text-gray-600 uppercase">Nombre del Proyecto / Programa:</label>
-          <input type="text" id="input-nuevo-proy-nombre" required placeholder="Ej. SISTEMA DE GESTION AMBIENTAL" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded text-sm font-semibold outline-none focus:border-teal-600">
-        </div>
-        <div class="relative">
-          <label class="text-[11px] font-bold text-gray-600 uppercase">Unidad de Organización Responsable:</label>
-          <input type="text" id="input-nuevo-proy-uo-busq" oninput="autocompletarUOProyecto(this.value)" placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded text-xs font-semibold outline-none focus:border-teal-600" autocomplete="off">
-          <input type="hidden" id="input-nuevo-proy-uo-valor">
-          <div id="sugerencias-uo-proyecto" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+          <label class="block font-bold text-gray-600 uppercase mb-1">Nombre de la Plantilla:</label>
+          <input type="text" id="input-plantilla-nombre" required placeholder="Ej. Plantilla de Auditoría Anual" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg font-bold text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
         </div>
         <div>
-          <label class="text-[11px] font-bold text-gray-600 uppercase">Descripción / Alcance:</label>
-          <textarea id="input-nuevo-proy-desc" rows="3" placeholder="Detalles u objetivos del proyecto..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded text-xs font-semibold outline-none focus:border-teal-600"></textarea>
+          <label class="block font-bold text-gray-600 uppercase mb-1">Categoría Temática:</label>
+          <input type="text" id="input-plantilla-categoria" placeholder="Ej. Modernización, Convenios, Logística..." class="w-full p-2.5 bg-white border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]">
         </div>
+        <div>
+          <label class="block font-bold text-gray-600 uppercase mb-1">Descripción / Cuándo utilizarla:</label>
+          <textarea id="input-plantilla-desc" rows="3" placeholder="Indique para qué tipo de proyectos está recomendada esta plantilla..." class="w-full p-2.5 bg-white border border-gray-300 rounded-lg font-medium outline-none focus:border-[#0f2a4a]"></textarea>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-[11px] text-blue-950 font-medium">
+          💡 Esta acción guardará toda la estructura WBS, duraciones en días y dependencias CPM del proyecto actual para que cualquier gestor pueda reutilizarla.
+        </div>
+
         <div class="flex justify-end space-x-2 pt-2 border-t border-gray-200">
-          <button type="button" onclick="cerrarModalNuevoProyecto()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded">Cancelar</button>
-          <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded shadow">Crear y Gestionar</button>
+          <button type="button" onclick="cerrarModalGuardarPlantilla()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white font-bold rounded-lg shadow transition">Guardar en Biblioteca</button>
         </div>
       </form>
     </div>
@@ -6354,6 +6466,237 @@
         alert("Error de conexión.");
       }
     }
+
+    // =========================================================================
+    // LÓGICA DE CONTROL: BIBLIOTECA DE PLANTILLAS MAESTRAS (ENTERPRISE TEMPLATES)
+    // =========================================================================
+    let catalogoPlantillasGlobal = [];
+    let plantillaSeleccionadaId = null;
+
+    function cambiarTabNuevoProyecto(tab) {
+      const btnBlanco = document.getElementById("np-tab-btn-blanco");
+      const btnPlantilla = document.getElementById("np-tab-btn-plantilla");
+      const contentBlanco = document.getElementById("np-tab-content-blanco");
+      const contentPlantilla = document.getElementById("np-tab-content-plantilla");
+
+      if (tab === "plantilla") {
+        btnPlantilla.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs flex items-center space-x-1.5 font-bold";
+        btnBlanco.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold";
+        contentBlanco.classList.add("hidden");
+        contentPlantilla.classList.remove("hidden");
+        cargarGaleriaPlantillas();
+      } else {
+        btnBlanco.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs flex items-center space-x-1.5 font-bold";
+        btnPlantilla.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold";
+        contentPlantilla.classList.add("hidden");
+        contentBlanco.classList.remove("hidden");
+      }
+    }
+
+    async function cargarGaleriaPlantillas() {
+      const cont = document.getElementById("galeria-plantillas-contenedor");
+      if (!cont) return;
+      cont.innerHTML = `<div class="col-span-2 p-6 text-center text-gray-400 font-bold animate-pulse">Cargando biblioteca de plantillas...</div>`;
+
+      try {
+        const res = await fetch("/plantillas", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Error al cargar plantillas");
+        catalogoPlantillasGlobal = await res.json();
+        renderizarTarjetasPlantillas(catalogoPlantillasGlobal);
+      } catch (e) {
+        cont.innerHTML = `<div class="col-span-2 p-6 text-center text-red-500 font-semibold">No se pudo cargar la galería de plantillas.</div>`;
+      }
+    }
+
+    function renderizarTarjetasPlantillas(lista) {
+      const cont = document.getElementById("galeria-plantillas-contenedor");
+      if (!cont) return;
+      cont.innerHTML = "";
+
+      if (lista.length === 0) {
+        cont.innerHTML = `<div class="col-span-2 p-6 text-center text-gray-400 italic font-semibold">No se encontraron plantillas con ese criterio.</div>`;
+        return;
+      }
+
+      lista.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "bg-white p-3.5 rounded-xl border border-gray-200 hover:border-teal-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group";
+        card.onclick = () => seleccionarPlantillaParaClonar(p);
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[9px] font-black uppercase text-teal-800 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">${p.categoria || 'General'}</span>
+              <span class="text-[10px] font-bold text-gray-400 font-mono">${p.total_actividades || 0} tareas</span>
+            </div>
+            <h4 class="font-bold text-xs text-[#0f2a4a] group-hover:text-teal-700 transition leading-snug">${p.nombre}</h4>
+            <p class="text-[11px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">${p.descripcion || 'Sin descripción adicional.'}</p>
+          </div>
+          <div class="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+            <span class="text-[10px] font-bold text-gray-400">⏱️ ~${p.duracion_estimada_dias || 0}d estim.</span>
+            <span class="text-[11px] font-black text-teal-700 group-hover:underline">Seleccionar →</span>
+          </div>
+        `;
+        cont.appendChild(card);
+      });
+    }
+
+    function filtrarGaleriaPlantillas() {
+      const q = (document.getElementById("filtro-plantillas-input")?.value || "").toLowerCase().trim();
+      const filtradas = catalogoPlantillasGlobal.filter(p => 
+        (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+        (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
+        (p.categoria && p.categoria.toLowerCase().includes(q))
+      );
+      renderizarTarjetasPlantillas(filtradas);
+    }
+
+    function seleccionarPlantillaParaClonar(plantilla) {
+      plantillaSeleccionadaId = plantilla.id;
+      document.getElementById("txt-plantilla-elegida-tit").innerText = `📋 ${plantilla.nombre}`;
+      document.getElementById("txt-plantilla-elegida-cat").innerText = plantilla.categoria || "General";
+      document.getElementById("np-input-clon-nombre").value = plantilla.nombre;
+      
+      const hoyISO = new Date().toISOString().split("T")[0];
+      document.getElementById("np-input-clon-fechaini").value = hoyISO;
+
+      document.getElementById("bloque-config-clonacion").classList.remove("hidden");
+      document.getElementById("bloque-config-clonacion").scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelarSeleccionPlantilla() {
+      plantillaSeleccionadaId = null;
+      document.getElementById("bloque-config-clonacion").classList.add("hidden");
+    }
+
+    function autocompletarUOClonacion(termino) {
+      const term = (termino || "").toLowerCase().trim();
+      const divSug = document.getElementById("sugerencias-uo-clonacion");
+      if (!divSug) return;
+
+      if (!term) {
+        divSug.classList.add("hidden");
+        return;
+      }
+      const matches = (catalogoUnidadesGlobal || []).filter(u => 
+        u.sigla.toLowerCase().includes(term) || u.nombre.toLowerCase().includes(term)
+      );
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = `<div class="p-2 text-gray-400">Sin coincidencias</div>`;
+      } else {
+        matches.slice(0, 5).forEach(u => {
+          const item = document.createElement("div");
+          item.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between font-semibold";
+          item.innerHTML = `<span>${u.nombre}</span><strong class="text-[#0f2a4a] ml-2">[${u.sigla}]</strong>`;
+          item.onclick = () => {
+            document.getElementById("np-input-clon-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+            document.getElementById("np-input-clon-uo-valor").value = u.sigla;
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
+
+    async function ejecutarCreacionDesdePlantilla() {
+      if (!plantillaSeleccionadaId) return;
+
+      const nombre = document.getElementById("np-input-clon-nombre").value.trim();
+      const uo = document.getElementById("np-input-clon-uo-valor").value || document.getElementById("np-input-clon-uo-busq").value.trim();
+      const fIniISO = document.getElementById("np-input-clon-fechaini").value;
+
+      if (!nombre) {
+        alert("Por favor ingrese un nombre para el proyecto.");
+        return;
+      }
+
+      const fIniLatina = formatearFechaLatina(fIniISO);
+
+      try {
+        const res = await fetch("/proyectos/desde-plantilla", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            plantilla_id: plantillaSeleccionadaId,
+            nombre_proyecto: nombre,
+            unidad_organica: uo,
+            fecha_inicio: fIniLatina
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          cerrarModalNuevoProyecto();
+          notificarToast("Proyecto generado desde plantilla exitosamente.", "success");
+          await cargarHubProyectos();
+          if (data.proyecto_id) {
+            ingresarAlProyecto(data.proyecto_id, nombre, true);
+          }
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al crear proyecto desde plantilla.");
+        }
+      } catch (e) {
+        alert("Error de conexión al crear el proyecto.");
+      }
+    }
+
+    function abrirModalGuardarPlantilla() {
+      if (!proyectoActualId) return;
+      document.getElementById("input-plantilla-nombre").value = document.getElementById("txt-nombre-proyecto")?.value || "";
+      document.getElementById("input-plantilla-categoria").value = "";
+      document.getElementById("input-plantilla-desc").value = "";
+      document.getElementById("modal-guardar-plantilla").classList.remove("hidden");
+    }
+
+    function cerrarModalGuardarPlantilla() {
+      document.getElementById("modal-guardar-plantilla").classList.add("hidden");
+    }
+
+    async function guardarProyectoComoPlantilla(e) {
+      e.preventDefault();
+      const nombre = document.getElementById("input-plantilla-nombre").value.trim();
+      const cat = document.getElementById("input-plantilla-categoria").value.trim() || "General";
+      const desc = document.getElementById("input-plantilla-desc").value.trim();
+
+      if (!nombre) {
+        alert("Consigne un nombre para la plantilla.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/plantillas/desde-proyecto", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            proyecto_id: proyectoActualId,
+            nombre: nombre,
+            categoria: cat,
+            descripcion: desc
+          })
+        });
+
+        if (res.ok) {
+          cerrarModalGuardarPlantilla();
+          notificarToast("Plantilla registrada en la biblioteca institucional.", "success");
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al guardar plantilla.");
+        }
+      } catch (e) {
+        alert("Error de conexión con el servidor.");
+      }
+    }
+    
   </script>
 </body>
 </html>
