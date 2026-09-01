@@ -353,13 +353,12 @@
 
         <!-- Grupo Selector de Vista, Botón Ocultos y Botón Excel -->
         <div class="flex items-center space-x-3 self-end md:self-auto">
-          <!-- Botón Indicador de Proyectos Ocultos -->
-          <button id="btn-toggle-proyectos-ocultos" onclick="alternarVerProyectosOcultos()" class="hidden px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition flex items-center space-x-1.5 cursor-pointer" title="Ver o gestionar proyectos ocultos">
+          <!-- Botón Indicador de Proyectos Ocultos Compacto -->
+          <button id="btn-toggle-proyectos-ocultos" onclick="alternarVerProyectosOcultos()" class="hidden w-[34px] h-[34px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0" title="Ver proyectos ocultos (0)">
             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            <span id="txt-contador-ocultos">Mis proyectos visibles (0)</span>
           </button>
           <!-- Conmutador de Vista Estilizado (Segmented Control UX) -->
           <div class="flex items-center space-x-2">
@@ -2295,20 +2294,19 @@
 
     function actualizarBotonOcultosHubUI() {
       const btnOcultos = document.getElementById("btn-toggle-proyectos-ocultos");
-      const txtCont = document.getElementById("txt-contador-ocultos");
       if (!btnOcultos) return;
 
       const cant = idsProyectosOcultos.size;
       if (cant > 0) {
         btnOcultos.classList.remove("hidden");
         if (mostrandoOcultosHub) {
-          // Estado activo: Fondo verde institucional (Teal) para regresar a los proyectos visibles
-          btnOcultos.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition flex items-center space-x-1.5 cursor-pointer";
-          txtCont.innerText = `Mis proyectos visibles (${cant})`;
+          // Estado activo: Fondo verde institucional cuadrado
+          btnOcultos.className = "w-[34px] h-[34px] rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0";
+          btnOcultos.title = `Mis proyectos visibles (${cant})`;
         } else {
-          // Estado normal: Fondo ámbar informativo indicando la cantidad de proyectos archivados
-          btnOcultos.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center space-x-1.5 cursor-pointer";
-          txtCont.innerText = `Ver Ocultos (${cant})`;
+          // Estado normal: Fondo ámbar cuadrado con tooltip informativo
+          btnOcultos.className = "w-[34px] h-[34px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0";
+          btnOcultos.title = `Ver proyectos ocultos (${cant})`;
         }
       } else {
         btnOcultos.classList.add("hidden");
