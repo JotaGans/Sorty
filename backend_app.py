@@ -1822,6 +1822,119 @@ def crear_proyecto_desde_plantilla(
     db.commit()
     return {"status": "success", "mensaje": "Proyecto generado exitosamente con la estructura de la plantilla.", "proyecto_id": nuevo_proy_id}
 
+@app.delete("/proyectos/{proyecto_id}")
+def eliminar_proyecto_vacio(
+    proyecto_id: int,
+    user: dict = Depends(get_current_user),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    es_gestor = db.execute("""
+        SELECT 1 FROM proyectos p 
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1 OR pu.permiso = 'GESTOR')
+    """, (user["id"], proyecto_id, user["id"])).fetchone()
+
+    if not es_gestor and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo un Gestor o Admin TI puede eliminar este proyecto.")
+
+    total_acts = db.execute("SELECT COUNT(*) FROM actividades WHERE proyecto_id = ?", (proyecto_id,)).fetchone()[0]
+    if total_acts > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"No se puede eliminar el proyecto porque contiene {total_acts} actividad(es). Debe eliminar primero todas las actividades para poder borrar el proyecto."
+        )
+
+    db.execute("DELETE FROM proyecto_usuarios WHERE proyecto_id = ?", (proyecto_id,))
+    db.execute("DELETE FROM comentarios_actividad WHERE proyecto_id = ?", (proyecto_id,))
+    db.execute("DELETE FROM historial WHERE proyecto_id = ?", (proyecto_id,))
+    db.execute("DELETE FROM proyectos WHERE id = ?", (proyecto_id,))
+    db.commit()
+    return {"status": "success", "mensaje": "Proyecto eliminado exitosamente."}
+
+@app.post("/proyectos/{proyecto_id}/aplicar-plantilla")
+def aplicar_plantilla_en_proyecto_existente(
+    proyecto_id: int,
+    data: CrearProyectoDesdePlantillaModel,
+    user: dict = Depends(get_current_user),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    es_gestor = db.execute("""
+        SELECT 1 FROM proyectos p 
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1 OR pu.permiso = 'GESTOR')
+    """, (user["id"], proyecto_id, user["id"])).fetchone()
+
+    if not es_gestor and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede importar plantillas.")
+
+    total_acts = db.execute("SELECT COUNT(*) FROM actividades WHERE proyecto_id = ?", (proyecto_id,)).fetchone()[0]
+    if total_acts > 0:
+        raise HTTPException(status_code=400, detail="El proyecto ya contiene actividades. Solo puede importar plantillas en proyectos vacíos.")
+
+    plantilla = db.execute("SELECT * FROM plantillas WHERE id = ?", (data.plantilla_id,)).fetchone()
+    if not plantilla:
+        raise HTTPException(status_code=404, detail="Plantilla no encontrada.")
+
+    acts_plantilla = db.execute("SELECT codigo, descripcion, dias, predecesores FROM plantillas_actividades WHERE plantilla_id = ? ORDER BY codigo ASC", (data.plantilla_id,)).fetchall()
+    if not acts_plantilla:
+        raise HTTPException(status_code=400, detail="La plantilla no contiene actividades.")
+
+    try:
+        p_fecha = data.fecha_inicio.strip().split("/")
+        dt_base = datetime(int(p_fecha[2]), int(p_fecha[1]), int(p_fecha[0]))
+    except Exception:
+        dt_base = datetime.now(ZONA_PERU)
+
+    def clave_wbs(r):
+        return [int(p) if p.isdigit() else p for p in str(r["codigo"]).rstrip(".").split(".")]
+
+    acts_ordenadas = sorted(acts_plantilla, key=clave_wbs)
+    acts_a_insertar = []
+    mapa_fechas_fin = {}
+
+    for a in acts_ordenadas:
+        cod = str(a["codigo"]).rstrip(".")
+        dias = max(1, int(a["dias"] or 1))
+        preds = [p.strip().rstrip(".") for p in (a["predecesores"] or "").split(",") if p.strip()]
+
+        dt_ini_act = dt_base
+        if preds:
+            max_fin_pred = None
+            for pr in preds:
+                if pr in mapa_fechas_fin and (max_fin_pred is None or mapa_fechas_fin[pr] > max_fin_pred):
+                    max_fin_pred = mapa_fechas_fin[pr]
+            if max_fin_pred:
+                dt_ini_act = max_fin_pred + timedelta(days=1)
+        
+        dt_fin_act = dt_ini_act + timedelta(days=dias - 1)
+        mapa_fechas_fin[cod] = dt_fin_act
+
+        acts_a_insertar.append((
+            proyecto_id,
+            cod,
+            a["descripcion"],
+            "No asignado",
+            "No iniciado",
+            0,
+            dt_ini_act.strftime("%d/%m/%Y"),
+            dt_fin_act.strftime("%d/%m/%Y"),
+            dias,
+            a["predecesores"] or ""
+        ))
+
+    db.executemany("""
+        INSERT INTO actividades (proyecto_id, codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, acts_a_insertar)
+
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle)
+        VALUES (?, ?, ?, 'Importación Plantilla', ?)
+    """, (proyecto_id, ahora_peru_str(), user["username"], f"Importó la estructura de la plantilla: '{plantilla['nombre']}'"))
+
+    db.commit()
+    return {"status": "success", "mensaje": "Plantilla importada exitosamente en el proyecto."}
+
 # Servir frontend estático
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/", StaticFiles(directory="templates", html=True), name="templates")

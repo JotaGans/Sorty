@@ -101,12 +101,16 @@
     .col-semana-actual { background-color: rgba(22, 160, 133, 0.12) !important; }
     .header-semana-actual { background-color: #16a085 !important; color: #ffffff !important; font-weight: bold; }
 
-    /* Cabecera Sticky Fija Hermética (Sin filtración de fondo al scrollear) */
+    /* Cabecera Sticky Fija Sellada Herméticamente (Sin micro-filtración de fondo) */
+    thead {
+      background-color: #0f2a4a !important;
+    }
     thead th {
       position: sticky;
       top: 0;
       z-index: 30;
       background-color: #0f2a4a !important;
+      background-clip: padding-box !important;
       border-right: 1px solid #1c335a !important;
       border-bottom: 1px solid #1c335a !important;
       border-top: none !important;
@@ -322,8 +326,13 @@
           <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar proyecto por nombre o descripción..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] focus:ring-1 focus:ring-[#0f2a4a] transition">
         </div>
 
-        <!-- Grupo Selector de Vista y Botón Excel -->
+        <!-- Grupo Selector de Vista, Botón Ocultos y Botón Excel -->
         <div class="flex items-center space-x-3 self-end md:self-auto">
+          <!-- Botón Indicador de Proyectos Ocultos (Aparece automáticamente si hay proyectos ocultados) -->
+          <button id="btn-toggle-proyectos-ocultos" onclick="alternarVerProyectosOcultos()" class="hidden px-3 py-1.5 rounded-lg text-xs font-black bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center space-x-1.5 cursor-pointer" title="Ver o gestionar proyectos ocultos">
+            <span>🙈</span>
+            <span id="txt-contador-ocultos">Ocultos (0)</span>
+          </button>
           <!-- Conmutador de Vista Estilizado (Segmented Control UX) -->
           <div class="flex items-center space-x-2">
             <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider hidden sm:inline">Vista:</span>
@@ -490,16 +499,15 @@
 
           <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-24 md:w-32 text-xs bg-gray-100 border border-gray-300 rounded-lg px-2.5 py-1 h-[29px] outline-none focus:border-[#0f2a4a] font-semibold">
 
-          <!-- Selector de Personal con Ancho Adecuado -->
-          <div class="relative flex items-center">
-            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="text-xs bg-gray-100 border border-gray-300 rounded-lg pl-2 pr-6 py-1 h-[29px] min-w-[150px] outline-none font-semibold text-gray-700 select-clean-arrow cursor-pointer">
+          <!-- Selector de Personal con Ancho Fijo Calibrado (No crece ni descuadra) -->
+          <div class="relative flex items-center w-[130px] max-w-[130px] flex-shrink-0">
+            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-100 border border-gray-300 rounded-lg pl-2 pr-5 py-1 h-[29px] outline-none font-semibold text-gray-700 select-clean-arrow cursor-pointer truncate" title="Filtrar por personal asignado">
               <option value="">👤 Todo el Personal</option>
             </select>
           </div>
 
           <!-- Selector Unificado de Escala Temporal con Área de Clic Total (100%) -->
           <div class="relative flex items-center h-[29px] bg-[#0f2a4a] hover:bg-[#1b4f8a] border border-blue-900/60 rounded-lg px-3 py-1 shadow-xs transition-colors cursor-pointer group">
-            <!-- Capa Visual Nítida y Alineada -->
             <div class="flex items-center space-x-1.5 pointer-events-none select-none">
               <span class="text-[10px] uppercase tracking-wider text-teal-300 font-black leading-none">ESCALA:</span>
               <span id="txt-escala-activa-label" class="text-xs font-black text-white leading-none">Días</span>
@@ -507,8 +515,6 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-
-            <!-- Select Invisible Superpuesto en todo el Contenedor (100% área de clic activa) -->
             <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold">
               <option value="dias" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Días</option>
               <option value="semanas" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold" selected>&nbsp;&nbsp;Semanas</option>
@@ -567,11 +573,11 @@
             ⚙️ Personal
           </button>
 
-          <!-- Botón Guardar como Plantilla Institucional -->
-          <button id="btn-guardar-plantilla" onclick="abrirModalGuardarPlantilla()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-black px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 whitespace-nowrap" title="Guardar este proyecto como plantilla en la biblioteca">
-            <span>📥</span>
-            <span>Guardar Plantilla</span>
+          <!-- Botón Cuadrado Dinámico de Plantilla (Importar cuando está vacío / Guardar cuando tiene tareas) -->
+          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="w-[29px] h-[29px] bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-black rounded-lg transition-all shadow flex items-center justify-center flex-shrink-0 cursor-pointer" title="Guardar Plantilla">
+            <span id="ico-accion-plantilla">📥</span>
           </button>
+        </div>
         </div>
       </div>
     </div>
@@ -752,6 +758,37 @@
           <button type="submit" class="px-5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white font-bold rounded-lg shadow transition">Guardar en Biblioteca</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: IMPORTAR PLANTILLA EN PROYECTO EXISTENTE -->
+  <div id="modal-importar-plantilla-proyecto" class="hidden fixed inset-0 bg-black/60 z-[85] flex items-center justify-center p-4 backdrop-blur-[1px]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📂</span>
+          <h3 class="font-black text-sm">Importar Estructura desde Plantilla</h3>
+        </div>
+        <button onclick="cerrarModalImportarPlantillaProyecto()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+      </div>
+
+      <div class="p-5 space-y-4 overflow-y-auto flex-1 bg-[#f8f9fa] text-xs">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-950 font-medium">
+          Seleccione una plantilla maestra para cargar automáticamente su desglose WBS y dependencias en este proyecto.
+        </div>
+
+        <div id="lista-plantillas-importar-contenedor" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1"></div>
+
+        <div id="bloque-fechaini-importar" class="hidden bg-white p-3 rounded-xl border border-teal-500 space-y-2">
+          <label class="block font-bold text-gray-700">Fecha de Inicio para el Cronograma:</label>
+          <input type="date" id="input-importar-fechaini" class="w-full p-2 border border-gray-300 rounded font-bold text-teal-800 outline-none">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-gray-200">
+          <button type="button" onclick="cerrarModalImportarPlantillaProyecto()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg">Cancelar</button>
+          <button type="button" id="btn-confirmar-importar-plantilla" onclick="ejecutarImportacionEnProyectoActivo()" class="hidden px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-lg shadow">Cargar en Proyecto →</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2198,32 +2235,115 @@
       }
     }
 
+    let idsProyectosOcultos = new Set(JSON.parse(localStorage.getItem("proyectos_ocultos_ids") || "[]"));
+    let mostrandoOcultosHub = false;
+
+    function guardarOcultosLocalStorage() {
+      localStorage.setItem("proyectos_ocultos_ids", JSON.stringify(Array.from(idsProyectosOcultos)));
+      actualizarBotonOcultosHubUI();
+    }
+
+    function actualizarBotonOcultosHubUI() {
+      const btnOcultos = document.getElementById("btn-toggle-proyectos-ocultos");
+      const txtCont = document.getElementById("txt-contador-ocultos");
+      if (!btnOcultos) return;
+
+      const cant = idsProyectosOcultos.size;
+      if (cant > 0) {
+        btnOcultos.classList.remove("hidden");
+        txtCont.innerText = mostrandoOcultosHub ? `Ocultar archivados (${cant})` : `Ver Ocultos (${cant})`;
+      } else {
+        btnOcultos.classList.add("hidden");
+      }
+    }
+
+    function alternarVerProyectosOcultos() {
+      mostrandoOcultosHub = !mostrandoOcultosHub;
+      actualizarBotonOcultosHubUI();
+      filtrarProyectosHub();
+    }
+
+    function alternarOcultarProyecto(id, event) {
+      if (event) event.stopPropagation();
+      if (idsProyectosOcultos.has(id)) {
+        idsProyectosOcultos.delete(id);
+        notificarToast("Proyecto restaurado en su panel principal.", "success");
+      } else {
+        idsProyectosOcultos.add(id);
+        notificarToast("Proyecto ocultado de la vista principal.", "info");
+      }
+      guardarOcultosLocalStorage();
+      filtrarProyectosHub();
+    }
+
+    async function solicitarEliminarProyecto(id, nombre, event) {
+      if (event) event.stopPropagation();
+
+      const pObj = proyectosUsuarioGlobal.find(p => p.id === id);
+      const totalActs = pObj ? (pObj.total_actividades || 0) : 0;
+
+      if (totalActs > 0) {
+        alert(`⚠️ No se puede eliminar el proyecto '${nombre}'.\n\nEl proyecto contiene ${totalActs} actividad(es). Debe ingresar al proyecto y eliminar todas sus actividades para poder borrarlo.`);
+        return;
+      }
+
+      const confirma = await confirmModal(
+        `¿Está seguro de eliminar permanentemente el proyecto '${nombre}'?\n\nEsta acción no se puede deshacer.`,
+        "Eliminar Proyecto Vacío",
+        "danger"
+      );
+
+      if (!confirma) return;
+
+      try {
+        const res = await fetch(`/proyectos/${id}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          idsProyectosOcultos.delete(id);
+          guardarOcultosLocalStorage();
+          notificarToast(`Proyecto '${nombre}' eliminado con éxito.`, "info");
+          await cargarHubProyectos();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al eliminar el proyecto.");
+        }
+      } catch (e) {
+        alert("Error de conexión al eliminar el proyecto.");
+      }
+    }
+
     function renderizarTarjetasHub(lista) {
       const grid = document.getElementById("grid-proyectos-hub");
       if (!grid) return;
       grid.innerHTML = "";
 
-      lista.forEach(p => {
+      actualizarBotonOcultosHubUI();
+
+      const listaFinal = lista.filter(p => mostrandoOcultosHub ? idsProyectosOcultos.has(p.id) : !idsProyectosOcultos.has(p.id));
+
+      listaFinal.forEach(p => {
         const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI");
         const tooltipEdit = esGestor ? 'title="Doble clic para editar descripción"' : '';
         const estiloCursor = esGestor ? 'cursor-pointer hover:text-teal-700 hover:bg-teal-50/70 p-1 -m-1 rounded transition' : '';
         const textoDesc = (p.descripcion && p.descripcion.trim() !== "") ? p.descripcion.trim() : "Sin descripción adicional registrada.";
         const descEscapada = (p.descripcion || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
         const avanceVal = parseInt(p.avance_global) || 0;
+        const estaOculto = idsProyectosOcultos.has(p.id);
 
-        // Estilos semánticos sincronizados con los estados del proyecto
-        let badgeAvanceClases = "bg-rose-50 text-rose-700 border border-rose-200"; // 0% - No iniciado
+        let badgeAvanceClases = "bg-rose-50 text-rose-700 border border-rose-200";
         let barraColorClase = "bg-rose-500";
 
         if (avanceVal === 100) {
-          badgeAvanceClases = "bg-emerald-50 text-emerald-800 border border-emerald-200"; // 100% - Ejecutado
+          badgeAvanceClases = "bg-emerald-50 text-emerald-800 border border-emerald-200";
           barraColorClase = "bg-emerald-500";
         } else if (avanceVal > 0) {
-          badgeAvanceClases = "bg-amber-50 text-amber-800 border border-amber-200"; // 1% a 99% - En Proceso
+          badgeAvanceClases = "bg-amber-50 text-amber-800 border border-amber-200";
           barraColorClase = "bg-amber-500";
         }
 
-        // Obtener sigla para visualización y nombre descriptivo completo para el texto flotante
         let siglaUnidad = "";
         let nombreCompletoUnidad = "";
         if (p.unidad_organica && p.unidad_organica.trim() !== "") {
@@ -2237,19 +2357,28 @@
         }
 
         const card = document.createElement("div");
-        card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50";
+        card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50 relative";
         card.innerHTML = `
           <div>
             <div class="flex items-center justify-between mb-3.5">
               <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider whitespace-nowrap ${esGestor ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-blue-50 text-blue-800 border border-blue-200/80'}">
                 ${esGestor ? '👑 Gestor' : '👤 Responsable'}
               </span>
-              <span class="text-xs font-black px-2 py-0.5 rounded whitespace-nowrap ${badgeAvanceClases}">${avanceVal}% Avance</span>
+              <div class="flex items-center space-x-1.5">
+                <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition" title="${estaOculto ? 'Restaurar al panel principal' : 'Ocultar proyecto de la vista'}">
+                  ${estaOculto ? '👁️' : '🙈'}
+                </button>
+                ${esGestor ? `
+                  <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-400 hover:text-rose-700 hover:bg-rose-50 transition" title="Eliminar proyecto (solo si está vacío)">
+                    🗑️
+                  </button>
+                ` : ''}
+                <span class="text-xs font-black px-2 py-0.5 rounded whitespace-nowrap ${badgeAvanceClases}">${avanceVal}% Avance</span>
+              </div>
             </div>
             
             <h3 class="font-bold text-base text-[#0f2a4a] leading-snug flex items-center">${p.nombre}</h3>
             
-            <!-- Sigla de la Unidad de Organización Responsable como texto plano -->
             ${siglaUnidad ? `
               <p class="text-[11px] font-bold text-teal-800 mt-1" title="${nombreCompletoUnidad}">
                 🏢 ${siglaUnidad}
@@ -2290,19 +2419,20 @@
         grid.appendChild(card);
       });
 
-      // Tarjeta fija para crear nuevo proyecto
-      const cardNuevo = document.createElement("div");
-      cardNuevo.onclick = abrirModalNuevoProyecto;
-      cardNuevo.className = "bg-slate-50/60 hover:bg-white rounded-2xl p-6 border-2 border-dashed border-slate-300 hover:border-teal-500 transition-all cursor-pointer flex flex-col items-center justify-center text-center group min-h-[290px] shadow-sm hover:shadow-md";
-      cardNuevo.innerHTML = `
-        <div class="w-12 h-12 rounded-full bg-teal-50 group-hover:bg-teal-600 text-teal-600 group-hover:text-white flex items-center justify-center text-xl font-black mb-3 transition shadow-sm">
-          +
-        </div>
-        <h4 class="text-sm font-black text-gray-700 group-hover:text-[#0f2a4a] transition">Nuevo Proyecto / Programa</h4>
-        <p class="text-[11px] text-gray-400 mt-1 max-w-[200px]">Cree una nueva estructura WBS con cronograma y ruta crítica independiente.</p>
-        <span class="mt-4 text-[11px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-lg border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition">Comenzar</span>
-      `;
-      grid.appendChild(cardNuevo);
+      if (!mostrandoOcultosHub) {
+        const cardNuevo = document.createElement("div");
+        cardNuevo.onclick = abrirModalNuevoProyecto;
+        cardNuevo.className = "bg-slate-50/60 hover:bg-white rounded-2xl p-6 border-2 border-dashed border-slate-300 hover:border-teal-500 transition-all cursor-pointer flex flex-col items-center justify-center text-center group min-h-[290px] shadow-sm hover:shadow-md";
+        cardNuevo.innerHTML = `
+          <div class="w-12 h-12 rounded-full bg-teal-50 group-hover:bg-teal-600 text-teal-600 group-hover:text-white flex items-center justify-center text-xl font-black mb-3 transition shadow-sm">
+            +
+          </div>
+          <h4 class="text-sm font-black text-gray-700 group-hover:text-[#0f2a4a] transition">Nuevo Proyecto / Programa</h4>
+          <p class="text-[11px] text-gray-400 mt-1 max-w-[200px]">Cree una estructura en blanco o seleccione una plantilla institucional.</p>
+          <span class="mt-4 text-[11px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-lg border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition">Comenzar</span>
+        `;
+        grid.appendChild(cardNuevo);
+      }
     }
 
     function renderizarTablaHub(lista) {
@@ -2310,14 +2440,19 @@
       if (!tbody) return;
       tbody.innerHTML = "";
 
-      if (lista.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 font-semibold italic">No se encontraron proyectos con el criterio ingresado.</td></tr>`;
+      actualizarBotonOcultosHubUI();
+
+      const listaFinal = lista.filter(p => mostrandoOcultosHub ? idsProyectosOcultos.has(p.id) : !idsProyectosOcultos.has(p.id));
+
+      if (listaFinal.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 font-semibold italic">No se encontraron proyectos.</td></tr>`;
         return;
       }
 
-      lista.forEach((p, idx) => {
+      listaFinal.forEach((p, idx) => {
         const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI");
         const pct = p.avance_global || 0;
+        const estaOculto = idsProyectosOcultos.has(p.id);
 
         tbody.innerHTML += `
           <tr class="hover:bg-gray-50 transition border-b border-gray-100">
@@ -2353,7 +2488,15 @@
                 </span>
               </div>
             </td>
-            <td class="p-3 text-center">
+            <td class="p-3 text-center whitespace-nowrap space-x-1">
+              <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 text-gray-400 hover:text-gray-700" title="${estaOculto ? 'Restaurar' : 'Ocultar'}">
+                ${estaOculto ? '👁️' : '🙈'}
+              </button>
+              ${esGestor ? `
+                <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 text-rose-500 hover:text-rose-700 font-bold" title="Eliminar proyecto (solo si está vacío)">
+                  🗑️
+                </button>
+              ` : ''}
               <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-[11px] font-bold px-3 py-1 rounded-lg transition shadow">
                 Ingresar →
               </button>
@@ -4805,6 +4948,7 @@
         tbody.appendChild(tr);
       });
       actualizarKPIs();
+      actualizarBotonPlantillaDinamico();
     }
 
     function filtrarNivelJerarquico(val) {
@@ -6472,6 +6616,40 @@
     // =========================================================================
     let catalogoPlantillasGlobal = [];
     let plantillaSeleccionadaId = null;
+    let plantillaParaImportarId = null;
+
+    function actualizarBotonPlantillaDinamico() {
+      const btn = document.getElementById("btn-accion-plantilla-dinamico");
+      const ico = document.getElementById("ico-accion-plantilla");
+      if (!btn || !ico) return;
+
+      if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
+        btn.classList.add("hidden");
+        return;
+      }
+      btn.classList.remove("hidden");
+
+      const tieneActividades = actividadesGlobal && actividadesGlobal.length > 0;
+
+      if (tieneActividades) {
+        btn.className = "w-[29px] h-[29px] bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-black rounded-lg transition-all shadow flex items-center justify-center flex-shrink-0 cursor-pointer";
+        btn.title = "Guardar Plantilla";
+        ico.innerText = "📥";
+      } else {
+        btn.className = "w-[29px] h-[29px] bg-teal-600 hover:bg-teal-700 text-white text-sm font-black rounded-lg transition-all shadow flex items-center justify-center flex-shrink-0 cursor-pointer animate-pulse";
+        btn.title = "Importar Plantilla";
+        ico.innerText = "📂";
+      }
+    }
+
+    function gestionarAccionPlantillaDinamica() {
+      const tieneActividades = actividadesGlobal && actividadesGlobal.length > 0;
+      if (tieneActividades) {
+        abrirModalGuardarPlantilla();
+      } else {
+        abrirModalImportarPlantillaProyecto();
+      }
+    }
 
     function cambiarTabNuevoProyecto(tab) {
       const btnBlanco = document.getElementById("np-tab-btn-blanco");
@@ -6516,7 +6694,7 @@
       cont.innerHTML = "";
 
       if (lista.length === 0) {
-        cont.innerHTML = `<div class="col-span-2 p-6 text-center text-gray-400 italic font-semibold">No se encontraron plantillas con ese criterio.</div>`;
+        cont.innerHTML = `<div class="col-span-2 p-6 text-gray-400 italic font-semibold text-center">No se encontraron plantillas.</div>`;
         return;
       }
 
@@ -6696,7 +6874,93 @@
         alert("Error de conexión con el servidor.");
       }
     }
-    
+
+    async function abrirModalImportarPlantillaProyecto() {
+      plantillaParaImportarId = null;
+      document.getElementById("bloque-fechaini-importar").classList.add("hidden");
+      document.getElementById("btn-confirmar-importar-plantilla").classList.add("hidden");
+      document.getElementById("modal-importar-plantilla-proyecto").classList.remove("hidden");
+
+      const cont = document.getElementById("lista-plantillas-importar-contenedor");
+      if (!cont) return;
+      cont.innerHTML = `<div class="col-span-2 p-4 text-center text-gray-400 font-bold animate-pulse">Cargando plantillas...</div>`;
+
+      try {
+        const res = await fetch("/plantillas", { headers: { "Authorization": `Bearer ${token}` } });
+        const plantillas = await res.json();
+        cont.innerHTML = "";
+
+        if (!plantillas || plantillas.length === 0) {
+          cont.innerHTML = `<div class="col-span-2 p-4 text-center text-gray-400 font-semibold italic">No hay plantillas registradas en la biblioteca.</div>`;
+          return;
+        }
+
+        plantillas.forEach(p => {
+          const item = document.createElement("div");
+          item.className = "bg-white p-3 rounded-xl border border-gray-200 hover:border-teal-600 hover:shadow cursor-pointer transition flex flex-col justify-between";
+          item.onclick = () => {
+            plantillaParaImportarId = p.id;
+            document.querySelectorAll("#lista-plantillas-importar-contenedor > div").forEach(d => d.classList.remove("border-teal-600", "bg-teal-50/50"));
+            item.classList.add("border-teal-600", "bg-teal-50/50");
+
+            const hoyISO = new Date().toISOString().split("T")[0];
+            document.getElementById("input-importar-fechaini").value = hoyISO;
+            document.getElementById("bloque-fechaini-importar").classList.remove("hidden");
+            document.getElementById("btn-confirmar-importar-plantilla").classList.remove("hidden");
+          };
+          item.innerHTML = `
+            <div>
+              <span class="text-[9px] font-black uppercase text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">${p.categoria || 'General'}</span>
+              <h5 class="font-bold text-xs text-[#0f2a4a] mt-1">${p.nombre}</h5>
+              <p class="text-[10px] text-gray-500 line-clamp-2 mt-0.5">${p.descripcion || ''}</p>
+            </div>
+            <span class="text-[10px] font-bold text-teal-700 mt-2 block">Seleccionar →</span>
+          `;
+          cont.appendChild(item);
+        });
+      } catch (e) {
+        cont.innerHTML = `<div class="col-span-2 p-4 text-center text-red-500 font-semibold">Error al cargar plantillas.</div>`;
+      }
+    }
+
+    function cerrarModalImportarPlantillaProyecto() {
+      document.getElementById("modal-importar-plantilla-proyecto").classList.add("hidden");
+      plantillaParaImportarId = null;
+    }
+
+    async function ejecutarImportacionEnProyectoActivo() {
+      if (!plantillaParaImportarId || !proyectoActualId) return;
+
+      const fIniISO = document.getElementById("input-importar-fechaini").value;
+      const fIniLatina = formatearFechaLatina(fIniISO);
+
+      try {
+        const res = await fetch(`/proyectos/${proyectoActualId}/aplicar-plantilla`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            plantilla_id: plantillaParaImportarId,
+            nombre_proyecto: "",
+            fecha_inicio: fIniLatina
+          })
+        });
+
+        if (res.ok) {
+          cerrarModalImportarPlantillaProyecto();
+          notificarToast("Estructura importada exitosamente en el proyecto.", "success");
+          await cargarActividades();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al importar plantilla.");
+        }
+      } catch (e) {
+        alert("Error de conexión al importar plantilla.");
+      }
+    }
+
   </script>
 </body>
 </html>
