@@ -2781,6 +2781,7 @@
       }
 
       document.getElementById("view-hub").classList.add("hidden");
+      inicializarRedimensionDescripcion(); // <-- Restaura el ancho específico de este usuario en este proyecto
       await sincronizarDatosProyecto(id, cacheKey);
       await cargarComentariosProyecto();
     }
@@ -5036,6 +5037,12 @@
       });
       actualizarKPIs();
       actualizarBotonPlantillaDinamico();
+      
+      // Asegurar que las nuevas filas renderizadas adopten el ancho guardado del usuario
+      const anchoGuardado = localStorage.getItem(obtenerClaveStorageAnchoCol());
+      if (anchoGuardado) {
+        aplicarAnchoColumnaDescripcion(anchoGuardado);
+      }
     }
 
     function filtrarNivelJerarquico(val) {
@@ -7049,26 +7056,46 @@
     }
 
     // =========================================================================
-    // REDIMENSIÓN MANUAL Y PERSISTENTE DE LA COLUMNA "DESCRIPCIÓN DE ACTIVIDAD"
+    // REDIMENSIÓN MANUAL AISLADA (POR USUARIO Y POR PROYECTO)
     // =========================================================================
+    function obtenerClaveStorageAnchoCol() {
+      const uId = currentUser.id || currentUser.username || "default";
+      const pId = proyectoActualId || "global";
+      return `ancho_col_desc_user_${uId}_proj_${pId}`;
+    }
+
+    function aplicarAnchoColumnaDescripcion(anchoPx) {
+      const thDesc = document.getElementById("th-descripcion");
+      if (!thDesc) return;
+      
+      const px = parseInt(anchoPx);
+      if (isNaN(px) || px < 140) return;
+
+      thDesc.style.width = `${px}px`;
+      thDesc.style.minWidth = `${px}px`;
+      thDesc.style.maxWidth = `${px}px`;
+
+      // Aplicar ancho máximo a las celdas del cuerpo para respetar truncado
+      document.querySelectorAll("#lista-actividades td:nth-child(2)").forEach(td => {
+        td.style.maxWidth = `${px}px`;
+      });
+    }
+
     function inicializarRedimensionDescripcion() {
       const thDesc = document.getElementById("th-descripcion");
       const resizer = document.getElementById("resizer-col-descripcion");
       if (!thDesc || !resizer) return;
 
-      const aplicarAncho = (anchoPx) => {
-        thDesc.style.width = `${anchoPx}px`;
-        thDesc.style.minWidth = `${anchoPx}px`;
-        thDesc.style.maxWidth = `${anchoPx}px`;
-        document.querySelectorAll("#lista-actividades td:nth-child(2)").forEach(td => {
-          td.style.maxWidth = `${anchoPx}px`;
-        });
-      };
-
-      // Recuperar ancho previamente personalizado
-      const anchoGuardado = localStorage.getItem("ancho_col_descripcion_px");
+      // Recuperar ancho guardado específicamente para este usuario en este proyecto
+      const clave = obtenerClaveStorageAnchoCol();
+      const anchoGuardado = localStorage.getItem(clave);
       if (anchoGuardado) {
-        aplicarAncho(parseInt(anchoGuardado));
+        aplicarAnchoColumnaDescripcion(anchoGuardado);
+      } else {
+        // Valor predeterminado limpio si el usuario nunca lo ha ajustado en este proyecto
+        thDesc.style.width = "";
+        thDesc.style.minWidth = "180px";
+        thDesc.style.maxWidth = "";
       }
 
       let inicioX = 0;
@@ -7076,9 +7103,8 @@
 
       const alMoverMouse = (e) => {
         const deltaX = e.clientX - inicioX;
-        // Rango amplio: desde 140px hasta 1400px
         const nuevoAncho = Math.min(1400, Math.max(140, anchoInicial + deltaX));
-        aplicarAncho(nuevoAncho);
+        aplicarAnchoColumnaDescripcion(nuevoAncho);
       };
 
       const alSoltarMouse = () => {
@@ -7088,14 +7114,15 @@
         
         const anchoFinal = parseInt(thDesc.style.width);
         if (anchoFinal) {
-          localStorage.setItem("ancho_col_descripcion_px", anchoFinal);
+          const claveActual = obtenerClaveStorageAnchoCol();
+          localStorage.setItem(claveActual, anchoFinal);
         }
 
         window.removeEventListener("mousemove", alMoverMouse);
         window.removeEventListener("mouseup", alSoltarMouse);
       };
 
-      resizer.addEventListener("mousedown", (e) => {
+      resizer.onmousedown = (e) => {
         e.preventDefault();
         e.stopPropagation();
         
@@ -7108,7 +7135,7 @@
 
         window.addEventListener("mousemove", alMoverMouse);
         window.addEventListener("mouseup", alSoltarMouse);
-      });
+      };
     }
 
   </script>
