@@ -617,8 +617,6 @@
             <span id="ico-accion-plantilla">📂</span>
           </button>
         </div>
-        </div>
-        </div>
       </div>
     </div>
   </div>
@@ -2942,24 +2940,23 @@
 
         if (resActs.ok) {
           const freshActs = await resActs.json();
-          actividadesGlobal = freshActs || [];
+          actividadesGlobal = (freshActs || []).sort((a, b) => compararCodigosWBS(a.codigo, b.codigo));
           localStorage.setItem(cacheKey, JSON.stringify(actividadesGlobal));
           construirCalendarioAnual();
           autoAjustarSemanaInicio();
           poblarFiltroResponsablesDinamico();
+          renderizarCabeceraGantt();
+          renderizarTabla();
           actualizarKPIs();
-        }
-        
-        else if (resActs.status === 401) {
+          actualizarBotonPlantillaDinamico();
+        } else if (resActs.status === 401) {
           cerrarSesion();
-        } 
-        
-        else {
-          actualizarVistaGantt();
+        } else {
+          renderizarTabla();
         }
       } catch (err) {
         console.error("Error sincronizando actividades:", err);
-        actualizarVistaGantt();
+        renderizarTabla();
       }
     }
 
