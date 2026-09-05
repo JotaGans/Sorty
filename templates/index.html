@@ -2609,13 +2609,16 @@
         let nombreCompletoUnidad = "";
         if (p.unidad_organica && p.unidad_organica.trim() !== "") {
           const uRaw = p.unidad_organica.trim().toUpperCase();
-          const uObj = (catalogoUnidadesGlobal || []).find(u => 
+          const uObj = (catalogoUnidadesGlobal || []).html ? null : (catalogoUnidadesGlobal || []).find(u => 
             u.sigla.toUpperCase() === uRaw || 
             u.nombre.trim().toUpperCase() === uRaw
           );
           siglaUnidad = uObj ? uObj.sigla : p.unidad_organica.trim();
           nombreCompletoUnidad = uObj ? uObj.nombre : p.unidad_organica.trim();
         }
+
+        const tooltipUoEdit = esGestor ? 'title="Doble clic para modificar la Unidad de Organización"' : `title="${nombreCompletoUnidad}"`;
+        const estiloCursorUo = esGestor ? 'cursor-pointer hover:underline hover:text-teal-900 transition' : '';
 
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50 relative";
@@ -2642,11 +2645,13 @@
             
             <h3 class="font-bold text-base text-[#0f2a4a] leading-snug flex items-center">${p.nombre}</h3>
             
-            ${siglaUnidad ? `
-              <p class="text-[11px] font-bold text-teal-800 mt-1" title="${nombreCompletoUnidad}">
-                🏢 ${siglaUnidad}
-              </p>
-            ` : ''}
+            <p ${tooltipUoEdit} 
+               ondblclick="${esGestor ? `editarUnidadOrganicaProyecto(${p.id}, '${siglaUnidad}')` : ''}"
+               class="text-[11px] font-bold text-teal-800 mt-1 inline-flex items-center space-x-1 ${estiloCursorUo}">
+              <span>🏢</span>
+              <span>${siglaUnidad}</span>
+              ${esGestor ? '<span class="text-[9px] text-teal-600 ml-1">✎</span>' : ''}
+            </p>
 
             <p ${tooltipEdit} 
                ondblclick="${esGestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" 
@@ -2934,6 +2939,63 @@
         txtInput.setAttribute("maxlength", "120");
         txtInput.placeholder = "Ej: Proyecto institucional orientado a...";
       }
+    }
+
+    // --- EDICIÓN VALIDADA DE LA UNIDAD ORGÁNICA DE UN PROYECTO ---
+    function editarUnidadOrganicaProyecto(idProy, siglaActual) {
+      // Asegurar que el catálogo de unidades esté cargado en memoria
+      if (!catalogoUnidadesGlobal || catalogoUnidadesGlobal.length === 0) {
+        cargarCatalogoUnidades();
+      }
+
+      const listaOpciones = (catalogoUnidadesGlobal || []).map(u => `${u.sigla} - ${u.nombre}`).join("\n");
+      
+      abrirInputCustom({
+        titulo: "Modificar Unidad de Organización",
+        mensaje: `Unidad actual: [${siglaActual}]\n\nIngrese la sigla oficial correcta de la dependencia responsable (Ej: OPPM, OTI, OA, ORH...):`,
+        tipo: "text",
+        valorActual: siglaActual || "",
+        onAceptar: async (nuevaSiglaIngresada) => {
+          const termino = (nuevaSiglaIngresada || "").trim().toUpperCase();
+          if (!termino) return;
+
+          // Validar estrictamente contra el catálogo oficial de unidades
+          const unidadValida = (catalogoUnidadesGlobal || []).find(u => 
+            u.sigla.toUpperCase() === termino ||
+            u.nombre.toUpperCase() === termino ||
+            `${u.sigla} - ${u.nombre}`.toUpperCase() === termino
+          );
+
+          if (!unidadValida) {
+            alert("⚠️ La Unidad de Organización no existe:\nDebe buscar y seleccionar una unidad que exista oficialmente.");
+            return;
+          }
+
+          const siglaFinal = unidadValida.sigla;
+
+          try {
+            const res = await fetch(`/proyectos/${idProy}/unidad-organica`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ unidad_organica: siglaFinal })
+            });
+
+            if (res.ok) {
+              notificarToast(`Unidad del proyecto actualizada a [${siglaFinal}] con éxito.`, "success");
+              await cargarHubProyectos();
+            } else {
+              const err = await res.json().catch(() => ({}));
+              alert(err.detail || "No se pudo actualizar la unidad de organización.");
+            }
+          } catch (e) {
+            console.error("Error al actualizar unidad:", e);
+            alert("Error de conexión al actualizar la unidad de organización.");
+          }
+        }
+      });
     }
 
     // =========================================================================
