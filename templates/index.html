@@ -3074,8 +3074,8 @@
       cerrarModalEditarUoProyecto();
 
       try {
-        // Enrutamiento unificado estándar del sistema
-        const res = await fetch(`/proyectos/${idProy}/unidad-organica`, {
+        // Enrutamiento compatible con el backend existente para actualización de campos del proyecto
+        const res = await fetch(`/proyectos/${idProy}/descripcion`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -3088,9 +3088,23 @@
           notificarToast(`Unidad del proyecto actualizada a [${siglaFinal}] con éxito.`, "success");
           await cargarHubProyectos();
         } else {
-          // Si el servidor retorna 405 Method Not Allowed, probamos la ruta alternativa por POST o campo general si estuviera mapeado así en el backend
-          const err = await res.json().catch(() => ({}));
-          alert(err.detail || `Error al actualizar (${res.status}): Verifique la conexión con el servidor.`);
+          // Intento alternativo con endpoint general de proyecto si estuviera disponible
+          const resAlt = await fetch(`/proyectos/${idProy}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ unidad_organica: siglaFinal })
+          });
+
+          if (resAlt.ok) {
+            notificarToast(`Unidad del proyecto actualizada a [${siglaFinal}] con éxito.`, "success");
+            await cargarHubProyectos();
+          } else {
+            const err = await resAlt.json().catch(() => ({}));
+            alert(err.detail || "No se pudo actualizar la unidad de organización en el servidor.");
+          }
         }
       } catch (e) {
         console.error("Error al actualizar unidad:", e);
