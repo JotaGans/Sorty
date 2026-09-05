@@ -358,19 +358,21 @@
 
       <!-- BARRA OPERATIVA DE ACCIONES: FILTROS MULTICRITERIO, VISTAS Y ANALÍTICA -->
       <div class="bg-white rounded-xl p-3.5 mb-6 border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <!-- Grupo Izquierda: Buscador + Filtros Inteligentes -->
+        <!-- Grupo Izquierda: Buscador + Búsqueda Inteligente UO + Estado -->
         <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
-          <!-- Buscador Rápido -->
+          <!-- Buscador Rápido de Texto -->
           <div class="relative flex-1 min-w-[200px] max-w-xs">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🔍</span>
             <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por nombre o desc..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition">
           </div>
 
-          <!-- Filtro por Unidad Orgánica -->
-          <div class="relative min-w-[150px]">
-            <select id="hub-filtro-uo" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-2 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
-              <option value="">🏢 Todas las Unidades</option>
-            </select>
+          <!-- Búsqueda Inteligente Compacta por Unidad Orgánica -->
+          <div class="relative min-w-[200px] max-w-[220px]">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🏢</span>
+            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por unidad u oficina..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+            <input type="hidden" id="hub-filtro-uo-valor" onchange="filtrarProyectosHub()">
+            <!-- Lista Desplegable Flotante Inteligente -->
+            <div id="hub-sugerencias-uo" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[100] text-xs divide-y divide-gray-100"></div>
           </div>
 
           <!-- Filtro por Estado Global del Proyecto -->
@@ -2075,7 +2077,7 @@
         "modal-trabajadores-baja", "modal-notificacion-correo", "modal-comentarios", 
         "modal-nuevo-proyecto", "modal-guardar-plantilla", "modal-importar-plantilla-proyecto",
         "modal-dialog-imarpe", "modal-input-custom", "modal-fecha-custom", "modal-fin-interactiva",
-        "modal-asignar-responsables"
+        "modal-asignar-responsables", "modal-estadisticas-hub" // <-- Asegurado aquí
       ];
       idsModales.forEach(id => {
         const el = document.getElementById(id);
@@ -7652,14 +7654,77 @@
       });
     }
 
+    // --- BÚSQUEDA INTELIGENTE COMPACTA DE UNIDADES EN EL HUB ---
+    function autocompletarUOHub(termino) {
+      const term = (termino || "").toLowerCase().trim();
+      const divSug = document.getElementById("hub-sugerencias-uo");
+      if (!divSug) return;
+
+      if (!term) {
+        divSug.innerHTML = "";
+        divSug.classList.add("hidden");
+        document.getElementById("hub-filtro-uo-valor").value = "";
+        filtrarProyectosHub();
+        return;
+      }
+
+      const matches = (catalogoUnidadesGlobal || []).filter(u => 
+        (u.estado === 'ACTIVO' || !u.estado) && (
+          u.sigla.toLowerCase().includes(term) || 
+          u.nombre.toLowerCase().includes(term)
+        )
+      );
+
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">Sin coincidencias</div>`;
+      } else {
+        // Opción para limpiar filtro rápidamente
+        const itemTodos = document.createElement("div");
+        itemTodos.className = "p-2 hover:bg-slate-50 cursor-pointer text-slate-500 font-bold border-b border-gray-100 text-[11px]";
+        itemTodos.innerHTML = `<span>× Mostrar todas las unidades</span>`;
+        itemTodos.onclick = () => {
+          document.getElementById("hub-filtro-uo-busq").value = "";
+          document.getElementById("hub-filtro-uo-valor").value = "";
+          divSug.classList.add("hidden");
+          filtrarProyectosHub();
+        };
+        divSug.appendChild(itemTodos);
+
+        matches.slice(0, 6).forEach(u => {
+          const item = document.createElement("div");
+          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
+          item.innerHTML = `
+            <span class="text-gray-800 truncate pr-2">${u.nombre}</span>
+            <strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${u.sigla}]</strong>
+          `;
+          item.onclick = () => {
+            document.getElementById("hub-filtro-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+            document.getElementById("hub-filtro-uo-valor").value = u.sigla;
+            divSug.classList.add("hidden");
+            filtrarProyectosHub();
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
+
     function obtenerProyectosFiltradosHub() {
       const query = (document.getElementById("hub-filtro-busqueda")?.value || "").toLowerCase().trim();
-      const filtroUo = document.getElementById("hub-filtro-uo")?.value || "";
+      const filtroUoVal = document.getElementById("hub-filtro-uo-valor")?.value || document.getElementById("hub-filtro-uo-busq")?.value || "";
+      const filtroUo = filtroUoVal.includes(" - ") ? filtroUoVal.split(" - ")[0].trim() : filtroUoVal.trim();
       const filtroEstado = document.getElementById("hub-filtro-estado")?.value || "";
 
       return proyectosUsuarioGlobal.filter(p => {
         const matchTexto = !query || (p.nombre && p.nombre.toLowerCase().includes(query)) || (p.descripcion && p.descripcion.toLowerCase().includes(query));
-        const matchUo = !filtroUo || (p.unidad_organica && p.unidad_organica.toUpperCase().includes(filtroUo.toUpperCase()));
+        
+        let matchUo = true;
+        if (filtroUo !== "") {
+          const pUo = (p.unidad_organica || "").trim().toUpperCase();
+          const fUo = filtroUo.toUpperCase();
+          matchUo = pUo.includes(fUo) || fUo.includes(pUo);
+        }
 
         let matchEstado = true;
         if (filtroEstado === "Ejecutado") {
