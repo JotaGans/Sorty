@@ -2851,12 +2851,29 @@
       e.preventDefault();
       const nombre = document.getElementById("input-nuevo-proy-nombre").value.trim();
       const descripcion = document.getElementById("input-nuevo-proy-desc").value.trim();
-      const uo = document.getElementById("input-nuevo-proy-uo-valor").value || document.getElementById("input-nuevo-proy-uo-busq").value.trim();
+      const uoBusq = document.getElementById("input-nuevo-proy-uo-busq").value.trim();
+      const uoValor = document.getElementById("input-nuevo-proy-uo-valor").value.trim();
 
       if (!nombre) {
         alert("Por favor ingresa un nombre para el proyecto.");
         return;
       }
+
+      // Validar estrictamente que la unidad pertenezca al catálogo institucional oficial
+      const unidadValida = (catalogoUnidadesGlobal || []).find(u => 
+        u.sigla.toUpperCase() === uoValor.toUpperCase() ||
+        u.sigla.toUpperCase() === uoBusq.toUpperCase() ||
+        `${u.sigla} - ${u.nombre}`.toUpperCase() === uoBusq.toUpperCase() ||
+        u.nombre.toUpperCase() === uoBusq.toUpperCase()
+      );
+
+      if (!unidadValida) {
+        alert("⚠️ Unidad de Organización inválida:\nDebe seleccionar una unidad válida del listado oficial desplegable utilizando el autocompletado.");
+        document.getElementById("input-nuevo-proy-uo-busq").focus();
+        return;
+      }
+
+      const uoFinal = unidadValida.sigla;
 
       try {
         const res = await fetch("/proyectos", {
@@ -2865,7 +2882,7 @@
             "Content-Type": "application/json", 
             "Authorization": `Bearer ${token}` 
           },
-          body: JSON.stringify({ nombre, descripcion, unidad_organica: uo })
+          body: JSON.stringify({ nombre, descripcion, unidad_organica: uoFinal })
         });
         
         if (!res.ok) {
@@ -2875,6 +2892,7 @@
 
         cerrarModalNuevoProyecto();
         await cargarHubProyectos();
+        notificarToast("Proyecto creado exitosamente con unidad oficial validada.", "success");
       } catch (err) {
         alert(err.message);
       }
