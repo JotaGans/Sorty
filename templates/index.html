@@ -4193,7 +4193,7 @@
       try {
         const payload = {
           proyecto_id: parseInt(proyectoActualId) || 1,
-          codigo_actividad: String(actRef.codigo).trim(), // Corregido a .trim()
+          codigo_actividad: String(actRef.codigo).trim(),
           destinatarios_nuevos: nuevosRef || [],
           dias_recordatorio: seleccionados.sort((a, b) => b - a)
         };
@@ -4208,13 +4208,19 @@
         });
 
         if (res.ok) {
-          notificarToast("Notificación procesada y alertas programadas exitosamente.", "success");
+          const dataRes = await res.json().catch(() => ({}));
+          console.log("Notificación programada con éxito:", dataRes);
+          // Forzar un pequeño respiro de renderizado antes de mostrar el toast verde
+          setTimeout(() => {
+            notificarToast("Notificación procesada y alertas programadas exitosamente.", "success", 4000);
+          }, 100);
         } else {
           const err = await res.json().catch(() => ({}));
+          console.error("Error devuelto por el servidor en notificaciones:", err);
           alert(err.detail || "No se pudo procesar la notificación.");
         }
       } catch (e) {
-        console.error("Error al programar notificación:", e);
+        console.error("Error de red al programar notificación:", e);
         alert("Error de comunicación con el servidor.");
       }
     }
