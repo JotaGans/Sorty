@@ -878,11 +878,23 @@ def actualizar_nombre_proyecto(proyecto_id: int, data: ProyectoNombreUpdate, use
     db.commit()
     return {"message": "Nombre del proyecto actualizado correctamente", "nombre": nombre_limpio}
 
-# --- ACTIVIDADES Y GANTT POR PROYECTO ---
+# --- ACTIVIDADES Y GANTT POR PROYECTO (ORDEN NATURAL WBS) ---
+def clave_orden_natural_wbs(row_dict):
+    cod_limpio = str(row_dict.get("codigo", "")).rstrip(".")
+    partes = []
+    for p in cod_limpio.split("."):
+        if p.isdigit():
+            partes.append(int(p))
+        else:
+            partes.append(p)
+    return partes
+
 @app.get("/proyectos/{proyecto_id}/actividades")
 def obtener_actividades_proyecto(proyecto_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT * FROM actividades WHERE proyecto_id = ? ORDER BY codigo ASC", (proyecto_id,)).fetchall()
-    return [dict(r) for r in rows]
+    rows = db.execute("SELECT * FROM actividades WHERE proyecto_id = ?", (proyecto_id,)).fetchall()
+    acts = [dict(r) for r in rows]
+    acts_ordenadas = sorted(acts, key=clave_orden_natural_wbs)
+    return acts_ordenadas
 
 @app.post("/actividades")
 def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):

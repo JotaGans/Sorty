@@ -2936,6 +2936,34 @@
     }
 
     // =========================================================================
+    // COMPARADOR DE ORDEN JERÁRQUICO NATURAL WBS (1.1, 1.2 ... 1.9, 1.10, 1.11 ...)
+    // =========================================================================
+    function compararCodigosWBS(codA, codB) {
+      const partesA = String(codA || "").replace(/\.+$/, "").split(".");
+      const partesB = String(codB || "").replace(/\.+$/, "").split(".");
+      const maxLen = Math.max(partesA.length, partesB.length);
+
+      for (let i = 0; i < maxLen; i++) {
+        const valA = partesA[i];
+        const valB = partesB[i];
+
+        if (valA === undefined) return -1;
+        if (valB === undefined) return 1;
+
+        const numA = parseInt(valA, 10);
+        const numB = parseInt(valB, 10);
+
+        if (!isNaN(numA) && !isNaN(numB)) {
+          if (numA !== numB) return numA - numB;
+        } else {
+          const comp = String(valA).localeCompare(String(valB));
+          if (comp !== 0) return comp;
+        }
+      }
+      return 0;
+    }
+
+    // =========================================================================
     // MOTOR DE CÁLCULO JERÁRQUICO AUTOMÁTICO (ROLL-UP BOTTOM-UP WBS)
     // =========================================================================
     function recalcularJerarquiaWBS() {
@@ -2944,6 +2972,9 @@
       actividadesGlobal.forEach(a => {
         a.codigo = String(a.codigo).replace(/\.+$/, "");
       });
+
+      // Ordenar actividades de forma natural antes de procesar y renderizar
+      actividadesGlobal.sort((a, b) => compararCodigosWBS(a.codigo, b.codigo));
 
       const niveles = [4, 3, 2, 1];
 
@@ -3030,7 +3061,8 @@
         });
         if (!res.ok) throw new Error("Error al cargar actividades");
         actividadesGlobal = await res.json();
-        
+        actividadesGlobal = (freshActs || []).sort((a, b) => compararCodigosWBS(a.codigo, b.codigo));
+
         // Actualizar caché permanente del proyecto
         localStorage.setItem(`cache_acts_proj_${proyectoActualId}`, JSON.stringify(actividadesGlobal));
         
