@@ -803,7 +803,16 @@ def actualizar_trabajador(
 
     db.commit()
     return {"status": "success", "mensaje": "Datos del trabajador actualizados correctamente."}
-    
+
+@app.api_route("/trabajadores/estado/{trabajador_id}", methods=["PUT", "POST"])
+def alternar_estado_trabajador(
+    trabajador_id: int, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Acceso denegado: solo Administrador TI puede cambiar estado de trabajadores.")
+
     actual = db.execute("SELECT estado FROM trabajadores WHERE id = ?", (trabajador_id,)).fetchone()
     if not actual:
         raise HTTPException(status_code=404, detail="Trabajador no encontrado")
@@ -811,7 +820,7 @@ def actualizar_trabajador(
     nuevo_estado = "INACTIVO" if actual["estado"] == "ACTIVO" else "ACTIVO"
     db.execute("UPDATE trabajadores SET estado = ? WHERE id = ?", (nuevo_estado, trabajador_id))
     db.commit()
-    return {"mensaje": f"Estado actualizado a {nuevo_estado}"}
+    return {"status": "success", "mensaje": f"Estado actualizado a {nuevo_estado}", "nuevo_estado": nuevo_estado}
 
 # --- HUB DE PROYECTOS ---
 @app.get("/proyectos")

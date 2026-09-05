@@ -6065,11 +6065,15 @@
       const inactivos = (catalogoTrabajadoresGlobal || []).filter(t => t.estado === "INACTIVO");
       const cant = inactivos.length;
 
+      btnBaja.classList.remove("hidden");
+      if (txtCont) {
+        txtCont.innerText = `Trabajadores de baja (${cant})`;
+      }
+
       if (cant > 0) {
-        btnBaja.classList.remove("hidden");
-        if (txtCont) txtCont.innerText = `Trabajadores de baja (${cant})`;
+        btnBaja.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition flex items-center space-x-1 cursor-pointer shadow-xs";
       } else {
-        btnBaja.classList.add("hidden");
+        btnBaja.className = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-300 transition flex items-center space-x-1 cursor-pointer";
       }
     }
 
