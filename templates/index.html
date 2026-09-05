@@ -5045,11 +5045,22 @@
                <span class="text-[11px]">💬</span>
              </button>`;
 
+        const descTextoLimpio = String(act.descripcion || "").replace(/"/g, '&quot;');
+
         const tdDescHTML = `
-          <td class="p-2.5 border-r border-b border-gray-200 ${proyectoEsGestor ? 'cell-editable cursor-pointer' : ''} group" style="padding-left: ${paddingLeft}px;" ondblclick="${proyectoEsGestor ? `editarDescripcion('${cod}')` : ''}" title="${proyectoEsGestor ? 'Doble clic para renombrar actividad' : ''}">
-            <div class="flex items-center justify-between">
-              <span class="truncate">${act.descripcion}</span>
-              ${iconoComentarioHTML}
+          <td class="p-2 border-r border-b border-gray-200 ${proyectoEsGestor ? 'cell-editable cursor-pointer' : ''} group align-middle" 
+              style="padding-left: ${paddingLeft}px;" 
+              ondblclick="${proyectoEsGestor ? `editarDescripcion('${cod}')` : ''}" 
+              title="${descTextoLimpio}">
+            <div class="flex items-center justify-between gap-1 w-full overflow-hidden">
+              <span class="text-xs leading-snug break-words text-gray-800 select-text" 
+                    style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;" 
+                    title="${descTextoLimpio}">
+                ${act.descripcion}
+              </span>
+              <div class="flex-shrink-0">
+                ${iconoComentarioHTML}
+              </div>
             </div>
           </td>
         `;
@@ -7134,10 +7145,8 @@
       if (anchoGuardado) {
         aplicarAnchoColumnaDescripcion(anchoGuardado);
       } else {
-        // Valor predeterminado limpio si el usuario nunca lo ha ajustado en este proyecto
-        thDesc.style.width = "";
-        thDesc.style.minWidth = "180px";
-        thDesc.style.maxWidth = "";
+        // Ancho óptimo por defecto: permite 2 líneas balanceadas sin expulsar las columnas derechas
+        aplicarAnchoColumnaDescripcion(260);
       }
 
       let inicioX = 0;
