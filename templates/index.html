@@ -293,7 +293,20 @@
         </div>
         <div>
           <label class="block text-xs font-bold uppercase text-gray-600">Contraseña</label>
-          <input type="password" id="login-password" required class="w-full mt-1 p-2.5 border border-gray-300 rounded focus:border-[#0f2a4a] outline-none" placeholder="••••••••">
+          <div class="relative mt-1">
+            <input type="password" id="login-password" required class="w-full p-2.5 pr-10 border border-gray-300 rounded focus:border-[#0f2a4a] outline-none" placeholder="••••••••">
+            <button type="button" onclick="alternarVisibilidadPasswordLogin()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#0f2a4a] transition cursor-pointer" title="Mostrar u ocultar contraseña">
+              <!-- Icono Ojito Abierto (Visible por defecto) -->
+              <svg id="ico-login-eye-open" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <!-- Icono Ojito Tachado (Oculto inicialmente) -->
+              <svg id="ico-login-eye-closed" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+              </svg>
+            </button>
+          </div>
         </div>
         <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold py-3 rounded transition shadow">Ingresar al Sistema</button>
       </form>
@@ -2245,6 +2258,23 @@
         alert("Error de conexión con el servidor. Intente nuevamente.");
       }
     });
+
+    function alternarVisibilidadPasswordLogin() {
+      const input = document.getElementById("login-password");
+      const eyeOpen = document.getElementById("ico-login-eye-open");
+      const eyeClosed = document.getElementById("ico-login-eye-closed");
+      if (!input) return;
+
+      if (input.type === "password") {
+        input.type = "text";
+        if (eyeOpen) eyeOpen.classList.add("hidden");
+        if (eyeClosed) eyeClosed.classList.remove("hidden");
+      } else {
+        input.type = "password";
+        if (eyeOpen) eyeOpen.classList.remove("hidden");
+        if (eyeClosed) eyeClosed.classList.add("hidden");
+      }
+    }
 
     function mostrarLogin() { 
       document.getElementById("view-login").classList.remove("hidden");
