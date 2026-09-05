@@ -6208,19 +6208,16 @@
     async function alternarEstadoTrabajador(id) {
       try {
         const res = await fetch(`/trabajadores/estado/${id}`, {
-          method: "PUT",
+          method: "POST",
           headers: { 
-            "Content-Type": "application/json",
             "Authorization": `Bearer ${token}` 
           }
         });
 
         if (res.ok) {
-          notificarToast("Estado de trabajador actualizado.", "info");
-          // Forzar la recarga del directorio y refrescar la tabla de activos
+          notificarToast("Estado de trabajador actualizado con éxito.", "info");
           await cargarDirectorioTrabajadores();
           
-          // Si el modal de bajas está abierto, refrescarlo de inmediato
           const modalBaja = document.getElementById("modal-trabajadores-baja");
           if (modalBaja && !modalBaja.classList.contains("hidden")) {
             renderizarTablaTrabajadoresBaja();
