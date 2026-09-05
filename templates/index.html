@@ -2618,7 +2618,8 @@
         }
 
         const tooltipUoEdit = esGestor ? 'title="Doble clic para modificar la Unidad de Organización"' : `title="${nombreCompletoUnidad}"`;
-        const estiloCursorUo = esGestor ? 'cursor-pointer hover:underline hover:text-teal-900 transition' : '';
+        // Cursor interactivo sutil solo para gestores
+        const estiloCursorUo = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50 relative";
@@ -2650,7 +2651,6 @@
                class="text-[11px] font-bold text-teal-800 mt-1 inline-flex items-center space-x-1 ${estiloCursorUo}">
               <span>🏢</span>
               <span>${siglaUnidad}</span>
-              ${esGestor ? '<span class="text-[9px] text-teal-600 ml-1">✎</span>' : ''}
             </p>
 
             <p ${tooltipEdit} 
@@ -2941,61 +2941,156 @@
       }
     }
 
-    // --- EDICIÓN VALIDADA DE LA UNIDAD ORGÁNICA DE UN PROYECTO ---
+    // --- MODAL DE EDICIÓN INTELIGENTE DE UNIDAD ORGÁNICA CON AUTOCOMPLETADO ---
+    let proyectoEditandoUoId = null;
+
     function editarUnidadOrganicaProyecto(idProy, siglaActual) {
-      // Asegurar que el catálogo de unidades esté cargado en memoria
+      if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
+        alert("Solo el Gestor del Proyecto puede modificar la unidad de organización.");
+        return;
+      }
+
+      proyectoEditandoUoId = idProy;
+
       if (!catalogoUnidadesGlobal || catalogoUnidadesGlobal.length === 0) {
         cargarCatalogoUnidades();
       }
 
-      const listaOpciones = (catalogoUnidadesGlobal || []).map(u => `${u.sigla} - ${u.nombre}`).join("\n");
-      
-      abrirInputCustom({
-        titulo: "Modificar Unidad de Organización",
-        mensaje: `Unidad actual: [${siglaActual}]\n\nIngrese la sigla oficial correcta de la dependencia responsable (Ej: OPPM, OTI, OA, ORH...):`,
-        tipo: "text",
-        valorActual: siglaActual || "",
-        onAceptar: async (nuevaSiglaIngresada) => {
-          const termino = (nuevaSiglaIngresada || "").trim().toUpperCase();
-          if (!termino) return;
+      const modalEl = document.getElementById("modal-editar-uo-proyecto");
+      if (modalEl) modalEl.remove();
 
-          // Validar estrictamente contra el catálogo oficial de unidades
-          const unidadValida = (catalogoUnidadesGlobal || []).find(u => 
-            u.sigla.toUpperCase() === termino ||
-            u.nombre.toUpperCase() === termino ||
-            `${u.sigla} - ${u.nombre}`.toUpperCase() === termino
-          );
+      // Construir un modal moderno nativo con autocompletado flotante
+      const modalHtml = `
+        <div id="modal-editar-uo-proyecto" class="fixed inset-0 bg-black/60 z-[120] flex items-center justify-center p-4 backdrop-blur-[1px]">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 flex flex-col">
+            <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+              <div class="flex items-center space-x-2">
+                <span class="text-xl">🏢</span>
+                <h3 class="font-black text-sm tracking-wide">Modificar Unidad de Organización</h3>
+              </div>
+              <button onclick="cerrarModalEditarUoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+            </div>
+            
+            <div class="p-6 space-y-4 text-xs">
+              <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-950 font-medium">
+                Unidad actual asignada: <strong class="text-[#0f2a4a]">[${siglaActual}]</strong>
+              </div>
 
-          if (!unidadValida) {
-            alert("⚠️ La Unidad de Organización no existe:\nDebe buscar y seleccionar una unidad que exista oficialmente.");
-            return;
-          }
+              <div class="relative">
+                <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Unidad (por Sigla o Nombre):</label>
+                <input type="text" id="edit-uo-input-busq" oninput="autocompletarModalUOProyecto(this.value)" placeholder="Escriba sigla o nombre completo de la oficina..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+                <input type="hidden" id="edit-uo-input-valor">
+                
+                <!-- Lista Desplegable Flotante de Sugerencias -->
+                <div id="edit-uo-sugerencias" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[130] text-xs divide-y divide-gray-100"></div>
+              </div>
+            </div>
 
-          const siglaFinal = unidadValida.sigla;
+            <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end space-x-2">
+              <button type="button" onclick="cerrarModalEditarUoProyecto()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-lg transition cursor-pointer">Cancelar</button>
+              <button type="button" onclick="confirmarCambioUoProyecto()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-lg transition shadow cursor-pointer">Actualizar Unidad</button>
+            </div>
+          </div>
+        </div>
+      `;
 
-          try {
-            const res = await fetch(`/proyectos/${idProy}/unidad-organica`, {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-              },
-              body: JSON.stringify({ unidad_organica: siglaFinal })
-            });
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      setTimeout(() => document.getElementById("edit-uo-input-busq").focus(), 100);
+    }
 
-            if (res.ok) {
-              notificarToast(`Unidad del proyecto actualizada a [${siglaFinal}] con éxito.`, "success");
-              await cargarHubProyectos();
-            } else {
-              const err = await res.json().catch(() => ({}));
-              alert(err.detail || "No se pudo actualizar la unidad de organización.");
-            }
-          } catch (e) {
-            console.error("Error al actualizar unidad:", e);
-            alert("Error de conexión al actualizar la unidad de organización.");
-          }
+    function autocompletarModalUOProyecto(termino) {
+      const term = (termino || "").toLowerCase().trim();
+      const divSug = document.getElementById("edit-uo-sugerencias");
+      if (!divSug) return;
+
+      if (!term) {
+        divSug.innerHTML = "";
+        divSug.classList.add("hidden");
+        document.getElementById("edit-uo-input-valor").value = "";
+        return;
+      }
+
+      // Búsqueda inteligente flexible: evalúa tanto la sigla como el nombre completo
+      const matches = (catalogoUnidadesGlobal || []).filter(u => 
+        (u.estado === 'ACTIVO' || !u.estado) && (
+          u.sigla.toLowerCase().includes(term) || 
+          u.nombre.toLowerCase().includes(term)
+        )
+      );
+
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">No se encontraron unidades con '${termino}'</div>`;
+      } else {
+        matches.slice(0, 6).forEach(u => {
+          const item = document.createElement("div");
+          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
+          item.title = `${u.nombre} [${u.sigla}]`;
+          item.innerHTML = `
+            <span class="text-gray-800 truncate pr-2">${u.nombre}</span>
+            <strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${u.sigla}]</strong>
+          `;
+          item.onclick = () => {
+            document.getElementById("edit-uo-input-busq").value = `${u.sigla} - ${u.nombre}`;
+            document.getElementById("edit-uo-input-valor").value = u.sigla;
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
+
+    function cerrarModalEditarUoProyecto() {
+      const modal = document.getElementById("modal-editar-uo-proyecto");
+      if (modal) modal.remove();
+      proyectoEditandoUoId = null;
+    }
+
+    async function confirmarCambioUoProyecto() {
+      const uoBusq = document.getElementById("edit-uo-input-busq")?.value.trim() || "";
+      const uoVal = document.getElementById("edit-uo-input-valor")?.value.trim() || "";
+
+      // Validar estrictamente contra el catálogo oficial
+      const unidadValida = (catalogoUnidadesGlobal || []).find(u => 
+        u.sigla.toUpperCase() === uoVal.toUpperCase() ||
+        u.sigla.toUpperCase() === uoBusq.toUpperCase() ||
+        `${u.sigla} - ${u.nombre}`.toUpperCase() === uoBusq.toUpperCase() ||
+        u.nombre.toUpperCase() === uoBusq.toUpperCase()
+      );
+
+      if (!unidadValida) {
+        alert("⚠️ La Unidad de Organización no existe:\nDebe buscar y seleccionar una unidad que exista oficialmente.");
+        document.getElementById("edit-uo-input-busq").focus();
+        return;
+      }
+
+      const siglaFinal = unidadValida.sigla;
+      const idProy = proyectoEditandoUoId;
+
+      cerrarModalEditarUoProyecto();
+
+      try {
+        const res = await fetch(`/proyectos/${idProy}/unidad-organica`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ unidad_organica: siglaFinal })
+        });
+
+        if (res.ok) {
+          notificarToast(`Unidad del proyecto actualizada a [${siglaFinal}] con éxito.`, "success");
+          await cargarHubProyectos();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "No se pudo actualizar la unidad de organización.");
         }
-      });
+      } catch (e) {
+        console.error("Error al actualizar unidad:", e);
+        alert("Error de conexión al actualizar la unidad de organización.");
+      }
     }
 
     // =========================================================================
