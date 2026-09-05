@@ -4941,7 +4941,10 @@
         const nivel = partes.length;
         const codLimpio = act.codigo;
 
-        if (nivel > nivelFiltroActivo) return;
+        // Filtro estricto por nivel exacto (si es menor a 4, exige coincidencia exacta; si es 4, muestra todo)
+        if (nivelFiltroActivo < 4 && nivel !== nivelFiltroActivo) return;
+        if (nivelFiltroActivo === 4 && nivel > 4) return;
+
         if (estaOcultoPorPadre(act.codigo)) return;
 
         if (txtBusqueda && !act.descripcion.toLowerCase().includes(txtBusqueda) && !act.codigo.toLowerCase().includes(txtBusqueda)) return;
