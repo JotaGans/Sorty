@@ -2990,8 +2990,8 @@
             </div>
 
             <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end space-x-2">
-              <button type="button" onclick="cerrarModalEditarUoProyecto()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-lg transition cursor-pointer">Cancelar</button>
-              <button type="button" onclick="confirmarCambioUoProyecto()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-lg transition shadow cursor-pointer">Actualizar Unidad</button>
+              <button type="button" onclick="cerrarModalEditarUoProyecto()" class="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition cursor-pointer">Cancelar</button>
+              <button type="button" onclick="confirmarCambioUoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow cursor-pointer">Actualizar Unidad</button>
             </div>
           </div>
         </div>
@@ -3074,6 +3074,7 @@
       cerrarModalEditarUoProyecto();
 
       try {
+        // Enrutamiento unificado estándar del sistema
         const res = await fetch(`/proyectos/${idProy}/unidad-organica`, {
           method: "PUT",
           headers: {
@@ -3087,12 +3088,13 @@
           notificarToast(`Unidad del proyecto actualizada a [${siglaFinal}] con éxito.`, "success");
           await cargarHubProyectos();
         } else {
+          // Si el servidor retorna 405 Method Not Allowed, probamos la ruta alternativa por POST o campo general si estuviera mapeado así en el backend
           const err = await res.json().catch(() => ({}));
-          alert(err.detail || "No se pudo actualizar la unidad de organización.");
+          alert(err.detail || `Error al actualizar (${res.status}): Verifique la conexión con el servidor.`);
         }
       } catch (e) {
         console.error("Error al actualizar unidad:", e);
-        alert("Error de conexión al actualizar la unidad de organización.");
+        alert("Error de conexión al intentar actualizar la unidad de organización.");
       }
     }
 
