@@ -2040,6 +2040,21 @@
     });
 
     document.addEventListener("DOMContentLoaded", () => {
+      // Garantizar que todos los modales vivan en la raíz directa del BODY (fuera del Hub y del Gantt)
+      const idsModales = [
+        "modal-wizard-creacion", "modal-columnas", "modal-dependencias", "modal-cpm", 
+        "modal-historial", "modal-responsables", "modal-admin-ti", "modal-editar-trabajador-ti", 
+        "modal-trabajadores-baja", "modal-notificacion-correo", "modal-comentarios", 
+        "modal-nuevo-proyecto", "modal-guardar-plantilla", "modal-importar-plantilla-proyecto",
+        "modal-dialog-imarpe", "modal-input-custom", "modal-fecha-custom", "modal-fin-interactiva"
+      ];
+      idsModales.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.parentElement !== document.body) {
+          document.body.appendChild(el);
+        }
+      });
+
       if (token && currentUser.username) {
         document.getElementById("view-login").classList.add("hidden");
         actualizarDisplaysUsuario();
