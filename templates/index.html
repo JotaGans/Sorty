@@ -6652,8 +6652,9 @@
               const err = await res.json().catch(() => ({}));
               alert(err.detail || "Error al persistir el responsable en la base de datos.");
             } else {
+              // Guardar en caché local
               localStorage.setItem(`cache_acts_proj_${proyectoActualId}`, JSON.stringify(actividadesGlobal));
-              notificarToast("Responsable(s) asignado(s) y guardado(s) permanentemente.", "success");
+              notificarToast("Responsable(s) asignado(s) y guardado(s) correctamente.", "success");
             }
           } catch (e) {
             console.error("Error al guardar responsable:", e);
