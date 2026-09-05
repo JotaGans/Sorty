@@ -2945,7 +2945,11 @@
     let proyectoEditandoUoId = null;
 
     function editarUnidadOrganicaProyecto(idProy, siglaActual) {
-      if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
+      // Validar estrictamente el rol de gestor para este proyecto específico en el Hub o rol Admin TI
+      const proyectoObj = (proyectosUsuarioGlobal || []).find(p => p.id === idProy);
+      const esGestorDeEsteProyecto = proyectoObj ? (proyectoObj.es_gestor === 1 || proyectoObj.es_gestor === true) : false;
+
+      if (!esGestorDeEsteProyecto && currentUser.rol !== "ADMIN_TI") {
         alert("Solo el Gestor del Proyecto puede modificar la unidad de organización.");
         return;
       }
@@ -2959,7 +2963,6 @@
       const modalEl = document.getElementById("modal-editar-uo-proyecto");
       if (modalEl) modalEl.remove();
 
-      // Construir un modal moderno nativo con autocompletado flotante
       const modalHtml = `
         <div id="modal-editar-uo-proyecto" class="fixed inset-0 bg-black/60 z-[120] flex items-center justify-center p-4 backdrop-blur-[1px]">
           <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 flex flex-col">
