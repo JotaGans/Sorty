@@ -935,9 +935,18 @@
         </form>
 
         <div>
-          <div class="flex items-center justify-between mb-2">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
             <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Directorio Institucional</h4>
-            <input type="text" id="tra-filtro-directorio" oninput="filtrarDirectorioTrabajadores()" placeholder="🔍 Buscar trabajador o unidad..." class="text-xs bg-white border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:border-[#0f2a4a] w-64 font-semibold">
+            
+            <div class="flex items-center space-x-2">
+              <!-- Botón no invasivo para ver trabajadores dados de baja -->
+              <button type="button" id="btn-ver-trabajadores-baja" onclick="abrirModalTrabajadoresBaja()" class="hidden px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition flex items-center space-x-1 cursor-pointer">
+                <span>📁</span>
+                <span id="txt-contador-tra-baja">Trabajadores de baja (0)</span>
+              </button>
+
+              <input type="text" id="tra-filtro-directorio" oninput="filtrarDirectorioTrabajadores()" placeholder="🔍 Buscar trabajador o unidad..." class="text-xs bg-white border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:border-[#0f2a4a] w-60 font-semibold">
+            </div>
           </div>
           <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
             <table class="w-full text-xs text-left">
@@ -1035,6 +1044,48 @@
       </form>
     </div>
   </div>
+  <!-- MODAL: REGISTRO DE TRABAJADORES DADOS DE BAJA -->
+  <div id="modal-trabajadores-baja" class="hidden fixed inset-0 bg-black/60 z-[96] flex items-center justify-center p-4 backdrop-blur-[1px]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📁</span>
+          <h3 class="font-black text-sm">Historial de Trabajadores Dados de Baja</h3>
+        </div>
+        <button onclick="cerrarModalTrabajadoresBaja()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+      </div>
+
+      <div class="p-4 bg-amber-50/80 border-b border-amber-200 text-xs text-amber-900 font-medium">
+        Listado de personal inactivo archivado fuera del directorio principal. Si un trabajador retorna a laborar a la institución, puede reactivarlo con un solo clic.
+      </div>
+
+      <div class="p-4 flex justify-between items-center border-b border-gray-200 bg-white">
+        <span class="text-xs font-bold text-gray-600 uppercase" id="txt-baja-resumen-cant">0 trabajador(es) archivado(s)</span>
+        <input type="text" id="filtro-trabajadores-baja-input" oninput="filtrarTrabajadoresBajaModal()" placeholder="🔍 Buscar en archivados..." class="text-xs bg-gray-50 border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:bg-white focus:border-[#0f2a4a] w-64 font-semibold">
+      </div>
+
+      <div class="p-5 overflow-y-auto flex-1 bg-[#f8f9fa]">
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-[#0f2a4a] text-white">
+              <tr>
+                <th class="p-2.5 font-bold text-white border-b border-blue-900">Apellidos y Nombres</th>
+                <th class="p-2.5 font-bold text-white border-b border-blue-900">Última Unidad</th>
+                <th class="p-2.5 font-bold text-white border-b border-blue-900">Correo Institucional</th>
+                <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-28 whitespace-nowrap">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-trabajadores-baja-body" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
+        <button type="button" onclick="cerrarModalTrabajadoresBaja()" class="px-5 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: CREACIÓN GUIADA Y DINÁMICA -->
   <div id="modal-wizard-creacion" class="hidden fixed inset-0 bg-black/60 z-[75] flex items-center justify-center p-4">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300 transition-all">
@@ -6006,34 +6057,75 @@
       }
     }
 
+    function actualizarBotonTrabajadoresBajaUI() {
+      const btnBaja = document.getElementById("btn-ver-trabajadores-baja");
+      const txtCont = document.getElementById("txt-contador-tra-baja");
+      if (!btnBaja) return;
+
+      const inactivos = (catalogoTrabajadoresGlobal || []).filter(t => t.estado === "INACTIVO");
+      const cant = inactivos.length;
+
+      if (cant > 0) {
+        btnBaja.classList.remove("hidden");
+        if (txtCont) txtCont.innerText = `Trabajadores de baja (${cant})`;
+      } else {
+        btnBaja.classList.add("hidden");
+      }
+    }
+
+    function filtrarDirectorioTrabajadores() {
+      const q = (document.getElementById("tra-filtro-directorio")?.value || "").toLowerCase().trim();
+      const filtrados = (catalogoTrabajadoresGlobal || []).filter(t => 
+        (t.nombre_completo && t.nombre_completo.toLowerCase().includes(q)) ||
+        (t.unidad_organica && t.unidad_organica.toLowerCase().includes(q)) ||
+        (t.correo && t.correo.toLowerCase().includes(q))
+      );
+      renderizarDirectorioTrabajadores(filtrados);
+    }
+
     function renderizarDirectorioTrabajadores(lista) {
       const tbody = document.getElementById("tra-tabla-directorio");
       if (!tbody) return;
       tbody.innerHTML = "";
 
-      if (!lista || lista.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 font-semibold italic">No hay trabajadores registrados en el directorio.</td></tr>`;
+      actualizarBotonTrabajadoresBajaUI();
+
+      // En la lista principal solo mostramos estrictamente a los trabajadores ACTIVOS
+      const activos = (lista || []).filter(t => t.estado === "ACTIVO" || !t.estado);
+
+      if (activos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 font-semibold italic">No se encontraron trabajadores activos con ese criterio.</td></tr>`;
         return;
       }
 
-      lista.forEach(t => {
-        const esActivo = t.estado === "ACTIVO";
+      activos.forEach(t => {
         tbody.innerHTML += `
           <tr class="hover:bg-gray-50 border-b border-gray-100">
             <td class="p-2.5 font-bold text-gray-800">${t.nombre_completo}</td>
             <td class="p-2.5 font-semibold text-teal-800"><span class="bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${t.unidad_organica}</span></td>
             <td class="p-2.5 font-mono text-blue-600">${t.correo}</td>
-            <td class="p-2.5 text-center whitespace-nowrap space-x-1">
-              <button onclick="abrirModalEditarTrabajador(${t.id})" class="p-1 rounded text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition font-bold" title="Editar datos del trabajador">
+            <td class="p-2.5 text-center whitespace-nowrap space-x-1.5">
+              <button onclick="abrirModalEditarTrabajador(${t.id})" class="p-1 rounded text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition font-bold cursor-pointer" title="Editar datos del trabajador">
                 ✏️
               </button>
-              <button onclick="alternarEstadoTrabajador(${t.id})" class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${esActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200'}">
-                ${esActivo ? 'DAR DE BAJA' : 'ACTIVAR'}
+              <button onclick="solicitarDarDeBajaTrabajador(${t.id}, '${t.nombre_completo.replace(/'/g, "\\'")}')" class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 transition cursor-pointer">
+                DAR DE BAJA
               </button>
             </td>
           </tr>
         `;
       });
+    }
+
+    async function solicitarDarDeBajaTrabajador(id, nombre) {
+      const confirma = await confirmModal(
+        `¿Está seguro de dar de baja al trabajador '${nombre}'?\n\nEl registro se moverá al archivo de bajas y dejará de aparecer en la lista activa del directorio.`,
+        "Confirmar Baja de Trabajador",
+        "warning"
+      );
+      if (!confirma) return;
+
+      await alternarEstadoTrabajador(id);
     }
 
     async function registrarTrabajadorTI(e) {
@@ -7339,6 +7431,97 @@
       } catch (err) {
         console.error("Error al actualizar trabajador:", err);
         alert("Error de conexión con el servidor.");
+      }
+    }
+
+    // =========================================================================
+    // MODAL Y GESTIÓN DE TRABAJADORES DADOS DE BAJA
+    // =========================================================================
+    function abrirModalTrabajadoresBaja() {
+      const modal = document.getElementById("modal-trabajadores-baja");
+      if (!modal) return;
+
+      const inp = document.getElementById("filtro-trabajadores-baja-input");
+      if (inp) inp.value = "";
+
+      renderizarTablaTrabajadoresBaja();
+      modal.classList.remove("hidden");
+    }
+
+    function cerrarModalTrabajadoresBaja() {
+      const modal = document.getElementById("modal-trabajadores-baja");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    function filtrarTrabajadoresBajaModal() {
+      const q = (document.getElementById("filtro-trabajadores-baja-input")?.value || "").toLowerCase().trim();
+      renderizarTablaTrabajadoresBaja(q);
+    }
+
+    function renderizarTablaTrabajadoresBaja(query = "") {
+      const tbody = document.getElementById("tabla-trabajadores-baja-body");
+      const txtCant = document.getElementById("txt-baja-resumen-cant");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      const inactivos = (catalogoTrabajadoresGlobal || []).filter(t => t.estado === "INACTIVO");
+      if (txtCant) txtCant.innerText = `${inactivos.length} trabajador(es) archivado(s)`;
+
+      const filtrados = inactivos.filter(t => 
+        (t.nombre_completo && t.nombre_completo.toLowerCase().includes(query)) ||
+        (t.unidad_organica && t.unidad_organica.toLowerCase().includes(query)) ||
+        (t.correo && t.correo.toLowerCase().includes(query))
+      );
+
+      if (filtrados.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 font-semibold italic">No hay trabajadores dados de baja registrados.</td></tr>`;
+        return;
+      }
+
+      filtrados.forEach(t => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-gray-50 border-b border-gray-100">
+            <td class="p-2.5 font-bold text-gray-700">${t.nombre_completo}</td>
+            <td class="p-2.5 font-semibold text-gray-500"><span class="bg-gray-100 px-2 py-0.5 rounded border border-gray-200 text-[11px]">${t.unidad_organica}</span></td>
+            <td class="p-2.5 font-mono text-gray-500 text-xs">${t.correo}</td>
+            <td class="p-2.5 text-center whitespace-nowrap">
+              <button onclick="solicitarReactivarTrabajador(${t.id}, '${t.nombre_completo.replace(/'/g, "\\'")}')" class="px-3 py-1 rounded text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 transition cursor-pointer shadow-xs">
+                ✓ REACTIVAR
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function solicitarReactivarTrabajador(id, nombre) {
+      const confirma = await confirmModal(
+        `¿Desea reactivar a '${nombre}' e integrarlo(a) nuevamente al Directorio Institucional activo?`,
+        "Reactivar Trabajador",
+        "question"
+      );
+      if (!confirma) return;
+
+      try {
+        const res = await fetch(`/trabajadores/estado/${id}`, {
+          method: "PUT",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          notificarToast(`Trabajador '${nombre}' reactivado exitosamente.`, "success");
+          await cargarDirectorioTrabajadores();
+          
+          const inactivosRestantes = (catalogoTrabajadoresGlobal || []).filter(t => t.estado === "INACTIVO");
+          if (inactivosRestantes.length === 0) {
+            cerrarModalTrabajadoresBaja();
+          } else {
+            renderizarTablaTrabajadoresBaja();
+          }
+        } else {
+          alert("No se pudo reactivar al trabajador.");
+        }
+      } catch (e) {
+        alert("Error de conexión al reactivar trabajador.");
       }
     }
 
