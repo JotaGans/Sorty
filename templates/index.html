@@ -356,13 +356,59 @@
         </div>
       </div>
 
-      <!-- BARRA OPERATIVA DE ACCIONES: FILTROS, VISTAS Y EXPORTACIÓN -->
-      <div class="bg-white rounded-xl p-3 mb-6 border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <!-- Buscador Rápido -->
-        <div class="relative flex-1 min-w-[240px] max-w-md">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🔍</span>
-          <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar proyecto por nombre o descripción..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] focus:ring-1 focus:ring-[#0f2a4a] transition">
+      <!-- BARRA OPERATIVA DE ACCIONES: FILTROS MULTICRITERIO, VISTAS Y ANALÍTICA -->
+      <div class="bg-white rounded-xl p-3.5 mb-6 border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <!-- Grupo Izquierda: Buscador + Filtros Inteligentes -->
+        <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+          <!-- Buscador Rápido -->
+          <div class="relative flex-1 min-w-[210px] max-w-xs">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🔍</span>
+            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por nombre o desc..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition">
+          </div>
+
+          <!-- Filtro por Unidad Orgánica -->
+          <div class="relative min-w-[150px]">
+            <select id="hub-filtro-uo" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-2 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
+              <option value="">🏢 Todas las Unidades</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Estado Global del Proyecto -->
+          <div class="relative min-w-[140px]">
+            <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-2 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
+              <option value="">📊 Todos los Estados</option>
+              <option value="Ejecutado">Ejecutado (100%)</option>
+              <option value="En proceso">En proceso</option>
+              <option value="No iniciado">No iniciado</option>
+            </select>
+          </div>
         </div>
+
+        <!-- Grupo Derecha: Botón Gráfica Estadística + Vistas + Excel -->
+        <div class="flex items-center space-x-2.5 self-end md:self-auto">
+          <!-- Botón Abrir Dashboard Estadístico -->
+          <button onclick="abrirModalEstadisticasHub()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold px-3.5 py-2 rounded-lg transition shadow flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Ver análisis gráfico y estadístico de los proyectos filtrados">
+            <span>📈</span>
+            <span>Estadísticas</span>
+          </button>
+
+          <!-- Conmutador de Vista Estilizado -->
+          <div class="flex items-center bg-slate-100 border border-slate-200 p-1 rounded-xl shadow-inner">
+            <button id="btn-vista-grid" onclick="cambiarVistaHub('cards')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer">
+              <span>Tarjetas</span>
+            </button>
+            <button id="btn-vista-table" onclick="cambiarVistaHub('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-teal-700 transition-all flex items-center space-x-1.5 cursor-pointer">
+              <span>Tabla</span>
+            </button>
+          </div>
+
+          <!-- Botón Exportar Excel -->
+          <button onclick="exportarResumenProyectosExcel()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow flex items-center space-x-1.5 cursor-pointer" title="Descargar reporte consolidado en Excel">
+            <span>📊</span>
+            <span>Excel</span>
+          </button>
+        </div>
+      </div>
 
         <!-- Grupo Selector de Vista, Botón Ocultos y Botón Excel -->
         <div class="flex items-center space-x-3 self-end md:self-auto">
@@ -2352,6 +2398,7 @@
         if (!res.ok) throw new Error("Error al cargar proyectos");
         proyectosUsuarioGlobal = await res.json();
 
+        inicializarFiltrosHub(); // <-- Inicializar desplegable de unidades orgánicas en el Hub
         actualizarKPIsHub(proyectosUsuarioGlobal);
         aplicarConmutadorVistaHub();
         filtrarProyectosHub();
@@ -7607,6 +7654,256 @@
         }
       } catch (e) {
         alert("Error de conexión al reactivar trabajador.");
+      }
+    }
+
+<!-- ================= MODAL: ANALÍTICA Y ESTADÍSTICAS DEL HUB ================= -->
+  <div id="modal-estadisticas-hub" class="hidden fixed inset-0 bg-black/60 z-[95] flex items-center justify-center p-4 backdrop-blur-[1px]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 flex flex-col max-h-[90vh]">
+      <!-- Cabecera del Modal -->
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📈</span>
+          <h3 class="font-black text-sm tracking-wide">Panel Analítico y Estadístico de Proyectos</h3>
+        </div>
+        <button onclick="cerrarModalEstadisticasHub()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+      </div>
+
+      <!-- Barra de Opciones Gráficas (Alternar Barras / Pastel) -->
+      <div class="p-4 bg-white border-b border-gray-200 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+        <div class="text-xs font-bold text-gray-700" id="stat-info-filtro-activo">
+          Mostrando métricas basadas en su selección actual.
+        </div>
+        <div class="flex items-center bg-slate-100 border border-slate-200 p-1 rounded-xl">
+          <button id="btn-tipo-barras" onclick="cambiarTipoGraficoHub('barras')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-indigo-700 text-white shadow-xs transition cursor-pointer">
+            📊 Gráfico de Barras
+          </button>
+          <button id="btn-tipo-pastel" onclick="cambiarTipoGraficoHub('pastel')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-700 transition cursor-pointer">
+            🥧 Gráfico de Pastel (Dona)
+          </button>
+        </div>
+      </div>
+
+      <!-- Cuerpo Interactivo de Estadísticas -->
+      <div class="p-6 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
+        <!-- Tarjetas KPI Resumen del Filtro -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-xs text-center">
+            <span class="block text-[9px] font-black text-gray-400 uppercase">Proyectos Filtrados</span>
+            <span id="stat-kpi-proyectos" class="text-lg font-black text-[#0f2a4a]">0</span>
+          </div>
+          <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 shadow-xs text-center">
+            <span class="block text-[9px] font-black text-emerald-700 uppercase">Tareas Ejecutadas</span>
+            <span id="stat-kpi-ejecutadas" class="text-lg font-black text-emerald-800">0</span>
+          </div>
+          <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 shadow-xs text-center">
+            <span class="block text-[9px] font-black text-amber-700 uppercase">Tareas En Proceso</span>
+            <span id="stat-kpi-proceso" class="text-lg font-black text-amber-800">0</span>
+          </div>
+          <div class="bg-teal-50 p-3 rounded-xl border border-teal-200 shadow-xs text-center">
+            <span class="block text-[9px] font-black text-teal-700 uppercase">Avance Promedio</span>
+            <span id="stat-kpi-avance" class="text-lg font-black text-teal-800">0%</span>
+          </div>
+        </div>
+
+        <!-- Contenedor del Gráfico Dinámico -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center min-h-[280px]">
+          <div id="grafico-dinamico-contenedor" class="w-full h-full flex items-center justify-center">
+            <!-- Se inyecta dinámicamente el SVG limpio -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie del Modal -->
+      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end flex-shrink-0">
+        <button type="button" onclick="cerrarModalEstadisticasHub()" class="px-5 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition cursor-pointer">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  // --- LÓGICA DE FILTRADO Y ESTADÍSTICAS INTELIGENTES EN EL HUB ---
+
+    // Poblar selector de Unidades Orgánicas al cargar el Hub
+    async function inicializarFiltrosHub() {
+      const selUo = document.getElementById("hub-filtro-uo");
+      if (!selUo) return;
+      
+      selUo.innerHTML = '<option value="">🏢 Todas las Unidades</option>';
+      (catalogoUnidadesGlobal || []).forEach(u => {
+        selUo.innerHTML += `<option value="${u.sigla}">${u.sigla} - ${u.nombre}</option>`;
+      });
+    }
+
+    // Extensión de la función de filtrado principal del Hub
+    function obtenerProyectosFiltradosHub() {
+      const query = (document.getElementById("hub-filtro-busqueda")?.value || "").toLowerCase().trim();
+      const filtroUo = document.getElementById("hub-filtro-uo")?.value || "";
+      const filtroEstado = document.getElementById("hub-filtro-estado")?.value || "";
+
+      return proyectosUsuarioGlobal.filter(p => {
+        const matchTexto = !query || (p.nombre && p.nombre.toLowerCase().includes(query)) || (p.descripcion && p.descripcion.toLowerCase().includes(query));
+        const matchUo = !filtroUo || (p.unidad_organica && p.unidad_organica.toUpperCase().includes(filtroUo.toUpperCase()));
+
+        let matchEstado = true;
+        if (filtroEstado === "Ejecutado") {
+          matchEstado = (p.avance_global === 100);
+        } else if (filtroEstado === "En proceso") {
+          matchEstado = (p.avance_global > 0 && p.avance_global < 100);
+        } else if (filtroEstado === "No iniciado") {
+          matchEstado = (p.avance_global === 0);
+        }
+
+        return matchTexto && matchUo && matchEstado;
+      });
+    }
+
+    // Sobrescribir la función de filtrado del Hub para conectar los nuevos selectores
+    function filtrarProyectosHub() {
+      const filtrados = obtenerProyectosFiltradosHub();
+      if (vistaHubActual === "table") {
+        renderizarTablaHub(filtrados);
+      } else {
+        renderizarTarjetasHub(filtrados);
+      }
+    }
+
+    // --- CONTROLADOR DE GRÁFICOS ESTADÍSTICOS (BARRAS VS PASTEL) ---
+    let tipoGraficoActual = "barras";
+
+    function abrirModalEstadisticasHub() {
+      renderizarEstadisticasHub();
+      document.getElementById("modal-estadisticas-hub").classList.remove("hidden");
+    }
+
+    function cerrarModalEstadisticasHub() {
+      document.getElementById("modal-estadisticas-hub").classList.add("hidden");
+    }
+
+    function cambiarTipoGraficoHub(tipo) {
+      tipoGraficoActual = tipo;
+      const btnBarras = document.getElementById("btn-tipo-barras");
+      const btnPastel = document.getElementById("btn-tipo-pastel");
+
+      if (tipo === "barras") {
+        btnBarras.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-indigo-700 text-white shadow-xs transition cursor-pointer";
+        btnPastel.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-700 transition cursor-pointer";
+      } else {
+        btnPastel.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-indigo-700 text-white shadow-xs transition cursor-pointer";
+        btnBarras.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-700 transition cursor-pointer";
+      }
+      renderizarEstadisticasHub();
+    }
+
+    function renderizarEstadisticasHub() {
+      const listaFiltrada = obtenerProyectosFiltradosHub();
+      const totalProy = listaFiltrada.length;
+
+      let totalEjecutadas = 0;
+      let totalProceso = 0;
+      let totalPendientes = 0;
+      let sumaAvances = 0;
+
+      listaFiltrada.forEach(p => {
+        totalEjecutadas += (p.ejecutadas || 0);
+        totalProceso += (p.en_proceso || 0);
+        totalPendientes += (p.pendientes || 0);
+        sumaAvances += (p.avance_global || 0);
+      });
+
+      const promAvance = totalProy > 0 ? Math.round(sumaAvances / totalProy) : 0;
+      const totalTareas = totalEjecutadas + totalProceso + totalPendientes;
+
+      document.getElementById("stat-kpi-proyectos").innerText = totalProy;
+      document.getElementById("stat-kpi-ejecutadas").innerText = totalEjecutadas;
+      document.getElementById("stat-kpi-proceso").innerText = totalProceso;
+      document.getElementById("stat-kpi-avance").innerText = `${promAvance}%`;
+
+      const txtInfo = document.getElementById("stat-info-filtro-activo");
+      const filtroUoVal = document.getElementById("hub-filtro-uo")?.value || "Todas";
+      const filtroEstVal = document.getElementById("hub-filtro-estado")?.value || "Todos";
+      txtInfo.innerHTML = `Analizando <strong>${totalProy}</strong> proyecto(s) | Unidad: <span class="text-teal-700">${filtroUoVal}</span> | Estado: <span class="text-amber-700">${filtroEstVal}</span>`;
+
+      const contenedorGrafico = document.getElementById("grafico-dinamico-contenedor");
+      if (!contenedorGrafico) return;
+      contenedorGrafico.innerHTML = "";
+
+      if (totalProy === 0 || totalTareas === 0) {
+        contenedorGrafico.innerHTML = `<div class="text-gray-400 font-semibold italic text-xs py-10">No hay datos suficientes con los filtros seleccionados para generar la estadística.</div>`;
+        return;
+      }
+
+      if (tipoGraficoActual === "barras") {
+        const maxVal = Math.max(totalEjecutadas, totalProceso, totalPendientes, 1);
+        const hEjec = Math.round((totalEjecutadas / maxVal) * 160);
+        const hProc = Math.round((totalProceso / maxVal) * 160);
+        const hPend = Math.round((totalPendientes / maxVal) * 160);
+
+        contenedorGrafico.innerHTML = `
+          <div class="w-full max-w-md flex items-end justify-around h-56 pt-8 pb-2 px-4 border-b border-l border-gray-300 relative">
+            <div class="flex flex-col items-center flex-1 h-full justify-end group">
+              <span class="text-[11px] font-black text-emerald-800 mb-1">${totalEjecutadas}</span>
+              <div class="w-14 bg-emerald-500 rounded-t-lg transition-all duration-500 hover:bg-emerald-600 shadow-sm" style="height: ${Math.max(15, hEjec)}px;" title="Ejecutadas: ${totalEjecutadas}"></div>
+              <span class="text-[10px] font-bold text-gray-600 mt-2 uppercase tracking-tight">Ejecutadas</span>
+            </div>
+            <div class="flex flex-col items-center flex-1 h-full justify-end group">
+              <span class="text-[11px] font-black text-amber-800 mb-1">${totalProceso}</span>
+              <div class="w-14 bg-amber-500 rounded-t-lg transition-all duration-500 hover:bg-amber-600 shadow-sm" style="height: ${Math.max(15, hProc)}px;" title="En Proceso: ${totalProceso}"></div>
+              <span class="text-[10px] font-bold text-gray-600 mt-2 uppercase tracking-tight">En Proceso</span>
+            </div>
+            <div class="flex flex-col items-center flex-1 h-full justify-end group">
+              <span class="text-[11px] font-black text-rose-800 mb-1">${totalPendientes}</span>
+              <div class="w-14 bg-rose-500 rounded-t-lg transition-all duration-500 hover:bg-rose-600 shadow-sm" style="height: ${Math.max(15, hPend)}px;" title="No Iniciadas: ${totalPendientes}"></div>
+              <span class="text-[10px] font-bold text-gray-600 mt-2 uppercase tracking-tight">No Iniciadas</span>
+            </div>
+          </div>
+        `;
+      } else {
+        const pEjec = (totalEjecutadas / totalTareas) * 100;
+        const pProc = (totalProceso / totalTareas) * 100;
+        const pPend = (totalPendientes / totalTareas) * 100;
+
+        const circ = 2 * Math.PI * 40;
+        const dashEjec = (pEjec / 100) * circ;
+        const dashProc = (pProc / 100) * circ;
+        const dashPend = (pPend / 100) * circ;
+
+        const offsetEjec = 0;
+        const offsetProc = -dashEjec;
+        const offsetPend = -(dashEjec + dashProc);
+
+        contenedorGrafico.innerHTML = `
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-8 py-4">
+            <div class="relative w-44 h-44 flex items-center justify-center">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f1f5f9" stroke-width="16" />
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" stroke-width="16" stroke-dasharray="${dashEjec} ${circ}" stroke-dashoffset="${offsetEjec}" />
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" stroke-width="16" stroke-dasharray="${dashProc} ${circ}" stroke-dashoffset="${offsetProc}" />
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f43f5e" stroke-width="16" stroke-dasharray="${dashPend} ${circ}" stroke-dashoffset="${offsetPend}" />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                <span class="text-xl font-black text-[#0f2a4a]">${totalTareas}</span>
+                <span class="text-[9px] font-bold text-gray-400 uppercase">Tareas Totales</span>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2 text-xs font-bold">
+              <div class="flex items-center space-x-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-xs"></span>
+                <span class="text-gray-700">Ejecutadas:</span>
+                <span class="font-black text-emerald-800">${totalEjecutadas} (${Math.round(pEjec)}%)</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-xs"></span>
+                <span class="text-gray-700">En Proceso:</span>
+                <span class="font-black text-amber-800">${totalProceso} (${Math.round(pProc)}%)</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-xs"></span>
+                <span class="text-gray-700">No Iniciadas:</span>
+                <span class="font-black text-rose-800">${totalPendientes} (${Math.round(pPend)}%)</span>
+              </div>
+            </div>
+          </div>
+        `;
       }
     }
 
