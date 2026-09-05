@@ -1697,16 +1697,22 @@
     let resolverDialogoActual = null;
 
     // 1. Notificaciones Toast no intrusivas (Verde Limón Institucional Sin Bordes)
-    function notificarToast(mensaje, tipo = "success", duracionMs = 3500) {
-      const container = document.getElementById("toast-container");
-      if (!container) return;
+    function notificarToast(mensaje, tipo = "success", duracionMs = 4000) {
+      // Crear un contenedor flotante absoluto en la ventana si no existe
+      let container = document.getElementById("toast-container-global");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container-global";
+        container.className = "fixed bottom-5 right-5 z-[99999] flex flex-col space-y-2 pointer-events-none";
+        document.body.appendChild(container);
+      }
 
       const toast = document.createElement("div");
       const estilos = {
-        success: "bg-emerald-600 text-white shadow-emerald-900/30",
-        error: "bg-[#991b1b] text-white shadow-red-900/30",
-        warning: "bg-[#b45309] text-white shadow-amber-900/30",
-        info: "bg-[#0f2a4a] text-white shadow-slate-900/30"
+        success: "bg-emerald-600 text-white shadow-2xl shadow-emerald-950/50 border border-emerald-500/40",
+        error: "bg-[#991b1b] text-white shadow-2xl shadow-red-950/50 border border-red-500/40",
+        warning: "bg-[#b45309] text-white shadow-2xl shadow-amber-950/50 border border-amber-500/40",
+        info: "bg-[#0f2a4a] text-white shadow-2xl shadow-slate-950/50 border border-blue-500/40"
       };
       const iconos = {
         success: "✓",
@@ -1715,20 +1721,24 @@
         info: "ℹ️"
       };
 
-      toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-xl shadow-2xl text-xs font-extrabold tracking-wide transition-all transform duration-300 translate-y-3 opacity-0 ${estilos[tipo] || estilos.info}`;
+      toast.className = `pointer-events-auto flex items-center space-x-3 px-5 py-3.5 rounded-2xl text-xs font-extrabold tracking-wide transition-all transform duration-300 translate-y-4 opacity-0 ${estilos[tipo] || estilos.info}`;
       toast.innerHTML = `
-        <span class="w-5 h-5 rounded-full ${tipo === 'success' ? 'bg-lime-400 text-emerald-900' : 'bg-white/20 text-white'} flex items-center justify-center text-xs font-black shadow-sm">${iconos[tipo] || 'ℹ️'}</span>
+        <span class="w-6 h-6 rounded-full ${tipo === 'success' ? 'bg-lime-400 text-emerald-950' : 'bg-white/25 text-white'} flex items-center justify-center text-xs font-black shadow-sm flex-shrink-0">${iconos[tipo] || 'ℹ️'}</span>
         <span class="flex-1 leading-snug drop-shadow-sm">${mensaje}</span>
       `;
 
       container.appendChild(toast);
 
+      // Forzar animación de aparición
       setTimeout(() => {
-        toast.classList.remove("translate-y-3", "opacity-0");
-      }, 50);
+        toast.classList.remove("translate-y-4", "opacity-0");
+        toast.classList.add("translate-y-0", "opacity-100");
+      }, 30);
 
+      // Desvanecer y retirar
       setTimeout(() => {
-        toast.classList.add("translate-y-3", "opacity-0");
+        toast.classList.remove("translate-y-0", "opacity-100");
+        toast.classList.add("translate-y-4", "opacity-0");
         setTimeout(() => toast.remove(), 300);
       }, duracionMs);
     }
@@ -4210,10 +4220,7 @@
         if (res.ok) {
           const dataRes = await res.json().catch(() => ({}));
           console.log("Notificación programada con éxito:", dataRes);
-          // Forzar un pequeño respiro de renderizado antes de mostrar el toast verde
-          setTimeout(() => {
-            notificarToast("Notificación procesada y alertas programadas exitosamente.", "success", 4000);
-          }, 100);
+          notificarToast("Notificación procesada y alertas programadas exitosamente.", "success", 4500);
         } else {
           const err = await res.json().catch(() => ({}));
           console.error("Error devuelto por el servidor en notificaciones:", err);
