@@ -7693,7 +7693,9 @@
 
         matches.slice(0, 6).forEach(u => {
           const item = document.createElement("div");
+          // Añadimos el atributo title para el tooltip nativo con el nombre completo y su sigla
           item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
+          item.title = `${u.nombre} [${u.sigla}]`; 
           item.innerHTML = `
             <span class="text-gray-800 truncate pr-2">${u.nombre}</span>
             <strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${u.sigla}]</strong>
