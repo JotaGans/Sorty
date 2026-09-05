@@ -135,6 +135,9 @@ class ProyectoDescripcionUpdate(BaseModel):
 class ProyectoNombreUpdate(BaseModel):
     nombre: str
 
+class ProyectoUnidadUpdate(BaseModel):
+    unidad_organica: str
+
 class ActividadModel(BaseModel):
     proyecto_id: Optional[int] = 1
     codigo: str
@@ -940,6 +943,30 @@ def actualizar_nombre_proyecto(proyecto_id: int, data: ProyectoNombreUpdate, use
     """, (proyecto_id, ahora_peru_str(), user["username"], f"Actualizó el nombre del proyecto a: '{nombre_limpio}'"))
     db.commit()
     return {"message": "Nombre del proyecto actualizado correctamente", "nombre": nombre_limpio}
+
+@app.put("/proyectos/{proyecto_id}/unidad-organica")
+def actualizar_unidad_organica_proyecto(proyecto_id: int, data: ProyectoUnidadUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    # Validar permisos estrictos de Gestor o Administrador TI
+    permiso = db.execute("""
+        SELECT 1 FROM proyectos p
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1 OR pu.permiso = 'GESTOR')
+    """, (user["id"], proyecto_id, user["id"])).fetchone()
+    
+    if not permiso and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="No tiene permisos de Gestor para modificar la unidad orgánica de este proyecto.")
+    
+    uo_limpia = (data.unidad_organica or "").strip()
+    if not uo_limpia:
+        raise HTTPException(status_code=400, detail="La unidad orgánica no puede estar vacía.")
+        
+    db.execute("UPDATE proyectos SET unidad_organica = ? WHERE id = ?", (uo_limpia, proyecto_id))
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
+        VALUES (?, ?, ?, 'Modificar Unidad Orgánica', ?)
+    """, (proyecto_id, ahora_peru_str(), user["username"], f"Actualizó la unidad orgánica del proyecto a: '{uo_limpia}'"))
+    db.commit()
+    return {"message": "Unidad de organización actualizada correctamente", "unidad_organica": uo_limpia}
 
 # --- ACTIVIDADES Y GANTT POR PROYECTO (ORDEN NATURAL WBS) ---
 def clave_orden_natural_wbs(row_dict):
