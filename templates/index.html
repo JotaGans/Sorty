@@ -955,7 +955,7 @@
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Apellidos y Nombres</th>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad Orgánica</th>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Correo Electrónico</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-24">Acción</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-36 whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
               <tbody id="tra-tabla-directorio" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
@@ -3152,7 +3152,7 @@
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) throw new Error("Error al cargar actividades");
-        actividadesGlobal = await res.json();
+        const freshActs = await res.json();
         actividadesGlobal = (freshActs || []).sort((a, b) => compararCodigosWBS(a.codigo, b.codigo));
 
         // Actualizar caché permanente del proyecto
@@ -6178,13 +6178,30 @@
       try {
         const res = await fetch(`/trabajadores/estado/${id}`, {
           method: "PUT",
-          headers: { "Authorization": `Bearer ${token}` }
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` 
+          }
         });
+
         if (res.ok) {
           notificarToast("Estado de trabajador actualizado.", "info");
+          // Forzar la recarga del directorio y refrescar la tabla de activos
           await cargarDirectorioTrabajadores();
+          
+          // Si el modal de bajas está abierto, refrescarlo de inmediato
+          const modalBaja = document.getElementById("modal-trabajadores-baja");
+          if (modalBaja && !modalBaja.classList.contains("hidden")) {
+            renderizarTablaTrabajadoresBaja();
+          }
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || `Error del servidor (${res.status}): No se pudo cambiar el estado.`);
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error("Error al alternar estado trabajador:", e);
+        alert("Error de conexión al intentar cambiar el estado del trabajador.");
+      }
     }
 
     function renderizarTablaUsuariosTI(lista) {
