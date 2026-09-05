@@ -2040,13 +2040,14 @@
     });
 
     document.addEventListener("DOMContentLoaded", () => {
-      // Garantizar que todos los modales vivan en la raíz directa del BODY (fuera del Hub y del Gantt)
+      // Garantizar que todos los modales vivan en la raíz directa del BODY para evitar bloqueos visuales
       const idsModales = [
         "modal-wizard-creacion", "modal-columnas", "modal-dependencias", "modal-cpm", 
         "modal-historial", "modal-responsables", "modal-admin-ti", "modal-editar-trabajador-ti", 
         "modal-trabajadores-baja", "modal-notificacion-correo", "modal-comentarios", 
         "modal-nuevo-proyecto", "modal-guardar-plantilla", "modal-importar-plantilla-proyecto",
-        "modal-dialog-imarpe", "modal-input-custom", "modal-fecha-custom", "modal-fin-interactiva"
+        "modal-dialog-imarpe", "modal-input-custom", "modal-fecha-custom", "modal-fin-interactiva",
+        "modal-asignar-responsables"
       ];
       idsModales.forEach(id => {
         const el = document.getElementById(id);
@@ -6576,16 +6577,20 @@
         return;
       }
 
-      // Cargar trabajadores si no están en memoria
-      if (!catalogoTrabajadoresGlobal || catalogoTrabajadoresGlobal.length === 0) {
-        await cargarDirectorioTrabajadores();
+      // Cargar trabajadores de forma segura sin bloquear la apertura si ocurre un retraso
+      try {
+        if (!catalogoTrabajadoresGlobal || catalogoTrabajadoresGlobal.length === 0) {
+          await cargarDirectorioTrabajadores();
+        }
+      } catch (e) {
+        console.warn("Precarga de trabajadores diferida:", e);
       }
 
       responsablesInicialesEdicion = obtenerListaResponsablesAsignados(actividadMultiRespActual.responsable);
       listaAsignadosModal = [];
 
       responsablesInicialesEdicion.forEach(nom => {
-        const tObj = (catalogoTrabajadoresGlobal || []).find(t => t.nombre_completo.trim().toLowerCase() === nom.trim().toLowerCase());
+        const tObj = (catalogoTrabajadoresGlobal || []).find(t => t.nombre_completo && t.nombre_completo.trim().toLowerCase() === nom.trim().toLowerCase());
         listaAsignadosModal.push({
           nombre_completo: nom,
           unidad_organica: tObj ? tObj.unidad_organica : "Personal"
@@ -6594,71 +6599,74 @@
 
       renderizarListaAsignadosModal();
 
-      document.getElementById("inp-buscar-resp-actividad").value = "";
-      document.getElementById("sug-responsables-actividad").classList.add("hidden");
+      const inpBusqResp = document.getElementById("inp-buscar-resp-actividad");
+      if (inpBusqResp) inpBusqResp.value = "";
+      const sugResp = document.getElementById("sug-responsables-actividad");
+      if (sugResp) sugResp.classList.add("hidden");
 
       // Botón Guardar Asignación Directo
-      document.getElementById("btn-guardar-multi-resp").onclick = async () => {
-        const seleccionados = listaAsignadosModal.map(r => r.nombre_completo.trim()).filter(Boolean);
-        const respFinal = seleccionados.length > 0 ? seleccionados.join("; ") : "No asignado";
-        
-        // Guardar referencia antes de cerrar modal
-        const actRef = actividadMultiRespActual;
-        const codAct = actRef.codigo;
-        
-        // Cerrar modal
-        cerrarAsignarResponsables();
+      const btnGuardarMulti = document.getElementById("btn-guardar-multi-resp");
+      if (btnGuardarMulti) {
+        btnGuardarMulti.onclick = async () => {
+          const seleccionados = listaAsignadosModal.map(r => r.nombre_completo.trim()).filter(Boolean);
+          const respFinal = seleccionados.length > 0 ? seleccionados.join("; ") : "No asignado";
+          
+          const actRef = actividadMultiRespActual;
+          const codAct = actRef ? actRef.codigo : null;
+          
+          cerrarAsignarResponsables();
+          if (!actRef) return;
 
-        // 1. Actualizar memoria local de inmediato
-        actRef.responsable = respFinal;
-        poblarFiltroResponsablesDinamico();
-        renderizarTabla();
+          actRef.responsable = respFinal;
+          poblarFiltroResponsablesDinamico();
+          renderizarTabla();
 
-        // 2. Guardar en Backend mediante endpoint atómico
-        try {
-          const res = await fetch("/actividades/responsable", {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              proyecto_id: parseInt(proyectoActualId),
-              codigo: String(codAct).trim(),
-              responsable: respFinal
-            })
-          });
+          try {
+            const res = await fetch("/actividades/responsable", {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                proyecto_id: parseInt(proyectoActualId),
+                codigo: String(codAct).trim(),
+                responsable: respFinal
+              })
+            });
 
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            alert(err.detail || "Error al persistir el responsable en la base de datos.");
-          } else {
-            // Guardar en caché local
-            localStorage.setItem(`cache_acts_proj_${proyectoActualId}`, JSON.stringify(actividadesGlobal));
-            notificarToast("Responsable(s) asignado(s) y guardado(s) permanentemente.", "success");
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              alert(err.detail || "Error al persistir el responsable en la base de datos.");
+            } else {
+              localStorage.setItem(`cache_acts_proj_${proyectoActualId}`, JSON.stringify(actividadesGlobal));
+              notificarToast("Responsable(s) asignado(s) y guardado(s) permanentemente.", "success");
+            }
+          } catch (e) {
+            console.error("Error al guardar responsable:", e);
+            alert("Error de conexión con el servidor al guardar la asignación.");
           }
-        } catch (e) {
-          console.error("Error al guardar responsable:", e);
-          alert("Error de conexión con el servidor al guardar la asignación.");
-        }
 
-        // 3. Flujo de Notificación para nuevos miembros
-        const inicialesSet = new Set(responsablesInicialesEdicion.map(n => n.trim().toLowerCase()));
-        const nuevos = seleccionados.filter(nom => !inicialesSet.has(nom.toLowerCase()));
+          const inicialesSet = new Set(responsablesInicialesEdicion.map(n => n.trim().toLowerCase()));
+          const nuevos = seleccionados.filter(nom => !inicialesSet.has(nom.toLowerCase()));
 
-        if (nuevos.length > 0) {
-          const mensajeNotif = nuevos.length === 1
-            ? `¿Desea enviar una notificación por correo electrónico al nuevo responsable asignado (${nuevos[0]})?`
-            : `¿Desea enviar una notificación por correo electrónico a los ${nuevos.length} nuevos responsables asignados (${nuevos.join(", ")})?`;
+          if (nuevos.length > 0) {
+            const mensajeNotif = nuevos.length === 1
+              ? `¿Desea enviar una notificación por correo electrónico al nuevo responsable asignado (${nuevos[0]})?`
+              : `¿Desea enviar una notificación por correo electrónico a los ${nuevos.length} nuevos responsables asignados (${nuevos.join(", ")})?`;
 
-          const deseaNotificar = await confirmModal(mensajeNotif, "Notificación Institucional", "question");
-          if (deseaNotificar) {
-            abrirModalNotificacionCorreo(actRef, nuevos);
+            const deseaNotificar = await confirmModal(mensajeNotif, "Notificación Institucional", "question");
+            if (deseaNotificar) {
+              abrirModalNotificacionCorreo(actRef, nuevos);
+            }
           }
-        }
-      };
+        };
+      }
 
-      document.getElementById("modal-asignar-responsables").classList.remove("hidden");
+      const modalAsignar = document.getElementById("modal-asignar-responsables");
+      if (modalAsignar) {
+        modalAsignar.classList.remove("hidden");
+      }
     }
 
     function renderizarListaAsignadosModal() {
