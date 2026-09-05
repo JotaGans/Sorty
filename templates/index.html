@@ -426,7 +426,7 @@
       </div>
 
       <!-- ETIQUETA / BADGE DE ADVERTENCIA DE FILTROS ACTIVOS EN EL HUB -->
-      <div id="hub-badge-filtro-activo" class="hidden mb-4 items-center justify-between bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold px-4 py-2 rounded-xl shadow-xs">
+      <div id="hub-badge-filtro-activo" class="hidden mb-4 items-center justify-between bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs">
         <div class="flex items-center space-x-2">
           <span>🔍</span>
           <span><strong>Filtros activos:</strong> <span id="hub-badge-filtro-texto">Ninguno</span></span>
@@ -7777,6 +7777,10 @@
 
     function filtrarProyectosHub() {
       const filtrados = obtenerProyectosFiltradosHub();
+      
+      // Actualizar de inmediato la etiqueta visual de filtros activos
+      actualizarBadgeFiltrosHub();
+
       if (vistaHubActual === "table") {
         renderizarTablaHub(filtrados);
       } else {
