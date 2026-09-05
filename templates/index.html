@@ -361,7 +361,7 @@
         <!-- Grupo Izquierda: Buscador + Filtros Inteligentes -->
         <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
           <!-- Buscador Rápido -->
-          <div class="relative flex-1 min-w-[210px] max-w-xs">
+          <div class="relative flex-1 min-w-[200px] max-w-xs">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🔍</span>
             <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por nombre o desc..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition">
           </div>
@@ -374,7 +374,7 @@
           </div>
 
           <!-- Filtro por Estado Global del Proyecto -->
-          <div class="relative min-w-[140px]">
+          <div class="relative min-w-[130px]">
             <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-2 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
               <option value="">📊 Todos los Estados</option>
               <option value="Ejecutado">Ejecutado (100%)</option>
@@ -384,76 +384,32 @@
           </div>
         </div>
 
-        <!-- Grupo Derecha: Botón Gráfica Estadística + Vistas + Excel -->
+        <!-- Grupo Derecha: Botón Estadísticas + Ocultos + Vistas + Excel -->
         <div class="flex items-center space-x-2.5 self-end md:self-auto">
-          <!-- Botón Abrir Dashboard Estadístico -->
-          <button onclick="abrirModalEstadisticasHub()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold px-3.5 py-2 rounded-lg transition shadow flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Ver análisis gráfico y estadístico de los proyectos filtrados">
+          <!-- Botón Estadísticas -->
+          <button onclick="abrirModalEstadisticasHub()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Ver análisis gráfico y estadístico">
             <span>📈</span>
             <span>Estadísticas</span>
           </button>
 
           <!-- Botón Indicador de Proyectos Ocultos -->
-          <button id="btn-toggle-proyectos-ocultos" onclick="alternarVerProyectosOcultos()" class="hidden w-[34px] h-[34px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0" title="Ver proyectos ocultos (0)">
+          <button id="btn-toggle-proyectos-ocultos" onclick="alternarVerProyectosOcultos()" class="hidden w-[34px] h-[34px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0" title="Ver proyectos ocultos">
             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
             </svg>
           </button>
 
-          <!-- Conmutador de Vista Estilizado (Segmented Control UX) -->
-          <div class="flex items-center space-x-2">
-            <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider hidden sm:inline">Vista:</span>
-            <div class="flex items-center bg-slate-100 border border-slate-200 p-1 rounded-xl shadow-inner">
-              <button id="btn-vista-grid" onclick="cambiarVistaHub('cards')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all duration-150 flex items-center space-x-1.5 cursor-pointer" title="Vista en cuadrícula de tarjetas">
-                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                </svg>
-                <span>Tarjetas</span>
-              </button>
-              <button id="btn-vista-table" onclick="cambiarVistaHub('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-teal-700 hover:bg-slate-200/60 transition-all duration-150 flex items-center space-x-1.5 cursor-pointer" title="Vista en tabla detallada">
-                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd"/>
-                </svg>
-                <span>Tabla</span>
-              </button>
-            </div>
+          <!-- Conmutador de Vista (Tarjetas / Tabla) -->
+          <div class="flex items-center bg-slate-100 border border-slate-200 p-1 rounded-xl shadow-inner">
+            <button id="btn-vista-grid" onclick="cambiarVistaHub('cards')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer">
+              <span>Tarjetas</span>
+            </button>
+            <button id="btn-vista-table" onclick="cambiarVistaHub('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-teal-700 transition-all flex items-center space-x-1.5 cursor-pointer">
+              <span>Tabla</span>
+            </button>
           </div>
 
-          <!-- Botón Exportar Excel -->
-          <button onclick="exportarResumenProyectosExcel()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow flex items-center space-x-1.5 cursor-pointer" title="Descargar reporte consolidado en Excel">
-            <span>📊</span>
-            <span>Excel</span>
-          </button>
-        </div>
-      </div>
-
-        <!-- Grupo Selector de Vista, Botón Ocultos y Botón Excel -->
-        <div class="flex items-center space-x-3 self-end md:self-auto">
-          <!-- Botón Indicador de Proyectos Ocultos -->
-          <button id="btn-toggle-proyectos-ocultos" onclick="alternarVerProyectosOcultos()" class="hidden w-[34px] h-[34px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0" title="Ver proyectos ocultos (0)">
-            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-            </svg>
-          </button>
-          <!-- Conmutador de Vista Estilizado (Segmented Control UX) -->
-          <div class="flex items-center space-x-2">
-            <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider hidden sm:inline">Vista:</span>
-            <div class="flex items-center bg-slate-100 border border-slate-200 p-1 rounded-xl shadow-inner">
-              <button id="btn-vista-grid" onclick="cambiarVistaHub('cards')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all duration-150 flex items-center space-x-1.5 cursor-pointer" title="Vista en cuadrícula de tarjetas">
-                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                </svg>
-                <span>Tarjetas</span>
-              </button>
-              <button id="btn-vista-table" onclick="cambiarVistaHub('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-teal-700 hover:bg-slate-200/60 transition-all duration-150 flex items-center space-x-1.5 cursor-pointer" title="Vista en tabla detallada">
-                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd"/>
-                </svg>
-                <span>Tabla</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Botón Exportar Excel -->
+          <!-- Botón Excel -->
           <button onclick="exportarResumenProyectosExcel()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow flex items-center space-x-1.5 cursor-pointer" title="Descargar reporte consolidado en Excel">
             <span>📊</span>
             <span>Excel</span>
@@ -7680,6 +7636,17 @@
       if (!selUo) return;
       
       selUo.innerHTML = '<option value="">🏢 Todas las Unidades</option>';
+      
+      // Si el catálogo global está vacío, intentamos cargarlo de inmediato
+      if (!catalogoUnidadesGlobal || catalogoUnidadesGlobal.length === 0) {
+        try {
+          const resUo = await fetch("/unidades-organicas", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (resUo.ok) catalogoUnidadesGlobal = await resUo.json();
+        } catch(e) {}
+      }
+
       (catalogoUnidadesGlobal || []).forEach(u => {
         selUo.innerHTML += `<option value="${u.sigla}">${u.sigla} - ${u.nombre}</option>`;
       });
