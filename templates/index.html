@@ -7747,7 +7747,8 @@
         if (filtroUo !== "") {
           const pUo = (p.unidad_organica || "").trim().toUpperCase();
           const fUo = filtroUo.toUpperCase();
-          matchUo = pUo.includes(fUo) || fUo.includes(pUo);
+          // Exigir coincidencia exacta de la sigla o que el texto del input coincida de forma limpia
+          matchUo = (pUo === fUo || pUo.startsWith(fUo + " ") || pUo.includes(`[${fUo}]`));
         }
 
         let matchEstado = true;
