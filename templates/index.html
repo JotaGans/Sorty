@@ -357,7 +357,7 @@
       </div>
 
       <!-- BARRA OPERATIVA DE ACCIONES: FILTROS MULTICRITERIO, VISTAS Y ANALÍTICA -->
-      <div class="bg-white rounded-xl p-3.5 mb-6 border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+      <div class="bg-white rounded-xl p-3.5 mb-4 border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
         <!-- Grupo Izquierda: Buscador + Búsqueda Inteligente UO + Estado -->
         <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
           <!-- Buscador Rápido de Texto -->
@@ -423,6 +423,17 @@
             <span>Excel</span>
           </button>
         </div>
+      </div>
+
+      <!-- ETIQUETA / BADGE DE ADVERTENCIA DE FILTROS ACTIVOS EN EL HUB -->
+      <div id="hub-badge-filtro-activo" class="hidden mb-4 items-center justify-between bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold px-4 py-2 rounded-xl shadow-xs">
+        <div class="flex items-center space-x-2">
+          <span>🔍</span>
+          <span><strong>Filtros activos:</strong> <span id="hub-badge-filtro-texto">Ninguno</span></span>
+        </div>
+        <button onclick="hubLimpiarTodosFiltros()" class="bg-amber-200 hover:bg-amber-300 text-amber-950 font-black px-2.5 py-1 rounded-lg text-xs transition cursor-pointer flex items-center space-x-1">
+          <span>Limpiar filtros ✕</span>
+        </button>
       </div>
 
       <!-- Contenedores Duales: Vista Tarjetas y Vista Tabla -->
@@ -7771,6 +7782,49 @@
       } else {
         renderizarTarjetasHub(filtrados);
       }
+    }
+
+    function actualizarBadgeFiltrosHub() {
+      const query = (document.getElementById("hub-filtro-busqueda")?.value || "").trim();
+      const uoVal = (document.getElementById("hub-filtro-uo-busq")?.value || "").trim();
+      const estadoVal = document.getElementById("hub-filtro-estado")?.value || "";
+
+      const hayFiltro = (query !== "" || uoVal !== "" || estadoVal !== "");
+      const badgeDiv = document.getElementById("hub-badge-filtro-activo");
+      const badgeTxt = document.getElementById("hub-badge-filtro-texto");
+
+      if (!badgeDiv || !badgeTxt) return;
+
+      if (hayFiltro) {
+        const descripciones = [];
+        if (query) descripciones.push(`Texto: "${query}"`);
+        if (uoVal) descripciones.push(`Unidad: "${uoVal}"`);
+        if (estadoVal) descripciones.push(`Estado: "${estadoVal}"`);
+
+        badgeTxt.innerText = descripciones.join(" | ");
+        badgeDiv.classList.remove("hidden");
+        badgeDiv.classList.add("flex");
+      } else {
+        badgeDiv.classList.add("hidden");
+        badgeDiv.classList.remove("flex");
+      }
+    }
+
+    function hubLimpiarTodosFiltros() {
+      const inpBusq = document.getElementById("hub-filtro-busqueda");
+      const inpUo = document.getElementById("hub-filtro-uo-busq");
+      const inpUoVal = document.getElementById("hub-filtro-uo-valor");
+      const selEstado = document.getElementById("hub-filtro-estado");
+      const btnLimpiarUo = document.getElementById("btn-limpiar-filtro-uo");
+
+      if (inpBusq) inpBusq.value = "";
+      if (inpUo) inpUo.value = "";
+      if (inpUoVal) inpUoVal.value = "";
+      if (selEstado) selEstado.value = "";
+      if (btnLimpiarUo) btnLimpiarUo.classList.add("hidden");
+
+      filtrarProyectosHub();
+      notificarToast("Filtros del Hub restablecidos correctamente.", "info");
     }
 
     let tipoGraficoActual = "barras";
