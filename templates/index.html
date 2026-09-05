@@ -989,9 +989,50 @@
         </div>
       </div>
 
-      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
-        <button onclick="cerrarModalAdminTI()" class="px-5 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg">Cerrar</button>
+      <!-- MODAL: EDITAR TRABAJADOR INSTITUCIONAL -->
+  <div id="modal-editar-trabajador-ti" class="hidden fixed inset-0 bg-black/60 z-[95] flex items-center justify-center p-4 backdrop-blur-[1px]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-300">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">✏️</span>
+          <h3 class="font-black text-sm">Modificar Datos del Trabajador</h3>
+        </div>
+        <button onclick="cerrarModalEditarTrabajador()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
       </div>
+
+      <form onsubmit="guardarEdicionTrabajador(event)" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="edit-tra-id">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-gray-600 mb-1">Nombres:</label>
+            <input type="text" id="edit-tra-nombres" required class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div>
+            <label class="block font-bold text-gray-600 mb-1">Apellidos:</label>
+            <input type="text" id="edit-tra-apellidos" required class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+
+          <div class="relative sm:col-span-2">
+            <label class="block font-bold text-gray-600 mb-1">Unidad de Organización (Sigla / Área):</label>
+            <input type="text" id="edit-tra-uo-busq" oninput="autocompletarUOEdicion(this.value)" required class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+            <input type="hidden" id="edit-tra-uo-valor">
+            <div id="edit-tra-sugerencias-uo" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block font-bold text-gray-600 mb-1">Correo Institucional:</label>
+            <div class="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
+              <input type="text" id="edit-tra-correo-user" required class="w-full p-2 font-semibold outline-none text-right">
+              <span class="bg-gray-100 px-2.5 py-2 text-gray-500 font-bold text-xs border-l border-gray-200">@imarpe.gob.pe</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+          <button type="button" onclick="cerrarModalEditarTrabajador()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow transition">Guardar Cambios</button>
+        </div>
+      </form>
     </div>
   </div>
   <!-- MODAL: CREACIÓN GUIADA Y DINÁMICA -->
@@ -5982,7 +6023,10 @@
             <td class="p-2.5 font-bold text-gray-800">${t.nombre_completo}</td>
             <td class="p-2.5 font-semibold text-teal-800"><span class="bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${t.unidad_organica}</span></td>
             <td class="p-2.5 font-mono text-blue-600">${t.correo}</td>
-            <td class="p-2.5 text-center">
+            <td class="p-2.5 text-center whitespace-nowrap space-x-1">
+              <button onclick="abrirModalEditarTrabajador(${t.id})" class="p-1 rounded text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition font-bold" title="Editar datos del trabajador">
+                ✏️
+              </button>
               <button onclick="alternarEstadoTrabajador(${t.id})" class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${esActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200'}">
                 ${esActivo ? 'DAR DE BAJA' : 'ACTIVAR'}
               </button>
@@ -7187,6 +7231,115 @@
         window.addEventListener("mousemove", alMoverMouse);
         window.addEventListener("mouseup", alSoltarMouse);
       };
+    }
+
+    // =========================================================================
+    // EDICIÓN DE TRABAJADORES (DIRECTORIO INSTITUCIONAL TI)
+    // =========================================================================
+    function abrirModalEditarTrabajador(id) {
+      const trabajador = (catalogoTrabajadoresGlobal || []).find(t => t.id === id);
+      if (!trabajador) return;
+
+      document.getElementById("edit-tra-id").value = trabajador.id;
+      document.getElementById("edit-tra-nombres").value = trabajador.nombres || "";
+      document.getElementById("edit-tra-apellidos").value = trabajador.apellidos || "";
+      document.getElementById("edit-tra-uo-busq").value = trabajador.unidad_organica || "";
+      document.getElementById("edit-tra-uo-valor").value = trabajador.unidad_organica || "";
+      
+      const usuarioCorreo = (trabajador.correo || "").split("@")[0];
+      document.getElementById("edit-tra-correo-user").value = usuarioCorreo;
+
+      document.getElementById("edit-tra-sugerencias-uo").classList.add("hidden");
+      document.getElementById("modal-editar-trabajador-ti").classList.remove("hidden");
+    }
+
+    function cerrarModalEditarTrabajador() {
+      document.getElementById("modal-editar-trabajador-ti").classList.add("hidden");
+    }
+
+    function autocompletarUOEdicion(termino) {
+      const term = (termino || "").toLowerCase().trim();
+      const divSug = document.getElementById("edit-tra-sugerencias-uo");
+      if (!divSug) return;
+
+      if (!term) {
+        divSug.innerHTML = "";
+        divSug.classList.add("hidden");
+        return;
+      }
+
+      const matches = (catalogoUnidadesGlobal || []).filter(u => 
+        (u.estado === 'ACTIVO' || !u.estado) && (
+          u.sigla.toLowerCase().includes(term) || 
+          u.nombre.toLowerCase().includes(term)
+        )
+      );
+
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">Sin coincidencias</div>`;
+      } else {
+        matches.slice(0, 6).forEach(u => {
+          const item = document.createElement("div");
+          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
+          item.innerHTML = `
+            <span class="text-gray-800">${u.nombre}</span>
+            <strong class="text-[#0f2a4a] ml-2 bg-slate-100 px-1.5 py-0.5 rounded border text-[11px]">[${u.sigla}]</strong>
+          `;
+          item.onclick = () => {
+            document.getElementById("edit-tra-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+            document.getElementById("edit-tra-uo-valor").value = u.sigla;
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
+
+    async function guardarEdicionTrabajador(e) {
+      e.preventDefault();
+      const id = document.getElementById("edit-tra-id").value;
+      const nombres = document.getElementById("edit-tra-nombres").value.trim();
+      const apellidos = document.getElementById("edit-tra-apellidos").value.trim();
+      const uo = document.getElementById("edit-tra-uo-valor").value || document.getElementById("edit-tra-uo-busq").value.trim();
+      const correo_user = document.getElementById("edit-tra-correo-user").value.trim();
+
+      if (!nombres || !apellidos || !uo || !correo_user) {
+        alert("Por favor complete todos los campos requeridos.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/trabajadores/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            nombres: nombres,
+            apellidos: apellidos,
+            unidad_organica: uo,
+            correo_usuario: correo_user
+          })
+        });
+
+        if (res.ok) {
+          cerrarModalEditarTrabajador();
+          notificarToast("Datos del trabajador actualizados con éxito.", "success");
+          await cargarDirectorioTrabajadores();
+          if (proyectoActualId) {
+            await cargarActividades();
+          }
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al actualizar los datos del trabajador.");
+        }
+      } catch (err) {
+        console.error("Error al actualizar trabajador:", err);
+        alert("Error de conexión con el servidor.");
+      }
     }
 
   </script>

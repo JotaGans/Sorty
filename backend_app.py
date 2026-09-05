@@ -745,10 +745,64 @@ def crear_trabajador(data: TrabajadorAltaModel, user: dict = Depends(get_current
     except sqlite3.IntegrityError:
         raise HTTPException(status_code=400, detail="El correo institucional ya se encuentra registrado.")
 
-@app.put("/trabajadores/estado/{trabajador_id}")
-def alternar_estado_trabajador(trabajador_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+@app.put("/trabajadores/{trabajador_id}")
+def actualizar_trabajador(
+    trabajador_id: int, 
+    data: TrabajadorAltaModel, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
     if user["rol"] != "ADMIN_TI":
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede editar trabajadores.")
+
+    actual = db.execute("SELECT * FROM trabajadores WHERE id = ?", (trabajador_id,)).fetchone()
+    if not actual:
+        raise HTTPException(status_code=404, detail="Trabajador no encontrado.")
+
+    nombres_limp = data.nombres.strip()
+    apellidos_limp = data.apellidos.strip()
+    nuevo_nombre_completo = f"{apellidos_limp}, {nombres_limp}"
+    antiguo_nombre_completo = actual["nombre_completo"]
+
+    usuario_correo = data.correo_usuario.strip().lower().replace("@imarpe.gob.pe", "")
+    correo_final = f"{usuario_correo}@imarpe.gob.pe"
+    antiguo_correo = actual["correo"]
+
+    # Verificar si el nuevo correo ya existe en otro trabajador
+    correo_ocupado = db.execute("SELECT id FROM trabajadores WHERE correo = ? AND id != ?", (correo_final, trabajador_id)).fetchone()
+    if correo_ocupado:
+        raise HTTPException(status_code=400, detail="El correo electrónico ya pertenece a otro trabajador.")
+
+    # 1. Actualizar tabla trabajadores
+    db.execute("""
+        UPDATE trabajadores 
+        SET nombres = ?, apellidos = ?, nombre_completo = ?, unidad_organica = ?, correo = ?
+        WHERE id = ?
+    """, (nombres_limp, apellidos_limp, nuevo_nombre_completo, data.unidad_organica.strip(), correo_final, trabajador_id))
+
+    # 2. Actualizar o sincronizar en catálogo de responsables
+    db.execute("""
+        UPDATE responsables 
+        SET nombre = ?, cargo = ?, correo = ?
+        WHERE nombre = ? OR correo = ?
+    """, (nuevo_nombre_completo, data.unidad_organica.strip(), correo_final, antiguo_nombre_completo, antiguo_correo))
+
+    # 3. Sincronizar nombre en la cuenta de usuario si coincide
+    db.execute("""
+        UPDATE usuarios 
+        SET nombre_completo = ?
+        WHERE nombre_completo = ?
+    """, (nuevo_nombre_completo, antiguo_nombre_completo))
+
+    # 4. Actualizar asignaciones en actividades si cambió el nombre
+    if antiguo_nombre_completo != nuevo_nombre_completo:
+        acts = db.execute("SELECT proyecto_id, codigo, responsable FROM actividades WHERE responsable LIKE ?", (f"%{antiguo_nombre_completo}%",)).fetchall()
+        for a in acts:
+            nuevo_resp = a["responsable"].replace(antiguo_nombre_completo, nuevo_nombre_completo)
+            db.execute("UPDATE actividades SET responsable = ? WHERE proyecto_id = ? AND codigo = ?", (nuevo_resp, a["proyecto_id"], a["codigo"]))
+
+    db.commit()
+    return {"status": "success", "mensaje": "Datos del trabajador actualizados correctamente."}
     
     actual = db.execute("SELECT estado FROM trabajadores WHERE id = ?", (trabajador_id,)).fetchone()
     if not actual:
