@@ -366,11 +366,17 @@
             <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por nombre o desc..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition">
           </div>
 
-          <!-- Búsqueda Inteligente Compacta por Unidad Orgánica -->
+          <!-- Búsqueda Inteligente Compacta por Unidad Orgánica con Botón de Limpieza Rápida -->
           <div class="relative min-w-[200px] max-w-[220px]">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🏢</span>
-            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por unidad u oficina..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por unidad u oficina..." class="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
             <input type="hidden" id="hub-filtro-uo-valor" onchange="filtrarProyectosHub()">
+            
+            <!-- Botón Limpiar Filtro (X) -->
+            <button type="button" id="btn-limpiar-filtro-uo" onclick="limpiarFiltroUnidadHub()" class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-rose-600 transition cursor-pointer" title="Limpiar filtro de unidad">
+              <span class="text-xs font-black bg-gray-200 hover:bg-rose-100 rounded-full w-4 h-4 flex items-center justify-center">×</span>
+            </button>
+
             <!-- Lista Desplegable Flotante Inteligente -->
             <div id="hub-sugerencias-uo" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[100] text-xs divide-y divide-gray-100"></div>
           </div>
@@ -7639,7 +7645,6 @@
       
       selUo.innerHTML = '<option value="">🏢 Todas las Unidades</option>';
       
-      // Si el catálogo global está vacío, intentamos cargarlo de inmediato
       if (!catalogoUnidadesGlobal || catalogoUnidadesGlobal.length === 0) {
         try {
           const resUo = await fetch("/unidades-organicas", {
@@ -7658,7 +7663,14 @@
     function autocompletarUOHub(termino) {
       const term = (termino || "").toLowerCase().trim();
       const divSug = document.getElementById("hub-sugerencias-uo");
+      const btnLimpiar = document.getElementById("btn-limpiar-filtro-uo");
+      
       if (!divSug) return;
+
+      if (btnLimpiar) {
+        if (term.length > 0) btnLimpiar.classList.remove("hidden");
+        else btnLimpiar.classList.add("hidden");
+      }
 
       if (!term) {
         divSug.innerHTML = "";
@@ -7679,21 +7691,16 @@
       if (matches.length === 0) {
         divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">Sin coincidencias</div>`;
       } else {
-        // Opción para limpiar filtro rápidamente
         const itemTodos = document.createElement("div");
         itemTodos.className = "p-2 hover:bg-slate-50 cursor-pointer text-slate-500 font-bold border-b border-gray-100 text-[11px]";
         itemTodos.innerHTML = `<span>× Cerrar filtro</span>`;
         itemTodos.onclick = () => {
-          document.getElementById("hub-filtro-uo-busq").value = "";
-          document.getElementById("hub-filtro-uo-valor").value = "";
-          divSug.classList.add("hidden");
-          filtrarProyectosHub();
+          limpiarFiltroUnidadHub();
         };
         divSug.appendChild(itemTodos);
 
         matches.slice(0, 6).forEach(u => {
           const item = document.createElement("div");
-          // Añadimos el atributo title para el tooltip nativo con el nombre completo y su sigla
           item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
           item.title = `${u.nombre} [${u.sigla}]`; 
           item.innerHTML = `
@@ -7703,6 +7710,7 @@
           item.onclick = () => {
             document.getElementById("hub-filtro-uo-busq").value = `${u.sigla} - ${u.nombre}`;
             document.getElementById("hub-filtro-uo-valor").value = u.sigla;
+            if (btnLimpiar) btnLimpiar.classList.remove("hidden");
             divSug.classList.add("hidden");
             filtrarProyectosHub();
           };
@@ -7710,6 +7718,20 @@
         });
       }
       divSug.classList.remove("hidden");
+    }
+
+    function limpiarFiltroUnidadHub() {
+      const inpBusq = document.getElementById("hub-filtro-uo-busq");
+      const inpVal = document.getElementById("hub-filtro-uo-valor");
+      const divSug = document.getElementById("hub-sugerencias-uo");
+      const btnLimpiar = document.getElementById("btn-limpiar-filtro-uo");
+
+      if (inpBusq) inpBusq.value = "";
+      if (inpVal) inpVal.value = "";
+      if (divSug) divSug.classList.add("hidden");
+      if (btnLimpiar) btnLimpiar.classList.add("hidden");
+
+      filtrarProyectosHub();
     }
 
     function obtenerProyectosFiltradosHub() {
@@ -7741,7 +7763,6 @@
       });
     }
 
-    // Sobrescribir filtrado de proyectos en el Hub
     function filtrarProyectosHub() {
       const filtrados = obtenerProyectosFiltradosHub();
       if (vistaHubActual === "table") {
@@ -7751,7 +7772,6 @@
       }
     }
 
-    // Controlador de Gráficos Estadísticos (Barras vs Pastel)
     let tipoGraficoActual = "barras";
 
     function abrirModalEstadisticasHub() {
@@ -7803,7 +7823,7 @@
       document.getElementById("stat-kpi-avance").innerText = `${promAvance}%`;
 
       const txtInfo = document.getElementById("stat-info-filtro-activo");
-      const filtroUoVal = document.getElementById("hub-filtro-uo")?.value || "Todas";
+      const filtroUoVal = document.getElementById("hub-filtro-uo-busq")?.value || "Todas";
       const filtroEstVal = document.getElementById("hub-filtro-estado")?.value || "Todos";
       txtInfo.innerHTML = `Analizando <strong>${totalProy}</strong> proyecto(s) | Unidad: <span class="text-teal-700">${filtroUoVal}</span> | Estado: <span class="text-amber-700">${filtroEstVal}</span>`;
 
