@@ -3074,8 +3074,8 @@
       cerrarModalEditarUoProyecto();
 
       try {
-        // Enrutamiento compatible con el backend existente para actualización de campos del proyecto
-        const res = await fetch(`/proyectos/${idProy}/descripcion`, {
+        // La ruta debe coincidir exactamente con el endpoint que añadiste en el backend
+        const res = await fetch(`/proyectos/${idProy}/unidad-organica`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -3088,23 +3088,8 @@
           notificarToast(`Unidad del proyecto actualizada a [${siglaFinal}] con éxito.`, "success");
           await cargarHubProyectos();
         } else {
-          // Intento alternativo con endpoint general de proyecto si estuviera disponible
-          const resAlt = await fetch(`/proyectos/${idProy}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({ unidad_organica: siglaFinal })
-          });
-
-          if (resAlt.ok) {
-            notificarToast(`Unidad del proyecto actualizada a [${siglaFinal}] con éxito.`, "success");
-            await cargarHubProyectos();
-          } else {
-            const err = await resAlt.json().catch(() => ({}));
-            alert(err.detail || "No se pudo actualizar la unidad de organización en el servidor.");
-          }
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "No se pudo actualizar la unidad de organización en el servidor.");
         }
       } catch (e) {
         console.error("Error al actualizar unidad:", e);
