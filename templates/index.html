@@ -2745,8 +2745,15 @@
         }
 
         const tooltipUoEdit = esGestor ? 'title="Doble clic para modificar la Unidad de Organización"' : `title="${nombreCompletoUnidad}"`;
-        // Cursor interactivo sutil solo para gestores
         const estiloCursorUo = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
+
+        // Formato oficial de proceso: [Denominación del proceso] [[Código del proceso]]
+        const tieneProceso = Boolean(p.proceso_nombre || p.proceso_codigo);
+        const textoProcesoDisplay = tieneProceso 
+          ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`)
+          : "Sin proceso asignado";
+        const tooltipProcesoEdit = esGestor ? 'title="Doble clic para asignar o modificar el proceso relacionado"' : `title="${textoProcesoDisplay}"`;
+        const estiloCursorProceso = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50 relative";
@@ -2773,12 +2780,22 @@
             
             <h3 class="font-bold text-base text-[#0f2a4a] leading-snug flex items-center">${p.nombre}</h3>
             
-            <p ${tooltipUoEdit} 
-               ondblclick="${esGestor ? `editarUnidadOrganicaProyecto(${p.id}, '${siglaUnidad}')` : ''}"
-               class="text-[11px] font-bold text-teal-800 mt-1 inline-flex items-center space-x-1 ${estiloCursorUo}">
-              <span>🏢</span>
-              <span>${siglaUnidad}</span>
-            </p>
+            <!-- Fila de Metadatos: Unidad Orgánica y Proceso Relacionado -->
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
+              <p ${tooltipUoEdit} 
+                 ondblclick="${esGestor ? `editarUnidadOrganicaProyecto(${p.id}, '${siglaUnidad}')` : ''}"
+                 class="text-[11px] font-bold text-teal-800 inline-flex items-center space-x-1 ${estiloCursorUo}">
+                <span>🏢</span>
+                <span>${siglaUnidad || 'Sin UO'}</span>
+              </p>
+              <span class="text-gray-300 text-xs">•</span>
+              <p ${tooltipProcesoEdit} 
+                 ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}"
+                 class="text-[11px] font-semibold text-slate-600 inline-flex items-center space-x-1 max-w-[220px] truncate ${estiloCursorProceso}">
+                <span>⚙️</span>
+                <span class="truncate ${tieneProceso ? 'text-[#0f2a4a] font-bold' : 'italic text-gray-400'}">${textoProcesoDisplay}</span>
+              </p>
+            </div>
 
             <p ${tooltipEdit} 
                ondblclick="${esGestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" 
@@ -2859,6 +2876,12 @@
             <td class="p-3">
               <div class="font-bold text-gray-800 text-xs">${p.nombre}</div>
               <div class="text-[11px] text-gray-500 line-clamp-1">${p.descripcion || 'Sin descripción'}</div>
+              <div class="text-[10px] text-teal-800 font-semibold mt-0.5 flex items-center gap-1">
+                <span>⚙️</span>
+                <span class="${esGestor ? 'cursor-pointer hover:underline' : ''}" ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}">
+                  ${(p.proceso_nombre || p.proceso_codigo) ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`) : '<span class="text-gray-400 italic">Sin proceso asignado</span>'}
+                </span>
+              </div>
             </td>
             <td class="p-3 text-center whitespace-nowrap">
               <span class="inline-flex items-center justify-center space-x-1 px-2.5 py-1 rounded text-[10px] font-black uppercase whitespace-nowrap ${esGestor ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}">
@@ -3221,6 +3244,175 @@
       } catch (e) {
         console.error("Error al actualizar unidad:", e);
         alert("Error de conexión al intentar actualizar la unidad de organización.");
+      }
+    }
+
+    // --- MODAL DE EDICIÓN RÁPIDA DE PROCESO RELACIONADO ---
+    let proyectoEditandoProcesoId = null;
+
+    function editarProcesoProyectoModal(idProy) {
+      const proyectoObj = (proyectosUsuarioGlobal || []).find(p => p.id === idProy);
+      const esGestor = proyectoObj ? (proyectoObj.es_gestor === 1 || proyectoObj.es_gestor === true || currentUser.rol === "ADMIN_TI") : false;
+
+      if (!esGestor) {
+        alert("Solo el Gestor del Proyecto puede modificar el proceso relacionado.");
+        return;
+      }
+
+      proyectoEditandoProcesoId = idProy;
+
+      if (!catalogoProcesosGlobal || catalogoProcesosGlobal.length === 0) {
+        cargarCatalogoProcesos();
+      }
+
+      const procActual = proyectoObj.proceso_nombre 
+        ? `${proyectoObj.proceso_nombre} [${proyectoObj.proceso_codigo}]` 
+        : "Ninguno";
+
+      const modalEl = document.getElementById("modal-editar-proceso-proyecto");
+      if (modalEl) modalEl.remove();
+
+      const modalHtml = `
+        <div id="modal-editar-proceso-proyecto" class="fixed inset-0 bg-black/60 z-[130] flex items-center justify-center p-4 backdrop-blur-[1px]">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 flex flex-col">
+            <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+              <div class="flex items-center space-x-2">
+                <span class="text-xl">⚙️</span>
+                <h3 class="font-black text-sm tracking-wide">Modificar Proceso Relacionado</h3>
+              </div>
+              <button onclick="cerrarModalEditarProcesoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+            </div>
+            
+            <div class="p-5 space-y-3.5 text-xs">
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800">
+                Proceso actual: <strong class="text-[#0f2a4a]">${procActual}</strong>
+              </div>
+
+              <div class="relative">
+                <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Proceso o Subproceso:</label>
+                <input type="text" id="edit-proc-input-busq" oninput="autocompletarModalEditarProceso(this.value)" placeholder="Escriba código (ej. E4.3) o nombre..." class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+                <input type="hidden" id="edit-proc-codigo">
+                <input type="hidden" id="edit-proc-nombre">
+                <input type="hidden" id="edit-proc-personalizado" value="0">
+                
+                <div id="edit-proc-sugerencias" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[140] text-xs divide-y divide-gray-100"></div>
+              </div>
+
+              <div id="edit-proc-contenedor-otro" class="hidden p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+                <label class="block text-[10px] font-bold text-amber-800 uppercase mb-1">Especifique el subproceso personalizado:</label>
+                <input type="text" id="edit-proc-otro-texto" placeholder="Nombre descriptivo..." class="w-full p-2 bg-white border border-amber-300 rounded text-xs font-semibold text-gray-800 outline-none focus:border-amber-600">
+              </div>
+            </div>
+
+            <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end space-x-2">
+              <button type="button" onclick="cerrarModalEditarProcesoProyecto()" class="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition cursor-pointer">Cancelar</button>
+              <button type="button" onclick="confirmarCambioProcesoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow cursor-pointer">Actualizar Proceso</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      setTimeout(() => document.getElementById("edit-proc-input-busq")?.focus(), 100);
+    }
+
+    function autocompletarModalEditarProceso(term) {
+      const q = (term || "").toLowerCase().trim();
+      const div = document.getElementById("edit-proc-sugerencias");
+      const contOtro = document.getElementById("edit-proc-contenedor-otro");
+      if (!div) return;
+
+      if (!q) {
+        div.classList.add("hidden");
+        return;
+      }
+
+      div.innerHTML = "";
+
+      const matches = (catalogoProcesosGlobal || []).filter(p => 
+        p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
+      );
+
+      matches.slice(0, 6).forEach(p => {
+        const row = document.createElement("div");
+        row.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-medium";
+        row.innerHTML = `<span>${p.nombre}</span> <strong class="text-[#0f2a4a] text-[10px]">[${p.codigo}]</strong>`;
+        row.onclick = () => {
+          document.getElementById("edit-proc-input-busq").value = `${p.nombre} [${p.codigo}]`;
+          document.getElementById("edit-proc-codigo").value = p.codigo;
+          document.getElementById("edit-proc-nombre").value = p.nombre;
+          document.getElementById("edit-proc-personalizado").value = "0";
+          div.classList.add("hidden");
+          if (contOtro) contOtro.classList.add("hidden");
+        };
+        div.appendChild(row);
+      });
+
+      const itemOtro = document.createElement("div");
+      itemOtro.className = "p-2 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold cursor-pointer border-t border-amber-200 flex items-center justify-between";
+      itemOtro.innerHTML = `<span>⚙️ Otro subproceso (Personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
+      itemOtro.onclick = () => {
+        document.getElementById("edit-proc-input-busq").value = "Otro subproceso";
+        document.getElementById("edit-proc-codigo").value = "OTRO";
+        document.getElementById("edit-proc-nombre").value = "";
+        document.getElementById("edit-proc-personalizado").value = "1";
+        div.classList.add("hidden");
+        if (contOtro) {
+          contOtro.classList.remove("hidden");
+          document.getElementById("edit-proc-otro-texto")?.focus();
+        }
+      };
+      div.appendChild(itemOtro);
+
+      div.classList.remove("hidden");
+    }
+
+    function cerrarModalEditarProcesoProyecto() {
+      const m = document.getElementById("modal-editar-proceso-proyecto");
+      if (m) m.remove();
+      proyectoEditandoProcesoId = null;
+    }
+
+    async function confirmarCambioProcesoProyecto() {
+      const idProy = proyectoEditandoProcesoId;
+      if (!idProy) return;
+
+      const esPers = document.getElementById("edit-proc-personalizado")?.value === "1";
+      const procCod = esPers ? "OTRO" : (document.getElementById("edit-proc-codigo")?.value || "");
+      const procNom = esPers 
+        ? (document.getElementById("edit-proc-otro-texto")?.value.trim() || "Otro subproceso")
+        : (document.getElementById("edit-proc-nombre")?.value || "");
+
+      if (!procNom && !procCod) {
+        alert("Debe seleccionar o especificar un proceso.");
+        return;
+      }
+
+      cerrarModalEditarProcesoProyecto();
+
+      try {
+        const res = await fetch(`/proyectos/${idProy}/proceso`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            proceso_codigo: procCod,
+            proceso_nombre: procNom,
+            es_proceso_personalizado: esPers ? 1 : 0
+          })
+        });
+
+        if (res.ok) {
+          notificarToast(`Proceso asignado: ${procNom} [${procCod}]`, "success");
+          await cargarHubProyectos();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al actualizar el proceso del proyecto.");
+        }
+      } catch (e) {
+        alert("Error de conexión al actualizar proceso.");
       }
     }
 
