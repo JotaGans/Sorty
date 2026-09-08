@@ -2754,12 +2754,19 @@
         const tooltipUoEdit = esGestor ? 'title="Doble clic para modificar la Unidad de Organización"' : `title="${nombreCompletoUnidad}"`;
         const estiloCursorUo = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
-        // Formato oficial de proceso: [Denominación del proceso] [[Código del proceso]]
+        // Separar denominación limpia para la tarjeta y detalle completo para el Tooltip
         const tieneProceso = Boolean(p.proceso_nombre || p.proceso_codigo);
-        const textoProcesoDisplay = tieneProceso 
+        const nombreLimpioProceso = tieneProceso 
+          ? (p.proceso_nombre || "Proceso sin denominación") 
+          : "Sin proceso asignado";
+        
+        const detalleCompletoProceso = tieneProceso
           ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`)
           : "Sin proceso asignado";
-        const tooltipProcesoEdit = esGestor ? 'title="Doble clic para asignar o modificar el proceso relacionado"' : `title="${textoProcesoDisplay}"`;
+
+        const tooltipProceso = esGestor 
+          ? `title="${detalleCompletoProceso}&#10;(Doble clic para modificar)"` 
+          : `title="${detalleCompletoProceso}"`;
         const estiloCursorProceso = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
         const card = document.createElement("div");
@@ -2796,11 +2803,11 @@
                 <span>${siglaUnidad || 'Sin UO'}</span>
               </p>
               <span class="text-gray-300 text-xs">•</span>
-              <p ${tooltipProcesoEdit} 
+              <p ${tooltipProceso} 
                  ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}"
                  class="text-[11px] font-semibold text-slate-600 inline-flex items-center space-x-1 max-w-[220px] truncate ${estiloCursorProceso}">
                 <span>⚙️</span>
-                <span class="truncate ${tieneProceso ? 'text-[#0f2a4a] font-bold' : 'italic text-gray-400'}">${textoProcesoDisplay}</span>
+                <span class="truncate ${tieneProceso ? 'text-[#0f2a4a] font-bold' : 'italic text-gray-400'}">${nombreLimpioProceso}</span>
               </p>
             </div>
 
@@ -2885,8 +2892,10 @@
               <div class="text-[11px] text-gray-500 line-clamp-1">${p.descripcion || 'Sin descripción'}</div>
               <div class="text-[10px] text-teal-800 font-semibold mt-0.5 flex items-center gap-1">
                 <span>⚙️</span>
-                <span class="${esGestor ? 'cursor-pointer hover:underline' : ''}" ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}">
-                  ${(p.proceso_nombre || p.proceso_codigo) ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`) : '<span class="text-gray-400 italic">Sin proceso asignado</span>'}
+                <span class="${esGestor ? 'cursor-pointer hover:underline' : ''}" 
+                      title="${(p.proceso_nombre || p.proceso_codigo) ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`) : 'Sin proceso asignado'}${esGestor ? '&#10;(Doble clic para modificar)' : ''}" 
+                      ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}">
+                  ${p.proceso_nombre ? p.proceso_nombre : (p.proceso_codigo ? `[${p.proceso_codigo}]` : '<span class="text-gray-400 italic">Sin proceso asignado</span>')}
                 </span>
               </div>
             </td>
