@@ -610,7 +610,7 @@
                   <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[7px] px-1 py-0.5 text-gray-800 font-black leading-none border-b border-gray-300">▲</button>
                   <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[7px] px-1 py-0.5 text-gray-800 font-black leading-none">▼</button>
                 </div>
-                <input type="number" id="input-semana-inicio" min="1" max="150" value="1" onchange="fijarSemanaInicio(this.value)" class="w-7 text-center text-xs font-extrabold text-[#0f2a4a] outline-none">
+                <input type="number" id="input-semana-inicio" min="1" max="999" value="1" onchange="fijarSemanaInicio(this.value)" class="w-10 text-center text-xs font-extrabold text-[#0f2a4a] outline-none px-0.5">
               </div>
             </div>
             <button onclick="irAInicioProyecto()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 py-1 rounded transition shadow-xs whitespace-nowrap" title="Ir a inicio">Inicio</button>
@@ -623,35 +623,36 @@
           </button>
         </div>
 
-        <!-- Grupo Derecha: Herramientas del Proyecto -->
+        <!-- Grupo Derecha: Herramientas del Proyecto (Iconos compactos con Tooltip) -->
         <div class="flex flex-nowrap items-center gap-1.5 flex-shrink-0">
-          <button onclick="exportarExcelCSV()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs font-bold px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 whitespace-nowrap">
+          <!-- Excel -->
+          <button onclick="exportarExcelCSV()" class="w-[29px] h-[29px] bg-[#27ae60] hover:bg-[#219150] text-white text-sm font-bold rounded-lg transition shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer" title="Exportar Cronograma a Excel (CSV)">
             <span>📊</span>
-            <span>Excel</span>
           </button>
 
-          <!-- Botón Toggle CPM Compacto -->
-          <button id="btn-toggle-cpm" onclick="alternarCapaRutaCritica()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 border border-gray-300 whitespace-nowrap" title="Activar o desactivar resaltado de Ruta Crítica">
+          <!-- Toggle Ruta Crítica (CPM) -->
+          <button id="btn-toggle-cpm" onclick="alternarCapaRutaCritica()" class="relative w-[29px] h-[29px] bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition shadow-xs flex items-center justify-center border border-gray-300 flex-shrink-0 cursor-pointer" title="Activar / Desactivar Ruta Crítica (CPM)">
             <span>🔥</span>
-            <span>Ruta Crítica</span>
-            <span id="badge-duracion-cpm" class="hidden bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-md">0d</span>
+            <span id="badge-duracion-cpm" class="hidden absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[8px] font-black px-1 py-0.2 rounded-full border border-white shadow-xs">0d</span>
           </button>
 
-          <button id="btn-config-dependencias" onclick="abrirModalDependencias()" class="bg-[#34495e] hover:bg-[#2c3e50] text-white text-xs font-bold px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 whitespace-nowrap" title="Configurar precedencias entre tareas">
+          <!-- Dependencias -->
+          <button id="btn-config-dependencias" onclick="abrirModalDependencias()" class="w-[29px] h-[29px] bg-[#34495e] hover:bg-[#2c3e50] text-white text-sm font-bold rounded-lg transition shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer" title="Configurar Dependencias y Predecesoras (CPM)">
             <span>🔗</span>
-            <span>Dependencias</span>
           </button>
 
-          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="bg-[#718093] hover:bg-[#576574] text-white text-xs font-bold px-2 py-1.5 rounded transition whitespace-nowrap">
-            📜 Historial
+          <!-- Historial -->
+          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="w-[29px] h-[29px] bg-[#718093] hover:bg-[#576574] text-white text-sm font-bold rounded-lg transition shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer" title="Historial de Cambios y Auditoría">
+            <span>📜</span>
           </button>
 
-          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="bg-[#2980b9] hover:bg-[#1f618d] text-white text-xs font-bold px-2 py-1.5 rounded transition whitespace-nowrap">
-            ⚙️ Personal
+          <!-- Personal y Roles -->
+          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="w-[29px] h-[29px] bg-[#2980b9] hover:bg-[#1f618d] text-white text-sm font-bold rounded-lg transition shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer" title="Administración de Personal y Roles del Proyecto">
+            <span>⚙️</span>
           </button>
 
-          <!-- Botón Cuadrado Dinámico de Plantilla (Importar cuando está vacío / Guardar cuando tiene tareas) -->
-          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="w-[29px] h-[29px] bg-teal-600 hover:bg-teal-700 text-white text-sm font-black rounded-lg transition-all shadow flex items-center justify-center flex-shrink-0 cursor-pointer animate-pulse" title="Importar Plantilla">
+          <!-- Plantilla Dinámica (Importar / Guardar) -->
+          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="w-[29px] h-[29px] bg-teal-600 hover:bg-teal-700 text-white text-sm font-black rounded-lg transition shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer animate-pulse" title="Importar Plantilla">
             <span id="ico-accion-plantilla">📂</span>
           </button>
         </div>
@@ -6315,14 +6316,16 @@
       if (!btn) return;
 
       if (activo) {
-        btn.className = "bg-red-600 hover:bg-red-700 text-white text-xs font-black px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 border border-red-700 whitespace-nowrap";
+        btn.className = "relative w-[29px] h-[29px] bg-red-600 hover:bg-red-700 text-white text-sm font-black rounded-lg transition shadow-xs flex items-center justify-center border border-red-700 flex-shrink-0 cursor-pointer";
+        btn.title = `Ruta Crítica activa (${duracionDias} días)`;
         if (badge) {
           badge.innerText = `${duracionDias}d`;
-          badge.className = "bg-white text-red-700 text-[10px] font-black px-1.5 py-0.2 rounded-md shadow-xs";
+          badge.className = "absolute -top-1.5 -right-1.5 bg-red-700 text-white text-[8px] font-black px-1 py-0.2 rounded-full border border-white shadow-xs";
           badge.classList.remove("hidden");
         }
       } else {
-        btn.className = "bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 border border-gray-300 whitespace-nowrap";
+        btn.className = "relative w-[29px] h-[29px] bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition shadow-xs flex items-center justify-center border border-gray-300 flex-shrink-0 cursor-pointer";
+        btn.title = "Activar / Desactivar Ruta Crítica (CPM)";
         if (badge) badge.classList.add("hidden");
       }
     }
