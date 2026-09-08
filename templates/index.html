@@ -2751,10 +2751,11 @@
           nombreCompletoUnidad = uObj ? uObj.nombre : p.unidad_organica.trim();
         }
 
-        const tooltipUoEdit = esGestor ? 'title="Doble clic para modificar la Unidad de Organización"' : `title="${nombreCompletoUnidad}"`;
+        // Tooltip exclusivo con el nombre completo oficial de la unidad
+        const tooltipUo = nombreCompletoUnidad ? `title="${nombreCompletoUnidad}"` : '';
         const estiloCursorUo = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
-        // Separar denominación limpia para la tarjeta y detalle completo para el Tooltip
+        // Tooltip exclusivo con denominación y código institucional: [Nombre] [[Código]]
         const tieneProceso = Boolean(p.proceso_nombre || p.proceso_codigo);
         const nombreLimpioProceso = tieneProceso 
           ? (p.proceso_nombre || "Proceso sin denominación") 
@@ -2764,9 +2765,7 @@
           ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`)
           : "Sin proceso asignado";
 
-        const tooltipProceso = esGestor 
-          ? `title="${detalleCompletoProceso}&#10;(Doble clic para modificar)"` 
-          : `title="${detalleCompletoProceso}"`;
+        const tooltipProceso = `title="${detalleCompletoProceso}"`;
         const estiloCursorProceso = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
         const card = document.createElement("div");
@@ -2796,7 +2795,7 @@
             
             <!-- Fila de Metadatos: Unidad Orgánica y Proceso Relacionado -->
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
-              <p ${tooltipUoEdit} 
+              <p ${tooltipUo} 
                  ondblclick="${esGestor ? `editarUnidadOrganicaProyecto(${p.id}, '${siglaUnidad}')` : ''}"
                  class="text-[11px] font-bold text-teal-800 inline-flex items-center space-x-1 ${estiloCursorUo}">
                 <span>🏢</span>
@@ -2893,7 +2892,7 @@
               <div class="text-[10px] text-teal-800 font-semibold mt-0.5 flex items-center gap-1">
                 <span>⚙️</span>
                 <span class="${esGestor ? 'cursor-pointer hover:underline' : ''}" 
-                      title="${(p.proceso_nombre || p.proceso_codigo) ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`) : 'Sin proceso asignado'}${esGestor ? '&#10;(Doble clic para modificar)' : ''}" 
+                      title="${(p.proceso_nombre || p.proceso_codigo) ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`) : 'Sin proceso asignado'}" 
                       ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}">
                   ${p.proceso_nombre ? p.proceso_nombre : (p.proceso_codigo ? `[${p.proceso_codigo}]` : '<span class="text-gray-400 italic">Sin proceso asignado</span>')}
                 </span>
