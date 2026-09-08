@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>IMARPE - Sistema de Gestión de Proyectos y Programas</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f5f6fa; }
     .tree-row-l1 { background-color: #e8f4f8 !important; font-weight: bold; color: #2c3e50; }
@@ -743,6 +744,25 @@
             <input type="hidden" id="input-nuevo-proy-uo-valor">
             <div id="sugerencias-uo-proyecto" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
           </div>
+
+      <!-- Campo: Proceso / Subproceso Relacionado -->
+          <div class="relative">
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Proceso / Subproceso Relacionado:</label>
+            <input type="text" id="input-nuevo-proy-proceso-busq" oninput="autocompletarProcesoNuevoProy(this.value)" placeholder="Buscar por denominación o código oficial (ej: E2.1.2)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+            <input type="hidden" id="input-nuevo-proy-proceso-codigo">
+            <input type="hidden" id="input-nuevo-proy-proceso-nombre">
+            <input type="hidden" id="input-nuevo-proy-proceso-personalizado" value="0">
+            
+            <!-- Lista Desplegable Flotante de Procesos -->
+            <div id="nuevo-proy-proceso-sugerencias" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+
+            <!-- Campo dinámico para 'Otro subproceso' -->
+            <div id="contenedor-otro-subproceso" class="hidden mt-2 p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+              <label class="block text-[10px] font-bold text-amber-800 uppercase mb-1">Especifique la denominación del subproceso:</label>
+              <input type="text" id="input-otro-subproceso-texto" placeholder="Ingrese el nombre del proceso o trámite..." class="w-full p-2 bg-white border border-amber-300 rounded text-xs font-semibold text-gray-800 outline-none focus:border-amber-600">
+            </div>
+          </div>
+
           <div>
             <label class="text-[11px] font-bold text-gray-600 uppercase">Descripción / Alcance:</label>
             <textarea id="input-nuevo-proy-desc" rows="3" placeholder="Detalles u objetivos del proyecto..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]"></textarea>
@@ -1682,6 +1702,113 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- MODAL ESTADÍSTICAS AVANZADAS TIPO POWER BI (FILTRADO REACTIVO POR USUARIO) -->
+  <div id="modal-estadisticas-hub" class="hidden fixed inset-0 bg-black/60 z-[150] flex items-center justify-center p-3 sm:p-4 backdrop-blur-[2px]">
+    <div class="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col border border-gray-200 overflow-hidden">
+      <!-- Barra Superior -->
+      <div class="bg-[#0f2a4a] text-white px-5 py-3.5 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <span class="text-xl">📊</span>
+          <div>
+            <h3 class="font-black text-sm tracking-wide">Panel Analítico de Proyectos & Procesos</h3>
+            <p class="text-[10px] text-blue-200 font-medium">Análisis reactivo aislado por sesión de usuario</p>
+          </div>
+        </div>
+        <button onclick="cerrarModalEstadisticasHub()" class="text-white hover:text-rose-300 text-2xl font-bold leading-none cursor-pointer transition">&times;</button>
+      </div>
+
+      <!-- Barra de Filtros / Slicers Tipo Power BI -->
+      <div class="bg-white border-b border-gray-200 px-5 py-3 flex flex-wrap items-center gap-3 flex-shrink-0 shadow-2xs">
+        <!-- Slicer Proceso -->
+        <div class="flex-1 min-w-[220px]">
+          <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Proceso Relacionado:</label>
+          <div class="relative">
+            <input type="text" id="stat-filtro-proceso" oninput="autocompletarSlicerProceso(this.value)" placeholder="Todos los procesos..." class="w-full pl-2.5 pr-6 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+            <input type="hidden" id="stat-filtro-proceso-val">
+            <button id="btn-limpiar-stat-proceso" onclick="limpiarSlicerProceso()" class="hidden absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-rose-600">×</button>
+            <div id="stat-sugerencias-proceso" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto z-[160] text-xs divide-y divide-gray-100"></div>
+          </div>
+        </div>
+
+        <!-- Slicer Unidad Orgánica -->
+        <div class="w-48 min-w-[160px]">
+          <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Unidad Orgánica:</label>
+          <select id="stat-filtro-uo" onchange="aplicarFiltrosEstadisticas()" class="w-full py-1.5 px-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
+            <option value="">🏢 Todas las Unidades</option>
+          </select>
+        </div>
+
+        <!-- Slicer Estado -->
+        <div class="w-40 min-w-[140px]">
+          <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Estado:</label>
+          <select id="stat-filtro-estado" onchange="aplicarFiltrosEstadisticas()" class="w-full py-1.5 px-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
+            <option value="">📊 Todos los Estados</option>
+            <option value="Ejecutado">Ejecutado</option>
+            <option value="En proceso">En proceso</option>
+            <option value="No iniciado">No iniciado</option>
+          </select>
+        </div>
+
+        <!-- Botón Reset Slicers -->
+        <div class="self-end">
+          <button onclick="resetearSlicersEstadisticas()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition border border-gray-300 flex items-center space-x-1 cursor-pointer" title="Restablecer filtros">
+            <span>↺</span>
+            <span>Limpiar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenedor Principal con Scroll Interno -->
+      <div class="flex-1 overflow-y-auto p-5 space-y-4">
+        <!-- Fila de Tarjetas KPI / Scorecards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-white p-3.5 rounded-xl border border-gray-200 shadow-2xs">
+            <span class="text-[10px] font-black text-gray-400 uppercase tracking-wider">Proyectos Filtrados</span>
+            <p id="stat-kpi-total" class="text-2xl font-black text-[#0f2a4a] mt-0.5">0</p>
+          </div>
+          <div class="bg-white p-3.5 rounded-xl border border-gray-200 shadow-2xs">
+            <span class="text-[10px] font-black text-gray-400 uppercase tracking-wider">Avance Promedio</span>
+            <p id="stat-kpi-promedio" class="text-2xl font-black text-teal-600 mt-0.5">0%</p>
+          </div>
+          <div class="bg-white p-3.5 rounded-xl border border-gray-200 shadow-2xs">
+            <span class="text-[10px] font-black text-gray-400 uppercase tracking-wider">En Ejecución</span>
+            <p id="stat-kpi-en-proceso" class="text-2xl font-black text-amber-500 mt-0.5">0</p>
+          </div>
+          <div class="bg-white p-3.5 rounded-xl border border-gray-200 shadow-2xs">
+            <span class="text-[10px] font-black text-gray-400 uppercase tracking-wider">Completados (100%)</span>
+            <p id="stat-kpi-ejecutados" class="text-2xl font-black text-emerald-600 mt-0.5">0</p>
+          </div>
+        </div>
+
+        <!-- Gráfico Principal con Selector de Visualización -->
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs flex flex-col">
+          <div class="flex justify-between items-center mb-3">
+            <h4 id="stat-titulo-grafico" class="font-bold text-xs text-gray-700 uppercase tracking-wider">Avance Individual de Proyectos (%)</h4>
+            
+            <!-- Conmutador: Barras vs Pastel -->
+            <div class="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200 text-xs font-bold">
+              <button id="btn-chart-barras" onclick="conmutarTipoGrafico('bar')" class="px-2.5 py-1 rounded-md bg-white shadow-2xs text-[#0f2a4a] transition">Gráfico de Barras</button>
+              <button id="btn-chart-pastel" onclick="conmutarTipoGrafico('pie')" class="px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-900 transition">Gráfico de Pastel</button>
+            </div>
+          </div>
+
+          <div class="relative h-64 w-full flex items-center justify-center">
+            <canvas id="canvasEstadisticasHub"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabla Drill-Through de Detalle -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-2xs overflow-hidden">
+          <div class="px-4 py-2.5 bg-slate-100/70 border-b border-gray-200 flex justify-between items-center">
+            <span class="text-xs font-black text-gray-700 uppercase tracking-wider">Detalle de Proyectos en Vista</span>
+            <span id="stat-conteo-tabla" class="text-[11px] font-bold text-gray-500">0 registros</span>
+          </div>
+          <div class="max-h-48 overflow-y-auto divide-y divide-gray-100 text-xs" id="stat-tabla-proyectos"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -8010,202 +8137,323 @@
       notificarToast("Filtros del Hub restablecidos correctamente.", "info");
     }
 
-    let tipoGraficoActual = "barras";
+    // =========================================================================
+    // MOTOR ANALÍTICO TIPO POWER BI (FILTRADO REACTIVO AISLADO POR SESIÓN)
+    // =========================================================================
+    let catalogoProcesosGlobal = [];
+    let tipoGraficoActual = 'bar';
+    let chartInstancia = null;
 
-    function abrirModalEstadisticasHub() {
-      renderizarEstadisticasHub();
+    async function cargarCatalogoProcesos() {
+      try {
+        const res = await fetch("/procesos-institucionales", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          catalogoProcesosGlobal = await res.json();
+        }
+      } catch (e) {
+        console.error("Error al cargar procesos:", e);
+      }
+    }
+
+    // Autocompletado al crear proyecto
+    function autocompletarProcesoNuevoProy(term) {
+      const q = (term || "").toLowerCase().trim();
+      const div = document.getElementById("nuevo-proy-proceso-sugerencias");
+      const contOtro = document.getElementById("contenedor-otro-subproceso");
+      if (!div) return;
+
+      if (!q) {
+        div.classList.add("hidden");
+        return;
+      }
+
+      div.innerHTML = "";
+
+      const matches = (catalogoProcesosGlobal || []).filter(p => 
+        p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
+      );
+
+      matches.slice(0, 6).forEach(p => {
+        const row = document.createElement("div");
+        row.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-semibold text-gray-800";
+        row.innerHTML = `<span>${p.nombre}</span> <strong class="text-[#0f2a4a] bg-gray-100 px-1.5 py-0.5 rounded text-[10px]">[${p.codigo}]</strong>`;
+        row.onclick = () => {
+          document.getElementById("input-nuevo-proy-proceso-busq").value = `${p.nombre} [${p.codigo}]`;
+          document.getElementById("input-nuevo-proy-proceso-codigo").value = p.codigo;
+          document.getElementById("input-nuevo-proy-proceso-nombre").value = p.nombre;
+          document.getElementById("input-nuevo-proy-proceso-personalizado").value = "0";
+          div.classList.add("hidden");
+          if (contOtro) contOtro.classList.add("hidden");
+        };
+        div.appendChild(row);
+      });
+
+      const itemOtro = document.createElement("div");
+      itemOtro.className = "p-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold cursor-pointer border-t border-amber-200 flex items-center justify-between";
+      itemOtro.innerHTML = `<span>⚙️ Otro subproceso (Personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
+      itemOtro.onclick = () => {
+        document.getElementById("input-nuevo-proy-proceso-busq").value = "Otro subproceso";
+        document.getElementById("input-nuevo-proy-proceso-codigo").value = "OTRO";
+        document.getElementById("input-nuevo-proy-proceso-nombre").value = "";
+        document.getElementById("input-nuevo-proy-proceso-personalizado").value = "1";
+        div.classList.add("hidden");
+        if (contOtro) {
+          contOtro.classList.remove("hidden");
+          document.getElementById("input-otro-subproceso-texto")?.focus();
+        }
+      };
+      div.appendChild(itemOtro);
+
+      div.classList.remove("hidden");
+    }
+
+    async function abrirModalEstadisticasHub() {
+      if (!catalogoProcesosGlobal || catalogoProcesosGlobal.length === 0) {
+        await cargarCatalogoProcesos();
+      }
+
+      const selUo = document.getElementById("stat-filtro-uo");
+      if (selUo) {
+        const uosExistentes = [...new Set((proyectosUsuarioGlobal || []).map(p => p.unidad_organica).filter(Boolean))];
+        selUo.innerHTML = '<option value="">🏢 Todas las Unidades</option>' + 
+          uosExistentes.map(u => `<option value="${u}">${u}</option>`).join("");
+      }
+
       document.getElementById("modal-estadisticas-hub").classList.remove("hidden");
+      aplicarFiltrosEstadisticas();
     }
 
     function cerrarModalEstadisticasHub() {
       document.getElementById("modal-estadisticas-hub").classList.add("hidden");
-    }
-
-    function cambiarTipoGraficoHub(tipo) {
-      tipoGraficoActual = tipo;
-      const btnBarras = document.getElementById("btn-tipo-barras");
-      const btnPastel = document.getElementById("btn-tipo-pastel");
-
-      if (tipo === "barras") {
-        btnBarras.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-indigo-700 text-white shadow-xs transition cursor-pointer";
-        btnPastel.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-700 transition cursor-pointer";
-      } else {
-        btnPastel.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-indigo-700 text-white shadow-xs transition cursor-pointer";
-        btnBarras.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-700 transition cursor-pointer";
+      if (chartInstancia) {
+        chartInstancia.destroy();
+        chartInstancia = null;
       }
-      renderizarEstadisticasHub();
     }
 
-    function renderizarEstadisticasHub() {
-      const listaFiltrada = obtenerProyectosFiltradosHub();
-      const totalProy = listaFiltrada.length;
+    function conmutarTipoGrafico(tipo) {
+      tipoGraficoActual = tipo;
+      const btnBarras = document.getElementById("btn-chart-barras");
+      const btnPastel = document.getElementById("btn-chart-pastel");
 
-      let totalEjecutadas = 0;
-      let totalProceso = 0;
-      let totalPendientes = 0;
-      let sumaAvances = 0;
+      if (tipo === 'bar') {
+        if (btnBarras) btnBarras.className = "px-2.5 py-1 rounded-md bg-white shadow-2xs text-[#0f2a4a] transition";
+        if (btnPastel) btnPastel.className = "px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-900 transition";
+      } else {
+        if (btnPastel) btnPastel.className = "px-2.5 py-1 rounded-md bg-white shadow-2xs text-[#0f2a4a] transition";
+        if (btnBarras) btnBarras.className = "px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-900 transition";
+      }
+      aplicarFiltrosEstadisticas();
+    }
 
-      listaFiltrada.forEach(p => {
-        totalEjecutadas += (p.ejecutadas || 0);
-        totalProceso += (p.en_proceso || 0);
-        totalPendientes += (p.pendientes || 0);
-        sumaAvances += (p.avance_global || 0);
+    function aplicarFiltrosEstadisticas() {
+      const procCod = (document.getElementById("stat-filtro-proceso-val")?.value || "").trim().toUpperCase();
+      const procTexto = (document.getElementById("stat-filtro-proceso")?.value || "").trim().toUpperCase();
+      const uoFiltro = document.getElementById("stat-filtro-uo")?.value || "";
+      const estFiltro = document.getElementById("stat-filtro-estado")?.value || "";
+
+      const proyectosFiltrados = (proyectosUsuarioGlobal || []).filter(p => {
+        if (uoFiltro && p.unidad_organica !== uoFiltro) return false;
+        
+        if (estFiltro) {
+          const av = p.avance_global || 0;
+          const estadoCalc = av === 100 ? "Ejecutado" : (av > 0 ? "En proceso" : "No iniciado");
+          if (estadoCalc !== estFiltro) return false;
+        }
+
+        if (procCod || procTexto) {
+          const codP = (p.proceso_codigo || "").toUpperCase();
+          const nomP = (p.proceso_nombre || "").toUpperCase();
+          const matchCod = procCod && (codP === procCod || codP.startsWith(procCod + "."));
+          const matchNom = procTexto && (nomP.includes(procTexto) || codP.includes(procTexto));
+          if (!matchCod && !matchNom) return false;
+        }
+
+        return true;
       });
 
-      const promAvance = totalProy > 0 ? Math.round(sumaAvances / totalProy) : 0;
-      const totalTareas = totalEjecutadas + totalProceso + totalPendientes;
+      actualizarKPIsEstadisticas(proyectosFiltrados);
+      renderizarGraficoEstadisticas(proyectosFiltrados);
+      renderizarTablaDetalleEstadisticas(proyectosFiltrados);
+    }
 
-      document.getElementById("stat-kpi-proyectos").innerText = totalProy;
-      document.getElementById("stat-kpi-ejecutadas").innerText = totalEjecutadas;
-      document.getElementById("stat-kpi-proceso").innerText = totalProceso;
-      document.getElementById("stat-kpi-avance").innerText = `${promAvance}%`;
+    function actualizarKPIsEstadisticas(lista) {
+      const total = lista.length;
+      let sumaAvance = 0;
+      let enProc = 0;
+      let ejec = 0;
 
-      const txtInfo = document.getElementById("stat-info-filtro-activo");
-      const filtroUoVal = document.getElementById("hub-filtro-uo-busq")?.value || "Todas";
-      const filtroEstVal = document.getElementById("hub-filtro-estado")?.value || "Todos";
-      txtInfo.innerHTML = `Analizando <strong>${totalProy}</strong> proyecto(s) | Unidad: <span class="text-teal-700">${filtroUoVal}</span> | Estado: <span class="text-amber-700">${filtroEstVal}</span>`;
+      lista.forEach(p => {
+        const av = p.avance_global || 0;
+        sumaAvance += av;
+        if (av === 100) ejec++;
+        else if (av > 0) enProc++;
+      });
 
-      const contenedorGrafico = document.getElementById("grafico-dinamico-contenedor");
-      if (!contenedorGrafico) return;
-      contenedorGrafico.innerHTML = "";
+      const prom = total > 0 ? Math.round(sumaAvance / total) : 0;
 
-      if (totalProy === 0 || totalTareas === 0) {
-        contenedorGrafico.innerHTML = `<div class="text-gray-400 font-semibold italic text-xs py-10">No hay datos suficientes con los filtros seleccionados para generar la estadística.</div>`;
+      document.getElementById("stat-kpi-total").innerText = total;
+      document.getElementById("stat-kpi-promedio").innerText = `${prom}%`;
+      document.getElementById("stat-kpi-en-proceso").innerText = enProc;
+      document.getElementById("stat-kpi-ejecutados").innerText = ejec;
+    }
+
+    function renderizarGraficoEstadisticas(lista) {
+      const canvas = document.getElementById("canvasEstadisticasHub");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+
+      if (chartInstancia) {
+        chartInstancia.destroy();
+      }
+
+      if (lista.length === 0) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         return;
       }
 
-      if (tipoGraficoActual === "barras") {
-        const maxVal = Math.max(totalEjecutadas, totalProceso, totalPendientes, 1);
-        const hEjec = Math.round((totalEjecutadas / maxVal) * 160);
-        const hProc = Math.round((totalProceso / maxVal) * 160);
-        const hPend = Math.round((totalPendientes / maxVal) * 160);
+      if (tipoGraficoActual === 'bar') {
+        const labels = lista.map(p => p.nombre.length > 25 ? p.nombre.substring(0, 22) + "..." : p.nombre);
+        const data = lista.map(p => p.avance_global || 0);
 
-        contenedorGrafico.innerHTML = `
-          <div class="w-full max-w-md flex items-end justify-around h-56 pt-8 pb-2 px-4 border-b border-l border-gray-300 relative">
-            <div class="flex flex-col items-center flex-1 h-full justify-end group">
-              <span class="text-[11px] font-black text-emerald-800 mb-1">${totalEjecutadas}</span>
-              <div class="w-14 bg-emerald-500 rounded-t-lg transition-all duration-500 hover:bg-emerald-600 shadow-sm" style="height: ${Math.max(15, hEjec)}px;" title="Ejecutadas: ${totalEjecutadas}"></div>
-              <span class="text-[10px] font-bold text-gray-600 mt-2 uppercase tracking-tight">Ejecutadas</span>
-            </div>
-            <div class="flex flex-col items-center flex-1 h-full justify-end group">
-              <span class="text-[11px] font-black text-amber-800 mb-1">${totalProceso}</span>
-              <div class="w-14 bg-amber-500 rounded-t-lg transition-all duration-500 hover:bg-amber-600 shadow-sm" style="height: ${Math.max(15, hProc)}px;" title="En Proceso: ${totalProceso}"></div>
-              <span class="text-[10px] font-bold text-gray-600 mt-2 uppercase tracking-tight">En Proceso</span>
-            </div>
-            <div class="flex flex-col items-center flex-1 h-full justify-end group">
-              <span class="text-[11px] font-black text-rose-800 mb-1">${totalPendientes}</span>
-              <div class="w-14 bg-rose-500 rounded-t-lg transition-all duration-500 hover:bg-rose-600 shadow-sm" style="height: ${Math.max(15, hPend)}px;" title="No Iniciadas: ${totalPendientes}"></div>
-              <span class="text-[10px] font-bold text-gray-600 mt-2 uppercase tracking-tight">No Iniciadas</span>
-            </div>
-          </div>
-        `;
+        chartInstancia = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: '% Avance',
+              data: data,
+              backgroundColor: data.map(v => v === 100 ? '#10b981' : (v > 0 ? '#0d9488' : '#cbd5e1')),
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
+            },
+            plugins: { legend: { display: false } }
+          }
+        });
       } else {
-        const pEjec = (totalEjecutadas / totalTareas) * 100;
-        const pProc = (totalProceso / totalTareas) * 100;
-        const pPend = (totalPendientes / totalTareas) * 100;
+        let noInic = 0, enProc = 0, ejec = 0;
+        lista.forEach(p => {
+          const av = p.avance_global || 0;
+          if (av === 100) ejec++;
+          else if (av > 0) enProc++;
+          else noInic++;
+        });
 
-        const circ = 2 * Math.PI * 40;
-        const dashEjec = (pEjec / 100) * circ;
-        const dashProc = (pProc / 100) * circ;
-        const dashPend = (pPend / 100) * circ;
-
-        const offsetEjec = 0;
-        const offsetProc = -dashEjec;
-        const offsetPend = -(dashEjec + dashProc);
-
-        contenedorGrafico.innerHTML = `
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-8 py-4">
-            <div class="relative w-44 h-44 flex items-center justify-center">
-              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f1f5f9" stroke-width="16" />
-                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" stroke-width="16" stroke-dasharray="${dashEjec} ${circ}" stroke-dashoffset="${offsetEjec}" />
-                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" stroke-width="16" stroke-dasharray="${dashProc} ${circ}" stroke-dashoffset="${offsetProc}" />
-                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f43f5e" stroke-width="16" stroke-dasharray="${dashPend} ${circ}" stroke-dashoffset="${offsetPend}" />
-              </svg>
-              <div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                <span class="text-xl font-black text-[#0f2a4a]">${totalTareas}</span>
-                <span class="text-[9px] font-bold text-gray-400 uppercase">Tareas Totales</span>
-              </div>
-            </div>
-            <div class="flex flex-col space-y-2 text-xs font-bold">
-              <div class="flex items-center space-x-2">
-                <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-xs"></span>
-                <span class="text-gray-700">Ejecutadas:</span>
-                <span class="font-black text-emerald-800">${totalEjecutadas} (${Math.round(pEjec)}%)</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <span class="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-xs"></span>
-                <span class="text-gray-700">En Proceso:</span>
-                <span class="font-black text-amber-800">${totalProceso} (${Math.round(pProc)}%)</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <span class="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-xs"></span>
-                <span class="text-gray-700">No Iniciadas:</span>
-                <span class="font-black text-rose-800">${totalPendientes} (${Math.round(pPend)}%)</span>
-              </div>
-            </div>
-          </div>
-        `;
+        chartInstancia = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: ['No iniciado', 'En proceso', 'Ejecutado'],
+            datasets: [{
+              data: [noInic, enProc, ejec],
+              backgroundColor: ['#cbd5e1', '#f59e0b', '#10b981']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom' }
+            }
+          }
+        });
       }
     }
+
+    function renderizarTablaDetalleEstadisticas(lista) {
+      const cont = document.getElementById("stat-tabla-proyectos");
+      const lblConteo = document.getElementById("stat-conteo-tabla");
+      if (!cont) return;
+
+      lblConteo.innerText = `${lista.length} proyecto(s)`;
+      if (lista.length === 0) {
+        cont.innerHTML = '<div class="p-4 text-center text-gray-400 italic">No hay proyectos coincidentes con los filtros seleccionados.</div>';
+        return;
+      }
+
+      cont.innerHTML = lista.map(p => `
+        <div class="p-3 flex items-center justify-between hover:bg-slate-50 transition">
+          <div class="flex-1 pr-4">
+            <h5 class="font-bold text-gray-800 text-xs">${p.nombre}</h5>
+            <p class="text-[11px] text-gray-500 flex items-center gap-2 mt-0.5">
+              <span>🏢 ${p.unidad_organica || 'Sin UO'}</span>
+              <span>•</span>
+              <span class="text-teal-700 font-semibold">⚙️ ${p.proceso_nombre ? `${p.proceso_nombre} [${p.proceso_codigo}]` : 'Sin proceso'}</span>
+            </p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <span class="text-xs font-black px-2 py-0.5 rounded ${p.avance_global === 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-teal-100 text-teal-800'}">
+              ${p.avance_global || 0}%
+            </span>
+            <button onclick="cerrarModalEstadisticasHub(); ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${(p.es_gestor === 1 || p.es_gestor === true)});" class="text-xs font-bold text-[#0f2a4a] hover:underline cursor-pointer">
+              Ver →
+            </button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function autocompletarSlicerProceso(term) {
+      const q = (term || "").toLowerCase().trim();
+      const div = document.getElementById("stat-sugerencias-proceso");
+      const btnLimpiar = document.getElementById("btn-limpiar-stat-proceso");
+      if (!div) return;
+
+      if (!q) {
+        div.classList.add("hidden");
+        btnLimpiar.classList.add("hidden");
+        document.getElementById("stat-filtro-proceso-val").value = "";
+        aplicarFiltrosEstadisticas();
+        return;
+      }
+
+      btnLimpiar.classList.remove("hidden");
+      div.innerHTML = "";
+
+      const matches = (catalogoProcesosGlobal || []).filter(p => 
+        p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
+      );
+
+      if (matches.length === 0) {
+        div.innerHTML = `<div class="p-2 text-gray-400 italic">Sin coincidencias</div>`;
+      } else {
+        matches.slice(0, 6).forEach(p => {
+          const item = document.createElement("div");
+          item.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-medium";
+          item.innerHTML = `<span>${p.nombre}</span> <strong class="text-[#0f2a4a] text-[10px]">[${p.codigo}]</strong>`;
+          item.onclick = () => {
+            document.getElementById("stat-filtro-proceso").value = `${p.nombre} [${p.codigo}]`;
+            document.getElementById("stat-filtro-proceso-val").value = p.codigo;
+            div.classList.add("hidden");
+            aplicarFiltrosEstadisticas();
+          };
+          div.appendChild(item);
+        });
+      }
+      div.classList.remove("hidden");
+    }
+
+    function limpiarSlicerProceso() {
+      document.getElementById("stat-filtro-proceso").value = "";
+      document.getElementById("stat-filtro-proceso-val").value = "";
+      document.getElementById("btn-limpiar-stat-proceso").classList.add("hidden");
+      aplicarFiltrosEstadisticas();
+    }
+
+    function resetearSlicersEstadisticas() {
+      limpiarSlicerProceso();
+      document.getElementById("stat-filtro-uo").value = "";
+      document.getElementById("stat-filtro-estado").value = "";
+      aplicarFiltrosEstadisticas();
+    }
   </script>
-
-  <!-- ================= MODAL: ANALÍTICA Y ESTADÍSTICAS DEL HUB ================= -->
-  <div id="modal-estadisticas-hub" class="hidden fixed inset-0 bg-black/60 z-[95] flex items-center justify-center p-4 backdrop-blur-[1px]">
-    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 flex flex-col max-h-[90vh]">
-      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
-        <div class="flex items-center space-x-2">
-          <span class="text-xl">📈</span>
-          <h3 class="font-black text-sm tracking-wide">Panel Analítico y Estadístico de Proyectos</h3>
-        </div>
-        <button onclick="cerrarModalEstadisticasHub()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
-      </div>
-
-      <div class="p-4 bg-white border-b border-gray-200 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
-        <div class="text-xs font-bold text-gray-700" id="stat-info-filtro-activo">
-          Mostrando métricas basadas en su selección actual.
-        </div>
-        <div class="flex items-center bg-slate-100 border border-slate-200 p-1 rounded-xl">
-          <button id="btn-tipo-barras" onclick="cambiarTipoGraficoHub('barras')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-indigo-700 text-white shadow-xs transition cursor-pointer">
-            📊 Gráfico de Barras
-          </button>
-          <button id="btn-tipo-pastel" onclick="cambiarTipoGraficoHub('pastel')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-700 transition cursor-pointer">
-            🥧 Gráfico de Pastel (Dona)
-          </button>
-        </div>
-      </div>
-
-      <div class="p-6 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-xs text-center">
-            <span class="block text-[9px] font-black text-gray-400 uppercase">Proyectos Filtrados</span>
-            <span id="stat-kpi-proyectos" class="text-lg font-black text-[#0f2a4a]">0</span>
-          </div>
-          <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 shadow-xs text-center">
-            <span class="block text-[9px] font-black text-emerald-700 uppercase">Tareas Ejecutadas</span>
-            <span id="stat-kpi-ejecutadas" class="text-lg font-black text-emerald-800">0</span>
-          </div>
-          <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 shadow-xs text-center">
-            <span class="block text-[9px] font-black text-amber-700 uppercase">Tareas En Proceso</span>
-            <span id="stat-kpi-proceso" class="text-lg font-black text-amber-800">0</span>
-          </div>
-          <div class="bg-teal-50 p-3 rounded-xl border border-teal-200 shadow-xs text-center">
-            <span class="block text-[9px] font-black text-teal-700 uppercase">Avance Promedio</span>
-            <span id="stat-kpi-avance" class="text-lg font-black text-teal-800">0%</span>
-          </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center min-h-[280px]">
-          <div id="grafico-dinamico-contenedor" class="w-full h-full flex items-center justify-center">
-          </div>
-        </div>
-      </div>
-
-      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end flex-shrink-0">
-        <button type="button" onclick="cerrarModalEstadisticasHub()" class="px-5 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition cursor-pointer">Cerrar</button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
 

@@ -128,6 +128,9 @@ class ProyectoCrearModel(BaseModel):
     nombre: str
     descripcion: Optional[str] = ""
     unidad_organica: Optional[str] = ""
+    proceso_codigo: Optional[str] = ""
+    proceso_nombre: Optional[str] = ""
+    es_proceso_personalizado: Optional[int] = 0
 
 class ProyectoDescripcionUpdate(BaseModel):
     descripcion: str
@@ -137,6 +140,17 @@ class ProyectoNombreUpdate(BaseModel):
 
 class ProyectoUnidadUpdate(BaseModel):
     unidad_organica: str
+
+class ProcesoItemModel(BaseModel):
+    codigo: str
+    nombre: str
+    nivel: int
+    codigo_padre: Optional[str] = None
+
+class ProyectoProcesoUpdate(BaseModel):
+    proceso_codigo: Optional[str] = ""
+    proceso_nombre: Optional[str] = ""
+    es_proceso_personalizado: Optional[int] = 0
 
 class ActividadModel(BaseModel):
     proyecto_id: Optional[int] = 1
@@ -389,6 +403,143 @@ def init_db():
             estado TEXT DEFAULT 'ACTIVO'
         )
     """)
+
+    # Migración de columnas de procesos en proyectos
+    for col, defn in [("proceso_codigo", "TEXT"), ("proceso_nombre", "TEXT"), ("es_proceso_personalizado", "INTEGER DEFAULT 0")]:
+        try:
+            c.execute(f"ALTER TABLE proyectos ADD COLUMN {col} {defn}")
+        except sqlite3.OperationalError:
+            pass
+
+    # Tabla Procesos Institucionales
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS procesos_institucionales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo TEXT UNIQUE NOT NULL,
+            nombre TEXT NOT NULL,
+            nivel INTEGER NOT NULL,
+            codigo_padre TEXT,
+            estado TEXT DEFAULT 'ACTIVO',
+            creado_por TEXT DEFAULT 'SISTEMA'
+        )
+    """)
+    try:
+        c.execute("CREATE INDEX IF NOT EXISTS idx_procesos_cod ON procesos_institucionales(codigo)")
+    except sqlite3.OperationalError:
+        pass
+
+    # Semilla Oficial de Procesos y Subprocesos IMARPE (103 nodos)
+    c.execute("SELECT COUNT(*) FROM procesos_institucionales")
+    if c.fetchone()[0] == 0:
+        procesos_semilla = [
+            ("E1", "Dirección y gestión estratégica", 0, None),
+            ("E1.1", "Gestión de la dirección", 1, "E1"),
+            ("E1.1.1", "Direccionamiento estratégico, roles y liderazgo institucional", 2, "E1.1"),
+            ("E1.1.2", "Formulación y aprobación de políticas institucionales y del SGI", 2, "E1.1"),
+            ("E1.1.3", "Revisión del desempeño institucional y del SGI por la Alta Dirección", 2, "E1.1"),
+            ("E1.2", "Planeamiento Estratégico Institucional", 1, "E1"),
+            ("E1.2.1", "Formulación y actualización del Plan Estratégico Institucional (PEI)", 2, "E1.2"),
+            ("E1.2.2", "Seguimiento y evaluación del Plan Estratégico Institucional", 2, "E1.2"),
+            ("E1.3", "Planeamiento Operativo Institucional", 1, "E1"),
+            ("E1.3.1", "Programación del Plan Operativo Institucional Multianual", 2, "E1.3"),
+            ("E1.3.2", "Consistencia y articulación del POI Anual con el PIA", 2, "E1.3"),
+            ("E1.3.3", "Seguimiento, control mensual y modificación del POI", 2, "E1.3"),
+            ("E2", "Gestión de modernización y mejora institucional", 0, None),
+            ("E2.1", "Modernización Institucional", 1, "E2"),
+            ("E2.1.1", "Gestión del diseño organizacional", 2, "E2.1"),
+            ("E2.1.2", "Gestión por procesos", 2, "E2.1"),
+            ("E2.1.3", "Gestión del conocimiento", 2, "E2.1"),
+            ("E2.1.4", "Gestión de calidad de servicios", 2, "E2.1"),
+            ("E2.1.5", "Gestión de la innovación pública", 2, "E2.1"),
+            ("E2.1.6", "Simplificación administrativa", 2, "E2.1"),
+            ("E2.2", "Gestión del Sistema de Gestión Integrado (SGI)", 1, "E2"),
+            ("E2.2.1", "Gestión del Sistema de Gestión de la Calidad (SGC)", 2, "E2.2"),
+            ("E2.2.1.1", "Gestión de salidas no conformes", 3, "E2.2.1"),
+            ("E2.2.1.2", "Satisfacción del usuario", 3, "E2.2.1"),
+            ("E2.2.2", "Gestión del Sistema de Gestión Antisoborno (SGAS)", 2, "E2.2"),
+            ("E2.2.2.1", "Gestión de denuncias y medidas de protección", 3, "E2.2.2"),
+            ("E2.2.3", "Gestión del Sistema de la Seguridad de la Información (SGSI)", 2, "E2.2"),
+            ("E2.2.4", "Gestión de procesos de soporte para las actividades del SGI", 2, "E2.2"),
+            ("E2.2.5", "Determinación de alcance del Sistema de Gestión", 2, "E2.2"),
+            ("E2.2.6", "Información documentada", 2, "E2.2"),
+            ("E2.2.7", "Comprensión de la organización", 2, "E2.2"),
+            ("E2.2.8", "Identificación de partes interesadas", 2, "E2.2"),
+            ("E2.2.9", "Auditorias internas SGI", 2, "E2.2"),
+            ("E2.2.10", "Gestión de mejora SGI", 2, "E2.2"),
+            ("E2.2.11", "Comunicaciones del SGI", 2, "E2.2"),
+            ("E2.2.12", "Planificación, medición y evaluación", 2, "E2.2"),
+            ("E2.2.13", "Gestión de riesgos SGI", 2, "E2.2"),
+            ("E3", "Control de la gestión institucional", 0, None),
+            ("E4", "Gestión de comunicaciones, imagen institucional y Relaciones Interinstitucionales.", 0, None),
+            ("E4.1", "Gestión de comunicaciones, imagen institucional y protocolo", 1, "E4"),
+            ("E4.2", "Gestión de Relaciones Interinstitucionales", 1, "E4"),
+            ("E4.3", "Gestión de Convenios", 1, "E4"),
+            ("E5", "Gestión de gobierno digital", 0, None),
+            ("M1", "Gestión de la investigación científica, tecnológica y de innovación", 0, None),
+            ("M2", "Investigación de campo y experimentación científica", 0, None),
+            ("M2.1", "Observación", 1, "M2"),
+            ("M2.2", "Toma de muestra", 1, "M2"),
+            ("M2.3", "Medición", 1, "M2"),
+            ("M2.3.1", "Muestreo biométrico y biológico de la anchoveta", 2, "M2.3"),
+            ("M2.4", "Recolección de datos", 1, "M2"),
+            ("M2.5", "Experimentación", 1, "M2"),
+            ("M3", "Gestión de datos e información técnico-científica", 0, None),
+            ("M4", "Gestión de la producción y difusión de documentos técnicos- científicos", 0, None),
+            ("M4.1", "Gestión de la producción de documentos técnicos el ordenamiento pesquero y acuícula", 1, "M4"),
+            ("M4.1.1", "Elaboración de documentos técnicos - científicos", 2, "M4.1"),
+            ("M4.1.1.1", "Estimación de la biomasa de la anchoveta", 3, "M4.1.1"),
+            ("M4.1.2", "Evaluación de los informes técnicos sobre el ordenamiento pesquero y acuícola", 2, "M4.1"),
+            ("M4.1.3", "Aprobación y difusión de documentos técnicos - científicos", 2, "M4.1"),
+            ("M4.2", "Gestión de la producción y difusion de articulos cientificos", 1, "M4"),
+            ("M4.3", "Gestión de la revisión y difusión de documentos para el boletín", 1, "M4"),
+            ("S1", "Gestión del talento humano", 0, None),
+            ("S2", "Gestión de la logística e infraestructura", 0, None),
+            ("S2.1", "Programación multianual de bienes, servicios y obras", 1, "S2"),
+            ("S2.1.1", "Gestión del Cuadro Multianual de Necesidades", 2, "S2.1"),
+            ("S2.1.1.1", "Identificación y Valorización del Cuadro Multianual de Necesidades", 3, "S2.1.1"),
+            ("S2.1.1.2", "Clasificación y priorización del Cuadro Multianual de Necesidades", 3, "S2.1.1"),
+            ("S2.1.1.3", "Consolidación y aprobación del Cuadro Multianual de Necesidades", 3, "S2.1.1"),
+            ("S2.1.1.4", "Modificaciones del Cuadro Multianual de Necesidades", 3, "S2.1.1"),
+            ("S2.1.1.5", "Evaluación de la ejecución del Cuadro Multianual de Necesidades", 3, "S2.1.1"),
+            ("S2.1.2", "Gestión del Plan Anual de Contrataciones", 2, "S2.1"),
+            ("S2.2.1.1", "Formulación y aprobación del Plan Anual de Contrataciones", 3, "S2.1.2"),
+            ("S2.2.1.2", "Modificaciones del Plan Anual de Contrataciones", 3, "S2.1.2"),
+            ("S2.2.1.3", "Evaluación de la ejecución del Plan Anual de Contrataciones", 3, "S2.1.2"),
+            ("S2.2", "Gestión de adquisiciones", 1, "S2"),
+            ("S2.2.1", "Gestión de procedimientos de selección competitivos", 2, "S2.2"),
+            ("S2.2.2", "Gestión de modalidades diferenciadas de contratación", 2, "S2.2"),
+            ("S2.2.3", "Gestión de contrataciones públicas eficientes", 2, "S2.2"),
+            ("S2.2.3.1", "Gestión de contratos menores", 3, "S2.2.3"),
+            ("S2.2.3.2", "Contrataciones con Proveedores No Domiciliados", 3, "S2.2.3"),
+            ("S2.2.4", "Gestión de procedimientos de selección no competitivos", 2, "S2.2"),
+            ("S2.2.5", "Fiscalización posterior de las contrataciones realizadas por PROINVERSIÓN", 2, "S2.2"),
+            ("S2.2.6", "Gestión de contratos", 2, "S2.2"),
+            ("S2.2.7", "Pago a proveedores", 2, "S2.2"),
+            ("S2.3", "Administración de bienes muebles e inmuebles", 1, "S2"),
+            ("S2.3.1", "Almacenamiento de bienes muebles", 2, "S2.3"),
+            ("S2.3.2", "Distribución de bienes muebles", 2, "S2.3"),
+            ("S2.3.3", "Mantenimiento de bienes muebles", 2, "S2.3"),
+            ("S2.3.4", "Inventario", 2, "S2.3"),
+            ("S2.3.5", "Disposición final", 2, "S2.3"),
+            ("S2.3.6", "Mantenimiento de bienes inmuebles", 2, "S2.3"),
+            ("S2.3.7", "Gestión de seguros patrimoniales", 2, "S2.3"),
+            ("S2.4", "Gestión de servicios generales", 1, "S2"),
+            ("S2.4.1", "Atención del servicio de transporte", 2, "S2.4"),
+            ("S2.4.2", "Atención de otros servicios generales", 2, "S2.4"),
+            ("S3", "Gestión financiera, contable y presupuestal", 0, None),
+            ("S3.1", "Gestión de tesorería y planeación financiera", 1, "S3"),
+            ("S3.1.1", "Elaboración de estados financieros y presupuestales", 2, "S3.1"),
+            ("S3.2", "Gestión contable y rendición de cuentas", 1, "S3"),
+            ("S3.3", "Gestión presupuestaria", 1, "S3"),
+            ("S3.4", "Gestión de inversiones", 1, "S3"),
+            ("S4", "Gestión de asesoría legal", 0, None),
+            ("S5", "Gestión documental y atención al ciudadano", 0, None),
+            ("S6", "Gestión de plataformas y flota científica", 0, None)
+        ]
+        c.executemany("""
+            INSERT INTO procesos_institucionales (codigo, nombre, nivel, codigo_padre, estado)
+            VALUES (?, ?, ?, ?, 'ACTIVO')
+        """, procesos_semilla)
 
     # Tabla Directorio de Trabajadores Institucionales
     c.execute("""
@@ -825,6 +976,31 @@ def alternar_estado_trabajador(
     db.commit()
     return {"status": "success", "mensaje": f"Estado actualizado a {nuevo_estado}", "nuevo_estado": nuevo_estado}
 
+# --- CATÁLOGO DE PROCESOS INSTITUCIONALES ---
+@app.get("/procesos-institucionales")
+def listar_procesos_institucionales(db: sqlite3.Connection = Depends(get_db)):
+    rows = db.execute("""
+        SELECT id, codigo, nombre, nivel, codigo_padre, estado 
+        FROM procesos_institucionales 
+        WHERE estado = 'ACTIVO' 
+        ORDER BY codigo ASC
+    """).fetchall()
+    return [dict(r) for r in rows]
+
+@app.post("/procesos-institucionales")
+def registrar_proceso_admin(data: ProcesoItemModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede gestionar el catálogo oficial de procesos.")
+    try:
+        db.execute("""
+            INSERT INTO procesos_institucionales (codigo, nombre, nivel, codigo_padre, estado, creado_por)
+            VALUES (?, ?, ?, ?, 'ACTIVO', ?)
+        """, (data.codigo.strip(), data.nombre.strip(), data.nivel, data.codigo_padre, user["username"]))
+        db.commit()
+        return {"mensaje": "Proceso registrado exitosamente"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="El código de proceso ya se encuentra registrado.")
+
 # --- HUB DE PROYECTOS ---
 @app.get("/proyectos")
 def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
@@ -832,7 +1008,8 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
     u_nom = user.get("nombre_completo", "")
 
     query = """
-        SELECT DISTINCT p.id, p.nombre, p.descripcion, p.unidad_organica, p.fecha_creacion,
+        SELECT DISTINCT p.id, p.nombre, p.descripcion, p.unidad_organica, 
+               p.proceso_codigo, p.proceso_nombre, p.es_proceso_personalizado, p.fecha_creacion,
                CASE WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 1 ELSE 0 END as es_gestor
         FROM proyectos p
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
@@ -894,8 +1071,18 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
 
 @app.post("/proyectos")
 def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    db.execute("INSERT INTO proyectos (nombre, descripcion, unidad_organica, creador_id) VALUES (?, ?, ?, ?)",
-               (p.nombre.strip(), p.descripcion.strip(), (p.unidad_organica or "").strip(), user["id"]))
+    db.execute("""
+        INSERT INTO proyectos (nombre, descripcion, unidad_organica, proceso_codigo, proceso_nombre, es_proceso_personalizado, creador_id) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        p.nombre.strip(), 
+        p.descripcion.strip(), 
+        (p.unidad_organica or "").strip(),
+        (p.proceso_codigo or "").strip(),
+        (p.proceso_nombre or "").strip(),
+        int(p.es_proceso_personalizado or 0),
+        user["id"]
+    ))
     nuevo_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (?, ?, 1)", (nuevo_id, user["id"]))
     db.execute("""
@@ -967,6 +1154,34 @@ def actualizar_unidad_organica_proyecto(proyecto_id: int, data: ProyectoUnidadUp
     """, (proyecto_id, ahora_peru_str(), user["username"], f"Actualizó la unidad orgánica del proyecto a: '{uo_limpia}'"))
     db.commit()
     return {"message": "Unidad de organización actualizada correctamente", "unidad_organica": uo_limpia}
+
+@app.put("/proyectos/{proyecto_id}/proceso")
+def actualizar_proceso_proyecto(proyecto_id: int, data: ProyectoProcesoUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    permiso = db.execute("""
+        SELECT 1 FROM proyectos p
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1 OR pu.permiso = 'GESTOR')
+    """, (user["id"], proyecto_id, user["id"])).fetchone()
+    
+    if not permiso and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="No tiene permisos de Gestor para modificar el proceso de este proyecto.")
+    
+    p_cod = (data.proceso_codigo or "").strip()
+    p_nom = (data.proceso_nombre or "").strip()
+    es_pers = int(data.es_proceso_personalizado or 0)
+    
+    db.execute("""
+        UPDATE proyectos 
+        SET proceso_codigo = ?, proceso_nombre = ?, es_proceso_personalizado = ? 
+        WHERE id = ?
+    """, (p_cod, p_nom, es_pers, proyecto_id))
+    
+    db.execute("""
+        INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
+        VALUES (?, ?, ?, 'Modificar Proceso', ?)
+    """, (proyecto_id, ahora_peru_str(), user["username"], f"Asignó proceso: {p_nom} [{p_cod}]"))
+    db.commit()
+    return {"message": "Proceso relacionado actualizado correctamente"}
 
 # --- ACTIVIDADES Y GANTT POR PROYECTO (ORDEN NATURAL WBS) ---
 def clave_orden_natural_wbs(row_dict):
