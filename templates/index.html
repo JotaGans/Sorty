@@ -1299,7 +1299,14 @@
           </div>
           <div>
             <label class="text-[11px] font-bold text-gray-600 uppercase">Personal Responsable:</label>
-            <div id="wz-lista-responsables" class="max-h-36 overflow-y-auto space-y-1.5 bg-white p-2.5 rounded-lg border border-gray-200 mt-1 shadow-sm"></div>
+            <div class="relative mt-1">
+              <input type="text" id="wz-busq-responsable" oninput="autocompletarResponsableWizard(this.value)" placeholder="🔍 Buscar trabajador por nombre o área..." class="w-full p-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <div id="wz-sug-responsables" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-36 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+            </div>
+            <!-- Contenedor de trabajadores seleccionados -->
+            <div id="wz-responsables-seleccionados" class="flex flex-wrap gap-1.5 mt-2 min-h-[28px] p-1.5 bg-slate-50 border border-dashed border-gray-300 rounded-lg">
+              <span class="text-[11px] text-gray-400 italic p-1">Ningún responsable seleccionado aún.</span>
+            </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
@@ -3043,16 +3050,36 @@
 
     function abrirModalNuevoProyecto() { 
       if (catalogoUnidadesGlobal.length === 0) cargarCatalogoUnidades();
+      if (catalogoProcesosGlobal.length === 0) cargarCatalogoProcesos();
+
+      // Limpieza de campos de texto e inputs ocultos
       document.getElementById("input-nuevo-proy-nombre").value = "";
       document.getElementById("input-nuevo-proy-desc").value = "";
       document.getElementById("input-nuevo-proy-uo-busq").value = "";
       document.getElementById("input-nuevo-proy-uo-valor").value = "";
       document.getElementById("sugerencias-uo-proyecto").classList.add("hidden");
-      document.getElementById("modal-nuevo-proyecto").classList.remove("hidden"); 
-    }
 
-    function cerrarModalNuevoProyecto() { 
-      document.getElementById("modal-nuevo-proyecto").classList.add("hidden"); 
+      // Resetear Proceso / Subproceso
+      const inpProcBusq = document.getElementById("input-nuevo-proy-proceso-busq");
+      if (inpProcBusq) inpProcBusq.value = "";
+      const inpProcCod = document.getElementById("input-nuevo-proy-proceso-codigo");
+      if (inpProcCod) inpProcCod.value = "";
+      const inpProcNom = document.getElementById("input-nuevo-proy-proceso-nombre");
+      if (inpProcNom) inpProcNom.value = "";
+      const inpProcPers = document.getElementById("input-nuevo-proy-proceso-personalizado");
+      if (inpProcPers) inpProcPers.value = "0";
+      const contOtro = document.getElementById("contenedor-otro-subproceso");
+      if (contOtro) contOtro.classList.add("hidden");
+      const inpOtroTexto = document.getElementById("input-otro-subproceso-texto");
+      if (inpOtroTexto) inpOtroTexto.value = "";
+      const divSugProc = document.getElementById("nuevo-proy-proceso-sugerencias");
+      if (divSugProc) divSugProc.classList.add("hidden");
+
+      // Resetear Modalidad por defecto
+      const selModo = document.getElementById("input-nuevo-proy-duration-mode");
+      if (selModo) selModo.value = "business_days";
+
+      document.getElementById("modal-nuevo-proyecto").classList.remove("hidden"); 
     }
 
     function autocompletarUOProyecto(termino) {
@@ -4095,6 +4122,73 @@
     // --- ASISTENTE WIZARD DE CREACIÓN INTELIGENTE ---
     let opcionesModoWizard = [];
 
+    // --- GESTIÓN DE RESPONSABLES DINÁMICOS EN WIZARD ---
+    let wzResponsablesElegidos = [];
+
+    function autocompletarResponsableWizard(termino) {
+      const term = (termino || "").toLowerCase().trim();
+      const divSug = document.getElementById("wz-sug-responsables");
+      if (!divSug) return;
+
+      if (!term) {
+        divSug.classList.add("hidden");
+        return;
+      }
+
+      const fuente = catalogoTrabajadoresGlobal.length > 0 ? catalogoTrabajadoresGlobal : responsablesGlobal;
+      const matches = fuente.filter(t => {
+        const nom = (t.nombre_completo || t.nombre || "").toLowerCase();
+        const uo = (t.unidad_organica || t.cargo || "").toLowerCase();
+        return nom.includes(term) || uo.includes(term);
+      });
+
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = '<div class="p-2 text-gray-400 italic">Sin coincidencias</div>';
+      } else {
+        matches.slice(0, 5).forEach(t => {
+          const nom = t.nombre_completo || t.nombre;
+          const uo = t.unidad_organica || t.cargo || "";
+          const item = document.createElement("div");
+          item.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-semibold text-gray-800";
+          item.innerHTML = `<span>${nom}</span> <strong class="text-[10px] text-teal-800 bg-teal-50 border border-teal-200 px-1 rounded">${uo}</strong>`;
+          item.onclick = () => {
+            if (!wzResponsablesElegidos.includes(nom)) {
+              wzResponsablesElegidos.push(nom);
+              renderizarBadgesResponsablesWizard();
+            }
+            document.getElementById("wz-busq-responsable").value = "";
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
+
+    function renderizarBadgesResponsablesWizard() {
+      const cont = document.getElementById("wz-responsables-seleccionados");
+      if (!cont) return;
+      cont.innerHTML = "";
+
+      if (wzResponsablesElegidos.length === 0) {
+        cont.innerHTML = '<span class="text-[11px] text-gray-400 italic p-1">Ningún responsable seleccionado aún.</span>';
+        return;
+      }
+
+      wzResponsablesElegidos.forEach((nom, idx) => {
+        const badge = document.createElement("span");
+        badge.className = "inline-flex items-center gap-1.5 bg-[#0f2a4a] text-white text-[11px] font-bold px-2 py-1 rounded-md shadow-xs";
+        badge.innerHTML = `<span>${nom}</span><button type="button" onclick="quitarResponsableWizard(${idx})" class="hover:text-rose-300 font-black leading-none text-xs">×</button>`;
+        cont.appendChild(badge);
+      });
+    }
+
+    function quitarResponsableWizard(idx) {
+      wzResponsablesElegidos.splice(idx, 1);
+      renderizarBadgesResponsablesWizard();
+    }
+
     function abrirWizardCreacion(codigoBase = null, modoForzado = "hijo") {
       wizardCodigoPadre = codigoBase;
       opcionesModoWizard = [];
@@ -4177,10 +4271,20 @@
       const hoy = new Date();
       document.getElementById("wz-input-desc").value = "";
       document.getElementById("wz-input-ini").value = formatearFechaISO(hoy.toISOString().split("T")[0]);
-      document.getElementById("wz-input-dias").value = 5;
+      // Adaptar label y duración según la modalidad temporal del proyecto
+      const esHoras = (proyectoModoDuracion === "hours");
+      const lblUnidad = document.getElementById("wz-lbl-duracion");
+      if (lblUnidad) {
+        lblUnidad.innerText = esHoras ? "Horas de Dedicación Neta:" : "Días Hábiles:";
+      }
+      const inpDias = document.getElementById("wz-input-dias");
+      if (inpDias) {
+        inpDias.value = esHoras ? 8 : 5; // 8 horas por defecto vs 5 días
+      }
       
       const dtFinDef = new Date(hoy);
-      dtFinDef.setDate(dtFinDef.getDate() + 4);
+      const diasASumar = esHoras ? 0 : 4; // 8 horas = mismo día hábil de inicio
+      dtFinDef.setDate(dtFinDef.getDate() + diasASumar);
       const inpFin = document.getElementById("wz-input-fin");
       if (inpFin) inpFin.value = formatearFechaISO(dtFinDef.toISOString().split("T")[0]);
 
@@ -4191,23 +4295,11 @@
       const inpPred = document.getElementById("wz-input-pred");
       if (inpPred) inpPred.value = "";
 
-      const contResp = document.getElementById("wz-lista-responsables");
-      if (contResp) {
-        contResp.innerHTML = "";
-        (catalogoTrabajadoresGlobal.length > 0 ? catalogoTrabajadoresGlobal : responsablesGlobal).forEach(r => {
-          const nom = r.nombre_completo || r.nombre;
-          const uo = r.unidad_organica || r.cargo || '';
-          contResp.innerHTML += `
-            <label class="flex items-center justify-between p-1.5 rounded hover:bg-gray-50 border border-gray-100 cursor-pointer text-xs">
-              <div class="flex items-center space-x-2">
-                <input type="checkbox" value="${nom}" class="wz-chk-resp rounded text-[#0f2a4a] focus:ring-0 cursor-pointer">
-                <span class="font-semibold text-gray-800">${nom}</span>
-              </div>
-              <span class="text-[10px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">${uo}</span>
-            </label>
-          `;
-        });
-      }
+      // Limpiar buscador predictivo de responsables en Wizard
+      wzResponsablesElegidos = [];
+      renderizarBadgesResponsablesWizard();
+      const inpBusqWz = document.getElementById("wz-busq-responsable");
+      if (inpBusqWz) inpBusqWz.value = "";
 
       irAPasoWizard(1);
       document.getElementById("modal-wizard-creacion").classList.remove("hidden");
@@ -4324,10 +4416,13 @@
 
       dias.addEventListener("input", () => {
         if (bloqueando || !fIni.value || !dias.value) return;
-        const dVal = parseInt(dias.value);
-        if (dVal > 0) {
+        const val = parseFloat(dias.value);
+        if (val > 0) {
+          const esHoras = (proyectoModoDuracion === "hours");
+          // Si el proyecto es por horas de dedicación neta, cada jornada de 8h equivale a 1 día
+          const diasEquivalentes = esHoras ? Math.max(1, Math.ceil(val / 8)) : Math.ceil(val);
           const dt = new Date(fIni.value + "T00:00:00");
-          dt.setDate(dt.getDate() + (dVal - 1));
+          dt.setDate(dt.getDate() + (diasEquivalentes - 1));
           bloqueando = true;
           fFin.value = formatearFechaISO(dt.toISOString().split("T")[0]);
           bloqueando = false;
@@ -4365,8 +4460,7 @@
       const fIniStr = formatearFechaLatina(fIniRaw);
       const fFinStr = formatearFechaLatina(fFinRaw);
 
-      const respsMarcados = Array.from(document.querySelectorAll(".wz-chk-resp:checked")).map(cb => cb.value);
-      const respFinal = respsMarcados.length > 0 ? respsMarcados.join("; ") : "No asignado";
+      const respFinal = wzResponsablesElegidos.length > 0 ? wzResponsablesElegidos.join("; ") : "No asignado";
 
       const estado = document.getElementById("wz-input-estado").value;
       let avance = 0;
@@ -5813,12 +5907,13 @@
           }
         }
 
+        const unidadTexto = (proyectoModoDuracion === "hours") ? "h" : "d";
         let tdDias = '';
         if (visibilidadColumnas.dias) {
           if (esMadre) {
-            tdDias = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${claseBloqueada} whitespace-nowrap" title="Duración calculada por el marco total de ejecución">${act.dias} ${lockIcon}</td>`;
+            tdDias = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${claseBloqueada} whitespace-nowrap" title="Duración calculada">${act.dias}${unidadTexto} ${lockIcon}</td>`;
           } else {
-            tdDias = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap" ondblclick="${puedeEditarTiempos ? `editarDias('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para ajustar días de duración' : ''}">${act.dias}</td>`;
+            tdDias = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap" ondblclick="${puedeEditarTiempos ? `editarDias('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para ajustar duración' : ''}">${act.dias}${unidadTexto}</td>`;
           }
         }
 
