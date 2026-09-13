@@ -3082,6 +3082,10 @@
       document.getElementById("modal-nuevo-proyecto").classList.remove("hidden"); 
     }
 
+    function cerrarModalNuevoProyecto() { 
+      document.getElementById("modal-nuevo-proyecto").classList.add("hidden"); 
+    }
+
     function autocompletarUOProyecto(termino) {
       const term = termino.toLowerCase().trim();
       const divSug = document.getElementById("sugerencias-uo-proyecto");
