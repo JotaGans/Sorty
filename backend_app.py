@@ -165,14 +165,6 @@ class PermisoProyectoUpdate(BaseModel):
     usuario_id: int
     nivel: str  # 'NINGUNO' | 'LECTURA' | 'GESTOR'
 
-class ProyectoCrearModel(BaseModel):
-    nombre: str
-    descripcion: Optional[str] = ""
-    unidad_organica: Optional[str] = ""
-    proceso_codigo: Optional[str] = ""
-    proceso_nombre: Optional[str] = ""
-    es_proceso_personalizado: Optional[int] = 0
-
 class ProyectoDescripcionUpdate(BaseModel):
     descripcion: str
 
@@ -209,11 +201,12 @@ class ProyectoCrearModel(BaseModel):
     nombre: str
     descripcion: Optional[str] = ""
     unidad_organica: Optional[str] = ""
+    duration_mode: Optional[str] = "business_days"  # 'business_days' | 'hours'
+    unidad_tiempo: Optional[str] = "DIAS"           # Compatibilidad retroactiva
+    horas_por_dia: Optional[int] = 8
     proceso_codigo: Optional[str] = ""
     proceso_nombre: Optional[str] = ""
     es_proceso_personalizado: Optional[int] = 0
-    unidad_tiempo: Optional[str] = "DIAS"  # 'DIAS' | 'HORAS'
-    horas_por_dia: Optional[int] = 8
 
 class ActividadModel(BaseModel):
     proyecto_id: Optional[int] = 1
@@ -472,6 +465,7 @@ def init_db():
         ("proceso_codigo", "TEXT"), 
         ("proceso_nombre", "TEXT"), 
         ("es_proceso_personalizado", "INTEGER DEFAULT 0"),
+        ("duration_mode", "TEXT DEFAULT 'business_days'"),
         ("unidad_tiempo", "TEXT DEFAULT 'DIAS'"),
         ("horas_por_dia", "INTEGER DEFAULT 8")
     ]:
@@ -1177,6 +1171,7 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
     query = """
         SELECT DISTINCT p.id, p.nombre, p.descripcion, p.unidad_organica, 
                p.proceso_codigo, p.proceso_nombre, p.es_proceso_personalizado,
+               COALESCE(p.duration_mode, CASE WHEN p.unidad_tiempo = 'HORAS' THEN 'hours' ELSE 'business_days' END) as duration_mode,
                p.unidad_tiempo, p.horas_por_dia, p.fecha_creacion,
                CASE WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 1 ELSE 0 END as es_gestor
         FROM proyectos p
@@ -1239,17 +1234,20 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
 
 @app.post("/proyectos")
 def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    unidad_tiempo = (p.unidad_tiempo or "DIAS").upper().strip()
-    if unidad_tiempo not in ("DIAS", "HORAS"):
-        unidad_tiempo = "DIAS"
+    # Homologar duración temporal según lo enviado desde el frontend
+    modo_duracion = str(p.duration_mode or "").strip().lower()
+    if modo_duracion not in ("business_days", "hours"):
+        modo_duracion = "hours" if (p.unidad_tiempo or "").upper() == "HORAS" else "business_days"
+
+    unidad_tiempo = "HORAS" if modo_duracion == "hours" else "DIAS"
     horas_dia = int(p.horas_por_dia or 8)
 
     db.execute("""
         INSERT INTO proyectos (
             nombre, descripcion, unidad_organica, proceso_codigo, proceso_nombre, 
-            es_proceso_personalizado, unidad_tiempo, horas_por_dia, creador_id
+            es_proceso_personalizado, duration_mode, unidad_tiempo, horas_por_dia, creador_id
         ) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         p.nombre.strip(), 
         p.descripcion.strip(), 
@@ -1257,6 +1255,7 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
         (p.proceso_codigo or "").strip(),
         (p.proceso_nombre or "").strip(),
         int(p.es_proceso_personalizado or 0),
+        modo_duracion,
         unidad_tiempo,
         horas_dia,
         user["id"]
@@ -1266,9 +1265,9 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
     db.execute("""
         INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
         VALUES (?, ?, ?, 'Creación Proyecto', ?)
-    """, (nuevo_id, ahora_peru_str(), user["username"], f"Proyecto creado: '{p.nombre.strip()}' [Modalidad: {unidad_tiempo}]"))
+    """, (nuevo_id, ahora_peru_str(), user["username"], f"Proyecto creado: '{p.nombre.strip()}' [Modalidad: {modo_duracion}]"))
     db.commit()
-    return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id, "unidad_tiempo": unidad_tiempo}
+    return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id, "duration_mode": modo_duracion, "unidad_tiempo": unidad_tiempo}
 
 @app.put("/proyectos/{proyecto_id}/descripcion")
 def actualizar_descripcion_proyecto(proyecto_id: int, data: ProyectoDescripcionUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
