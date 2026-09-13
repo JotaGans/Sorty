@@ -111,11 +111,8 @@
       top: 0;
       z-index: 30;
       background-color: #0f2a4a !important;
-      background-clip: padding-box !important;
-      border-right: 1px solid #1c335a !important;
-      border-bottom: 1px solid #1c335a !important;
-      border-top: none !important;
-      border-left: none !important;
+      box-shadow: inset 0 -1px 0 #1c335a, inset -1px 0 0 #1c335a;
+      border: none !important;
     }
 
     /* Rombo de Hito */
@@ -326,18 +323,6 @@
           <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-teal-500">
             <span>🛡️</span>
             <span>Gestión TI: Alta de Usuarios</span>
-          </button>
-
-          <!-- BOTÓN: CALENDARIO DE FERIADOS -->
-          <button id="btn-admin-ti-feriados" onclick="abrirModalFeriados()" class="hidden bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-slate-500">
-            <span>📅</span>
-            <span>Feriados</span>
-          </button>
-
-          <!-- BOTÓN: CATÁLOGO PROCESOS TI -->
-          <button id="btn-admin-ti-procesos" onclick="abrirModalProcesosTI()" class="hidden bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-blue-500">
-            <span>⚙️</span>
-            <span>Procesos TI</span>
           </button>
 
           <div class="text-right border-l border-blue-900/60 pl-3">
@@ -933,16 +918,12 @@
         <button onclick="cerrarModalAdminTI()" class="text-white text-2xl font-bold hover:text-gray-200 leading-none">&times;</button>
       </div>
 
-      <div class="flex border-b border-gray-200 bg-gray-100 text-xs font-bold px-4 pt-2 space-x-2 flex-shrink-0">
-        <button id="ti-tab-btn-cuentas" onclick="cambiarTabTI('cuentas')" class="px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs">
-          🔑 Cuentas de Acceso (Login)
-        </button>
-        <button id="ti-tab-btn-trabajadores" onclick="cambiarTabTI('trabajadores')" class="px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition">
-          👥 Directorio de Trabajadores
-        </button>
-        <button id="ti-tab-btn-unidades" onclick="cambiarTabTI('unidades')" class="px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition">
-          🏢 Unidades de Organización
-        </button>
+      <div class="flex border-b border-gray-200 bg-gray-100 text-xs font-bold px-4 pt-2 space-x-1 flex-shrink-0 overflow-x-auto">
+        <button id="ti-tab-btn-cuentas" onclick="cambiarTabTI('cuentas')" class="px-3.5 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold whitespace-nowrap">🔑 Cuentas de acceso</button>
+        <button id="ti-tab-btn-trabajadores" onclick="cambiarTabTI('trabajadores')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">👥 Trabajadores</button>
+        <button id="ti-tab-btn-unidades" onclick="cambiarTabTI('unidades')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">🏢 Unidades de organización</button>
+        <button id="ti-tab-btn-feriados" onclick="cambiarTabTI('feriados')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">📅 Feriados</button>
+        <button id="ti-tab-btn-procesos" onclick="cambiarTabTI('procesos')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">⚙️ Procesos</button>
       </div>
 
       <!-- Tab 1: Cuentas -->
@@ -1092,6 +1073,66 @@
               <tbody id="uo-tabla-cuerpo" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Feriados Institucionales -->
+      <div id="ti-tab-content-feriados" class="hidden p-5 overflow-y-auto space-y-4 flex-1 bg-[#f8f9fa] text-xs">
+        <form onsubmit="guardarFeriado(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-white p-3 rounded-xl border border-gray-200 shadow-xs">
+          <div class="md:col-span-4">
+            <label class="block font-bold text-gray-600 mb-1">Fecha no laborable:</label>
+            <input type="date" id="input-feriado-fecha" required class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-6">
+            <label class="block font-bold text-gray-600 mb-1">Motivo / Conmemoración:</label>
+            <input type="text" id="input-feriado-motivo" required placeholder="Ej. Santa Rosa de Lima" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-2 flex items-end">
+            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 rounded transition shadow">+ Agregar</button>
+          </div>
+        </form>
+
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
+          <table class="w-full text-xs text-left">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
+              <tr>
+                <th class="p-2.5 font-bold w-32">Fecha</th>
+                <th class="p-2.5 font-bold">Descripción</th>
+                <th class="p-2.5 font-bold text-center w-20">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-feriados-body" class="divide-y divide-gray-100 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 5: Catálogo de Procesos TI -->
+      <div id="ti-tab-content-procesos" class="hidden p-5 overflow-y-auto space-y-4 flex-1 bg-[#f8f9fa] text-xs">
+        <form onsubmit="guardarProcesoTI(event)" class="bg-white p-3 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-3 shadow-xs">
+          <div class="md:col-span-3">
+            <label class="block font-bold text-gray-600 mb-1">Código Oficial:</label>
+            <input type="text" id="input-proc-ti-codigo" required placeholder="Ej. E2.1" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-7">
+            <label class="block font-bold text-gray-600 mb-1">Denominación del Proceso:</label>
+            <input type="text" id="input-proc-ti-nombre" required placeholder="Ej. Planificación Operativa Institucional" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-2 flex items-end">
+            <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold py-2 rounded transition shadow">+ Guardar</button>
+          </div>
+        </form>
+
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
+          <table class="w-full text-xs text-left">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
+              <tr>
+                <th class="p-2.5 font-bold w-24">Código</th>
+                <th class="p-2.5 font-bold">Nombre del Proceso</th>
+                <th class="p-2.5 font-bold text-center w-24">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-procesos-ti-body" class="divide-y divide-gray-100 font-medium"></tbody>
+          </table>
         </div>
       </div>
 
@@ -1841,104 +1882,13 @@
     </div>
   </div>
 
-  <!-- MODAL: GESTIÓN DE FERIADOS INSTITUCIONALES -->
-  <div id="modal-feriados" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-[1px]">
-    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
-      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
-        <div class="flex items-center space-x-2">
-          <span class="text-xl">📅</span>
-          <h3 class="font-black text-sm">Calendario Institucional de Feriados</h3>
-        </div>
-        <button onclick="cerrarModalFeriados()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
-      </div>
-
-      <div class="p-5 space-y-4 overflow-y-auto flex-1 text-xs">
-        <form id="form-nuevo-feriado" onsubmit="guardarFeriado(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-white p-3 rounded-xl border border-gray-200">
-          <div class="md:col-span-4">
-            <label class="block font-bold text-gray-600 mb-1">Fecha:</label>
-            <input type="date" id="input-feriado-fecha" required class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-          </div>
-          <div class="md:col-span-6">
-            <label class="block font-bold text-gray-600 mb-1">Motivo / Descripción:</label>
-            <input type="text" id="input-feriado-motivo" required placeholder="Ej. Santa Rosa de Lima" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-          </div>
-          <div class="md:col-span-2 flex items-end">
-            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 rounded transition shadow">+ Agregar</button>
-          </div>
-        </form>
-
-        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
-          <table class="w-full text-xs text-left">
-            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
-              <tr>
-                <th class="p-2.5 font-bold w-32">Fecha</th>
-                <th class="p-2.5 font-bold">Descripción</th>
-                <th class="p-2.5 font-bold text-center w-20">Acción</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-feriados-body" class="divide-y divide-gray-100 font-medium"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
-        <button type="button" onclick="cerrarModalFeriados()" class="px-5 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: CATÁLOGO TI DE PROCESOS Y SUBPROCESOS -->
-  <div id="modal-procesos-ti" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-[1px]">
-    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
-      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
-        <div class="flex items-center space-x-2">
-          <span class="text-xl">⚙️</span>
-          <h3 class="font-black text-sm">Gestión TI: Procesos y Subprocesos</h3>
-        </div>
-        <button onclick="cerrarModalProcesosTI()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
-      </div>
-
-      <div class="p-5 space-y-4 overflow-y-auto flex-1 text-xs">
-        <form onsubmit="guardarProcesoTI(event)" class="bg-white p-3 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-3">
-          <div class="md:col-span-3">
-            <label class="block font-bold text-gray-600 mb-1">Código Oficial:</label>
-            <input type="text" id="input-proc-ti-codigo" required placeholder="Ej. E2.1" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-          </div>
-          <div class="md:col-span-7">
-            <label class="block font-bold text-gray-600 mb-1">Denominación del Proceso:</label>
-            <input type="text" id="input-proc-ti-nombre" required placeholder="Ej. Planificación Operativa Institucional" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-          </div>
-          <div class="md:col-span-2 flex items-end">
-            <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 rounded transition shadow">+ Guardar</button>
-          </div>
-        </form>
-
-        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
-          <table class="w-full text-xs text-left">
-            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
-              <tr>
-                <th class="p-2.5 font-bold w-24">Código</th>
-                <th class="p-2.5 font-bold">Nombre del Proceso</th>
-                <th class="p-2.5 font-bold text-center w-24">Acción</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-procesos-ti-body" class="divide-y divide-gray-100 font-medium"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
-        <button type="button" onclick="cerrarModalProcesosTI()" class="px-5 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ================= LÓGICA DE CONTROL JAVASCRIPT ================= -->
   <script>
     let token = localStorage.getItem("token");
     let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
     let proyectoActualId = null;
     let proyectoEsGestor = false;
+    let proyectoModoDuracion = "business_days"; // 'business_days' | 'hours'
 
     let actividadesGlobal = [];
     let responsablesGlobal = [];
@@ -3141,12 +3091,21 @@
       const uoBusq = document.getElementById("input-nuevo-proy-uo-busq").value.trim();
       const uoValor = document.getElementById("input-nuevo-proy-uo-valor").value.trim();
 
+      // Captura de Modalidad Temporal
+      const durationMode = document.getElementById("input-nuevo-proy-duration-mode")?.value || "business_days";
+
+      // Captura de Proceso / Subproceso
+      const esPers = document.getElementById("input-nuevo-proy-proceso-personalizado")?.value === "1";
+      const procCod = esPers ? "OTRO" : (document.getElementById("input-nuevo-proy-proceso-codigo")?.value || "");
+      const procNom = esPers 
+        ? (document.getElementById("input-otro-subproceso-texto")?.value.trim() || "Otro subproceso")
+        : (document.getElementById("input-nuevo-proy-proceso-nombre")?.value || "");
+
       if (!nombre) {
         alert("Por favor ingresa un nombre para el proyecto.");
         return;
       }
 
-      // Validar estrictamente que la unidad pertenezca al catálogo institucional oficial
       const unidadValida = (catalogoUnidadesGlobal || []).find(u => 
         u.sigla.toUpperCase() === uoValor.toUpperCase() ||
         u.sigla.toUpperCase() === uoBusq.toUpperCase() ||
@@ -3155,7 +3114,7 @@
       );
 
       if (!unidadValida) {
-        alert("⚠️ La Unidad de Organización no existe:\nDebe buscar y seleccionar una unidad que exista oficialmente.");
+        alert("⚠️ La Unidad de Organización no existe:\nDebe buscar y seleccionar una unidad oficial.");
         document.getElementById("input-nuevo-proy-uo-busq").focus();
         return;
       }
@@ -3169,7 +3128,15 @@
             "Content-Type": "application/json", 
             "Authorization": `Bearer ${token}` 
           },
-          body: JSON.stringify({ nombre, descripcion, unidad_organica: uoFinal })
+          body: JSON.stringify({ 
+            nombre: nombre, 
+            descripcion: descripcion, 
+            unidad_organica: uoFinal,
+            duration_mode: durationMode,
+            proceso_codigo: procCod,
+            proceso_nombre: procNom,
+            es_proceso_personalizado: esPers ? 1 : 0
+          })
         });
         
         if (!res.ok) {
@@ -3179,7 +3146,7 @@
 
         cerrarModalNuevoProyecto();
         await cargarHubProyectos();
-        notificarToast("Proyecto creado exitosamente con unidad oficial validada.", "success");
+        notificarToast("Proyecto creado exitosamente.", "success");
       } catch (err) {
         alert(err.message);
       }
@@ -3555,6 +3522,18 @@
     async function ingresarAlProyecto(id, nombre, esGestor) {
       proyectoActualId = id;
       proyectoEsGestor = (esGestor === 1 || esGestor === true);
+
+      // Detectar y guardar la modalidad configurada en este proyecto
+      const proyData = proyectosUsuarioGlobal.find(p => p.id === id);
+      proyectoModoDuracion = proyData?.duration_mode || "business_days";
+
+      // Actualizar la cabecera de la columna según sea Horas o Días
+      const thDias = document.getElementById("th-dias");
+      if (thDias) {
+        thDias.innerHTML = (proyectoModoDuracion === "hours")
+          ? `Horas <span class="text-[10px] text-teal-300 opacity-80">✎</span>`
+          : `Días <span class="text-[10px] text-teal-300 opacity-80">✎</span>`;
+      }
 
       document.getElementById("txt-nombre-proyecto").value = nombre;
       document.getElementById("txt-nombre-proyecto").disabled = !proyectoEsGestor;
@@ -6671,18 +6650,22 @@
 
     function cambiarTabTI(tab) {
       tabTIActiva = tab;
-      const tabs = ['cuentas', 'trabajadores', 'unidades'];
+      const tabs = ['cuentas', 'trabajadores', 'unidades', 'feriados', 'procesos'];
       tabs.forEach(t => {
         const btn = document.getElementById(`ti-tab-btn-${t}`);
         const content = document.getElementById(`ti-tab-content-${t}`);
+        if (!btn || !content) return;
         if (t === tab) {
-          btn.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold";
+          btn.className = "px-3.5 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold whitespace-nowrap";
           content.classList.remove("hidden");
         } else {
-          btn.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold";
+          btn.className = "px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap";
           content.classList.add("hidden");
         }
       });
+
+      if (tab === 'feriados') cargarListaFeriados();
+      if (tab === 'procesos') cargarListaProcesosTI();
     }
 
     // --- CARGA Y RENDERIZADO DE UNIDADES ORGÁNICAS ---
