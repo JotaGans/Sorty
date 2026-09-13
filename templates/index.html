@@ -321,11 +321,25 @@
         <div class="flex items-center space-x-4">
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
-        <div class="flex items-center space-x-4">
-          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3.5 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-teal-500">
+        <div class="flex items-center space-x-2.5">
+          <!-- BOTÓN: ALTA DE USUARIOS -->
+          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-teal-500">
             <span>🛡️</span>
             <span>Gestión TI: Alta de Usuarios</span>
           </button>
+
+          <!-- BOTÓN: CALENDARIO DE FERIADOS -->
+          <button id="btn-admin-ti-feriados" onclick="abrirModalFeriados()" class="hidden bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-slate-500">
+            <span>📅</span>
+            <span>Feriados</span>
+          </button>
+
+          <!-- BOTÓN: CATÁLOGO PROCESOS TI -->
+          <button id="btn-admin-ti-procesos" onclick="abrirModalProcesosTI()" class="hidden bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-blue-500">
+            <span>⚙️</span>
+            <span>Procesos TI</span>
+          </button>
+
           <div class="text-right border-l border-blue-900/60 pl-3">
             <p id="user-display-hub" class="text-xs font-bold text-gray-100">admin</p>
             <p id="role-display-hub" class="text-[10px] text-teal-300 uppercase font-semibold">ADMINISTRADOR TI</p>
@@ -773,6 +787,14 @@
           <div>
             <label class="text-[11px] font-bold text-gray-600 uppercase">Descripción / Alcance:</label>
             <textarea id="input-nuevo-proy-desc" rows="3" placeholder="Detalles u objetivos del proyecto..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]"></textarea>
+          </div>
+          <!-- SELECTOR MODALIDAD TEMPORAL -->
+          <div>
+            <label class="text-[11px] font-bold text-gray-600 uppercase">Modalidad de Estimación Temporal:</label>
+            <select id="input-nuevo-proy-duration-mode" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+              <option value="business_days" selected>Días Hábiles (Lunes a Viernes, excluye feriados)</option>
+              <option value="hours">Horas de Dedicación Neta</option>
+            </select>
           </div>
           <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
             <button type="button" onclick="cerrarModalNuevoProyecto()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cancelar</button>
@@ -1819,6 +1841,98 @@
     </div>
   </div>
 
+  <!-- MODAL: GESTIÓN DE FERIADOS INSTITUCIONALES -->
+  <div id="modal-feriados" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-[1px]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📅</span>
+          <h3 class="font-black text-sm">Calendario Institucional de Feriados</h3>
+        </div>
+        <button onclick="cerrarModalFeriados()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+      </div>
+
+      <div class="p-5 space-y-4 overflow-y-auto flex-1 text-xs">
+        <form id="form-nuevo-feriado" onsubmit="guardarFeriado(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-white p-3 rounded-xl border border-gray-200">
+          <div class="md:col-span-4">
+            <label class="block font-bold text-gray-600 mb-1">Fecha:</label>
+            <input type="date" id="input-feriado-fecha" required class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-6">
+            <label class="block font-bold text-gray-600 mb-1">Motivo / Descripción:</label>
+            <input type="text" id="input-feriado-motivo" required placeholder="Ej. Santa Rosa de Lima" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-2 flex items-end">
+            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 rounded transition shadow">+ Agregar</button>
+          </div>
+        </form>
+
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
+          <table class="w-full text-xs text-left">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
+              <tr>
+                <th class="p-2.5 font-bold w-32">Fecha</th>
+                <th class="p-2.5 font-bold">Descripción</th>
+                <th class="p-2.5 font-bold text-center w-20">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-feriados-body" class="divide-y divide-gray-100 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
+        <button type="button" onclick="cerrarModalFeriados()" class="px-5 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CATÁLOGO TI DE PROCESOS Y SUBPROCESOS -->
+  <div id="modal-procesos-ti" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-[1px]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">⚙️</span>
+          <h3 class="font-black text-sm">Gestión TI: Procesos y Subprocesos</h3>
+        </div>
+        <button onclick="cerrarModalProcesosTI()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+      </div>
+
+      <div class="p-5 space-y-4 overflow-y-auto flex-1 text-xs">
+        <form onsubmit="guardarProcesoTI(event)" class="bg-white p-3 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div class="md:col-span-3">
+            <label class="block font-bold text-gray-600 mb-1">Código Oficial:</label>
+            <input type="text" id="input-proc-ti-codigo" required placeholder="Ej. E2.1" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-7">
+            <label class="block font-bold text-gray-600 mb-1">Denominación del Proceso:</label>
+            <input type="text" id="input-proc-ti-nombre" required placeholder="Ej. Planificación Operativa Institucional" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-2 flex items-end">
+            <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 rounded transition shadow">+ Guardar</button>
+          </div>
+        </form>
+
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
+          <table class="w-full text-xs text-left">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
+              <tr>
+                <th class="p-2.5 font-bold w-24">Código</th>
+                <th class="p-2.5 font-bold">Nombre del Proceso</th>
+                <th class="p-2.5 font-bold text-center w-24">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-procesos-ti-body" class="divide-y divide-gray-100 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end">
+        <button type="button" onclick="cerrarModalProcesosTI()" class="px-5 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= LÓGICA DE CONTROL JAVASCRIPT ================= -->
   <script>
     let token = localStorage.getItem("token");
@@ -2094,12 +2208,15 @@
       if (uGantt) uGantt.innerText = userText;
       if (rGantt) rGantt.innerText = roleText;
 
-      // 3. Control de Acceso Botón TI
+      // 3. Control de Acceso Botones TI
+      const esAdminTI = (currentUser.rol === "ADMIN_TI");
       const btnTI = document.getElementById("btn-admin-ti-hub");
-      if (btnTI) {
-        if (currentUser.rol === "ADMIN_TI") btnTI.classList.remove("hidden");
-        else btnTI.classList.add("hidden");
-      }
+      const btnFeriados = document.getElementById("btn-admin-ti-feriados");
+      const btnProcesos = document.getElementById("btn-admin-ti-procesos");
+
+      if (btnTI) btnTI.classList.toggle("hidden", !esAdminTI);
+      if (btnFeriados) btnFeriados.classList.toggle("hidden", !esAdminTI);
+      if (btnProcesos) btnProcesos.classList.toggle("hidden", !esAdminTI);
     }
 
     // =========================================================================
@@ -8665,10 +8782,196 @@
       document.getElementById("stat-filtro-estado").value = "";
       aplicarFiltrosEstadisticas();
     }
-  </script>
-</body>
-</html>
 
+    // =========================================================================
+    // CONTROLADOR: GESTIÓN DE FERIADOS INSTITUCIONALES
+    // =========================================================================
+    async function abrirModalFeriados() {
+      document.getElementById("modal-feriados").classList.remove("hidden");
+      await cargarListaFeriados();
+    }
+
+    function cerrarModalFeriados() {
+      document.getElementById("modal-feriados").classList.add("hidden");
+    }
+
+    async function cargarListaFeriados() {
+      const tbody = document.getElementById("tabla-feriados-body");
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400">Cargando feriados...</td></tr>';
+
+      try {
+        const res = await fetch("/feriados", {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (!res.ok) throw new Error("Error al obtener feriados");
+        const feriados = await res.json();
+        tbody.innerHTML = "";
+
+        if (feriados.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400 italic">No hay feriados registrados.</td></tr>';
+          return;
+        }
+
+        feriados.forEach(function(f) {
+          const fFecha = f.fecha || f.holiday_date || "";
+          const fMotivo = f.motivo || f.description || "";
+          const fId = f.id;
+
+          const fila = document.createElement("tr");
+          fila.className = "hover:bg-gray-50 border-b border-gray-100";
+          fila.innerHTML = 
+            '<td class="p-2.5 font-bold font-mono text-gray-700">' + fFecha + '</td>' +
+            '<td class="p-2.5 font-semibold text-gray-800">' + fMotivo + '</td>' +
+            '<td class="p-2.5 text-center">' +
+              '<button onclick="eliminarFeriado(' + fId + ')" class="text-rose-500 hover:text-rose-700 font-bold px-1" title="Eliminar feriado">🗑️</button>' +
+            '</td>';
+          tbody.appendChild(fila);
+        });
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-rose-500">Error al cargar feriados.</td></tr>';
+      }
+    }
+
+    async function guardarFeriado(e) {
+      e.preventDefault();
+      const fecha = document.getElementById("input-feriado-fecha").value;
+      const motivo = document.getElementById("input-feriado-motivo").value.trim();
+
+      if (!fecha || !motivo) return;
+
+      try {
+        const res = await fetch("/feriados", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ fecha: fecha, motivo: motivo })
+        });
+        if (res.ok) {
+          notificarToast("Feriado agregado al calendario institucional.", "success");
+          document.getElementById("input-feriado-fecha").value = "";
+          document.getElementById("input-feriado-motivo").value = "";
+          await cargarListaFeriados();
+        } else {
+          const err = await res.json().catch(function() { return {}; });
+          alert(err.detail || "Error al registrar feriado.");
+        }
+      } catch (err) {
+        alert("Error de conexión al registrar feriado.");
+      }
+    }
+
+    async function eliminarFeriado(id) {
+      const confirma = await confirmModal("¿Desea eliminar esta fecha del calendario institucional?", "Eliminar Feriado", "danger");
+      if (!confirma) return;
+
+      try {
+        const res = await fetch("/feriados/" + id, {
+          method: "DELETE",
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (res.ok) {
+          notificarToast("Feriado eliminado con éxito.", "info");
+          await cargarListaFeriados();
+        }
+      } catch (err) {
+        alert("Error al eliminar feriado.");
+      }
+    }
+
+    // =========================================================================
+    // CONTROLADOR: CATÁLOGO TI DE PROCESOS
+    // =========================================================================
+    async function abrirModalProcesosTI() {
+      document.getElementById("modal-procesos-ti").classList.remove("hidden");
+      await cargarListaProcesosTI();
+    }
+
+    function cerrarModalProcesosTI() {
+      document.getElementById("modal-procesos-ti").classList.add("hidden");
+    }
+
+    async function cargarListaProcesosTI() {
+      const tbody = document.getElementById("tabla-procesos-ti-body");
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400">Cargando procesos...</td></tr>';
+
+      try {
+        const res = await fetch("/procesos-institucionales", {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (!res.ok) throw new Error("Error al obtener catálogo");
+        catalogoProcesosGlobal = await res.json();
+        tbody.innerHTML = "";
+
+        if (catalogoProcesosGlobal.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400 italic">No hay procesos registrados.</td></tr>';
+          return;
+        }
+
+        catalogoProcesosGlobal.forEach(function(p) {
+          const pId = p.id;
+          const pCodigo = p.codigo || "";
+          const pNombre = (p.nombre || "").replace(/'/g, "\\'");
+
+          const fila = document.createElement("tr");
+          fila.className = "hover:bg-gray-50 border-b border-gray-100";
+          fila.innerHTML = 
+            '<td class="p-2.5 font-bold font-mono text-[#0f2a4a]">[' + pCodigo + ']</td>' +
+            '<td class="p-2.5 font-semibold text-gray-800">' + (p.nombre || "") + '</td>' +
+            '<td class="p-2.5 text-center">' +
+              '<button onclick="eliminarProcesoTI(' + pId + ', \'' + pNombre + '\')" class="text-rose-500 hover:text-rose-700 font-bold px-1" title="Eliminar proceso">🗑️</button>' +
+            '</td>';
+          tbody.appendChild(fila);
+        });
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-rose-500">Error al cargar catálogo de procesos.</td></tr>';
+      }
+    }
+
+    async function guardarProcesoTI(e) {
+      e.preventDefault();
+      const codigo = document.getElementById("input-proc-ti-codigo").value.trim();
+      const nombre = document.getElementById("input-proc-ti-nombre").value.trim();
+
+      if (!codigo || !nombre) return;
+
+      try {
+        const res = await fetch("/procesos-institucionales", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ codigo: codigo, nombre: nombre })
+        });
+        if (res.ok) {
+          notificarToast("Proceso institucional registrado.", "success");
+          document.getElementById("input-proc-ti-codigo").value = "";
+          document.getElementById("input-proc-ti-nombre").value = "";
+          await cargarListaProcesosTI();
+        } else {
+          const err = await res.json().catch(function() { return {}; });
+          alert(err.detail || "Error al registrar proceso.");
+        }
+      } catch (err) {
+        alert("Error de conexión al registrar proceso.");
+      }
+    }
+
+    async function eliminarProcesoTI(id, nombre) {
+      const confirma = await confirmModal("¿Está seguro de eliminar el proceso '" + nombre + "'?", "Eliminar Proceso TI", "danger");
+      if (!confirma) return;
+
+      try {
+        const res = await fetch("/procesos-institucionales/" + id, {
+          method: "DELETE",
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (res.ok) {
+          notificarToast("Proceso eliminado correctamente.", "info");
+          await cargarListaProcesosTI();
+        }
+      } catch (err) {
+        alert("Error al eliminar proceso.");
+      }
+    }
   </script>
 </body>
 </html>

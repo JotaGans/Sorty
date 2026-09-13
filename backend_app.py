@@ -25,6 +25,47 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 DATA_DIR = "/data" if os.path.exists("/data") else "."
 DB_PATH = os.path.join(DATA_DIR, "imarpe_gantt.db")
 
+# --- FUNCIONES MATEMÁTICAS DE CALENDARIO LABORAL INSTITUCIONAL ---
+
+def obtener_set_feriados(db: sqlite3.Connection) -> set:
+    """Retorna un conjunto con todas las fechas feriadas registradas en formato YYYY-MM-DD."""
+    try:
+        rows = db.execute("SELECT fecha FROM feriados_institucionales").fetchall()
+        return {r[0] for r in rows}
+    except Exception:
+        return set()
+
+def es_dia_laborable(dt: datetime.date, feriados_set: set) -> bool:
+    """Verifica si una fecha es día hábil (Lunes a Viernes y no feriado)."""
+    if dt.weekday() >= 5:  # 5: Sábado, 6: Domingo
+        return False
+    return dt.isoformat() not in feriados_set
+
+def calcular_fecha_fin_habil(fecha_ini_date: datetime.date, dias_habiles: int, feriados_set: set) -> datetime.date:
+    """Calcula la fecha final considerando días hábiles (L-V) excluyendo feriados."""
+    if dias_habiles <= 1:
+        return fecha_ini_date
+    
+    cur = fecha_ini_date
+    contados = 1
+    while contados < dias_habiles:
+        cur += datetime.timedelta(days=1)
+        if es_dia_laborable(cur, feriados_set):
+            contados += 1
+    return cur
+
+def contar_dias_habiles_entre(fecha_ini: datetime.date, fecha_fin: datetime.date, feriados_set: set) -> int:
+    """Cuenta los días hábiles netos entre dos fechas inclusive."""
+    if fecha_fin < fecha_ini:
+        return 1
+    cur = fecha_ini
+    dias = 0
+    while cur <= fecha_fin:
+        if es_dia_laborable(cur, feriados_set):
+            dias += 1
+        cur += datetime.timedelta(days=1)
+    return max(1, dias)
+
 app = FastAPI(title="IMARPE Project Management Engine", version="9.3")
 
 app.add_middleware(
@@ -147,10 +188,32 @@ class ProcesoItemModel(BaseModel):
     nivel: int
     codigo_padre: Optional[str] = None
 
+class ProcesoEditarModel(BaseModel):
+    codigo: str
+    nombre: str
+    nivel: int
+    codigo_padre: Optional[str] = None
+    estado: Optional[str] = "ACTIVO"
+
 class ProyectoProcesoUpdate(BaseModel):
     proceso_codigo: Optional[str] = ""
     proceso_nombre: Optional[str] = ""
     es_proceso_personalizado: Optional[int] = 0
+
+class FeriadoToggleModel(BaseModel):
+    fecha: str  # 'YYYY-MM-DD'
+    descripcion: Optional[str] = "Feriado / Día no laborable"
+    tipo: Optional[str] = "FERIADO"
+
+class ProyectoCrearModel(BaseModel):
+    nombre: str
+    descripcion: Optional[str] = ""
+    unidad_organica: Optional[str] = ""
+    proceso_codigo: Optional[str] = ""
+    proceso_nombre: Optional[str] = ""
+    es_proceso_personalizado: Optional[int] = 0
+    unidad_tiempo: Optional[str] = "DIAS"  # 'DIAS' | 'HORAS'
+    horas_por_dia: Optional[int] = 8
 
 class ActividadModel(BaseModel):
     proyecto_id: Optional[int] = 1
@@ -404,12 +467,34 @@ def init_db():
         )
     """)
 
-    # Migración de columnas de procesos en proyectos
-    for col, defn in [("proceso_codigo", "TEXT"), ("proceso_nombre", "TEXT"), ("es_proceso_personalizado", "INTEGER DEFAULT 0")]:
+    # Migración de columnas de procesos y temporalidad en proyectos
+    for col, defn in [
+        ("proceso_codigo", "TEXT"), 
+        ("proceso_nombre", "TEXT"), 
+        ("es_proceso_personalizado", "INTEGER DEFAULT 0"),
+        ("unidad_tiempo", "TEXT DEFAULT 'DIAS'"),
+        ("horas_por_dia", "INTEGER DEFAULT 8")
+    ]:
         try:
             c.execute(f"ALTER TABLE proyectos ADD COLUMN {col} {defn}")
         except sqlite3.OperationalError:
             pass
+
+    # Tabla Feriados y Días No Laborables Institucionales
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS feriados_institucionales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT UNIQUE NOT NULL,
+            descripcion TEXT,
+            tipo TEXT DEFAULT 'FERIADO',
+            creado_por TEXT DEFAULT 'ADMIN_TI',
+            fecha_registro TEXT
+        )
+    """)
+    try:
+        c.execute("CREATE INDEX IF NOT EXISTS idx_feriados_fecha ON feriados_institucionales(fecha)")
+    except sqlite3.OperationalError:
+        pass
 
     # Tabla Procesos Institucionales
     c.execute("""
@@ -976,13 +1061,14 @@ def alternar_estado_trabajador(
     db.commit()
     return {"status": "success", "mensaje": f"Estado actualizado a {nuevo_estado}", "nuevo_estado": nuevo_estado}
 
-# --- CATÁLOGO DE PROCESOS INSTITUCIONALES ---
+# --- CATÁLOGO DE PROCESOS INSTITUCIONALES (CRUD COMPLETO TI) ---
 @app.get("/procesos-institucionales")
-def listar_procesos_institucionales(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("""
+def listar_procesos_institucionales(todos: bool = False, db: sqlite3.Connection = Depends(get_db)):
+    filtro = "" if todos else "WHERE estado = 'ACTIVO'"
+    rows = db.execute(f"""
         SELECT id, codigo, nombre, nivel, codigo_padre, estado 
         FROM procesos_institucionales 
-        WHERE estado = 'ACTIVO' 
+        {filtro}
         ORDER BY codigo ASC
     """).fetchall()
     return [dict(r) for r in rows]
@@ -990,16 +1076,97 @@ def listar_procesos_institucionales(db: sqlite3.Connection = Depends(get_db)):
 @app.post("/procesos-institucionales")
 def registrar_proceso_admin(data: ProcesoItemModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     if user.get("rol") != "ADMIN_TI":
-        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede gestionar el catálogo oficial de procesos.")
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede incorporar procesos al catálogo oficial.")
+    cod_limpio = data.codigo.strip().upper()
+    nom_limpio = data.nombre.strip()
     try:
         db.execute("""
             INSERT INTO procesos_institucionales (codigo, nombre, nivel, codigo_padre, estado, creado_por)
             VALUES (?, ?, ?, ?, 'ACTIVO', ?)
-        """, (data.codigo.strip(), data.nombre.strip(), data.nivel, data.codigo_padre, user["username"]))
+        """, (cod_limpio, nom_limpio, data.nivel, data.codigo_padre, user["username"]))
         db.commit()
         return {"mensaje": "Proceso registrado exitosamente"}
     except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="El código de proceso ya se encuentra registrado.")
+        raise HTTPException(status_code=400, detail=f"El código de proceso '{cod_limpio}' ya existe en la base de datos.")
+
+@app.put("/procesos-institucionales/{proceso_id}")
+def editar_proceso_admin(proceso_id: int, data: ProcesoEditarModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar procesos institucionales.")
+    
+    proc_actual = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proceso_id,)).fetchone()
+    if not proc_actual:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado.")
+
+    nuevo_cod = data.codigo.strip().upper()
+    nuevo_nom = data.nombre.strip()
+    cod_anterior = proc_actual["codigo"]
+
+    try:
+        db.execute("""
+            UPDATE procesos_institucionales 
+            SET codigo = ?, nombre = ?, nivel = ?, codigo_padre = ?, estado = ?
+            WHERE id = ?
+        """, (nuevo_cod, nuevo_nom, data.nivel, data.codigo_padre, data.estado, proceso_id))
+        
+        # Propagar actualización a proyectos vinculados si el código o nombre cambió
+        db.execute("""
+            UPDATE proyectos 
+            SET proceso_codigo = ?, proceso_nombre = ? 
+            WHERE proceso_codigo = ? AND es_proceso_personalizado = 0
+        """, (nuevo_cod, nuevo_nom, cod_anterior))
+        
+        db.commit()
+        return {"mensaje": "Proceso actualizado correctamente y propagado a los proyectos vinculados."}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail=f"El código '{nuevo_cod}' ya está en uso por otro proceso.")
+
+@app.delete("/procesos-institucionales/{proceso_id}")
+def eliminar_proceso_admin(proceso_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede eliminar procesos institucionales.")
+    
+    proc = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proceso_id,)).fetchone()
+    if not proc:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado.")
+    
+    # Validación de Integridad Institucional: Verificar si proyectos vigentes dependen de este proceso
+    en_uso = db.execute("SELECT COUNT(*) FROM proyectos WHERE proceso_codigo = ?", (proc["codigo"],)).fetchone()[0]
+    if en_uso > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"No se puede eliminar el proceso [{proc['codigo']}] porque existen {en_uso} proyecto(s) asociados a él. Puede cambiar su estado a 'INACTIVO' para deshabilitarlo de nuevos proyectos."
+        )
+
+    db.execute("DELETE FROM procesos_institucionales WHERE id = ?", (proceso_id,))
+    db.commit()
+    return {"mensaje": f"Proceso [{proc['codigo']}] eliminado con éxito."}
+
+# --- CALENDARIO LABORAL Y FERIADOS INSTITUCIONALES (TI) ---
+@app.get("/feriados")
+def listar_feriados(db: sqlite3.Connection = Depends(get_db)):
+    rows = db.execute("SELECT id, fecha, descripcion, tipo, creado_por FROM feriados_institucionales ORDER BY fecha ASC").fetchall()
+    return [dict(r) for r in rows]
+
+@app.post("/feriados/toggle")
+def toggle_feriado_admin(data: FeriadoToggleModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede configurar el calendario de feriados.")
+    
+    fecha_str = data.fecha.strip()
+    existente = db.execute("SELECT id FROM feriados_institucionales WHERE fecha = ?", (fecha_str,)).fetchone()
+    
+    if existente:
+        db.execute("DELETE FROM feriados_institucionales WHERE id = ?", (existente[0],))
+        db.commit()
+        return {"accion": "ELIMINADO", "fecha": fecha_str, "mensaje": f"La fecha {fecha_str} fue retirada de feriados."}
+    else:
+        db.execute("""
+            INSERT INTO feriados_institucionales (fecha, descripcion, tipo, creado_por, fecha_registro)
+            VALUES (?, ?, ?, ?, ?)
+        """, (fecha_str, data.descripcion.strip(), data.tipo, user["username"], ahora_peru_str()))
+        db.commit()
+        return {"accion": "REGISTRADO", "fecha": fecha_str, "mensaje": f"La fecha {fecha_str} fue registrada como feriado / no laborable."}
 
 # --- HUB DE PROYECTOS ---
 @app.get("/proyectos")
@@ -1009,7 +1176,8 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
 
     query = """
         SELECT DISTINCT p.id, p.nombre, p.descripcion, p.unidad_organica, 
-               p.proceso_codigo, p.proceso_nombre, p.es_proceso_personalizado, p.fecha_creacion,
+               p.proceso_codigo, p.proceso_nombre, p.es_proceso_personalizado,
+               p.unidad_tiempo, p.horas_por_dia, p.fecha_creacion,
                CASE WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 1 ELSE 0 END as es_gestor
         FROM proyectos p
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
@@ -1071,9 +1239,17 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
 
 @app.post("/proyectos")
 def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    unidad_tiempo = (p.unidad_tiempo or "DIAS").upper().strip()
+    if unidad_tiempo not in ("DIAS", "HORAS"):
+        unidad_tiempo = "DIAS"
+    horas_dia = int(p.horas_por_dia or 8)
+
     db.execute("""
-        INSERT INTO proyectos (nombre, descripcion, unidad_organica, proceso_codigo, proceso_nombre, es_proceso_personalizado, creador_id) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO proyectos (
+            nombre, descripcion, unidad_organica, proceso_codigo, proceso_nombre, 
+            es_proceso_personalizado, unidad_tiempo, horas_por_dia, creador_id
+        ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         p.nombre.strip(), 
         p.descripcion.strip(), 
@@ -1081,6 +1257,8 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
         (p.proceso_codigo or "").strip(),
         (p.proceso_nombre or "").strip(),
         int(p.es_proceso_personalizado or 0),
+        unidad_tiempo,
+        horas_dia,
         user["id"]
     ))
     nuevo_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -1088,9 +1266,9 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
     db.execute("""
         INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
         VALUES (?, ?, ?, 'Creación Proyecto', ?)
-    """, (nuevo_id, ahora_peru_str(), user["username"], f"Proyecto creado: '{p.nombre.strip()}'"))
+    """, (nuevo_id, ahora_peru_str(), user["username"], f"Proyecto creado: '{p.nombre.strip()}' [Modalidad: {unidad_tiempo}]"))
     db.commit()
-    return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id}
+    return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id, "unidad_tiempo": unidad_tiempo}
 
 @app.put("/proyectos/{proyecto_id}/descripcion")
 def actualizar_descripcion_proyecto(proyecto_id: int, data: ProyectoDescripcionUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
