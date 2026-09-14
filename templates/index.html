@@ -1031,8 +1031,12 @@
       <!-- Tab 2: Trabajadores -->
       <div id="ti-tab-content-trabajadores" class="hidden p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
         <form onsubmit="registrarTrabajadorTI(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
-          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Nuevo Trabajador en Directorio Institucional</h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+            <h4 class="text-xs font-black uppercase text-[#0f2a4a] tracking-wider">Directorio Institucional & Alta Única de Personal</h4>
+            <span class="text-[10px] bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded font-bold">Autogestión de Acceso</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
               <label class="block font-bold text-gray-600 mb-1">Nombres</label>
               <input type="text" id="tra-input-nombres" required placeholder="Ej. Luis Orlando" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
@@ -1050,14 +1054,40 @@
             </div>
 
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Correo Institucional</label>
+              <label class="block font-bold text-gray-600 mb-1">Cargo Institucional</label>
+              <input type="text" id="tra-input-cargo" placeholder="Ej. Director General, Especialista..." class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Nivel de Mando Institucional:</label>
+              <select id="tra-input-nivel-mando" class="w-full p-2 border border-gray-300 rounded font-bold text-gray-700 outline-none focus:border-[#0f2a4a] bg-slate-50">
+                <option value="0">Personal Operativo / Especialista</option>
+                <option value="1">🏛️ DIRECTIVO / TITULAR DE UNIDAD</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Usuario / Correo Institucional</label>
               <div class="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
                 <input type="text" id="tra-input-correo-user" required placeholder="laguilar" class="w-full p-2 font-semibold outline-none text-right">
                 <span class="bg-gray-100 px-2 py-2 text-gray-500 font-bold text-xs border-l border-gray-200">@imarpe.gob.pe</span>
               </div>
             </div>
           </div>
-          <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg transition shadow">Registrar Trabajador</button>
+
+          <!-- Bloque de Creación de Credencial de Acceso Inmediata -->
+          <div class="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            <label class="inline-flex items-center space-x-2 font-bold text-[#0f2a4a] cursor-pointer">
+              <input type="checkbox" id="tra-chk-crear-acceso" checked class="rounded text-[#0f2a4a] focus:ring-0">
+              <span>Habilitar cuenta de acceso al software inmediatamente</span>
+            </label>
+            <div class="flex items-center space-x-2">
+              <span class="text-gray-500 font-semibold">Contraseña Inicial:</span>
+              <input type="text" id="tra-input-pass-inicial" value="imarpe2026" class="p-1 px-2 border border-gray-300 rounded text-xs font-mono font-bold text-teal-800 bg-white w-28 text-center outline-none">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg transition shadow">+ Guardar en Directorio y Habilitar Acceso</button>
         </form>
 
         <div>
@@ -6961,39 +6991,49 @@
         }
       });
 
+      // Disparar carga de datos correspondiente según pestaña seleccionada
+      if (tab === 'cuentas') cargarListaUsuariosTI();
+      if (tab === 'trabajadores') cargarDirectorioTrabajadores();
+      if (tab === 'unidades') cargarCatalogoUnidades();
       if (tab === 'feriados') cargarListaFeriados();
       if (tab === 'procesos') cargarListaProcesosTI();
     }
 
     // --- CARGA Y RENDERIZADO DE UNIDADES ORGÁNICAS ROF ---
     async function cargarCatalogoUnidades() {
+      const tbody = document.getElementById("uo-tabla-cuerpo");
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 font-semibold animate-pulse">Sincronizando catálogo oficial del ROF...</td></tr>`;
+      }
+
       try {
-        // 1. Garantizar sincronización asíncrona de datos de personal previo al render
-        if (!window.trabajadoresTIGlobal || window.trabajadoresTIGlobal.length === 0) {
+        // 1. Asegurar precarga de trabajadores
+        if (!catalogoTrabajadoresGlobal || catalogoTrabajadoresGlobal.length === 0) {
           try {
             const resT = await fetch("/trabajadores", { headers: { "Authorization": `Bearer ${token}` } });
-            if (resT.ok) window.trabajadoresTIGlobal = await resT.json();
-          } catch (_) {}
-        }
-        if (!window.usuariosTIGlobal || window.usuariosTIGlobal.length === 0) {
-          try {
-            const resU = await fetch("/usuarios", { headers: { "Authorization": `Bearer ${token}` } });
-            if (resU.ok) window.usuariosTIGlobal = await resU.json();
+            if (resT.ok) catalogoTrabajadoresGlobal = await resT.json();
           } catch (_) {}
         }
 
-        // 2. Obtener catálogo oficial de unidades orgánicas
+        // 2. Obtener catálogo oficial de unidades
         const res = await fetch("/unidades-organicas", {
           headers: { "Authorization": `Bearer ${token}` }
         });
-        if (!res.ok) return;
-        catalogoUnidadesGlobal = await res.json();
+        if (!res.ok) {
+          if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error al consultar unidades orgánicas.</td></tr>`;
+          return;
+        }
 
-        const tbody = document.getElementById("uo-tabla-cuerpo");
+        catalogoUnidadesGlobal = await res.json();
         if (!tbody) return;
         tbody.innerHTML = "";
 
-        // 3. Poblar selector de dependencia jerárquica (Unidad Padre)
+        if (!catalogoUnidadesGlobal || catalogoUnidadesGlobal.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">No hay unidades registradas.</td></tr>`;
+          return;
+        }
+
+        // 3. Poblar desplegable de Unidad Padre
         const selPadre = document.getElementById("uo-input-padre");
         if (selPadre) {
           selPadre.innerHTML = '<option value="">(Ninguna - Nivel Máximo / Alta Dirección)</option>';
@@ -7002,12 +7042,12 @@
           });
         }
 
-        // 4. Consolidar lista de personas disponibles para asignación directiva
-        const listaPersonas = (window.trabajadoresTIGlobal && window.trabajadoresTIGlobal.length > 0)
-          ? window.trabajadoresTIGlobal
-          : (window.usuariosTIGlobal || []);
+        // 4. Lista consolidada de personas para el selector de directivos
+        const listaPersonas = (catalogoTrabajadoresGlobal && catalogoTrabajadoresGlobal.length > 0)
+          ? catalogoTrabajadoresGlobal
+          : (usuariosTIGlobal || []);
 
-        // 5. Renderizar filas de la estructura institucional
+        // 5. Dibujar cada fila del catálogo institucional
         catalogoUnidadesGlobal.forEach(u => {
           const padreTxt = u.sigla_padre 
             ? `<span class="bg-slate-100 px-2 py-0.5 rounded text-[10px] text-slate-700 font-mono font-bold" title="Depende de ${u.sigla_padre}">↑ ${u.sigla_padre}</span>` 
@@ -7038,7 +7078,8 @@
           `;
         });
       } catch (e) {
-        console.error("Error al cargar unidades orgánicas:", e);
+        console.error("Error al cargar unidades:", e);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error de conexión al cargar unidades.</td></tr>`;
       }
     }
 
@@ -7223,6 +7264,10 @@
       const apellidos = document.getElementById("tra-input-apellidos").value.trim();
       const uo = document.getElementById("tra-input-uo-valor").value || document.getElementById("tra-input-uo-busq").value.trim();
       const correo_user = document.getElementById("tra-input-correo-user").value.trim();
+      const cargo = document.getElementById("tra-input-cargo")?.value.trim() || "Especialista";
+      const esDirectivo = parseInt(document.getElementById("tra-input-nivel-mando")?.value || "0");
+      const crearAcceso = document.getElementById("tra-chk-crear-acceso")?.checked !== false;
+      const passInicial = document.getElementById("tra-input-pass-inicial")?.value.trim() || "imarpe2026";
 
       if (!nombres || !apellidos || !uo || !correo_user) {
         alert("Por favor complete todos los campos requeridos.");
@@ -7236,7 +7281,17 @@
             "Content-Type": "application/json", 
             "Authorization": `Bearer ${token}` 
           },
-          body: JSON.stringify({ nombres, apellidos, unidad_organica: uo, correo_usuario: correo_user })
+          body: JSON.stringify({ 
+            nombres, 
+            apellidos, 
+            unidad_organica: uo, 
+            correo_usuario: correo_user,
+            cargo: cargo,
+            es_directivo: esDirectivo,
+            crear_acceso: crearAcceso,
+            password_inicial: passInicial,
+            rol_sistema: "OPERADOR"
+          })
         });
 
         if (res.status === 401) {

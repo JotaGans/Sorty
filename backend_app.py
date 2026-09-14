@@ -159,6 +159,11 @@ class TrabajadorAltaModel(BaseModel):
     apellidos: str
     unidad_organica: str
     correo_usuario: str  # parte antes del @imarpe.gob.pe
+    cargo: Optional[str] = "Especialista"
+    es_directivo: Optional[int] = 0
+    crear_acceso: Optional[bool] = True
+    password_inicial: Optional[str] = "imarpe2026"
+    rol_sistema: Optional[str] = "OPERADOR"
 
 class TrabajadorActualizarModel(BaseModel):
     id: int
@@ -735,17 +740,20 @@ def init_db():
         ("Centro de Plataformas Flotantes de Investigación Marina y Continental", "CPFIMC", "ÓRGANOS DESCONCENTRADOS", "GC")
     ]
 
+    # Sincronización e inserción robusta tolerante a versiones previas de SQLite
     for nom, sig, tipo, padre in unidades_semilla:
-        # Si la unidad ya existe, actualiza su jerarquía ROF y tipo sin tocar los titulares asignados
-        c.execute("""
-            INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, sigla_padre, estado)
-            VALUES (?, ?, ?, ?, 'ACTIVO')
-            ON CONFLICT(sigla) DO UPDATE SET
-                nombre = excluded.nombre,
-                tipo_organo = excluded.tipo_organo,
-                sigla_padre = excluded.sigla_padre,
-                estado = 'ACTIVO'
-        """, (nom, sig, tipo, padre))
+        uo_existente = c.execute("SELECT id FROM unidades_organicas WHERE sigla = ?", (sig,)).fetchone()
+        if uo_existente:
+            c.execute("""
+                UPDATE unidades_organicas 
+                SET nombre = ?, tipo_organo = ?, sigla_padre = ?, estado = 'ACTIVO'
+                WHERE id = ?
+            """, (nom, tipo, padre, uo_existente[0]))
+        else:
+            c.execute("""
+                INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, sigla_padre, estado)
+                VALUES (?, ?, ?, ?, 'ACTIVO')
+            """, (nom, sig, tipo, padre))
 
 # Tabla Comentarios de Actividad (Colaborativo tipo Word 365)
     c.execute("""
@@ -979,19 +987,27 @@ def actualizar_rol_global_usuario(
 # --- DIRECTORIO DE TRABAJADORES Y UNIDADES ORGÁNICAS ---
 @app.get("/unidades-organicas")
 def listar_unidades_organicas(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("""
-        SELECT uo.id, uo.nombre, uo.sigla, uo.tipo_organo, uo.sigla_padre, 
-               uo.titular_usuario_id, uo.titular_trabajador_id, uo.estado,
-               COALESCE(t.nombre_completo, u.nombre_completo, '') as titular_nombre,
-               t.cargo as titular_cargo,
-               t.correo as titular_correo
-        FROM unidades_organicas uo
-        LEFT JOIN trabajadores t ON uo.titular_trabajador_id = t.id
-        LEFT JOIN usuarios u ON uo.titular_usuario_id = u.id
-        WHERE uo.estado = 'ACTIVO' 
-        ORDER BY uo.tipo_organo ASC, uo.nombre ASC
-    """).fetchall()
-    return [dict(r) for r in rows]
+    try:
+        rows = db.execute("""
+            SELECT uo.id, uo.nombre, uo.sigla, 
+                   COALESCE(uo.tipo_organo, 'ÓRGANOS DE LÍNEA') as tipo_organo, 
+                   uo.sigla_padre, 
+                   uo.titular_usuario_id, 
+                   uo.titular_trabajador_id, 
+                   uo.estado,
+                   COALESCE(t.nombre_completo, u.nombre_completo, '') as titular_nombre,
+                   t.cargo as titular_cargo,
+                   t.correo as titular_correo
+            FROM unidades_organicas uo
+            LEFT JOIN trabajadores t ON uo.titular_trabajador_id = t.id
+            LEFT JOIN usuarios u ON uo.titular_usuario_id = u.id
+            WHERE uo.estado = 'ACTIVO' OR uo.estado IS NULL
+            ORDER BY uo.id ASC
+        """).fetchall()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        rows = db.execute("SELECT id, nombre, sigla FROM unidades_organicas").fetchall()
+        return [dict(r) for r in rows]
 
 @app.post("/unidades-organicas")
 def crear_unidad_organica(data: UnidadOrganicaModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
@@ -1059,22 +1075,55 @@ def crear_trabajador(data: TrabajadorAltaModel, user: dict = Depends(get_current
     
     usuario_correo = data.correo_usuario.strip().lower().replace("@imarpe.gob.pe", "")
     correo_final = f"{usuario_correo}@imarpe.gob.pe"
+    cargo_final = (data.cargo or "Especialista").strip()
+    es_dir = int(data.es_directivo or 0)
+    uo_final = data.unidad_organica.strip().upper()
 
     try:
+        # 1. Registrar en tabla Trabajadores
         db.execute("""
-            INSERT INTO trabajadores (nombres, apellidos, nombre_completo, unidad_organica, correo, estado)
-            VALUES (?, ?, ?, ?, ?, 'ACTIVO')
-        """, (nombres_limp, apellidos_limp, nombre_completo, data.unidad_organica.strip(), correo_final))
-        
+            INSERT INTO trabajadores (nombres, apellidos, nombre_completo, unidad_organica, correo, cargo, es_directivo, estado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVO')
+        """, (nombres_limp, apellidos_limp, nombre_completo, uo_final, correo_final, cargo_final, es_dir))
+        trabajador_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        # 2. Registrar en catálogo de Responsables para WBS
         db.execute("""
             INSERT OR REPLACE INTO responsables (nombre, cargo, correo)
             VALUES (?, ?, ?)
-        """, (nombre_completo, data.unidad_organica.strip(), correo_final))
-        
+        """, (nombre_completo, cargo_final, correo_final))
+
+        # 3. Si se solicita crear acceso, generar cuenta de usuario automáticamente sin duplicar trabajo
+        if data.crear_acceso:
+            pass_hasheada = hash_password(data.password_inicial or "imarpe2026")
+            rol_sist = data.rol_sistema if data.rol_sistema in ("ADMIN_TI", "OPERADOR") else "OPERADOR"
+            
+            # Verificar si el username ya existía
+            u_existe = db.execute("SELECT id FROM usuarios WHERE username = ?", (usuario_correo,)).fetchone()
+            if not u_existe:
+                db.execute("""
+                    INSERT INTO usuarios (username, password, nombre_completo, rol, estado)
+                    VALUES (?, ?, ?, ?, 'ACTIVO')
+                """, (usuario_correo, pass_hasheada, nombre_completo, rol_sist))
+                nuevo_user_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+            else:
+                nuevo_user_id = u_existe[0]
+                db.execute("""
+                    UPDATE usuarios SET nombre_completo = ?, rol = ?, estado = 'ACTIVO' WHERE id = ?
+                """, (nombre_completo, rol_sist, nuevo_user_id))
+
+            # 4. Si fue marcado como Directivo / Titular, vincularlo automáticamente como autoridad de su UO
+            if es_dir == 1:
+                db.execute("""
+                    UPDATE unidades_organicas 
+                    SET titular_trabajador_id = ?, titular_usuario_id = ? 
+                    WHERE sigla = ?
+                """, (trabajador_id, nuevo_user_id, uo_final))
+
         db.commit()
-        return {"mensaje": "Trabajador registrado en el directorio institucional"}
+        return {"mensaje": "Trabajador incorporado exitosamente con identidad unificada."}
     except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="El correo institucional ya se encuentra registrado.")
+        raise HTTPException(status_code=400, detail="El correo o usuario ya se encuentra registrado.")
 
 @app.put("/trabajadores/{trabajador_id}")
 def actualizar_trabajador(
