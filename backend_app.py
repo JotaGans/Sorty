@@ -1409,8 +1409,17 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         """, (p_id, cod, f"{cod}.")).fetchone()
 
         if not es_admin_o_gestor:
-            if not existe or user.get("nombre_completo", user["username"]) not in (existe["responsable"] or ""):
-                raise HTTPException(status_code=403, detail="Permiso denegado: Solo puedes modificar tus actividades asignadas.")
+            u_nombre = (user.get("nombre_completo") or "").strip().lower()
+            u_user = (user.get("username") or "").strip().lower()
+            resp_db = (existe["responsable"] or "").strip().lower() if existe else ""
+
+            es_responsable_valido = bool(
+                (u_nombre and u_nombre in resp_db) or 
+                (u_user and u_user in resp_db)
+            )
+
+            if not existe or not es_responsable_valido:
+                raise HTTPException(status_code=403, detail="Acceso restringido: Solo el Gestor o el Responsable asignado pueden actualizar el avance de esta actividad.")
 
         ahora_str = ahora_peru_str()
 

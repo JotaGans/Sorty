@@ -3592,14 +3592,21 @@
 
       actualizarDisplaysUsuario();
 
+      const btnNuevaAct = document.getElementById("btn-nueva-act-gantt");
+      const btnHist = document.getElementById("btn-historial-gantt");
+      const btnPers = document.getElementById("btn-personal-gantt");
+      const btnPlantilla = document.getElementById("btn-accion-plantilla-dinamico");
+
       if (!proyectoEsGestor) {
-        document.getElementById("btn-nueva-act-gantt").classList.add("hidden");
-        document.getElementById("btn-historial-gantt").classList.add("hidden");
-        document.getElementById("btn-personal-gantt").classList.add("hidden");
+        if (btnNuevaAct) btnNuevaAct.classList.add("hidden");
+        if (btnHist) btnHist.classList.add("hidden");
+        if (btnPers) btnPers.classList.add("hidden");
+        if (btnPlantilla) btnPlantilla.classList.add("hidden");
       } else {
-        document.getElementById("btn-nueva-act-gantt").classList.remove("hidden");
-        document.getElementById("btn-historial-gantt").classList.remove("hidden");
-        document.getElementById("btn-personal-gantt").classList.remove("hidden");
+        if (btnNuevaAct) btnNuevaAct.classList.remove("hidden");
+        if (btnHist) btnHist.classList.remove("hidden");
+        if (btnPers) btnPers.classList.remove("hidden");
+        if (btnPlantilla) btnPlantilla.classList.remove("hidden");
       }
 
       const cacheKey = `cache_acts_proj_${id}`;
@@ -5548,6 +5555,17 @@
       renderizarTabla();
     }
 
+    function esResponsableDeActividad(act) {
+      if (!act || !act.responsable || !currentUser) return false;
+      const respStr = String(act.responsable).toLowerCase();
+      const uNom = String(currentUser.nombre_completo || "").toLowerCase().trim();
+      const uUser = String(currentUser.username || "").toLowerCase().trim();
+      
+      if (uNom && respStr.includes(uNom)) return true;
+      if (uUser && respStr.includes(uUser)) return true;
+      return false;
+    }
+
    // --- RENDERIZADO DEL GANTT VISUAL RESPONSIVO CON AFFORDANCE UX ---
     function renderizarTabla() {
       recalcularJerarquiaWBS();
@@ -5912,9 +5930,11 @@
 
         const paddingLeft = (nivel - 1) * 16 + 8;
         const cod = act.codigo;
-        const esMio = act.responsable && act.responsable.includes(currentUser.username);
+        const esMio = esResponsableDeActividad(act);
         
+        // Solo el Gestor puede cambiar fechas, días o descripciones
         const puedeEditarTiempos = proyectoEsGestor && !esMadre;
+        // Solo el Gestor O el Responsable directo asignado pueden cambiar Estado y % Avance
         const puedeEditarAvance = (proyectoEsGestor || esMio) && !esMadre;
 
         const claseEditable = "cell-editable cursor-pointer";
@@ -6035,7 +6055,7 @@
           ${tdAvance}
           ${tdGantt}
           <td class="p-2 text-center border-b border-gray-200 space-x-1 whitespace-nowrap">
-            ${(proyectoEsGestor || esMio) && nivel < 4 ? `<button onclick="event.stopPropagation(); abrirWizardCreacion('${cod}', 'hijo')" class="text-blue-600 hover:text-blue-800 font-bold px-1 text-sm" title="Agregar subtarea jerárquica">+</button>` : ''}
+            ${proyectoEsGestor && nivel < 4 ? `<button onclick="event.stopPropagation(); abrirWizardCreacion('${cod}', 'hijo')" class="text-blue-600 hover:text-blue-800 font-bold px-1 text-sm" title="Agregar subtarea jerárquica">+</button>` : ''}
             ${proyectoEsGestor ? `<button onclick="event.stopPropagation(); eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>` : ''}
           </td>
         `;
@@ -6633,12 +6653,15 @@
         const predsActuales = (act.predecesores || "").split(",").map(s => s.trim().replace(/\.+$/, "")).filter(Boolean);
 
         let opcionesHTML = "";
+        const deshabilitarChecks = !proyectoEsGestor ? 'disabled' : '';
+        const cursorClase = !proyectoEsGestor ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:bg-teal-50';
+
         posiblesPreds.forEach(p => {
           const pCod = String(p.codigo).replace(/\.+$/, "");
           const estaMarcado = predsActuales.includes(pCod);
           opcionesHTML += `
-            <label class="inline-flex items-center space-x-1.5 bg-gray-50 hover:bg-teal-50 px-2 py-1 rounded border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700 mr-1.5 mb-1.5 shadow-xs">
-              <input type="checkbox" data-act-cod="${codLimpio}" value="${pCod}" ${estaMarcado ? 'checked' : ''} class="chk-dep-item rounded text-[#0f2a4a] focus:ring-0 cursor-pointer">
+            <label class="inline-flex items-center space-x-1.5 bg-gray-50 px-2 py-1 rounded border border-gray-200 text-[11px] font-bold text-gray-700 mr-1.5 mb-1.5 shadow-xs ${cursorClase}">
+              <input type="checkbox" data-act-cod="${codLimpio}" value="${pCod}" ${estaMarcado ? 'checked' : ''} ${deshabilitarChecks} class="chk-dep-item rounded text-[#0f2a4a] focus:ring-0">
               <span>[${pCod}] ${p.descripcion.substring(0, 20)}...</span>
             </label>
           `;
@@ -6658,6 +6681,15 @@
           </tr>
         `;
       });
+
+      const btnGuardarDep = document.querySelector("#modal-dependencias button[onclick='guardarTodasDependencias()']");
+      if (btnGuardarDep) {
+        if (!proyectoEsGestor) {
+          btnGuardarDep.classList.add("hidden");
+        } else {
+          btnGuardarDep.classList.remove("hidden");
+        }
+      }
 
       modal.classList.remove("hidden");
     }
