@@ -6971,15 +6971,12 @@
         const res = await fetch("/unidades-organicas", {
           headers: { "Authorization": `Bearer ${token}` }
         });
-        if (res.status === 401) {
-          cerrarSesion();
-          return;
-        }
         if (!res.ok) return;
         catalogoUnidadesGlobal = await res.json();
         const tbody = document.getElementById("uo-tabla-cuerpo");
         if (!tbody) return;
         tbody.innerHTML = "";
+
         const selPadre = document.getElementById("uo-input-padre");
         if (selPadre) {
           selPadre.innerHTML = '<option value="">(Ninguna - Nivel Máximo / Alta Dirección)</option>';
@@ -6988,16 +6985,27 @@
           });
         }
 
+        // Fuente unificada: Listar desde el directorio oficial de trabajadores
+        const listaPersonas = (trabajadoresTIGlobal && trabajadoresTIGlobal.length > 0) 
+          ? trabajadoresTIGlobal 
+          : (usuariosTIGlobal || []);
+
         catalogoUnidadesGlobal.forEach(u => {
           const padreTxt = u.sigla_padre 
             ? `<span class="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] text-slate-700 font-mono" title="Depende de ${u.sigla_padre}">↑ ${u.sigla_padre}</span>` 
             : `<span class="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Alta Dirección</span>`;
 
-          // Generar selector dinámico de usuarios registrados
-          let opcionesUsuarios = '<option value="">(Sin titular asignado)</option>';
-          (usuariosTIGlobal || []).forEach(usr => {
-            const estaAsignado = (u.titular_usuario_id === usr.id);
-            opcionesUsuarios += `<option value="${usr.id}" ${estaAsignado ? 'selected' : ''}>${usr.nombre_completo || usr.username} (@${usr.username})</option>`;
+          let opcionesTitular = '<option value="">(Sin titular asignado)</option>';
+          listaPersonas.forEach(p => {
+            const esTrabajador = ('cargo' in p);
+            const pId = p.id;
+            const pNombre = p.nombre_completo || p.username;
+            const pCargo = p.cargo ? ` - ${p.cargo}` : '';
+            const estaAsignado = esTrabajador 
+              ? (u.titular_trabajador_id === pId)
+              : (u.titular_usuario_id === pId);
+
+            opcionesTitular += `<option value="${pId}" ${estaAsignado ? 'selected' : ''}>${pNombre}${pCargo}</option>`;
           });
 
           tbody.innerHTML += `
@@ -7007,27 +7015,32 @@
               <td class="p-2.5 text-gray-500 text-[11px] whitespace-nowrap">${padreTxt}</td>
               <td class="p-2.5">
                 <select onchange="asignarTitularUnidad(${u.id}, this.value, '${u.sigla}')" 
-                        class="w-full text-xs font-bold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer">
-                  ${opcionesUsuarios}
+                        class="w-full text-xs font-semibold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer">
+                  ${opcionesTitular}
                 </select>
               </td>
             </tr>
           `;
         });
       } catch (e) {
-        console.error("Error cargando unidades:", e);
+        console.error("Error al cargar unidades:", e);
       }
     }
 
-    async function asignarTitularUnidad(unidadId, usuarioId, sigla) {
+    async function asignarTitularUnidad(unidadId, personaId, sigla) {
       try {
+        const payload = {
+          titular_trabajador_id: personaId ? parseInt(personaId) : null,
+          titular_usuario_id: null
+        };
+
         const res = await fetch(`/unidades-organicas/${unidadId}/titular`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          body: JSON.stringify({ titular_usuario_id: usuarioId ? parseInt(usuarioId) : null })
+          body: JSON.stringify(payload)
         });
 
         if (res.ok) {

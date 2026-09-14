@@ -151,6 +151,7 @@ class UnidadOrganicaModel(BaseModel):
     titular_usuario_id: Optional[int] = None
 
 class AsignarTitularModel(BaseModel):
+    titular_trabajador_id: Optional[int] = None
     titular_usuario_id: Optional[int] = None
 
 class TrabajadorAltaModel(BaseModel):
@@ -486,15 +487,22 @@ def init_db():
         except sqlite3.OperationalError:
             pass
 
-    # Migración de jerarquía ROF y titular en unidades orgánicas
+    # Migración de jerarquía ROF y titular en unidades orgánicas (trabajador o usuario)
     for col, defn in [
         ("sigla_padre", "TEXT"),
-        ("titular_usuario_id", "INTEGER")
+        ("titular_usuario_id", "INTEGER"),
+        ("titular_trabajador_id", "INTEGER")
     ]:
         try:
             c.execute(f"ALTER TABLE unidades_organicas ADD COLUMN {col} {defn}")
         except sqlite3.OperationalError:
             pass
+
+    # Migración para nivel directivo en trabajadores
+    try:
+        c.execute("ALTER TABLE trabajadores ADD COLUMN es_directivo INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
 
     # Tabla Feriados y Días No Laborables Institucionales
     c.execute("""
@@ -967,9 +975,13 @@ def actualizar_rol_global_usuario(
 @app.get("/unidades-organicas")
 def listar_unidades_organicas(db: sqlite3.Connection = Depends(get_db)):
     rows = db.execute("""
-        SELECT uo.id, uo.nombre, uo.sigla, uo.tipo_organo, uo.sigla_padre, uo.titular_usuario_id, uo.estado,
-               u.nombre_completo as titular_nombre
+        SELECT uo.id, uo.nombre, uo.sigla, uo.tipo_organo, uo.sigla_padre, 
+               uo.titular_usuario_id, uo.titular_trabajador_id, uo.estado,
+               COALESCE(t.nombre_completo, u.nombre_completo, '') as titular_nombre,
+               t.cargo as titular_cargo,
+               t.correo as titular_correo
         FROM unidades_organicas uo
+        LEFT JOIN trabajadores t ON uo.titular_trabajador_id = t.id
         LEFT JOIN usuarios u ON uo.titular_usuario_id = u.id
         WHERE uo.estado = 'ACTIVO' 
         ORDER BY uo.tipo_organo ASC, uo.nombre ASC
@@ -1000,12 +1012,29 @@ def crear_unidad_organica(data: UnidadOrganicaModel, user: dict = Depends(get_cu
 def asignar_titular_unidad(unidad_id: int, data: AsignarTitularModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     if user["rol"] != "ADMIN_TI":
         raise HTTPException(status_code=403, detail="Solo el Administrador TI puede asignar directivos y titulares de unidades.")
-    
+
+    t_id = data.titular_trabajador_id
+    u_id = data.titular_usuario_id
+
+    # Si se seleccionó un trabajador del directorio, buscar si ya cuenta con usuario de login
+    if t_id and not u_id:
+        trab = db.execute("SELECT nombre_completo, correo FROM trabajadores WHERE id = ?", (t_id,)).fetchone()
+        if trab:
+            u_row = db.execute("""
+                SELECT id FROM usuarios 
+                WHERE LOWER(nombre_completo) = LOWER(?) 
+                   OR LOWER(username) = LOWER(?)
+                   OR LOWER(?) LIKE LOWER(username || '@%')
+                LIMIT 1
+            """, (trab["nombre_completo"], trab["correo"].split("@")[0] if trab["correo"] else "", trab["correo"] or "")).fetchone()
+            if u_row:
+                u_id = u_row["id"]
+
     db.execute("""
         UPDATE unidades_organicas 
-        SET titular_usuario_id = ? 
+        SET titular_trabajador_id = ?, titular_usuario_id = ? 
         WHERE id = ?
-    """, (data.titular_usuario_id, unidad_id))
+    """, (t_id, u_id, unidad_id))
     db.commit()
     return {"mensaje": "Titular de unidad asignado exitosamente."}
 
@@ -1233,16 +1262,18 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
     u_nom = user.get("nombre_completo", "")
     es_admin_ti = (user.get("rol") == "ADMIN_TI")
 
-    # Identificar la unidad orgánica del usuario actual
+    # Identificar si el usuario actual es titular/directivo de alguna unidad orgánica
     uo_row = db.execute("""
-        SELECT COALESCE(uo.sigla, t.unidad_organica, '') as sigla
-        FROM usuarios u
-        LEFT JOIN trabajadores t ON (u.nombre_completo = t.nombre_completo OR t.correo LIKE u.username || '@%')
-        LEFT JOIN unidades_organicas uo ON (uo.titular_usuario_id = u.id OR uo.sigla = t.unidad_organica)
-        WHERE u.id = ? LIMIT 1
+        SELECT uo.sigla
+        FROM unidades_organicas uo
+        LEFT JOIN trabajadores t ON uo.titular_trabajador_id = t.id
+        LEFT JOIN usuarios u ON (uo.titular_usuario_id = u.id OR u.nombre_completo = t.nombre_completo OR t.correo LIKE u.username || '@%')
+        WHERE u.id = ? AND uo.estado = 'ACTIVO'
+        LIMIT 1
     """, (u_id,)).fetchone()
-    
-    mi_sigla = uo_row["sigla"] if uo_row else ""
+
+    # Si es titular directo de una unidad de mando, esa es su sigla de autoridad; de lo contrario queda vacía
+    mi_sigla_autoridad = uo_row["sigla"] if uo_row else ""
 
     # Consulta con CTE recursiva para obtener todas las unidades subordinadas a mi cargo
     query = """
@@ -1288,12 +1319,12 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
     es_admin_flag = 1 if es_admin_ti else 0
 
     rows = db.execute(query, (
-        mi_sigla, 
+        mi_sigla_autoridad, 
         u_id, es_admin_flag,
-        u_id, resp_like, mi_sigla,
+        u_id, resp_like, mi_sigla_autoridad,
         u_id,
         es_admin_flag, u_id, u_id, resp_like,
-        mi_sigla
+        mi_sigla_autoridad
     )).fetchall()
     
     proyectos_resumen = []
