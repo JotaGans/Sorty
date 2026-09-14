@@ -1889,44 +1889,67 @@ def actualizar_permiso_personal(
     db.commit()
     return {"mensaje": "Permiso actualizado exitosamente"}
 
-# --- ALGORITMO FORMAL CPM (CRITICAL PATH METHOD) ---
+# --- ALGORITMO FORMAL CPM CON PROTECCIÓN DE CICLOS Y SOPORTE HORAS/DÍAS ---
 @app.get("/ruta-critica")
 def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    p_id = int(proyecto_id or 1)
+    
+    # 1. Obtener modalidad temporal del proyecto (horas o días)
+    proy = db.execute("SELECT duration_mode, unidad_tiempo FROM proyectos WHERE id = ?", (p_id,)).fetchone()
+    modo_duracion = "hours" if (proy and (proy["duration_mode"] == "hours" or proy["unidad_tiempo"] == "HORAS")) else "business_days"
+
     rows = db.execute("""
         SELECT codigo, descripcion, dias, predecesores, fecha_inicio, fecha_fin 
         FROM actividades 
         WHERE proyecto_id = ? 
         ORDER BY codigo ASC
-    """, (proyecto_id,)).fetchall()
+    """, (p_id,)).fetchall()
 
     if not rows:
-        return {"duracion_proyecto_dias": 0, "detalles": {}}
+        return {"duracion_proyecto_dias": 0, "modo_duracion": modo_duracion, "detalles": {}}
 
-    todos_codigos = [r["codigo"] for r in rows]
+    todos_codigos = [str(r["codigo"]).rstrip(".") for r in rows]
     actividades_dict = {}
     
     for r in rows:
-        cod = r["codigo"]
-        cod_limpio = cod.rstrip(".")
-        es_madre = any(otro.startswith(f"{cod_limpio}.") and otro != cod for otro in todos_codigos)
+        cod = str(r["codigo"]).rstrip(".")
+        es_madre = any(otro.startswith(f"{cod}.") and otro != cod for otro in todos_codigos)
         
+        preds_raw = [p.strip().rstrip(".") for p in (r["predecesores"] or "").split(",") if p.strip()]
+        # Filtrar predecesores válidos y evitar auto-dependencia (1 depende de 1)
+        preds_validos = [p for p in preds_raw if p in todos_codigos and p != cod]
+
         actividades_dict[cod] = {
             "codigo": cod,
             "descripcion": r["descripcion"],
             "duracion": max(1, int(r["dias"] or 1)),
-            "predecesores": [p.strip() for p in (r["predecesores"] or "").split(",") if p.strip() and p.strip() in todos_codigos],
+            "predecesores": preds_validos,
             "es_madre": es_madre,
             "ES": 0, "EF": 0, "LS": 0, "LF": 0, "holgura": 0, "es_critica": False
         }
 
+    # Evaluar únicamente nodos terminales (hojas)
     nodos = {k: v for k, v in actividades_dict.items() if not v["es_madre"]}
     if not nodos:
         nodos = actividades_dict
 
-    # 1. Forward Pass
+    # Limpieza de dependencias circulares directas (A -> B y B -> A)
+    for cod, n in nodos.items():
+        preds_limpios = []
+        for pred in n["predecesores"]:
+            if pred in nodos and cod in nodos[pred]["predecesores"]:
+                # Romper enlace circular: se respeta el orden natural WBS (el menor código manda)
+                if cod > pred:
+                    preds_limpios.append(pred)
+            else:
+                preds_limpios.append(pred)
+        n["predecesores"] = preds_limpios
+
+    # 1. Forward Pass con detector de convergencia estricto
     cambio = True
     pasadas = 0
-    while cambio and pasadas < len(nodos) * 2:
+    max_pasadas = len(nodos) + 2
+    while cambio and pasadas < max_pasadas:
         cambio = False
         pasadas += 1
         for cod, n in nodos.items():
@@ -1946,11 +1969,11 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
     # 2. Backward Pass
     for n in nodos.values():
         n["LF"] = duracion_total
-        n["LS"] = duracion_total - n["duracion"]
+        n["LS"] = max(0, duracion_total - n["duracion"])
 
     cambio = True
     pasadas = 0
-    while cambio and pasadas < len(nodos) * 2:
+    while cambio and pasadas < max_pasadas:
         cambio = False
         pasadas += 1
         for cod, n in nodos.items():
@@ -1958,7 +1981,7 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
             if sucesores:
                 min_ls_suc = min(s["LS"] for s in sucesores)
                 nuevo_lf = min_ls_suc
-                nuevo_ls = nuevo_lf - n["duracion"]
+                nuevo_ls = max(0, nuevo_lf - n["duracion"])
                 if nuevo_lf != n["LF"] or nuevo_ls != n["LS"]:
                     n["LF"] = nuevo_lf
                     n["LS"] = nuevo_ls
@@ -1969,7 +1992,11 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
         n["holgura"] = max(0, n["LS"] - n["ES"])
         n["es_critica"] = (n["holgura"] == 0 and n["duracion"] > 0)
 
-    return {"duracion_proyecto_dias": duracion_total, "detalles": nodos}
+    return {
+        "duracion_proyecto_dias": duracion_total,
+        "modo_duracion": modo_duracion,
+        "detalles": nodos
+    }
 
 # --- NOTIFICACIONES ---
 @app.post("/notificaciones/asignacion")
