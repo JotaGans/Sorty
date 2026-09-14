@@ -147,6 +147,8 @@ class UnidadOrganicaModel(BaseModel):
     nombre: str
     sigla: str
     tipo_organo: Optional[str] = "Órgano de Línea"
+    sigla_padre: Optional[str] = None
+    titular_usuario_id: Optional[int] = None
 
 class TrabajadorAltaModel(BaseModel):
     nombres: str
@@ -201,12 +203,13 @@ class ProyectoCrearModel(BaseModel):
     nombre: str
     descripcion: Optional[str] = ""
     unidad_organica: Optional[str] = ""
-    duration_mode: Optional[str] = "business_days"  # 'business_days' | 'hours'
-    unidad_tiempo: Optional[str] = "DIAS"           # Compatibilidad retroactiva
+    duration_mode: Optional[str] = "business_days"
+    unidad_tiempo: Optional[str] = "DIAS"
     horas_por_dia: Optional[int] = 8
     proceso_codigo: Optional[str] = ""
     proceso_nombre: Optional[str] = ""
     es_proceso_personalizado: Optional[int] = 0
+    visibilidad: Optional[str] = "PRIVADO"  # 'PRIVADO' | 'PUBLICO'
 
 class ActividadModel(BaseModel):
     proyecto_id: Optional[int] = 1
@@ -460,17 +463,28 @@ def init_db():
         )
     """)
 
-    # Migración de columnas de procesos y temporalidad en proyectos
+    # Migración de columnas de procesos, temporalidad y privacidad en proyectos
     for col, defn in [
         ("proceso_codigo", "TEXT"), 
         ("proceso_nombre", "TEXT"), 
         ("es_proceso_personalizado", "INTEGER DEFAULT 0"),
         ("duration_mode", "TEXT DEFAULT 'business_days'"),
         ("unidad_tiempo", "TEXT DEFAULT 'DIAS'"),
-        ("horas_por_dia", "INTEGER DEFAULT 8")
+        ("horas_por_dia", "INTEGER DEFAULT 8"),
+        ("visibilidad", "TEXT DEFAULT 'PRIVADO'")  # 'PRIVADO' | 'PUBLICO'
     ]:
         try:
             c.execute(f"ALTER TABLE proyectos ADD COLUMN {col} {defn}")
+        except sqlite3.OperationalError:
+            pass
+
+    # Migración de jerarquía ROF y titular en unidades orgánicas
+    for col, defn in [
+        ("sigla_padre", "TEXT"),
+        ("titular_usuario_id", "INTEGER")
+    ]:
+        try:
+            c.execute(f"ALTER TABLE unidades_organicas ADD COLUMN {col} {defn}")
         except sqlite3.OperationalError:
             pass
 
@@ -646,56 +660,70 @@ def init_db():
     # Semilla oficial de Unidades Orgánicas del IMARPE
     c.execute("SELECT COUNT(*) FROM unidades_organicas")
     if c.fetchone()[0] == 0:
+        # Estructura: (Nombre, Sigla, Tipo, Sigla_Padre)
         unidades_semilla = [
-            ("Consejo Directivo", "CD", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
-            ("Presidencia Ejecutiva", "PE", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
-            ("Gerencia Científica", "GC", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
-            ("Gerencia General", "GG", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
-            ("Órgano de Control Institucional", "OCI", "ÓRGANOS DE CONTROL"),
-            ("Oficina de Asesoría Jurídica", "OAJ", "ÓRGANOS DE ASESORAMIENTO"),
-            ("Oficina de Planeamiento, Presupuesto y Modernización", "OPPM", "ÓRGANOS DE ASESORAMIENTO"),
-            ("Oficina de Administración", "OA", "ÓRGANOS DE APOYO"),
-            ("Unidad de Abastecimiento y Control Patrimonial", "UACP", "ÓRGANOS DE APOYO"),
-            ("Unidad de Gestión Financiera", "UGF", "ÓRGANOS DE APOYO"),
-            ("Oficina de Recursos Humanos", "ORH", "ÓRGANOS DE APOYO"),
-            ("Oficina de Tecnologías de la Información", "OTI", "ÓRGANOS DE APOYO"),
-            ("Dirección de Investigaciones del Subsistema Pelágico", "DISP", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Recursos Neríticos Pelágicos", "SIRNP", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Recursos Transzonales y Altamente Migratorios", "SIRTAM", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Dinámica Poblacional en Recursos Pelágicos", "SIDPRP", "ÓRGANOS DE LINEA"),
-            ("Dirección de Investigaciones del Subsistema Bentodemersal", "DISB", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Peces Demersales y Costeros", "SIPDC", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Biodiversidad Acuática", "SIBA", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Invertebrados y Macroalgas Marinas", "SIIMM", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Pesca Artesanal", "SIPA", "ÓRGANOS DE LINEA"),
-            ("Dirección de Investigaciones en Ciencias Marinas", "DICM", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Física y Modelado del Océano", "SIFMO", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Química y Geología", "SIQG", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Biología del Océano", "SIBO", "ÓRGANOS DE LINEA"),
-            ("Dirección de Investigaciones en Acuicultura", "DIA", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Sistemas Acuícolas", "SISA", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Recursos de Aguas Continentales", "SIRAC", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Calidad Acuática de Ambientes Litorales", "SICAAL", "ÓRGANOS DE LINEA"),
-            ("Dirección de Investigaciones en Pesca y Desarrollo Tecnológico", "DIPDT", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Tecnología Hidroacústica", "SITH", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Sensoramiento Remoto", "SISR", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Sistemas y Métodos de Pesca", "SISMP", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Ediciones y Difusión del Conocimiento Científico y Tecnológico", "SEDCCT", "ÓRGANOS DE LINEA"),
-            ("Sedes Desconcentrada Tumbes", "SD Tumbes", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Paita", "SD Paita", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Santa Rosa", "SD Santa Rosa", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Huanchaco", "SD Huanchaco", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Chimbote", "SD Chimbote", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Huacho", "SD Huacho", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Pisco", "SD Pisco", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Camaná", "SD Camaná", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Ilo", "SD Ilo", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Puno", "SD Puno", "ÓRGANOS DESCONCENTRADOS"),
-            ("Centro de Plataformas Flotantes de Investigación Marina y Continental", "CPFIMC", "ÓRGANOS DESCONCENTRADOS")
+            # Nivel 1: Alta Dirección
+            ("Consejo Directivo", "CD", "ÓRGANOS DE LA ALTA DIRECCIÓN", None),
+            ("Presidencia Ejecutiva", "PE", "ÓRGANOS DE LA ALTA DIRECCIÓN", "CD"),
+            ("Gerencia General", "GG", "ÓRGANOS DE LA ALTA DIRECCIÓN", "PE"),
+            ("Gerencia Científica", "GC", "ÓRGANOS DE LA ALTA DIRECCIÓN", "PE"),
+            
+            # Control y Asesoramiento
+            ("Órgano de Control Institucional", "OCI", "ÓRGANOS DE CONTROL", "PE"),
+            ("Oficina de Asesoría Jurídica", "OAJ", "ÓRGANOS DE ASESORAMIENTO", "GG"),
+            ("Oficina de Planeamiento, Presupuesto y Modernización", "OPPM", "ÓRGANOS DE ASESORAMIENTO", "GG"),
+            
+            # Órganos de Apoyo
+            ("Oficina de Administración", "OA", "ÓRGANOS DE APOYO", "GG"),
+            ("Unidad de Abastecimiento y Control Patrimonial", "UACP", "ÓRGANOS DE APOYO", "OA"),
+            ("Unidad de Gestión Financiera", "UGF", "ÓRGANOS DE APOYO", "OA"),
+            ("Oficina de Recursos Humanos", "ORH", "ÓRGANOS DE APOYO", "GG"),
+            ("Oficina de Tecnologías de la Información", "OTI", "ÓRGANOS DE APOYO", "GG"),
+            
+            # Órganos de Línea (Dependen de Gerencia Científica)
+            ("Dirección de Investigaciones del Subsistema Pelágico", "DISP", "ÓRGANOS DE LINEA", "GC"),
+            ("Subdirección de Investigaciones en Recursos Neríticos Pelágicos", "SIRNP", "ÓRGANOS DE LINEA", "DISP"),
+            ("Subdirección de Investigaciones en Recursos Transzonales y Altamente Migratorios", "SIRTAM", "ÓRGANOS DE LINEA", "DISP"),
+            ("Subdirección de Investigaciones en Dinámica Poblacional en Recursos Pelágicos", "SIDPRP", "ÓRGANOS DE LINEA", "DISP"),
+            
+            ("Dirección de Investigaciones del Subsistema Bentodemersal", "DISB", "ÓRGANOS DE LINEA", "GC"),
+            ("Subdirección de Investigaciones en Peces Demersales y Costeros", "SIPDC", "ÓRGANOS DE LINEA", "DISB"),
+            ("Subdirección de Investigaciones en Biodiversidad Acuática", "SIBA", "ÓRGANOS DE LINEA", "DISB"),
+            ("Subdirección de Investigaciones en Invertebrados y Macroalgas Marinas", "SIIMM", "ÓRGANOS DE LINEA", "DISB"),
+            ("Subdirección de Investigaciones en Pesca Artesanal", "SIPA", "ÓRGANOS DE LINEA", "DISB"),
+            
+            ("Dirección de Investigaciones en Ciencias Marinas", "DICM", "ÓRGANOS DE LINEA", "GC"),
+            ("Subdirección de Investigaciones en Física y Modelado del Océano", "SIFMO", "ÓRGANOS DE LINEA", "DICM"),
+            ("Subdirección de Investigaciones en Química y Geología", "SIQG", "ÓRGANOS DE LINEA", "DICM"),
+            ("Subdirección de Investigaciones en Biología del Océano", "SIBO", "ÓRGANOS DE LINEA", "DICM"),
+            
+            ("Dirección de Investigaciones en Acuicultura", "DIA", "ÓRGANOS DE LINEA", "GC"),
+            ("Subdirección de Investigaciones en Sistemas Acuícolas", "SISA", "ÓRGANOS DE LINEA", "DIA"),
+            ("Subdirección de Investigaciones en Recursos de Aguas Continentales", "SIRAC", "ÓRGANOS DE LINEA", "DIA"),
+            ("Subdirección de Investigaciones en Calidad Acuática de Ambientes Litorales", "SICAAL", "ÓRGANOS DE LINEA", "DIA"),
+            
+            ("Dirección de Investigaciones en Pesca y Desarrollo Tecnológico", "DIPDT", "ÓRGANOS DE LINEA", "GC"),
+            ("Subdirección de Investigaciones en Tecnología Hidroacústica", "SITH", "ÓRGANOS DE LINEA", "DIPDT"),
+            ("Subdirección de Investigaciones en Sensoramiento Remoto", "SISR", "ÓRGANOS DE LINEA", "DIPDT"),
+            ("Subdirección de Investigaciones en Sistemas y Métodos de Pesca", "SISMP", "ÓRGANOS DE LINEA", "DIPDT"),
+            ("Subdirección de Ediciones y Difusión del Conocimiento Científico y Tecnológico", "SEDCCT", "ÓRGANOS DE LINEA", "DIPDT"),
+            
+            # Órganos Desconcentrados (Dependen de Gerencia Científica)
+            ("Sedes Desconcentrada Tumbes", "SD Tumbes", "ÓRGANOS DESCONCENTRADOS", "GC"),
+            ("Sedes Desconcentrada Paita", "SD Paita", "ÓRGANOS DESCONCENTRADOS", "GC"),
+            ("Sedes Desconcentrada Santa Rosa", "SD Santa Rosa", "ÓRGANOS DESCONCENTRADOS", "GC"),
+            ("Sedes Desconcentrada Huanchaco", "SD Huanchaco", "ÓRGANOS DESCONCENTRADOS", "GC"),
+            ("Sedes Desconcentrada Chimbote", "SD Chimbote", "ÓRGANOS DESCONCENTRADOS", "GC"),
+            ("Sedes Desconcentrada Huacho", "SD Huacho", "ÓRGANOS DESCONCENTRADOS", "GC"),
+            ("Sedes Desconcentrada Pisco", "SD Pisco", "ÓRGANOS DESCONCENTRADOS", "GC"),
+            ("Sedes Desconcentrada Camaná", "SD Camaná", "ÓRGANOS DESCONCENTRADOS", "GC"),
+            ("Sedes Desconcentrada Ilo", "SD Ilo", "ÓRGANOS DESCONCENTRADOS", "GC"),
+            ("Sedes Desconcentrada Puno", "SD Puno", "ÓRGANOS DESCONCENTRADOS", "GC"),
+            ("Centro de Plataformas Flotantes de Investigación Marina y Continental", "CPFIMC", "ÓRGANOS DESCONCENTRADOS", "GC")
         ]
         c.executemany("""
-            INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, estado)
-            VALUES (?, ?, ?, 'ACTIVO')
+            INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, sigla_padre, estado)
+            VALUES (?, ?, ?, ?, 'ACTIVO')
         """, unidades_semilla)
 
 # Tabla Comentarios de Actividad (Colaborativo tipo Word 365)
@@ -930,7 +958,14 @@ def actualizar_rol_global_usuario(
 # --- DIRECTORIO DE TRABAJADORES Y UNIDADES ORGÁNICAS ---
 @app.get("/unidades-organicas")
 def listar_unidades_organicas(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT id, nombre, sigla, tipo_organo, estado FROM unidades_organicas WHERE estado = 'ACTIVO' ORDER BY tipo_organo ASC, nombre ASC").fetchall()
+    rows = db.execute("""
+        SELECT uo.id, uo.nombre, uo.sigla, uo.tipo_organo, uo.sigla_padre, uo.titular_usuario_id, uo.estado,
+               u.nombre_completo as titular_nombre
+        FROM unidades_organicas uo
+        LEFT JOIN usuarios u ON uo.titular_usuario_id = u.id
+        WHERE uo.estado = 'ACTIVO' 
+        ORDER BY uo.tipo_organo ASC, uo.nombre ASC
+    """).fetchall()
     return [dict(r) for r in rows]
 
 @app.post("/unidades-organicas")
@@ -938,8 +973,16 @@ def crear_unidad_organica(data: UnidadOrganicaModel, user: dict = Depends(get_cu
     if user["rol"] != "ADMIN_TI":
         raise HTTPException(status_code=403, detail="Solo el Administrador TI puede gestionar la estructura orgánica.")
     try:
-        db.execute("INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, estado) VALUES (?, ?, ?, 'ACTIVO')",
-                   (data.nombre.strip(), data.sigla.strip().upper(), data.tipo_organo.strip()))
+        db.execute("""
+            INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, sigla_padre, titular_usuario_id, estado) 
+            VALUES (?, ?, ?, ?, ?, 'ACTIVO')
+        """, (
+            data.nombre.strip(), 
+            data.sigla.strip().upper(), 
+            data.tipo_organo.strip(),
+            (data.sigla_padre or "").strip().upper() or None,
+            data.titular_usuario_id
+        ))
         db.commit()
         return {"mensaje": "Unidad Orgánica registrada exitosamente"}
     except sqlite3.IntegrityError:
@@ -1167,22 +1210,70 @@ def toggle_feriado_admin(data: FeriadoToggleModel, user: dict = Depends(get_curr
 def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     u_id = user["id"]
     u_nom = user.get("nombre_completo", "")
+    es_admin_ti = (user.get("rol") == "ADMIN_TI")
 
+    # Identificar la unidad orgánica del usuario actual
+    uo_row = db.execute("""
+        SELECT COALESCE(uo.sigla, t.unidad_organica, '') as sigla
+        FROM usuarios u
+        LEFT JOIN trabajadores t ON (u.nombre_completo = t.nombre_completo OR t.correo LIKE u.username || '@%')
+        LEFT JOIN unidades_organicas uo ON (uo.titular_usuario_id = u.id OR uo.sigla = t.unidad_organica)
+        WHERE u.id = ? LIMIT 1
+    """, (u_id,)).fetchone()
+    
+    mi_sigla = uo_row["sigla"] if uo_row else ""
+
+    # Consulta con CTE recursiva para obtener todas las unidades subordinadas a mi cargo
     query = """
+        WITH RECURSIVE ArbolSubordinadas(sigla) AS (
+            SELECT sigla FROM unidades_organicas WHERE sigla = ?
+            UNION ALL
+            SELECT uo.sigla FROM unidades_organicas uo
+            JOIN ArbolSubordinadas a ON uo.sigla_padre = a.sigla
+        )
         SELECT DISTINCT p.id, p.nombre, p.descripcion, p.unidad_organica, 
                p.proceso_codigo, p.proceso_nombre, p.es_proceso_personalizado,
                COALESCE(p.duration_mode, CASE WHEN p.unidad_tiempo = 'HORAS' THEN 'hours' ELSE 'business_days' END) as duration_mode,
+               COALESCE(p.visibilidad, 'PRIVADO') as visibilidad,
                p.unidad_tiempo, p.horas_por_dia, p.fecha_creacion,
-               CASE WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 1 ELSE 0 END as es_gestor
+               CASE 
+                   WHEN pu.es_gestor = 1 OR p.creador_id = ? OR ? = 1 THEN 1 
+                   ELSE 0 
+               END as es_gestor,
+               CASE 
+                   WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 'GESTOR'
+                   WHEN a.responsable LIKE ? THEN 'RESPONSABLE'
+                   WHEN pu.permiso IS NOT NULL THEN pu.permiso
+                   WHEN p.visibilidad = 'PUBLICO' AND (p.unidad_organica IN (SELECT sigla FROM ArbolSubordinadas) OR ? = 'PE') THEN 'AUTORIDAD'
+                   ELSE 'VISUALIZADOR'
+               END as rol_efectivo
         FROM proyectos p
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
         LEFT JOIN actividades a ON p.id = a.proyecto_id
-        WHERE p.creador_id = ? 
-           OR pu.usuario_id = ? 
-           OR a.responsable LIKE ?
+        WHERE ? = 1                                           -- Admin TI ve todo
+           OR p.creador_id = ?                                -- Creador siempre lo ve
+           OR pu.usuario_id = ?                               -- Invitado explícito
+           OR a.responsable LIKE ?                            -- Responsable de tareas asignadas
+           OR (                                               -- Cadena de Mando ROF para Proyectos Públicos
+               p.visibilidad = 'PUBLICO' AND (
+                   ? = 'PE'                                   -- Presidencia Ejecutiva ve todo lo público
+                   OR p.unidad_organica IN (SELECT sigla FROM ArbolSubordinadas)
+               )
+           )
         ORDER BY p.id DESC
     """
-    rows = db.execute(query, (u_id, u_id, u_id, u_id, f"%{u_nom}%")).fetchall()
+    
+    resp_like = f"%{u_nom}%"
+    es_admin_flag = 1 if es_admin_ti else 0
+
+    rows = db.execute(query, (
+        mi_sigla, 
+        u_id, es_admin_flag,
+        u_id, resp_like, mi_sigla,
+        u_id,
+        es_admin_flag, u_id, u_id, resp_like,
+        mi_sigla
+    )).fetchall()
     
     proyectos_resumen = []
     for r in rows:
@@ -1202,7 +1293,7 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
             acts_dict[cod] = {
                 "codigo": cod,
                 "avance": int(a["avance"] or 0),
-                "estado": str(a["estado"] or "Pendiente")
+                "estado": str(a["estado"] or "No iniciado")
             }
 
         def round_half_up(n):
@@ -1234,7 +1325,6 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
 
 @app.post("/proyectos")
 def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    # Homologar duración temporal según lo enviado desde el frontend
     modo_duracion = str(p.duration_mode or "").strip().lower()
     if modo_duracion not in ("business_days", "hours"):
         modo_duracion = "hours" if (p.unidad_tiempo or "").upper() == "HORAS" else "business_days"
@@ -1242,12 +1332,18 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
     unidad_tiempo = "HORAS" if modo_duracion == "hours" else "DIAS"
     horas_dia = int(p.horas_por_dia or 8)
 
+    # Visibilidad: PRIVADO por default, PUBLICO opcional
+    visibilidad_final = (p.visibilidad or "PRIVADO").upper().strip()
+    if visibilidad_final not in ("PRIVADO", "PUBLICO"):
+        visibilidad_final = "PRIVADO"
+
     db.execute("""
         INSERT INTO proyectos (
             nombre, descripcion, unidad_organica, proceso_codigo, proceso_nombre, 
-            es_proceso_personalizado, duration_mode, unidad_tiempo, horas_por_dia, creador_id
+            es_proceso_personalizado, duration_mode, unidad_tiempo, horas_por_dia, 
+            visibilidad, creador_id
         ) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         p.nombre.strip(), 
         p.descripcion.strip(), 
@@ -1258,16 +1354,17 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
         modo_duracion,
         unidad_tiempo,
         horas_dia,
+        visibilidad_final,
         user["id"]
     ))
     nuevo_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
-    db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (?, ?, 1)", (nuevo_id, user["id"]))
+    db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor, permiso) VALUES (?, ?, 1, 'GESTOR')", (nuevo_id, user["id"]))
     db.execute("""
         INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
         VALUES (?, ?, ?, 'Creación Proyecto', ?)
-    """, (nuevo_id, ahora_peru_str(), user["username"], f"Proyecto creado: '{p.nombre.strip()}' [Modalidad: {modo_duracion}]"))
+    """, (nuevo_id, ahora_peru_str(), user["username"], f"Proyecto creado: '{p.nombre.strip()}' [Modalidad: {modo_duracion} | Alcance: {visibilidad_final}]"))
     db.commit()
-    return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id, "duration_mode": modo_duracion, "unidad_tiempo": unidad_tiempo}
+    return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id, "duration_mode": modo_duracion, "visibilidad": visibilidad_final}
 
 @app.put("/proyectos/{proyecto_id}/descripcion")
 def actualizar_descripcion_proyecto(proyecto_id: int, data: ProyectoDescripcionUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):

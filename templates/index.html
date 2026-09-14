@@ -773,13 +773,22 @@
             <label class="text-[11px] font-bold text-gray-600 uppercase">Descripción / Alcance:</label>
             <textarea id="input-nuevo-proy-desc" rows="3" placeholder="Detalles u objetivos del proyecto..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]"></textarea>
           </div>
-          <!-- SELECTOR MODALIDAD TEMPORAL -->
-          <div>
-            <label class="text-[11px] font-bold text-gray-600 uppercase">Modalidad de Estimación Temporal:</label>
-            <select id="input-nuevo-proy-duration-mode" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]">
-              <option value="business_days" selected>Días Hábiles (Lunes a Viernes, excluye feriados)</option>
-              <option value="hours">Horas de Dedicación Neta</option>
-            </select>
+          <!-- SELECTOR MODALIDAD TEMPORAL Y ALCANCE DE PRIVACIDAD -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] font-bold text-gray-600 uppercase">Modalidad de Estimación Temporal:</label>
+              <select id="input-nuevo-proy-duration-mode" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+                <option value="business_days" selected>Días Hábiles (L-V, excluye feriados)</option>
+                <option value="hours">Horas de Dedicación Neta</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-gray-600 uppercase">Alcance / Privacidad del Proyecto:</label>
+              <select id="input-nuevo-proy-visibilidad" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+                <option value="PRIVADO" selected>🔒 Privado (Solo miembros asignados)</option>
+                <option value="PUBLICO">🌐 Institucional (Cadena de Mando ROF)</option>
+              </select>
+            </div>
           </div>
           <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
             <button type="button" onclick="cerrarModalNuevoProyecto()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cancelar</button>
@@ -1054,6 +1063,12 @@
             <div>
               <label class="block font-bold text-gray-600 mb-1">Sigla Oficial</label>
               <input type="text" id="uo-input-sigla" required placeholder="Ej. OPPM" class="w-full p-2 border border-gray-300 rounded font-bold outline-none focus:border-[#0f2a4a] uppercase">
+            </div>
+            <div class="sm:col-span-3">
+              <label class="block font-bold text-gray-600 mb-1">Depende Jerárquicamente de (Unidad Padre según ROF):</label>
+              <select id="uo-input-padre" class="w-full p-2 border border-gray-300 rounded text-xs font-semibold outline-none bg-gray-50 focus:bg-white focus:border-[#0f2a4a]">
+                <option value="">(Ninguna - Nivel Máximo / Alta Dirección)</option>
+              </select>
             </div>
           </div>
           <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2 rounded-lg transition shadow">+ Guardar Unidad Orgánica</button>
@@ -2802,10 +2817,32 @@
       const listaFinal = lista.filter(p => mostrandoOcultosHub ? idsProyectosOcultos.has(p.id) : !idsProyectosOcultos.has(p.id));
 
       listaFinal.forEach(p => {
-        const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI");
+        const rolEfectivo = p.rol_efectivo || (p.es_gestor ? 'GESTOR' : 'RESPONSABLE');
+        const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI") && rolEfectivo !== "AUTORIDAD";
         const totalActs = p.total_actividades || 0;
         const esProyectoVacio = totalActs === 0;
         const puedeEliminar = esGestor && esProyectoVacio;
+        const esPublico = (p.visibilidad === "PUBLICO");
+
+        // Distintivo de Rol de usuario en este proyecto
+        let badgeRolClases = "bg-blue-50 text-blue-800 border-blue-200/80";
+        let badgeRolTexto = "👤 Responsable";
+
+        if (rolEfectivo === "GESTOR" || esGestor) {
+          badgeRolClases = "bg-amber-50 text-amber-800 border-amber-200/80";
+          badgeRolTexto = "👑 Gestor";
+        } else if (rolEfectivo === "AUTORIDAD") {
+          badgeRolClases = "bg-purple-50 text-purple-800 border-purple-200/80";
+          badgeRolTexto = "🏛️ Autoridad";
+        } else if (rolEfectivo === "VISUALIZADOR") {
+          badgeRolClases = "bg-slate-100 text-slate-700 border-slate-300";
+          badgeRolTexto = "👁️ Visualizador";
+        }
+
+        // Badge de Alcance / Privacidad
+        const badgeAlcanceHTML = esPublico
+          ? `<span class="text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider bg-teal-50 text-teal-800 border border-teal-200/80" title="Proyecto visible por la cadena de mando institucional del ROF">🌐 Institucional</span>`
+          : `<span class="text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200" title="Proyecto privado restringido a sus miembros">🔒 Privado</span>`;
 
         const tooltipEdit = esGestor ? 'title="Doble clic para editar descripción"' : '';
         const estiloCursor = esGestor ? 'cursor-pointer hover:text-teal-700 hover:bg-teal-50/70 p-1 -m-1 rounded transition' : '';
@@ -2858,10 +2895,13 @@
         card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50 relative";
         card.innerHTML = `
           <div>
-            <div class="flex items-center justify-between mb-3.5">
-              <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider whitespace-nowrap ${esGestor ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-blue-50 text-blue-800 border border-blue-200/80'}">
-                ${esGestor ? '👑 Gestor' : '👤 Responsable'}
-              </span>
+            <div class="flex items-center justify-between mb-3.5 gap-1">
+              <div class="flex items-center space-x-1.5 flex-wrap">
+                <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider whitespace-nowrap border ${badgeRolClases}">
+                  ${badgeRolTexto}
+                </span>
+                ${badgeAlcanceHTML}
+              </div>
               <div class="flex items-center space-x-1">
                 <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-100 transition cursor-pointer" title="${estaOculto ? 'Restaurar al panel principal' : 'Ocultar proyecto de la vista'}">
                   ${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}
@@ -2961,10 +3001,25 @@
       }
 
       listaFinal.forEach((p, idx) => {
-        const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI");
+        const rolEfectivo = p.rol_efectivo || (p.es_gestor ? 'GESTOR' : 'RESPONSABLE');
+        const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI") && rolEfectivo !== "AUTORIDAD";
         const totalActs = p.total_actividades || 0;
         const esProyectoVacio = totalActs === 0;
         const puedeEliminar = esGestor && esProyectoVacio;
+        const esPublico = (p.visibilidad === "PUBLICO");
+
+        let badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-blue-100 text-blue-900 border border-blue-300">👤 RESPONSABLE</span>`;
+        if (rolEfectivo === "GESTOR" || esGestor) {
+          badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-amber-100 text-amber-900 border border-amber-300">👑 GESTOR</span>`;
+        } else if (rolEfectivo === "AUTORIDAD") {
+          badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-purple-100 text-purple-900 border border-purple-300">🏛️ AUTORIDAD</span>`;
+        } else if (rolEfectivo === "VISUALIZADOR") {
+          badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-slate-100 text-slate-700 border border-slate-300">👁️ VISUALIZADOR</span>`;
+        }
+
+        const badgeAlcanceHTML = esPublico
+          ? `<span class="text-[9px] font-bold text-teal-700 bg-teal-50 border border-teal-200 px-1.5 py-0.2 rounded ml-1">🌐 Institucional</span>`
+          : `<span class="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded ml-1">🔒 Privado</span>`;
 
         const pct = p.avance_global || 0;
         const estaOculto = idsProyectosOcultos.has(p.id);
@@ -2973,7 +3028,10 @@
           <tr class="hover:bg-gray-50 transition border-b border-gray-100">
             <td class="p-3 text-center text-gray-400 font-mono text-xs">${idx + 1}</td>
             <td class="p-3">
-              <div class="font-bold text-gray-800 text-xs">${p.nombre}</div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-gray-800 text-xs">${p.nombre}</span>
+                ${badgeAlcanceHTML}
+              </div>
               <div class="text-[11px] text-gray-500 line-clamp-1">${p.descripcion || 'Sin descripción'}</div>
               <div class="text-[10px] text-teal-800 font-semibold mt-0.5 flex items-center gap-1">
                 <span>⚙️</span>
@@ -2985,10 +3043,7 @@
               </div>
             </td>
             <td class="p-3 text-center whitespace-nowrap">
-              <span class="inline-flex items-center justify-center space-x-1 px-2.5 py-1 rounded text-[10px] font-black uppercase whitespace-nowrap ${esGestor ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}">
-                <span>${esGestor ? '👑' : '👤'}</span>
-                <span>${esGestor ? 'GESTOR' : 'RESPONSABLE'}</span>
-              </span>
+              ${badgeRolHTML}
             </td>
             <td class="p-3 text-center">
               <div class="flex items-center space-x-2 justify-center">
@@ -3087,9 +3142,11 @@
       const divSugProc = document.getElementById("nuevo-proy-proceso-sugerencias");
       if (divSugProc) divSugProc.classList.add("hidden");
 
-      // Resetear Modalidad por defecto
+      // Resetear Modalidad y Privacidad por defecto
       const selModo = document.getElementById("input-nuevo-proy-duration-mode");
       if (selModo) selModo.value = "business_days";
+      const selVis = document.getElementById("input-nuevo-proy-visibilidad");
+      if (selVis) selVis.value = "PRIVADO";
 
       document.getElementById("modal-nuevo-proyecto").classList.remove("hidden"); 
     }
@@ -3134,8 +3191,9 @@
       const uoBusq = document.getElementById("input-nuevo-proy-uo-busq").value.trim();
       const uoValor = document.getElementById("input-nuevo-proy-uo-valor").value.trim();
 
-      // Captura de Modalidad Temporal
+      // Captura de Modalidad Temporal y Alcance de Privacidad
       const durationMode = document.getElementById("input-nuevo-proy-duration-mode")?.value || "business_days";
+      const visibilidad = document.getElementById("input-nuevo-proy-visibilidad")?.value || "PRIVADO";
 
       // Captura de Proceso / Subproceso
       const esPers = document.getElementById("input-nuevo-proy-proceso-personalizado")?.value === "1";
@@ -3176,6 +3234,7 @@
             descripcion: descripcion, 
             unidad_organica: uoFinal,
             duration_mode: durationMode,
+            visibilidad: visibilidad,
             proceso_codigo: procCod,
             proceso_nombre: procNom,
             es_proceso_personalizado: esPers ? 1 : 0
@@ -6878,12 +6937,24 @@
         const tbody = document.getElementById("uo-tabla-cuerpo");
         if (!tbody) return;
         tbody.innerHTML = "";
+        const selPadre = document.getElementById("uo-input-padre");
+        if (selPadre) {
+          selPadre.innerHTML = '<option value="">(Ninguna - Nivel Máximo / Alta Dirección)</option>';
+          catalogoUnidadesGlobal.forEach(u => {
+            selPadre.innerHTML += `<option value="${u.sigla}">[${u.sigla}] ${u.nombre}</option>`;
+          });
+        }
+
         catalogoUnidadesGlobal.forEach(u => {
+          const padreTxt = u.sigla_padre ? `<span class="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] text-slate-700 font-mono">↑ ${u.sigla_padre}</span>` : '<span class="text-gray-400 italic text-[10px]">Titular</span>';
           tbody.innerHTML += `
             <tr class="hover:bg-gray-50 border-b border-gray-100">
               <td class="p-2.5 font-bold text-[#0f2a4a]">${u.sigla}</td>
               <td class="p-2.5 font-semibold text-gray-700">${u.nombre}</td>
-              <td class="p-2.5 text-gray-500 text-[11px]">${u.tipo_organo}</td>
+              <td class="p-2.5 text-gray-500 text-[11px] flex items-center justify-between">
+                <span>${u.tipo_organo}</span>
+                ${padreTxt}
+              </td>
             </tr>
           `;
         });
