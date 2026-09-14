@@ -1119,9 +1119,10 @@
             <table class="w-full text-xs text-left">
               <thead class="sticky top-0 bg-[#0f2a4a] text-white">
                 <tr>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-24">Sigla</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-20">Sigla</th>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad de Organización</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Tipo de Órgano</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Dependencia ROF</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 min-w-[200px]">Titular / Directivo a Cargo</th>
                 </tr>
               </thead>
               <tbody id="uo-tabla-cuerpo" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
@@ -6988,20 +6989,56 @@
         }
 
         catalogoUnidadesGlobal.forEach(u => {
-          const padreTxt = u.sigla_padre ? `<span class="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] text-slate-700 font-mono">↑ ${u.sigla_padre}</span>` : '<span class="text-gray-400 italic text-[10px]">Titular</span>';
+          const padreTxt = u.sigla_padre 
+            ? `<span class="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] text-slate-700 font-mono" title="Depende de ${u.sigla_padre}">↑ ${u.sigla_padre}</span>` 
+            : `<span class="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Alta Dirección</span>`;
+
+          // Generar selector dinámico de usuarios registrados
+          let opcionesUsuarios = '<option value="">(Sin titular asignado)</option>';
+          (usuariosTIGlobal || []).forEach(usr => {
+            const estaAsignado = (u.titular_usuario_id === usr.id);
+            opcionesUsuarios += `<option value="${usr.id}" ${estaAsignado ? 'selected' : ''}>${usr.nombre_completo || usr.username} (@${usr.username})</option>`;
+          });
+
           tbody.innerHTML += `
             <tr class="hover:bg-gray-50 border-b border-gray-100">
               <td class="p-2.5 font-bold text-[#0f2a4a]">${u.sigla}</td>
-              <td class="p-2.5 font-semibold text-gray-700">${u.nombre}</td>
-              <td class="p-2.5 text-gray-500 text-[11px] flex items-center justify-between">
-                <span>${u.tipo_organo}</span>
-                ${padreTxt}
+              <td class="p-2.5 font-semibold text-gray-800 text-xs">${u.nombre}</td>
+              <td class="p-2.5 text-gray-500 text-[11px] whitespace-nowrap">${padreTxt}</td>
+              <td class="p-2.5">
+                <select onchange="asignarTitularUnidad(${u.id}, this.value, '${u.sigla}')" 
+                        class="w-full text-xs font-bold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer">
+                  ${opcionesUsuarios}
+                </select>
               </td>
             </tr>
           `;
         });
       } catch (e) {
         console.error("Error cargando unidades:", e);
+      }
+    }
+
+    async function asignarTitularUnidad(unidadId, usuarioId, sigla) {
+      try {
+        const res = await fetch(`/unidades-organicas/${unidadId}/titular`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ titular_usuario_id: usuarioId ? parseInt(usuarioId) : null })
+        });
+
+        if (res.ok) {
+          notificarToast(`Titular de [${sigla}] actualizado con éxito.`, "success");
+          await cargarCatalogoUnidades();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al actualizar titular.");
+        }
+      } catch (e) {
+        alert("Error de conexión al asignar titular.");
       }
     }
 

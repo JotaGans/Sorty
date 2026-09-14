@@ -150,6 +150,9 @@ class UnidadOrganicaModel(BaseModel):
     sigla_padre: Optional[str] = None
     titular_usuario_id: Optional[int] = None
 
+class AsignarTitularModel(BaseModel):
+    titular_usuario_id: Optional[int] = None
+
 class TrabajadorAltaModel(BaseModel):
     nombres: str
     apellidos: str
@@ -992,6 +995,19 @@ def crear_unidad_organica(data: UnidadOrganicaModel, user: dict = Depends(get_cu
         return {"mensaje": "Unidad Orgánica registrada exitosamente"}
     except sqlite3.IntegrityError:
         raise HTTPException(status_code=400, detail="La sigla ingresada ya existe.")
+
+@app.put("/unidades-organicas/{unidad_id}/titular")
+def asignar_titular_unidad(unidad_id: int, data: AsignarTitularModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede asignar directivos y titulares de unidades.")
+    
+    db.execute("""
+        UPDATE unidades_organicas 
+        SET titular_usuario_id = ? 
+        WHERE id = ?
+    """, (data.titular_usuario_id, unidad_id))
+    db.commit()
+    return {"mensaje": "Titular de unidad asignado exitosamente."}
 
 @app.get("/trabajadores")
 def listar_trabajadores(db: sqlite3.Connection = Depends(get_db)):
