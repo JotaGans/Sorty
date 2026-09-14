@@ -807,7 +807,7 @@
         <!-- Galería de Tarjetas de Plantillas -->
         <div id="galeria-plantillas-contenedor" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[280px] overflow-y-auto pr-1"></div>
 
-        <!-- Formulario de Configuración del Proyecto Clonado -->
+        <!-- Formulario de Configuración del Proyecto Clonado Completo -->
         <div id="bloque-config-clonacion" class="hidden bg-white p-4 rounded-xl border-2 border-teal-600 shadow-sm space-y-3">
           <div class="flex items-center justify-between border-b border-gray-100 pb-2">
             <span class="text-xs font-black text-[#0f2a4a]" id="txt-plantilla-elegida-tit">Plantilla Seleccionada</span>
@@ -830,6 +830,45 @@
             <div>
               <label class="block font-bold text-gray-600 mb-1">Fecha de Inicio del Proyecto:</label>
               <input type="date" id="np-input-clon-fechaini" class="w-full p-2 border border-gray-300 rounded-lg font-bold text-teal-800 outline-none focus:border-[#0f2a4a]">
+            </div>
+
+            <!-- Proceso / Subproceso en Plantilla -->
+            <div class="relative sm:col-span-2">
+              <label class="block font-bold text-gray-600 mb-1">Proceso / Subproceso Relacionado:</label>
+              <input type="text" id="np-input-clon-proceso-busq" oninput="autocompletarProcesoClonacion(this.value)" placeholder="Buscar por denominación o código oficial (ej: E2.1.2)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <input type="hidden" id="np-input-clon-proceso-codigo">
+              <input type="hidden" id="np-input-clon-proceso-nombre">
+              <input type="hidden" id="np-input-clon-proceso-personalizado" value="0">
+              
+              <div id="sugerencias-proceso-clonacion" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+
+              <div id="contenedor-otro-subproceso-clon" class="hidden mt-2 p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+                <label class="block text-[10px] font-bold text-amber-800 uppercase mb-1">Especifique la denominación del subproceso:</label>
+                <input type="text" id="input-otro-subproceso-clon-texto" placeholder="Ingrese el nombre del proceso o trámite..." class="w-full p-2 bg-white border border-amber-300 rounded text-xs font-semibold text-gray-800 outline-none focus:border-amber-600">
+              </div>
+            </div>
+
+            <!-- Descripción / Alcance -->
+            <div class="sm:col-span-2">
+              <label class="block font-bold text-gray-600 mb-1">Descripción / Alcance:</label>
+              <textarea id="np-input-clon-desc" rows="2" placeholder="Detalles u objetivos del proyecto..." class="w-full p-2 border border-gray-300 rounded-lg font-medium outline-none focus:border-[#0f2a4a]"></textarea>
+            </div>
+
+            <!-- Modalidad Temporal y Alcance de Privacidad -->
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Modalidad de Estimación Temporal:</label>
+              <select id="np-input-clon-duration-mode" class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]">
+                <option value="business_days" selected>Días Hábiles (L-V, excluye feriados)</option>
+                <option value="hours">Horas de Dedicación Neta</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Alcance / Privacidad del Proyecto:</label>
+              <select id="np-input-clon-visibilidad" class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]">
+                <option value="PRIVADO" selected>🔒 Privado (Solo miembros asignados)</option>
+                <option value="PUBLICO">🌐 Institucional (Cadena de Mando ROF)</option>
+              </select>
             </div>
           </div>
 
@@ -2839,10 +2878,10 @@
           badgeRolTexto = "👁️ Visualizador";
         }
 
-        // Badge de Alcance / Privacidad
+        // Badge compacto de Alcance / Privacidad (Solo icono estilizado con tooltip)
         const badgeAlcanceHTML = esPublico
-          ? `<span class="text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider bg-teal-50 text-teal-800 border border-teal-200/80" title="Proyecto visible por la cadena de mando institucional del ROF">🌐 Institucional</span>`
-          : `<span class="text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200" title="Proyecto privado restringido a sus miembros">🔒 Privado</span>`;
+          ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-teal-50 text-teal-700 border border-teal-200 text-xs shadow-2xs cursor-help" title="Proyecto visible a nivel institucional">🌐</span>`
+          : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-xs shadow-2xs cursor-help" title="Proyecto privado">🔒</span>`;
 
         const tooltipEdit = esGestor ? 'title="Doble clic para editar descripción"' : '';
         const estiloCursor = esGestor ? 'cursor-pointer hover:text-teal-700 hover:bg-teal-50/70 p-1 -m-1 rounded transition' : '';
@@ -3147,6 +3186,9 @@
       if (selModo) selModo.value = "business_days";
       const selVis = document.getElementById("input-nuevo-proy-visibilidad");
       if (selVis) selVis.value = "PRIVADO";
+
+      // Limpiar y ocultar bloque de clonación previa de plantilla
+      cancelarSeleccionPlantilla();
 
       document.getElementById("modal-nuevo-proyecto").classList.remove("hidden"); 
     }
@@ -7952,6 +7994,7 @@
         btnBlanco.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold";
         contentBlanco.classList.add("hidden");
         contentPlantilla.classList.remove("hidden");
+        cancelarSeleccionPlantilla(); // Asegurar que arranque limpio sin preselección residual
         cargarGaleriaPlantillas();
       } else {
         btnBlanco.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs flex items-center space-x-1.5 font-bold";
@@ -8025,17 +8068,87 @@
       document.getElementById("txt-plantilla-elegida-tit").innerText = `📋 ${plantilla.nombre}`;
       document.getElementById("txt-plantilla-elegida-cat").innerText = plantilla.categoria || "General";
       document.getElementById("np-input-clon-nombre").value = plantilla.nombre;
+      document.getElementById("np-input-clon-desc").value = plantilla.descripcion || "";
+      document.getElementById("np-input-clon-uo-busq").value = "";
+      document.getElementById("np-input-clon-uo-valor").value = "";
+      document.getElementById("np-input-clon-proceso-busq").value = "";
+      document.getElementById("np-input-clon-proceso-codigo").value = "";
+      document.getElementById("np-input-clon-proceso-nombre").value = "";
+      document.getElementById("np-input-clon-proceso-personalizado").value = "0";
       
+      const contOtro = document.getElementById("contenedor-otro-subproceso-clon");
+      if (contOtro) contOtro.classList.add("hidden");
+      const inpOtroTexto = document.getElementById("input-otro-subproceso-clon-texto");
+      if (inpOtroTexto) inpOtroTexto.value = "";
+
+      const selModo = document.getElementById("np-input-clon-duration-mode");
+      if (selModo) selModo.value = "business_days";
+      const selVis = document.getElementById("np-input-clon-visibilidad");
+      if (selVis) selVis.value = "PRIVADO";
+
       const hoyISO = new Date().toISOString().split("T")[0];
       document.getElementById("np-input-clon-fechaini").value = hoyISO;
 
-      document.getElementById("bloque-config-clonacion").classList.remove("hidden");
-      document.getElementById("bloque-config-clonacion").scrollIntoView({ behavior: 'smooth' });
+      const bloque = document.getElementById("bloque-config-clonacion");
+      bloque.classList.remove("hidden");
+      bloque.scrollIntoView({ behavior: 'smooth' });
     }
 
     function cancelarSeleccionPlantilla() {
       plantillaSeleccionadaId = null;
-      document.getElementById("bloque-config-clonacion").classList.add("hidden");
+      const bloque = document.getElementById("bloque-config-clonacion");
+      if (bloque) bloque.classList.add("hidden");
+    }
+
+    function autocompletarProcesoClonacion(term) {
+      const q = (term || "").toLowerCase().trim();
+      const div = document.getElementById("sugerencias-proceso-clonacion");
+      const contOtro = document.getElementById("contenedor-otro-subproceso-clon");
+      if (!div) return;
+
+      if (!q) {
+        div.classList.add("hidden");
+        return;
+      }
+
+      div.innerHTML = "";
+
+      const matches = (catalogoProcesosGlobal || []).filter(p => 
+        p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
+      );
+
+      matches.slice(0, 6).forEach(p => {
+        const row = document.createElement("div");
+        row.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-semibold text-gray-800";
+        row.innerHTML = `<span>${p.nombre}</span> <strong class="text-[#0f2a4a] bg-gray-100 px-1.5 py-0.5 rounded text-[10px]">[${p.codigo}]</strong>`;
+        row.onclick = () => {
+          document.getElementById("np-input-clon-proceso-busq").value = `${p.nombre} [${p.codigo}]`;
+          document.getElementById("np-input-clon-proceso-codigo").value = p.codigo;
+          document.getElementById("np-input-clon-proceso-nombre").value = p.nombre;
+          document.getElementById("np-input-clon-proceso-personalizado").value = "0";
+          div.classList.add("hidden");
+          if (contOtro) contOtro.classList.add("hidden");
+        };
+        div.appendChild(row);
+      });
+
+      const itemOtro = document.createElement("div");
+      itemOtro.className = "p-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold cursor-pointer border-t border-amber-200 flex items-center justify-between";
+      itemOtro.innerHTML = `<span>⚙️ Otro subproceso (Personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
+      itemOtro.onclick = () => {
+        document.getElementById("np-input-clon-proceso-busq").value = "Otro subproceso";
+        document.getElementById("np-input-clon-proceso-codigo").value = "OTRO";
+        document.getElementById("np-input-clon-proceso-nombre").value = "";
+        document.getElementById("np-input-clon-proceso-personalizado").value = "1";
+        div.classList.add("hidden");
+        if (contOtro) {
+          contOtro.classList.remove("hidden");
+          document.getElementById("input-otro-subproceso-clon-texto")?.focus();
+        }
+      };
+      div.appendChild(itemOtro);
+
+      div.classList.remove("hidden");
     }
 
     function autocompletarUOClonacion(termino) {
@@ -8075,6 +8188,15 @@
       const nombre = document.getElementById("np-input-clon-nombre").value.trim();
       const uo = document.getElementById("np-input-clon-uo-valor").value || document.getElementById("np-input-clon-uo-busq").value.trim();
       const fIniISO = document.getElementById("np-input-clon-fechaini").value;
+      const desc = document.getElementById("np-input-clon-desc")?.value.trim() || "";
+      const durMode = document.getElementById("np-input-clon-duration-mode")?.value || "business_days";
+      const visib = document.getElementById("np-input-clon-visibilidad")?.value || "PRIVADO";
+
+      const esPers = document.getElementById("np-input-clon-proceso-personalizado")?.value === "1";
+      const procCod = esPers ? "OTRO" : (document.getElementById("np-input-clon-proceso-codigo")?.value || "");
+      const procNom = esPers 
+        ? (document.getElementById("input-otro-subproceso-clon-texto")?.value.trim() || "Otro subproceso")
+        : (document.getElementById("np-input-clon-proceso-nombre")?.value || "");
 
       if (!nombre) {
         alert("Por favor ingrese un nombre para el proyecto.");
@@ -8093,8 +8215,14 @@
           body: JSON.stringify({
             plantilla_id: plantillaSeleccionadaId,
             nombre_proyecto: nombre,
+            descripcion: desc,
             unidad_organica: uo,
-            fecha_inicio: fIniLatina
+            fecha_inicio: fIniLatina,
+            proceso_codigo: procCod,
+            proceso_nombre: procNom,
+            es_proceso_personalizado: esPers ? 1 : 0,
+            duration_mode: durMode,
+            visibilidad: visib
           })
         });
 

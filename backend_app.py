@@ -275,6 +275,11 @@ class CrearProyectoDesdePlantillaModel(BaseModel):
     descripcion: Optional[str] = ""
     unidad_organica: Optional[str] = ""
     fecha_inicio: str  # Formato DD/MM/YYYY
+    proceso_codigo: Optional[str] = ""
+    proceso_nombre: Optional[str] = ""
+    es_proceso_personalizado: Optional[int] = 0
+    duration_mode: Optional[str] = "business_days"
+    visibilidad: Optional[str] = "PRIVADO"
 
 # --- INICIALIZACIÓN Y MIGRACIÓN DE BD ---
 def init_db():
@@ -2382,10 +2387,33 @@ def crear_proyecto_desde_plantilla(
     if not acts_plantilla:
         raise HTTPException(status_code=400, detail="La plantilla seleccionada no contiene actividades.")
 
+    modo_duracion = str(data.duration_mode or "business_days").strip().lower()
+    if modo_duracion not in ("business_days", "hours"):
+        modo_duracion = "business_days"
+    unidad_tiempo = "HORAS" if modo_duracion == "hours" else "DIAS"
+
+    visib = (data.visibilidad or "PRIVADO").upper().strip()
+    if visib not in ("PRIVADO", "PUBLICO"):
+        visib = "PRIVADO"
+
     db.execute("""
-        INSERT INTO proyectos (nombre, descripcion, unidad_organica, creador_id)
-        VALUES (?, ?, ?, ?)
-    """, (data.nombre_proyecto.strip(), (data.descripcion or plantilla["descripcion"] or "").strip(), (data.unidad_organica or "").strip(), user["id"]))
+        INSERT INTO proyectos (
+            nombre, descripcion, unidad_organica, proceso_codigo, proceso_nombre,
+            es_proceso_personalizado, duration_mode, unidad_tiempo, visibilidad, creador_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        data.nombre_proyecto.strip(),
+        (data.descripcion or plantilla["descripcion"] or "").strip(),
+        (data.unidad_organica or "").strip(),
+        (data.proceso_codigo or "").strip(),
+        (data.proceso_nombre or "").strip(),
+        int(data.es_proceso_personalizado or 0),
+        modo_duracion,
+        unidad_tiempo,
+        visib,
+        user["id"]
+    ))
     
     nuevo_proy_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor, permiso) VALUES (?, ?, 1, 'GESTOR')", (nuevo_proy_id, user["id"]))
