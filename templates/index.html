@@ -6965,18 +6965,35 @@
       if (tab === 'procesos') cargarListaProcesosTI();
     }
 
-    // --- CARGA Y RENDERIZADO DE UNIDADES ORGÁNICAS ---
+    // --- CARGA Y RENDERIZADO DE UNIDADES ORGÁNICAS ROF ---
     async function cargarCatalogoUnidades() {
       try {
+        // 1. Garantizar sincronización asíncrona de datos de personal previo al render
+        if (!window.trabajadoresTIGlobal || window.trabajadoresTIGlobal.length === 0) {
+          try {
+            const resT = await fetch("/trabajadores", { headers: { "Authorization": `Bearer ${token}` } });
+            if (resT.ok) window.trabajadoresTIGlobal = await resT.json();
+          } catch (_) {}
+        }
+        if (!window.usuariosTIGlobal || window.usuariosTIGlobal.length === 0) {
+          try {
+            const resU = await fetch("/usuarios", { headers: { "Authorization": `Bearer ${token}` } });
+            if (resU.ok) window.usuariosTIGlobal = await resU.json();
+          } catch (_) {}
+        }
+
+        // 2. Obtener catálogo oficial de unidades orgánicas
         const res = await fetch("/unidades-organicas", {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) return;
         catalogoUnidadesGlobal = await res.json();
+
         const tbody = document.getElementById("uo-tabla-cuerpo");
         if (!tbody) return;
         tbody.innerHTML = "";
 
+        // 3. Poblar selector de dependencia jerárquica (Unidad Padre)
         const selPadre = document.getElementById("uo-input-padre");
         if (selPadre) {
           selPadre.innerHTML = '<option value="">(Ninguna - Nivel Máximo / Alta Dirección)</option>';
@@ -6985,32 +7002,30 @@
           });
         }
 
-        // Fuente unificada: Listar desde el directorio oficial de trabajadores
-        const listaPersonas = (trabajadoresTIGlobal && trabajadoresTIGlobal.length > 0) 
-          ? trabajadoresTIGlobal 
-          : (usuariosTIGlobal || []);
+        // 4. Consolidar lista de personas disponibles para asignación directiva
+        const listaPersonas = (window.trabajadoresTIGlobal && window.trabajadoresTIGlobal.length > 0)
+          ? window.trabajadoresTIGlobal
+          : (window.usuariosTIGlobal || []);
 
+        // 5. Renderizar filas de la estructura institucional
         catalogoUnidadesGlobal.forEach(u => {
           const padreTxt = u.sigla_padre 
-            ? `<span class="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] text-slate-700 font-mono" title="Depende de ${u.sigla_padre}">↑ ${u.sigla_padre}</span>` 
-            : `<span class="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Alta Dirección</span>`;
+            ? `<span class="bg-slate-100 px-2 py-0.5 rounded text-[10px] text-slate-700 font-mono font-bold" title="Depende de ${u.sigla_padre}">↑ ${u.sigla_padre}</span>` 
+            : `<span class="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Alta Dirección</span>`;
 
           let opcionesTitular = '<option value="">(Sin titular asignado)</option>';
           listaPersonas.forEach(p => {
-            const esTrabajador = ('cargo' in p);
             const pId = p.id;
             const pNombre = p.nombre_completo || p.username;
             const pCargo = p.cargo ? ` - ${p.cargo}` : '';
-            const estaAsignado = esTrabajador 
-              ? (u.titular_trabajador_id === pId)
-              : (u.titular_usuario_id === pId);
+            const estaAsignado = (u.titular_trabajador_id === pId || u.titular_usuario_id === pId);
 
             opcionesTitular += `<option value="${pId}" ${estaAsignado ? 'selected' : ''}>${pNombre}${pCargo}</option>`;
           });
 
           tbody.innerHTML += `
             <tr class="hover:bg-gray-50 border-b border-gray-100">
-              <td class="p-2.5 font-bold text-[#0f2a4a]">${u.sigla}</td>
+              <td class="p-2.5 font-bold text-[#0f2a4a] text-xs font-mono">${u.sigla}</td>
               <td class="p-2.5 font-semibold text-gray-800 text-xs">${u.nombre}</td>
               <td class="p-2.5 text-gray-500 text-[11px] whitespace-nowrap">${padreTxt}</td>
               <td class="p-2.5">
@@ -7023,7 +7038,7 @@
           `;
         });
       } catch (e) {
-        console.error("Error al cargar unidades:", e);
+        console.error("Error al cargar unidades orgánicas:", e);
       }
     }
 

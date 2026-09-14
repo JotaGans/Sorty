@@ -673,74 +673,79 @@ def init_db():
         except sqlite3.OperationalError:
             pass
 
-    # Semilla oficial de Unidades Orgánicas del IMARPE
-    c.execute("SELECT COUNT(*) FROM unidades_organicas")
-    if c.fetchone()[0] == 0:
-        # Estructura: (Nombre, Sigla, Tipo, Sigla_Padre)
-        unidades_semilla = [
-            # Nivel 1: Alta Dirección
-            ("Consejo Directivo", "CD", "ÓRGANOS DE LA ALTA DIRECCIÓN", None),
-            ("Presidencia Ejecutiva", "PE", "ÓRGANOS DE LA ALTA DIRECCIÓN", "CD"),
-            ("Gerencia General", "GG", "ÓRGANOS DE LA ALTA DIRECCIÓN", "PE"),
-            ("Gerencia Científica", "GC", "ÓRGANOS DE LA ALTA DIRECCIÓN", "PE"),
-            
-            # Control y Asesoramiento
-            ("Órgano de Control Institucional", "OCI", "ÓRGANOS DE CONTROL", "PE"),
-            ("Oficina de Asesoría Jurídica", "OAJ", "ÓRGANOS DE ASESORAMIENTO", "GG"),
-            ("Oficina de Planeamiento, Presupuesto y Modernización", "OPPM", "ÓRGANOS DE ASESORAMIENTO", "GG"),
-            
-            # Órganos de Apoyo
-            ("Oficina de Administración", "OA", "ÓRGANOS DE APOYO", "GG"),
-            ("Unidad de Abastecimiento y Control Patrimonial", "UACP", "ÓRGANOS DE APOYO", "OA"),
-            ("Unidad de Gestión Financiera", "UGF", "ÓRGANOS DE APOYO", "OA"),
-            ("Oficina de Recursos Humanos", "ORH", "ÓRGANOS DE APOYO", "GG"),
-            ("Oficina de Tecnologías de la Información", "OTI", "ÓRGANOS DE APOYO", "GG"),
-            
-            # Órganos de Línea (Dependen de Gerencia Científica)
-            ("Dirección de Investigaciones del Subsistema Pelágico", "DISP", "ÓRGANOS DE LINEA", "GC"),
-            ("Subdirección de Investigaciones en Recursos Neríticos Pelágicos", "SIRNP", "ÓRGANOS DE LINEA", "DISP"),
-            ("Subdirección de Investigaciones en Recursos Transzonales y Altamente Migratorios", "SIRTAM", "ÓRGANOS DE LINEA", "DISP"),
-            ("Subdirección de Investigaciones en Dinámica Poblacional en Recursos Pelágicos", "SIDPRP", "ÓRGANOS DE LINEA", "DISP"),
-            
-            ("Dirección de Investigaciones del Subsistema Bentodemersal", "DISB", "ÓRGANOS DE LINEA", "GC"),
-            ("Subdirección de Investigaciones en Peces Demersales y Costeros", "SIPDC", "ÓRGANOS DE LINEA", "DISB"),
-            ("Subdirección de Investigaciones en Biodiversidad Acuática", "SIBA", "ÓRGANOS DE LINEA", "DISB"),
-            ("Subdirección de Investigaciones en Invertebrados y Macroalgas Marinas", "SIIMM", "ÓRGANOS DE LINEA", "DISB"),
-            ("Subdirección de Investigaciones en Pesca Artesanal", "SIPA", "ÓRGANOS DE LINEA", "DISB"),
-            
-            ("Dirección de Investigaciones en Ciencias Marinas", "DICM", "ÓRGANOS DE LINEA", "GC"),
-            ("Subdirección de Investigaciones en Física y Modelado del Océano", "SIFMO", "ÓRGANOS DE LINEA", "DICM"),
-            ("Subdirección de Investigaciones en Química y Geología", "SIQG", "ÓRGANOS DE LINEA", "DICM"),
-            ("Subdirección de Investigaciones en Biología del Océano", "SIBO", "ÓRGANOS DE LINEA", "DICM"),
-            
-            ("Dirección de Investigaciones en Acuicultura", "DIA", "ÓRGANOS DE LINEA", "GC"),
-            ("Subdirección de Investigaciones en Sistemas Acuícolas", "SISA", "ÓRGANOS DE LINEA", "DIA"),
-            ("Subdirección de Investigaciones en Recursos de Aguas Continentales", "SIRAC", "ÓRGANOS DE LINEA", "DIA"),
-            ("Subdirección de Investigaciones en Calidad Acuática de Ambientes Litorales", "SICAAL", "ÓRGANOS DE LINEA", "DIA"),
-            
-            ("Dirección de Investigaciones en Pesca y Desarrollo Tecnológico", "DIPDT", "ÓRGANOS DE LINEA", "GC"),
-            ("Subdirección de Investigaciones en Tecnología Hidroacústica", "SITH", "ÓRGANOS DE LINEA", "DIPDT"),
-            ("Subdirección de Investigaciones en Sensoramiento Remoto", "SISR", "ÓRGANOS DE LINEA", "DIPDT"),
-            ("Subdirección de Investigaciones en Sistemas y Métodos de Pesca", "SISMP", "ÓRGANOS DE LINEA", "DIPDT"),
-            ("Subdirección de Ediciones y Difusión del Conocimiento Científico y Tecnológico", "SEDCCT", "ÓRGANOS DE LINEA", "DIPDT"),
-            
-            # Órganos Desconcentrados (Dependen de Gerencia Científica)
-            ("Sedes Desconcentrada Tumbes", "SD Tumbes", "ÓRGANOS DESCONCENTRADOS", "GC"),
-            ("Sedes Desconcentrada Paita", "SD Paita", "ÓRGANOS DESCONCENTRADOS", "GC"),
-            ("Sedes Desconcentrada Santa Rosa", "SD Santa Rosa", "ÓRGANOS DESCONCENTRADOS", "GC"),
-            ("Sedes Desconcentrada Huanchaco", "SD Huanchaco", "ÓRGANOS DESCONCENTRADOS", "GC"),
-            ("Sedes Desconcentrada Chimbote", "SD Chimbote", "ÓRGANOS DESCONCENTRADOS", "GC"),
-            ("Sedes Desconcentrada Huacho", "SD Huacho", "ÓRGANOS DESCONCENTRADOS", "GC"),
-            ("Sedes Desconcentrada Pisco", "SD Pisco", "ÓRGANOS DESCONCENTRADOS", "GC"),
-            ("Sedes Desconcentrada Camaná", "SD Camaná", "ÓRGANOS DESCONCENTRADOS", "GC"),
-            ("Sedes Desconcentrada Ilo", "SD Ilo", "ÓRGANOS DESCONCENTRADOS", "GC"),
-            ("Sedes Desconcentrada Puno", "SD Puno", "ÓRGANOS DESCONCENTRADOS", "GC"),
-            ("Centro de Plataformas Flotantes de Investigación Marina y Continental", "CPFIMC", "ÓRGANOS DESCONCENTRADOS", "GC")
-        ]
-        c.executemany("""
+    # Semilla oficial y sincronización jerárquica ROF de Unidades Orgánicas
+    unidades_semilla = [
+        # Nivel 1: Alta Dirección
+        ("Consejo Directivo", "CD", "ÓRGANOS DE LA ALTA DIRECCIÓN", None),
+        ("Presidencia Ejecutiva", "PE", "ÓRGANOS DE LA ALTA DIRECCIÓN", "CD"),
+        ("Gerencia General", "GG", "ÓRGANOS DE LA ALTA DIRECCIÓN", "PE"),
+        ("Gerencia Científica", "GC", "ÓRGANOS DE LA ALTA DIRECCIÓN", "PE"),
+        
+        # Control y Asesoramiento
+        ("Órgano de Control Institucional", "OCI", "ÓRGANOS DE CONTROL", "PE"),
+        ("Oficina de Asesoría Jurídica", "OAJ", "ÓRGANOS DE ASESORAMIENTO", "GG"),
+        ("Oficina de Planeamiento, Presupuesto y Modernización", "OPPM", "ÓRGANOS DE ASESORAMIENTO", "GG"),
+        
+        # Órganos de Apoyo
+        ("Oficina de Administración", "OA", "ÓRGANOS DE APOYO", "GG"),
+        ("Unidad de Abastecimiento y Control Patrimonial", "UACP", "ÓRGANOS DE APOYO", "OA"),
+        ("Unidad de Gestión Financiera", "UGF", "ÓRGANOS DE APOYO", "OA"),
+        ("Oficina de Recursos Humanos", "ORH", "ÓRGANOS DE APOYO", "GG"),
+        ("Oficina de Tecnologías de la Información", "OTI", "ÓRGANOS DE APOYO", "GG"),
+        
+        # Órganos de Línea (Dependen de Gerencia Científica)
+        ("Dirección de Investigaciones del Subsistema Pelágico", "DISP", "ÓRGANOS DE LINEA", "GC"),
+        ("Subdirección de Investigaciones en Recursos Neríticos Pelágicos", "SIRNP", "ÓRGANOS DE LINEA", "DISP"),
+        ("Subdirección de Investigaciones en Recursos Transzonales y Altamente Migratorios", "SIRTAM", "ÓRGANOS DE LINEA", "DISP"),
+        ("Subdirección de Investigaciones en Dinámica Poblacional en Recursos Pelágicos", "SIDPRP", "ÓRGANOS DE LINEA", "DISP"),
+        
+        ("Dirección de Investigaciones del Subsistema Bentodemersal", "DISB", "ÓRGANOS DE LINEA", "GC"),
+        ("Subdirección de Investigaciones en Peces Demersales y Costeros", "SIPDC", "ÓRGANOS DE LINEA", "DISB"),
+        ("Subdirección de Investigaciones en Biodiversidad Acuática", "SIBA", "ÓRGANOS DE LINEA", "DISB"),
+        ("Subdirección de Investigaciones en Invertebrados y Macroalgas Marinas", "SIIMM", "ÓRGANOS DE LINEA", "DISB"),
+        ("Subdirección de Investigaciones en Pesca Artesanal", "SIPA", "ÓRGANOS DE LINEA", "DISB"),
+        
+        ("Dirección de Investigaciones en Ciencias Marinas", "DICM", "ÓRGANOS DE LINEA", "GC"),
+        ("Subdirección de Investigaciones en Física y Modelado del Océano", "SIFMO", "ÓRGANOS DE LINEA", "DICM"),
+        ("Subdirección de Investigaciones en Química y Geología", "SIQG", "ÓRGANOS DE LINEA", "DICM"),
+        ("Subdirección de Investigaciones en Biología del Océano", "SIBO", "ÓRGANOS DE LINEA", "DICM"),
+        
+        ("Dirección de Investigaciones en Acuicultura", "DIA", "ÓRGANOS DE LINEA", "GC"),
+        ("Subdirección de Investigaciones en Sistemas Acuícolas", "SISA", "ÓRGANOS DE LINEA", "DIA"),
+        ("Subdirección de Investigaciones en Recursos de Aguas Continentales", "SIRAC", "ÓRGANOS DE LINEA", "DIA"),
+        ("Subdirección de Investigaciones en Calidad Acuática de Ambientes Litorales", "SICAAL", "ÓRGANOS DE LINEA", "DIA"),
+        
+        ("Dirección de Investigaciones en Pesca y Desarrollo Tecnológico", "DIPDT", "ÓRGANOS DE LINEA", "GC"),
+        ("Subdirección de Investigaciones en Tecnología Hidroacústica", "SITH", "ÓRGANOS DE LINEA", "DIPDT"),
+        ("Subdirección de Investigaciones en Sensoramiento Remoto", "SISR", "ÓRGANOS DE LINEA", "DIPDT"),
+        ("Subdirección de Investigaciones en Sistemas y Métodos de Pesca", "SISMP", "ÓRGANOS DE LINEA", "DIPDT"),
+        ("Subdirección de Ediciones y Difusión del Conocimiento Científico y Tecnológico", "SEDCCT", "ÓRGANOS DE LINEA", "DIPDT"),
+        
+        # Órganos Desconcentrados (Dependen de Gerencia Científica)
+        ("Sedes Desconcentrada Tumbes", "SD Tumbes", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sedes Desconcentrada Paita", "SD Paita", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sedes Desconcentrada Santa Rosa", "SD Santa Rosa", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sedes Desconcentrada Huanchaco", "SD Huanchaco", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sedes Desconcentrada Chimbote", "SD Chimbote", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sedes Desconcentrada Huacho", "SD Huacho", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sedes Desconcentrada Pisco", "SD Pisco", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sedes Desconcentrada Camaná", "SD Camaná", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sedes Desconcentrada Ilo", "SD Ilo", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sedes Desconcentrada Puno", "SD Puno", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Centro de Plataformas Flotantes de Investigación Marina y Continental", "CPFIMC", "ÓRGANOS DESCONCENTRADOS", "GC")
+    ]
+
+    for nom, sig, tipo, padre in unidades_semilla:
+        # Si la unidad ya existe, actualiza su jerarquía ROF y tipo sin tocar los titulares asignados
+        c.execute("""
             INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, sigla_padre, estado)
             VALUES (?, ?, ?, ?, 'ACTIVO')
-        """, unidades_semilla)
+            ON CONFLICT(sigla) DO UPDATE SET
+                nombre = excluded.nombre,
+                tipo_organo = excluded.tipo_organo,
+                sigla_padre = excluded.sigla_padre,
+                estado = 'ACTIVO'
+        """, (nom, sig, tipo, padre))
 
 # Tabla Comentarios de Actividad (Colaborativo tipo Word 365)
     c.execute("""
