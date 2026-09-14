@@ -1266,11 +1266,11 @@
           </div>
         </div>
 
-        <!-- PASO 2: CALCULADORA BIDIRECCIONAL DE FECHAS -->
+        <!-- PASO 2: PROGRAMACIÓN Y DURACIÓN DINÁMICA (DÍAS VS HORAS) -->
         <div id="wz-paso-2" class="hidden space-y-4">
           <div class="flex items-center space-x-2 text-xs font-bold text-[#0f2a4a]">
             <span class="w-6 h-6 rounded-full bg-[#0f2a4a] text-white flex items-center justify-center text-xs">2</span>
-            <span>Programación de Fechas y Duración</span>
+            <span id="wz-txt-paso2-tit">Programación y Esfuerzo de Trabajo</span>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
             <div>
@@ -1278,15 +1278,18 @@
               <input type="date" id="wz-input-ini" class="w-full mt-1 p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
             </div>
             <div>
-              <label class="text-[11px] font-bold text-gray-600 uppercase">Fecha Fin (Término):</label>
-              <input type="date" id="wz-input-fin" class="w-full mt-1 p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
+              <label id="wz-lbl-duracion" class="text-[11px] font-bold text-gray-600 uppercase">Días Calendario:</label>
+              <div class="relative mt-1">
+                <input type="number" id="wz-input-dias" min="1" value="5" class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-black text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
+                <span id="wz-sufijo-duracion" class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-bold text-gray-400 pointer-events-none"></span>
+              </div>
             </div>
             <div>
-              <label class="text-[11px] font-bold text-gray-600 uppercase">Días Calendario:</label>
-              <input type="number" id="wz-input-dias" min="1" value="5" class="w-full mt-1 p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-black text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
+              <label id="wz-lbl-fin" class="text-[11px] font-bold text-gray-600 uppercase">Fecha Fin (Término):</label>
+              <input type="date" id="wz-input-fin" class="w-full mt-1 p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
             </div>
             <div class="sm:col-span-3 pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500 font-semibold">
-              <span>💡 Al modificar los días se calcula la fecha fin, y al modificar la fecha fin se calculan los días.</span>
+              <span id="wz-msg-ayuda-temporal">💡 Al modificar los días se calcula la fecha fin, y al modificar la fecha fin se calculan los días.</span>
             </div>
           </div>
         </div>
@@ -3848,8 +3851,15 @@
                 const yFin = maxFin.getFullYear();
                 madre.fecha_fin = `${dFin}/${mFin}/${yFin}`;
 
-                const diffDias = Math.floor((maxFin - minIni) / (1000 * 60 * 60 * 24)) + 1;
-                madre.dias = Math.max(1, diffDias);
+                if (proyectoModoDuracion === "hours") {
+                  // En horas: la madre suma el total de horas netas de sus hijas directas
+                  const totalHorasHijas = hijosDirectos.reduce((acc, h) => acc + (parseInt(h.dias) || 0), 0);
+                  madre.dias = Math.max(1, totalHorasHijas);
+                } else {
+                  // En días hábiles: mide el lapso total de calendario
+                  const diffDias = Math.floor((maxFin - minIni) / (1000 * 60 * 60 * 24)) + 1;
+                  madre.dias = Math.max(1, diffDias);
+                }
               }
             }
           }
@@ -4271,26 +4281,46 @@
 
       cambiarModoSeleccionadoWizard(modoForzado);
 
-      // Resetear valores de los campos
+      // Resetear valores de los campos con adaptación condicional (Horas vs Días)
       const hoy = new Date();
       document.getElementById("wz-input-desc").value = "";
       document.getElementById("wz-input-ini").value = formatearFechaISO(hoy.toISOString().split("T")[0]);
-      // Adaptar label y duración según la modalidad temporal del proyecto
+
       const esHoras = (proyectoModoDuracion === "hours");
       const lblUnidad = document.getElementById("wz-lbl-duracion");
-      if (lblUnidad) {
-        lblUnidad.innerText = esHoras ? "Horas de Dedicación Neta:" : "Días Hábiles:";
-      }
+      const sufijoUnidad = document.getElementById("wz-sufijo-duracion");
       const inpDias = document.getElementById("wz-input-dias");
-      if (inpDias) {
-        inpDias.value = esHoras ? 8 : 5; // 8 horas por defecto vs 5 días
-      }
-      
-      const dtFinDef = new Date(hoy);
-      const diasASumar = esHoras ? 0 : 4; // 8 horas = mismo día hábil de inicio
-      dtFinDef.setDate(dtFinDef.getDate() + diasASumar);
       const inpFin = document.getElementById("wz-input-fin");
-      if (inpFin) inpFin.value = formatearFechaISO(dtFinDef.toISOString().split("T")[0]);
+      const lblFin = document.getElementById("wz-lbl-fin");
+      const msgAyuda = document.getElementById("wz-msg-ayuda-temporal");
+
+      if (esHoras) {
+        // --- PROYECTOS POR HORAS DE DEDICACIÓN NETA ---
+        if (lblUnidad) lblUnidad.innerText = "Horas Netas de Dedicación:";
+        if (sufijoUnidad) sufijoUnidad.innerText = "h";
+        if (lblFin) lblFin.innerText = "Fecha Término Proyectada:";
+        if (msgAyuda) msgAyuda.innerText = "💡 Duración en horas netas (8h = 1 jornada hábil). La fecha de término se proyecta automáticamente.";
+        if (inpDias) inpDias.value = 8;
+        if (inpFin) {
+          inpFin.readOnly = true;
+          inpFin.className = "w-full mt-1 p-2 bg-slate-100 border border-gray-300 rounded-lg text-xs font-bold text-slate-500 cursor-not-allowed outline-none select-none";
+          inpFin.value = formatearFechaISO(hoy.toISOString().split("T")[0]);
+        }
+      } else {
+        // --- PROYECTOS POR DÍAS (LEGACY INTACTO) ---
+        if (lblUnidad) lblUnidad.innerText = "Días Calendario:";
+        if (sufijoUnidad) sufijoUnidad.innerText = "";
+        if (lblFin) lblFin.innerText = "Fecha Fin (Término):";
+        if (msgAyuda) msgAyuda.innerText = "💡 Al modificar los días se calcula la fecha fin, y al modificar la fecha fin se calculan los días.";
+        if (inpDias) inpDias.value = 5;
+        if (inpFin) {
+          inpFin.readOnly = false;
+          inpFin.className = "w-full mt-1 p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-[#0f2a4a]";
+          const dtFinDef = new Date(hoy);
+          dtFinDef.setDate(dtFinDef.getDate() + 4);
+          inpFin.value = formatearFechaISO(dtFinDef.toISOString().split("T")[0]);
+        }
+      }
 
       const selEst = document.getElementById("wz-input-estado");
       if (selEst) selEst.value = "No iniciado";
@@ -4423,10 +4453,20 @@
         const val = parseFloat(dias.value);
         if (val > 0) {
           const esHoras = (proyectoModoDuracion === "hours");
-          // Si el proyecto es por horas de dedicación neta, cada jornada de 8h equivale a 1 día
-          const diasEquivalentes = esHoras ? Math.max(1, Math.ceil(val / 8)) : Math.ceil(val);
+          let diasASumar = 0;
+
+          if (esHoras) {
+            // Regla Horas: 1 a 8 horas = mismo día hábil (0 días a sumar).
+            // Cada bloque de 8 horas subsiguiente avanza 1 día hábil adicional.
+            diasASumar = Math.max(0, Math.ceil(val / 8) - 1);
+          } else {
+            // Regla Días: Comportamiento tradicional exacto
+            diasASumar = Math.max(0, Math.ceil(val) - 1);
+          }
+
           const dt = new Date(fIni.value + "T00:00:00");
-          dt.setDate(dt.getDate() + (diasEquivalentes - 1));
+          dt.setDate(dt.getDate() + diasASumar);
+
           bloqueando = true;
           fFin.value = formatearFechaISO(dt.toISOString().split("T")[0]);
           bloqueando = false;
@@ -4435,9 +4475,13 @@
 
       fIni.addEventListener("input", () => {
         if (bloqueando || !fIni.value) return;
-        const dVal = parseInt(dias.value) || 1;
+        const val = parseFloat(dias.value) || 1;
+        const esHoras = (proyectoModoDuracion === "hours");
+        const diasASumar = esHoras ? Math.max(0, Math.ceil(val / 8) - 1) : Math.max(0, Math.ceil(val) - 1);
+
         const dt = new Date(fIni.value + "T00:00:00");
-        dt.setDate(dt.getDate() + (dVal - 1));
+        dt.setDate(dt.getDate() + diasASumar);
+
         bloqueando = true;
         fFin.value = formatearFechaISO(dt.toISOString().split("T")[0]);
         bloqueando = false;
@@ -4445,6 +4489,9 @@
 
       fFin.addEventListener("input", () => {
         if (bloqueando || !fIni.value || !fFin.value) return;
+        // En proyectos por horas, la fecha fin se proyecta de forma determinista desde las horas netas
+        if (proyectoModoDuracion === "hours") return;
+
         const dt1 = new Date(fIni.value + "T00:00:00");
         const dt2 = new Date(fFin.value + "T00:00:00");
         const diff = Math.floor((dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
@@ -6344,13 +6391,15 @@
     function editarDias(cod) {
       if (!proyectoEsGestor) return;
       if (tieneHijos(cod)) {
-        alert("🔒 Bloqueado CPM: Los Días se autocalculan midiendo la ventana de ejecución total.");
+        alert("🔒 Bloqueado: La duración se autocalcula de sus subtareas.");
         return;
       }
       const act = actividadesGlobal.find(a => a.codigo === cod);
+      const esHoras = (proyectoModoDuracion === "hours");
+
       abrirInputCustom({
-        titulo: "Modificar Duración",
-        mensaje: "Consigne los Días de duración estimada:",
+        titulo: esHoras ? "Modificar Horas de Dedicación" : "Modificar Duración",
+        mensaje: esHoras ? "Ingrese las horas netas de trabajo estimadas:" : "Consigne los Días de duración estimada:",
         tipo: "number",
         valorActual: act.dias,
         onAceptar: async (diasStr) => {
@@ -6359,7 +6408,10 @@
             act.dias = d;
             const dtIni = parsearFechaUniversal(act.fecha_inicio) || new Date();
             const dtFin = new Date(dtIni);
-            dtFin.setDate(dtFin.getDate() + (d - 1));
+
+            const diasASumar = esHoras ? Math.max(0, Math.ceil(d / 8) - 1) : Math.max(0, d - 1);
+            dtFin.setDate(dtFin.getDate() + diasASumar);
+
             act.fecha_inicio = formatearFechaLatina(act.fecha_inicio);
             act.fecha_fin = `${String(dtFin.getDate()).padStart(2, '0')}/${String(dtFin.getMonth() + 1).padStart(2, '0')}/${dtFin.getFullYear()}`;
             await guardarCambioDirecto(act);
