@@ -7040,7 +7040,7 @@
 
       const selNivel = document.getElementById("edit-tra-nivel-mando");
       if (selNivel) {
-        selNivel.value = trabajador.es_directivo === 1 ? "1" : "0";
+        selNivel.value = String(trabajador.es_directivo === 1 ? "1" : "0");
       }
 
       const usuarioCorreo = (trabajador.correo || "").split("@")[0];
@@ -7048,6 +7048,51 @@
 
       document.getElementById("edit-tra-sugerencias-uo").classList.add("hidden");
       document.getElementById("modal-editar-trabajador-ti").classList.remove("hidden");
+    }
+
+    function cerrarModalEditarTrabajador() {
+      const m = document.getElementById("modal-editar-trabajador-ti");
+      if (m) m.classList.add("hidden");
+    }
+
+    function autocompletarUOEdicion(termino) {
+      const term = (termino || "").toLowerCase().trim();
+      const divSug = document.getElementById("edit-tra-sugerencias-uo");
+      if (!divSug) return;
+
+      if (!term) {
+        divSug.innerHTML = "";
+        divSug.classList.add("hidden");
+        return;
+      }
+
+      const matches = (catalogoUnidadesGlobal || []).filter(u => 
+        (u.estado === 'ACTIVO' || !u.estado) && (
+          u.sigla.toLowerCase().includes(term) || 
+          u.nombre.toLowerCase().includes(term)
+        )
+      );
+
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">Sin coincidencias</div>`;
+      } else {
+        matches.slice(0, 6).forEach(u => {
+          const item = document.createElement("div");
+          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
+          item.innerHTML = `
+            <span class="text-gray-800">${u.nombre}</span>
+            <strong class="text-[#0f2a4a] ml-2 bg-slate-100 px-1.5 py-0.5 rounded border text-[11px]">[${u.sigla}]</strong>
+          `;
+          item.onclick = () => {
+            document.getElementById("edit-tra-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+            document.getElementById("edit-tra-uo-valor").value = u.sigla;
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
     }
 
     async function guardarEdicionTrabajador(e) {
@@ -8809,122 +8854,6 @@
         window.addEventListener("mousemove", alMoverMouse);
         window.addEventListener("mouseup", alSoltarMouse);
       };
-    }
-
-    function abrirModalEditarTrabajador(id) {
-      const trabajador = (catalogoTrabajadoresGlobal || []).find(t => t.id === id);
-      if (!trabajador) return;
-
-      document.getElementById("edit-tra-id").value = trabajador.id;
-      document.getElementById("edit-tra-nombres").value = trabajador.nombres || "";
-      document.getElementById("edit-tra-apellidos").value = trabajador.apellidos || "";
-      document.getElementById("edit-tra-uo-busq").value = trabajador.unidad_organica || "";
-      document.getElementById("edit-tra-uo-valor").value = trabajador.unidad_organica || "";
-      
-      const selCargo = document.getElementById("edit-tra-cargo");
-      if (selCargo) {
-        selCargo.value = trabajador.cargo || "Sin cargo / nivel";
-      }
-
-      const selNivel = document.getElementById("edit-tra-nivel-mando");
-      if (selNivel) {
-        selNivel.value = trabajador.es_directivo === 1 ? "1" : "0";
-      }
-
-      const usuarioCorreo = (trabajador.correo || "").split("@")[0];
-      document.getElementById("edit-tra-correo-user").value = usuarioCorreo;
-
-      document.getElementById("edit-tra-sugerencias-uo").classList.add("hidden");
-      document.getElementById("modal-editar-trabajador-ti").classList.remove("hidden");
-    }
-
-    function cerrarModalEditarTrabajador() {
-      document.getElementById("modal-editar-trabajador-ti").classList.add("hidden");
-    }
-
-    function autocompletarUOEdicion(termino) {
-      const term = (termino || "").toLowerCase().trim();
-      const divSug = document.getElementById("edit-tra-sugerencias-uo");
-      if (!divSug) return;
-
-      if (!term) {
-        divSug.innerHTML = "";
-        divSug.classList.add("hidden");
-        return;
-      }
-
-      const matches = (catalogoUnidadesGlobal || []).filter(u => 
-        (u.estado === 'ACTIVO' || !u.estado) && (
-          u.sigla.toLowerCase().includes(term) || 
-          u.nombre.toLowerCase().includes(term)
-        )
-      );
-
-      divSug.innerHTML = "";
-      if (matches.length === 0) {
-        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">Sin coincidencias</div>`;
-      } else {
-        matches.slice(0, 6).forEach(u => {
-          const item = document.createElement("div");
-          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
-          item.innerHTML = `
-            <span class="text-gray-800">${u.nombre}</span>
-            <strong class="text-[#0f2a4a] ml-2 bg-slate-100 px-1.5 py-0.5 rounded border text-[11px]">[${u.sigla}]</strong>
-          `;
-          item.onclick = () => {
-            document.getElementById("edit-tra-uo-busq").value = `${u.sigla} - ${u.nombre}`;
-            document.getElementById("edit-tra-uo-valor").value = u.sigla;
-            divSug.classList.add("hidden");
-          };
-          divSug.appendChild(item);
-        });
-      }
-      divSug.classList.remove("hidden");
-    }
-
-    async function guardarEdicionTrabajador(e) {
-      e.preventDefault();
-      const id = document.getElementById("edit-tra-id").value;
-      const nombres = document.getElementById("edit-tra-nombres").value.trim();
-      const apellidos = document.getElementById("edit-tra-apellidos").value.trim();
-      const uo = document.getElementById("edit-tra-uo-valor").value || document.getElementById("edit-tra-uo-busq").value.trim();
-      const correo_user = document.getElementById("edit-tra-correo-user").value.trim();
-
-      if (!nombres || !apellidos || !uo || !correo_user) {
-        alert("Por favor complete todos los campos requeridos.");
-        return;
-      }
-
-      try {
-        const res = await fetch(`/trabajadores/${id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            nombres: nombres,
-            apellidos: apellidos,
-            unidad_organica: uo,
-            correo_usuario: correo_user
-          })
-        });
-
-        if (res.ok) {
-          cerrarModalEditarTrabajador();
-          notificarToast("Datos del trabajador actualizados con éxito.", "success");
-          await cargarDirectorioTrabajadores();
-          if (proyectoActualId) {
-            await cargarActividades();
-          }
-        } else {
-          const err = await res.json().catch(() => ({}));
-          alert(err.detail || "Error al actualizar los datos del trabajador.");
-        }
-      } catch (err) {
-        console.error("Error al actualizar trabajador:", err);
-        alert("Error de conexión con el servidor.");
-      }
     }
 
     // =========================================================================
