@@ -111,11 +111,8 @@
       top: 0;
       z-index: 30;
       background-color: #0f2a4a !important;
-      background-clip: padding-box !important;
-      border-right: 1px solid #1c335a !important;
-      border-bottom: 1px solid #1c335a !important;
-      border-top: none !important;
-      border-left: none !important;
+      box-shadow: inset 0 -1px 0 #1c335a, inset -1px 0 0 #1c335a;
+      border: none !important;
     }
 
     /* Rombo de Hito */
@@ -316,16 +313,18 @@
 
   <!-- ================= VISTA: HUB DE PROYECTOS OPTIMIZADO ================= -->
   <div id="view-hub" class="hidden fixed inset-0 bg-[#f4f7f6] z-40 flex flex-col overflow-y-auto">
-    <header class="bg-[#0f2a4a] text-white shadow-md flex-shrink-0 sticky top-0 z-50">
+    <header class="bg-[#0f2a4a] text-white shadow-md flex-shrink-0 sticky top-0 z-[100]">
       <div class="max-w-6xl mx-auto px-6 h-[65px] flex items-center justify-between">
         <div class="flex items-center space-x-4">
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
-        <div class="flex items-center space-x-4">
-          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3.5 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-teal-500">
+        <div class="flex items-center space-x-2.5">
+          <!-- BOTÓN: BASE DE DATOS TI -->
+          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-teal-500">
             <span>🛡️</span>
-            <span>Gestión TI: Alta de Usuarios</span>
+            <span>Gestión TI: Base de datos</span>
           </button>
+
           <div class="text-right border-l border-blue-900/60 pl-3">
             <p id="user-display-hub" class="text-xs font-bold text-gray-100">admin</p>
             <p id="role-display-hub" class="text-[10px] text-teal-300 uppercase font-semibold">ADMINISTRADOR TI</p>
@@ -358,34 +357,34 @@
       </div>
 
       <!-- BARRA OPERATIVA DE ACCIONES: FILTROS MULTICRITERIO, VISTAS Y ANALÍTICA -->
-      <div class="bg-white rounded-xl p-3.5 mb-4 border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <!-- Grupo Izquierda: Buscador + Búsqueda Inteligente UO + Estado -->
-        <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
-          <!-- Buscador Rápido de Texto -->
-          <div class="relative flex-1 min-w-[200px] max-w-xs">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🔍</span>
-            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por nombre o desc..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition">
+      <div class="bg-white rounded-xl p-2.5 mb-4 border border-gray-200 shadow-xs flex items-center justify-between gap-2 relative z-50">
+        <!-- Grupo Izquierda: Buscador + Búsqueda Inteligente UO + Estado en 1 sola línea rígida -->
+        <div class="flex flex-nowrap items-center gap-2 flex-shrink-0">
+          <!-- Buscador Rápido de Texto Compacto -->
+          <div class="relative w-40 flex-shrink-0">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400 text-xs">🔍</span>
+            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar proyecto..." class="w-full pl-7 pr-2 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" title="Buscar por nombre o descripción">
           </div>
 
-          <!-- Búsqueda Inteligente Compacta por Unidad Orgánica con Botón de Limpieza Rápida -->
-          <div class="relative min-w-[200px] max-w-[220px]">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🏢</span>
-            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por unidad u oficina..." class="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+          <!-- Búsqueda Inteligente Compacta por Unidad Orgánica -->
+          <div class="relative w-44 flex-shrink-0 z-[60]">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400 text-xs">🏢</span>
+            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Buscar por UUOO" class="w-full pl-7 pr-5 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" autocomplete="off" title="Filtrar por Unidad de Organización">
             <input type="hidden" id="hub-filtro-uo-valor" onchange="filtrarProyectosHub()">
             
             <!-- Botón Limpiar Filtro (X) -->
-            <button type="button" id="btn-limpiar-filtro-uo" onclick="limpiarFiltroUnidadHub()" class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-rose-600 transition cursor-pointer" title="Limpiar filtro de unidad">
-              <span class="text-xs font-black bg-gray-200 hover:bg-rose-100 rounded-full w-4 h-4 flex items-center justify-center">×</span>
+            <button type="button" id="btn-limpiar-filtro-uo" onclick="limpiarFiltroUnidadHub()" class="hidden absolute inset-y-0 right-0 pr-1.5 flex items-center text-gray-400 hover:text-rose-600 transition cursor-pointer" title="Limpiar filtro de unidad">
+              <span class="text-[10px] font-black bg-gray-200 hover:bg-rose-100 rounded-full w-3 h-3 flex items-center justify-center">×</span>
             </button>
 
-            <!-- Lista Desplegable Flotante Inteligente -->
-            <div id="hub-sugerencias-uo" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[100] text-xs divide-y divide-gray-100"></div>
+            <!-- Lista Desplegable Flotante Inteligente con Capa Superior Controlada -->
+            <div id="hub-sugerencias-uo" class="hidden absolute top-full left-0 w-64 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1.5 max-h-56 overflow-y-auto z-[70] text-xs divide-y divide-gray-100"></div>
           </div>
 
-          <!-- Filtro por Estado Global del Proyecto -->
-          <div class="relative min-w-[130px]">
-            <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-2 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
-              <option value="">📊 Todos los Estados</option>
+          <!-- Filtro por Estado Global Compacto -->
+          <div class="relative w-44 flex-shrink-0">
+            <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 py-1.5 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer truncate" title="Filtrar por estado del proyecto">
+              <option value="">📊 Todos los estados</option>
               <option value="Ejecutado">Ejecutado</option>
               <option value="En proceso">En proceso</option>
               <option value="No iniciado">No iniciado</option>
@@ -438,8 +437,8 @@
       </div>
 
       <!-- Contenedores Duales: Vista Tarjetas y Vista Tabla -->
-      <div id="grid-proyectos-hub" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-      <div id="hub-proyectos-tabla-contenedor" class="hidden border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white mt-2">
+      <div id="grid-proyectos-hub" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10"></div>
+      <div id="hub-proyectos-tabla-contenedor" class="hidden border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white mt-2 relative z-10">
         <table class="w-full text-xs text-left">
           <thead class="bg-[#0f2a4a] text-white">
             <tr>
@@ -593,8 +592,8 @@
               </svg>
             </div>
             <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold">
-              <option value="dias" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Días</option>
-              <option value="semanas" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold" selected>&nbsp;&nbsp;Semanas</option>
+              <option value="dias" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold" selected>&nbsp;&nbsp;Días</option>
+              <option value="semanas" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Semanas</option>
               <option value="meses" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Meses</option>
               <option value="trimestres" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Trimestres</option>
               <option value="semestres" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Semestres</option>
@@ -645,7 +644,7 @@
           </button>
 
           <!-- Historial -->
-          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="group h-[29px] px-2 bg-[#718093] hover:bg-[#576574] text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap" title="Historial de Cambios y Auditoría">
+          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="group h-[29px] px-2 bg-[#718093] hover:bg-[#576574] text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap" title="Historial de cambios">
             <span class="text-sm">📜</span>
             <span class="max-w-0 opacity-0 group-hover:max-w-[110px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] text-xs font-bold overflow-hidden">Historial</span>
           </button>
@@ -675,7 +674,7 @@
             <th id="th-codigo" class="p-2.5 font-bold w-20 md:w-24 whitespace-nowrap">Código</th>
             <th id="th-descripcion" class="p-2.5 font-bold min-w-[180px] whitespace-nowrap select-none" style="position: sticky !important; top: 0 !important; z-index: 35 !important; background-color: #0f2a4a !important;">
               <div class="flex items-center justify-between pr-3">
-                <span class="truncate">Descripción de Actividad</span>
+                <span class="truncate">Descripción de actividad</span>
                 <span class="text-[10px] text-teal-300 opacity-80 flex-shrink-0">✎</span>
               </div>
               <!-- Tirador interactivo con línea ultra-fina -->
@@ -734,7 +733,7 @@
         </button>
         <button id="np-tab-btn-plantilla" onclick="cambiarTabNuevoProyecto('plantilla')" class="px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold">
           <span>📋</span>
-          <span>Desde Plantilla Institucional</span>
+          <span>Desde Plantilla de proyecto</span>
         </button>
       </div>
 
@@ -747,7 +746,7 @@
           </div>
           <div class="relative">
             <label class="text-[11px] font-bold text-gray-600 uppercase">Unidad de Organización Responsable:</label>
-            <input type="text" id="input-nuevo-proy-uo-busq" oninput="autocompletarUOProyecto(this.value)" placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+            <input type="text" id="input-nuevo-proy-uo-busq" oninput="autocompletarUOProyecto(this.value)" placeholder="Escriba sigla o unidad (ej. OPPM)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
             <input type="hidden" id="input-nuevo-proy-uo-valor">
             <div id="sugerencias-uo-proyecto" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
           </div>
@@ -755,7 +754,7 @@
       <!-- Campo: Proceso / Subproceso Relacionado -->
           <div class="relative">
             <label class="text-[11px] font-bold text-gray-600 uppercase">Proceso / Subproceso Relacionado:</label>
-            <input type="text" id="input-nuevo-proy-proceso-busq" oninput="autocompletarProcesoNuevoProy(this.value)" placeholder="Buscar por denominación o código oficial (ej: E2.1.2)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+            <input type="text" id="input-nuevo-proy-proceso-busq" oninput="autocompletarProcesoNuevoProy(this.value)" placeholder="Buscar por denominación o código del proceso (ej: E2.1.2)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
             <input type="hidden" id="input-nuevo-proy-proceso-codigo">
             <input type="hidden" id="input-nuevo-proy-proceso-nombre">
             <input type="hidden" id="input-nuevo-proy-proceso-personalizado" value="0">
@@ -774,6 +773,23 @@
             <label class="text-[11px] font-bold text-gray-600 uppercase">Descripción / Alcance:</label>
             <textarea id="input-nuevo-proy-desc" rows="3" placeholder="Detalles u objetivos del proyecto..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]"></textarea>
           </div>
+          <!-- SELECTOR MODALIDAD TEMPORAL Y ALCANCE DE PRIVACIDAD -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] font-bold text-gray-600 uppercase">Modalidad de Estimación Temporal:</label>
+              <select id="input-nuevo-proy-duration-mode" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+                <option value="business_days" selected>Días Hábiles (L-V, excluye feriados)</option>
+                <option value="hours">Horas de Dedicación Neta</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-gray-600 uppercase">Alcance / Privacidad del Proyecto:</label>
+              <select id="input-nuevo-proy-visibilidad" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+                <option value="PRIVADO" selected>🔒 Privado (Solo miembros asignados)</option>
+                <option value="PUBLICO">🌐 Institucional</option>
+              </select>
+            </div>
+          </div>
           <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
             <button type="button" onclick="cerrarModalNuevoProyecto()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cancelar</button>
             <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg shadow transition">Crear en Blanco →</button>
@@ -791,7 +807,7 @@
         <!-- Galería de Tarjetas de Plantillas -->
         <div id="galeria-plantillas-contenedor" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[280px] overflow-y-auto pr-1"></div>
 
-        <!-- Formulario de Configuración del Proyecto Clonado -->
+        <!-- Formulario de Configuración del Proyecto Clonado Completo -->
         <div id="bloque-config-clonacion" class="hidden bg-white p-4 rounded-xl border-2 border-teal-600 shadow-sm space-y-3">
           <div class="flex items-center justify-between border-b border-gray-100 pb-2">
             <span class="text-xs font-black text-[#0f2a4a]" id="txt-plantilla-elegida-tit">Plantilla Seleccionada</span>
@@ -806,7 +822,7 @@
 
             <div class="relative">
               <label class="block font-bold text-gray-600 mb-1">Unidad de Organización Responsable:</label>
-              <input type="text" id="np-input-clon-uo-busq" oninput="autocompletarUOClonacion(this.value)" placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <input type="text" id="np-input-clon-uo-busq" oninput="autocompletarUOClonacion(this.value)" placeholder="Escriba sigla o unidad (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
               <input type="hidden" id="np-input-clon-uo-valor">
               <div id="sugerencias-uo-clonacion" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-36 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
             </div>
@@ -814,6 +830,45 @@
             <div>
               <label class="block font-bold text-gray-600 mb-1">Fecha de Inicio del Proyecto:</label>
               <input type="date" id="np-input-clon-fechaini" class="w-full p-2 border border-gray-300 rounded-lg font-bold text-teal-800 outline-none focus:border-[#0f2a4a]">
+            </div>
+
+            <!-- Proceso / Subproceso en Plantilla -->
+            <div class="relative sm:col-span-2">
+              <label class="block font-bold text-gray-600 mb-1">Proceso / Subproceso Relacionado:</label>
+              <input type="text" id="np-input-clon-proceso-busq" oninput="autocompletarProcesoClonacion(this.value)" placeholder="Buscar por denominación o código del proceso (ej: E2.1.2)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <input type="hidden" id="np-input-clon-proceso-codigo">
+              <input type="hidden" id="np-input-clon-proceso-nombre">
+              <input type="hidden" id="np-input-clon-proceso-personalizado" value="0">
+              
+              <div id="sugerencias-proceso-clonacion" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+
+              <div id="contenedor-otro-subproceso-clon" class="hidden mt-2 p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+                <label class="block text-[10px] font-bold text-amber-800 uppercase mb-1">Especifique la denominación del subproceso:</label>
+                <input type="text" id="input-otro-subproceso-clon-texto" placeholder="Ingrese el nombre del proceso o trámite..." class="w-full p-2 bg-white border border-amber-300 rounded text-xs font-semibold text-gray-800 outline-none focus:border-amber-600">
+              </div>
+            </div>
+
+            <!-- Descripción / Alcance -->
+            <div class="sm:col-span-2">
+              <label class="block font-bold text-gray-600 mb-1">Descripción / Alcance:</label>
+              <textarea id="np-input-clon-desc" rows="2" placeholder="Detalles u objetivos del proyecto..." class="w-full p-2 border border-gray-300 rounded-lg font-medium outline-none focus:border-[#0f2a4a]"></textarea>
+            </div>
+
+            <!-- Modalidad Temporal y Alcance de Privacidad -->
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Modalidad de Estimación Temporal:</label>
+              <select id="np-input-clon-duration-mode" class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]">
+                <option value="business_days" selected>Días Hábiles (L-V, excluye feriados)</option>
+                <option value="hours">Horas de Dedicación Neta</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Alcance / Privacidad del Proyecto:</label>
+              <select id="np-input-clon-visibilidad" class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]">
+                <option value="PRIVADO" selected>🔒 Privado (Solo miembros asignados)</option>
+                <option value="PUBLICO">🌐 Institucional</option>
+              </select>
             </div>
           </div>
 
@@ -837,7 +892,7 @@
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
         <div class="flex items-center space-x-2">
           <span class="text-xl">📥</span>
-          <h3 class="font-black text-sm">Guardar como Plantilla Institucional</h3>
+          <h3 class="font-black text-sm">Guardar como Plantilla de proyecto</h3>
         </div>
         <button onclick="cerrarModalGuardarPlantilla()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
       </div>
@@ -911,102 +966,92 @@
         <button onclick="cerrarModalAdminTI()" class="text-white text-2xl font-bold hover:text-gray-200 leading-none">&times;</button>
       </div>
 
-      <div class="flex border-b border-gray-200 bg-gray-100 text-xs font-bold px-4 pt-2 space-x-2 flex-shrink-0">
-        <button id="ti-tab-btn-cuentas" onclick="cambiarTabTI('cuentas')" class="px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs">
-          🔑 Cuentas de Acceso (Login)
-        </button>
-        <button id="ti-tab-btn-trabajadores" onclick="cambiarTabTI('trabajadores')" class="px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition">
-          👥 Directorio de Trabajadores
-        </button>
-        <button id="ti-tab-btn-unidades" onclick="cambiarTabTI('unidades')" class="px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition">
-          🏢 Unidades de Organización
-        </button>
-      </div>
-
-      <!-- Tab 1: Cuentas -->
-      <div id="ti-tab-content-cuentas" class="p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
-        <form onsubmit="darAltaUsuario(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
-          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Alta de Usuario para Acceso al Sistema</h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div>
-              <label class="block font-bold text-gray-600 mb-1">Nombres</label>
-              <input type="text" id="ti-input-nombres" required placeholder="Ej. Jesús Gianfranco" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-            </div>
-            <div>
-              <label class="block font-bold text-gray-600 mb-1">Apellidos</label>
-              <input type="text" id="ti-input-apellidos" required placeholder="Ej. Salas Guerrero" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-            </div>
-            <div>
-              <label class="block font-bold text-gray-600 mb-1">Usuario (Login)</label>
-              <input type="text" id="ti-input-user" required placeholder="Ej. jsalas" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-            </div>
-            <div>
-              <label class="block font-bold text-gray-600 mb-1">Contraseña Inicial</label>
-              <input type="password" id="ti-input-pass" required placeholder="••••••••" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-            </div>
-            <div class="sm:col-span-2">
-              <label class="block font-bold text-gray-600 mb-1">Rol Global en el Software</label>
-              <select id="ti-input-rol" class="w-full p-2 border border-gray-300 rounded font-bold outline-none">
-                <option value="OPERADOR">OPERADOR (Gestor / Responsable de Proyectos)</option>
-                <option value="ADMIN_TI">ADMINISTRADOR TI (Gestión Institucional Total)</option>
-              </select>
-            </div>
-          </div>
-          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2 rounded-lg transition shadow">Dar de Alta Cuenta</button>
-        </form>
-
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Cuentas Registradas</h4>
-            <input type="text" id="ti-filtro-usuarios" oninput="filtrarUsuariosTI()" placeholder="🔍 Buscar por nombre o @usuario..." class="text-xs bg-white border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:border-[#0f2a4a] w-56 font-semibold">
-          </div>
-          <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
-            <table class="w-full text-xs text-left">
-              <thead class="bg-[#0f2a4a] text-white">
-                <tr>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 min-w-[200px]">Apellidos y Nombres</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-28 whitespace-nowrap">Usuario</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-36 whitespace-nowrap">Rol</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-20 whitespace-nowrap">Estado</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-24 whitespace-nowrap">Acción</th>
-                </tr>
-              </thead>
-              <tbody id="ti-tabla-usuarios" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
-            </table>
-          </div>
-        </div>
+      <div class="flex border-b border-gray-200 bg-gray-100 text-xs font-bold px-4 pt-2 space-x-1 flex-shrink-0 overflow-x-auto">
+        <button id="ti-tab-btn-trabajadores" onclick="cambiarTabTI('trabajadores')" class="px-3.5 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold whitespace-nowrap">👥 Directorio & Cuentas</button>
+        <button id="ti-tab-btn-unidades" onclick="cambiarTabTI('unidades')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">🏢 Unidades de organización</button>
+        <button id="ti-tab-btn-feriados" onclick="cambiarTabTI('feriados')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">📅 Feriados</button>
+        <button id="ti-tab-btn-procesos" onclick="cambiarTabTI('procesos')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">⚙️ Procesos</button>
       </div>
 
       <!-- Tab 2: Trabajadores -->
-      <div id="ti-tab-content-trabajadores" class="hidden p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
+      <div id="ti-tab-content-trabajadores" class="p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
         <form onsubmit="registrarTrabajadorTI(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
-          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Nuevo Trabajador en Directorio Institucional</h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+            <h4 class="text-xs font-black uppercase text-[#0f2a4a] tracking-wider">Directorio de trabajadores & Altas de usuario</h4>
+            <span class="text-[10px] bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded font-bold">Gestión de accesos</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
               <label class="block font-bold text-gray-600 mb-1">Nombres</label>
-              <input type="text" id="tra-input-nombres" required placeholder="Ej. Luis Orlando" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+              <input type="text" id="tra-input-nombres" required placeholder="Ej. Pedro Luciano" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
             <div>
               <label class="block font-bold text-gray-600 mb-1">Apellidos</label>
-              <input type="text" id="tra-input-apellidos" required placeholder="Ej. Aguilar Villanueva" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+              <input type="text" id="tra-input-apellidos" required placeholder="Ej. Salas Ramos" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
             
             <div class="relative">
               <label class="block font-bold text-gray-600 mb-1">Unidad de Organización (Sigla / Nombre)</label>
-              <input type="text" id="tra-input-uo-busq" oninput="autocompletarUnidadOrganica(this.value)" required placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <input type="text" id="tra-input-uo-busq" oninput="autocompletarUnidadOrganica(this.value)" required placeholder="Escriba sigla o unidad (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
               <input type="hidden" id="tra-input-uo-valor">
               <div id="tra-sugerencias-uo" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-44 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
             </div>
 
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Correo Institucional</label>
+              <label class="block font-bold text-gray-600 mb-1">Cargo / Nivel</label>
+              <select id="tra-input-cargo" class="w-full p-2 border border-gray-300 rounded font-semibold text-gray-800 outline-none focus:border-[#0f2a4a] bg-white cursor-pointer">
+                <option value="Sin cargo / nivel" selected>Sin cargo / nivel</option>
+                <option value="Presidente Ejecutivo">Presidente Ejecutivo</option>
+                <option value="Gerente">Gerente</option>
+                <option value="Asesor">Asesor</option>
+                <option value="Jefe">Jefe</option>
+                <option value="Coordinador">Coordinador</option>
+                <option value="Jefe adjunto">Jefe adjunto</option>
+                <option value="Investigador">Investigador</option>
+                <option value="Especialista">Especialista</option>
+                <option value="Analista">Analista</option>
+                <option value="Profesional">Profesional</option>
+                <option value="Asistente">Asistente</option>
+                <option value="Técnico">Técnico</option>
+                <option value="Patrón">Patrón</option>
+                <option value="Observador">Observador</option>
+                <option value="Secretario/a">Secretario/a</option>
+                <option value="Tripulante">Tripulante</option>
+                <option value="Auxiliar">Auxiliar</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Nivel de Mando Institucional:</label>
+              <select id="tra-input-nivel-mando" class="w-full p-2 border border-gray-300 rounded font-bold text-gray-700 outline-none focus:border-[#0f2a4a] bg-slate-50 cursor-pointer">
+                <option value="0">Personal Operativo</option>
+                <option value="1">🏛️ Directivo / Titular de unidad</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Usuario Login / Correo Institucional</label>
               <div class="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
                 <input type="text" id="tra-input-correo-user" required placeholder="laguilar" class="w-full p-2 font-semibold outline-none text-right">
                 <span class="bg-gray-100 px-2 py-2 text-gray-500 font-bold text-xs border-l border-gray-200">@imarpe.gob.pe</span>
               </div>
             </div>
           </div>
-          <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg transition shadow">Registrar Trabajador</button>
+
+          <!-- Bloque de Creación de Credencial de Acceso Inmediata -->
+          <div class="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            <label class="inline-flex items-center space-x-2 font-bold text-[#0f2a4a] cursor-pointer">
+              <input type="checkbox" id="tra-chk-crear-acceso" checked class="rounded text-[#0f2a4a] focus:ring-0">
+              <span>Habilitar acceso al aplicativo</span>
+            </label>
+            <div class="flex items-center space-x-2">
+              <span class="text-gray-500 font-semibold">Contraseña Inicial:</span>
+              <input type="text" id="tra-input-pass-inicial" value="imarpe123" class="p-1 px-2 border border-gray-300 rounded text-xs font-mono font-bold text-teal-800 bg-white w-28 text-center outline-none">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg transition shadow">+ Guardar en directorio y habilitar acceso</button>
         </form>
 
         <div>
@@ -1028,9 +1073,11 @@
               <thead class="bg-[#0f2a4a] text-white">
                 <tr>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Apellidos y Nombres</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad Orgánica</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Correo Electrónico</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-36 whitespace-nowrap">Acción</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad de organización</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Cargo / Nivel</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Usuario Login</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-24">Acceso</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-32 whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
               <tbody id="tra-tabla-directorio" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
@@ -1042,18 +1089,24 @@
       <!-- Tab 3: Unidades -->
       <div id="ti-tab-content-unidades" class="hidden p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
         <form onsubmit="registrarNuevaUnidadOrganica(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
-          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Agregar Dependencia / Unidad Orgánica</h4>
+          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Agregar Unidad de organización</h4>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div class="sm:col-span-2">
               <label class="block font-bold text-gray-600 mb-1">Nombre Completo de la Unidad</label>
-              <input type="text" id="uo-input-nombre" required placeholder="Ej. Subdirección de Investigaciones..." class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+              <input type="text" id="uo-input-nombre" required placeholder="Ej. Oficina de Planeamiento, Presupuesto y Modernización" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Sigla Oficial</label>
+              <label class="block font-bold text-gray-600 mb-1">Siglas</label>
               <input type="text" id="uo-input-sigla" required placeholder="Ej. OPPM" class="w-full p-2 border border-gray-300 rounded font-bold outline-none focus:border-[#0f2a4a] uppercase">
             </div>
+            <div class="sm:col-span-3">
+              <label class="block font-bold text-gray-600 mb-1">Depende Jerárquicamente de (Unidad Padre según ROF):</label>
+              <select id="uo-input-padre" class="w-full p-2 border border-gray-300 rounded text-xs font-semibold outline-none bg-gray-50 focus:bg-white focus:border-[#0f2a4a]">
+                <option value="">(Seleccione una unidad de organización)</option>
+              </select>
+            </div>
           </div>
-          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2 rounded-lg transition shadow">+ Guardar Unidad Orgánica</button>
+          <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg transition shadow">+ Guardar Unidad de organización</button>
         </form>
 
         <div>
@@ -1062,14 +1115,109 @@
             <table class="w-full text-xs text-left">
               <thead class="sticky top-0 bg-[#0f2a4a] text-white">
                 <tr>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-24">Sigla</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-20">Sigla</th>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad de Organización</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Tipo de Órgano</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Dependencia ROF</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 min-w-[200px]">Titular / Directivo a Cargo</th>
                 </tr>
               </thead>
               <tbody id="uo-tabla-cuerpo" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Feriados Institucionales y Calendario Laboral -->
+      <div id="ti-tab-content-feriados" class="hidden p-5 overflow-y-auto space-y-4 flex-1 bg-[#f8f9fa] text-xs">
+        
+        <!-- Formulario de Alta con Selector de Tipo -->
+        <form onsubmit="guardarFeriado(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-xs items-end">
+          <div class="md:col-span-3">
+            <label class="block font-bold text-gray-700 uppercase mb-1 text-[11px]">Fecha no laborable:</label>
+            <input type="date" id="input-feriado-fecha" required class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
+          </div>
+          
+          <div class="md:col-span-3">
+            <label class="block font-bold text-gray-700 uppercase mb-1 text-[11px]">Tipo de Feriado:</label>
+            <select id="input-feriado-tipo" class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
+              <option value="Calendario">Calendario</option>
+              <option value="Sector público">Sector público</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-4">
+            <label class="block font-bold text-gray-700 uppercase mb-1 text-[11px]">Descripción / Motivo:</label>
+            <input type="text" id="input-feriado-motivo" required placeholder="Ej. Santa Rosa de Lima" class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:border-[#0f2a4a]">
+          </div>
+
+          <div class="md:col-span-2">
+            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-black py-2 rounded-lg transition shadow flex items-center justify-center space-x-1 cursor-pointer">
+              <span>+ Agregar</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Barra de Gestión Anual y Proyección -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-gray-200 shadow-2xs">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-gray-700">Año de Consulta:</span>
+            <select id="sel-filtro-ano-feriados" onchange="cargarListaFeriados()" class="p-1 px-2.5 bg-slate-50 border border-gray-300 rounded-lg font-black text-[#0f2a4a] outline-none cursor-pointer">
+              <option value="">Todos los años</option>
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+            </select>
+          </div>
+
+          <button type="button" onclick="proyectarFeriadosSiguienteAno()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold px-3.5 py-1.5 rounded-lg text-xs transition shadow flex items-center space-x-1.5 cursor-pointer" title="Cargar y proyectar automáticamente los feriados para el siguiente año">
+            <span>📅 Proyectar Feriados para Siguiente Año</span>
+          </button>
+        </div>
+
+        <!-- Tabla con Edición y Clasificación -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-72 overflow-y-auto">
+          <table class="w-full text-xs text-left">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
+              <tr>
+                <th class="p-2.5 font-bold w-28">Fecha</th>
+                <th class="p-2.5 font-bold w-36">Tipo Feriado</th>
+                <th class="p-2.5 font-bold">Descripción</th>
+                <th class="p-2.5 font-bold text-center w-28 whitespace-nowrap">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-feriados-body" class="divide-y divide-gray-100 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 5: Catálogo de Procesos TI -->
+      <div id="ti-tab-content-procesos" class="hidden p-5 overflow-y-auto space-y-4 flex-1 bg-[#f8f9fa] text-xs">
+        <form onsubmit="guardarProcesoTI(event)" class="bg-white p-3 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-3 shadow-xs">
+          <div class="md:col-span-3">
+            <label class="block font-bold text-gray-600 mb-1">Código del proceso:</label>
+            <input type="text" id="input-proc-ti-codigo" required placeholder="Ej. E2.1" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-7">
+            <label class="block font-bold text-gray-600 mb-1">Denominación del Proceso:</label>
+            <input type="text" id="input-proc-ti-nombre" required placeholder="Ej. Planeamiento Operativo Institucional" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-2 flex items-end">
+            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 rounded transition shadow">+ Guardar</button>
+          </div>
+        </form>
+
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
+          <table class="w-full text-xs text-left">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
+              <tr>
+                <th class="p-2.5 font-bold w-24">Código</th>
+                <th class="p-2.5 font-bold">Nombre del Proceso</th>
+                <th class="p-2.5 font-bold text-center w-24">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-procesos-ti-body" class="divide-y divide-gray-100 font-medium"></tbody>
+          </table>
         </div>
       </div>
 
@@ -1103,8 +1251,40 @@
             <div id="edit-tra-sugerencias-uo" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
           </div>
 
+          <div>
+            <label class="block font-bold text-gray-600 mb-1">Cargo / Nivel:</label>
+            <select id="edit-tra-cargo" class="w-full p-2 border border-gray-300 rounded font-semibold text-gray-800 outline-none focus:border-[#0f2a4a] bg-white cursor-pointer">
+              <option value="Sin cargo / nivel">Sin cargo / nivel</option>
+              <option value="Presidente Ejecutivo">Presidente Ejecutivo</option>
+              <option value="Gerente">Gerente</option>
+              <option value="Asesor">Asesor</option>
+              <option value="Jefe">Jefe</option>
+              <option value="Coordinador">Coordinador</option>
+              <option value="Jefe adjunto">Jefe adjunto</option>
+              <option value="Investigador">Investigador</option>
+              <option value="Especialista">Especialista</option>
+              <option value="Analista">Analista</option>
+              <option value="Profesional">Profesional</option>
+              <option value="Asistente">Asistente</option>
+              <option value="Técnico">Técnico</option>
+              <option value="Patrón">Patrón</option>
+              <option value="Observador">Observador</option>
+              <option value="Secretario/a">Secretario/a</option>
+              <option value="Tripulante">Tripulante</option>
+              <option value="Auxiliar">Auxiliar</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-bold text-gray-600 mb-1">Nivel de Mando:</label>
+            <select id="edit-tra-nivel-mando" class="w-full p-2 border border-gray-300 rounded font-bold text-gray-700 outline-none focus:border-[#0f2a4a] bg-slate-50 cursor-pointer">
+              <option value="0">Personal Operativo</option>
+              <option value="1">🏛️ Directivo / Titular de unidad</option>
+            </select>
+          </div>
+
           <div class="sm:col-span-2">
-            <label class="block font-bold text-gray-600 mb-1">Correo Institucional:</label>
+            <label class="block font-bold text-gray-600 mb-1">Usuario Login / Correo Institucional:</label>
             <div class="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
               <input type="text" id="edit-tra-correo-user" required class="w-full p-2 font-semibold outline-none text-right">
               <span class="bg-gray-100 px-2.5 py-2 text-gray-500 font-bold text-xs border-l border-gray-200">@imarpe.gob.pe</span>
@@ -1113,12 +1293,53 @@
         </div>
 
         <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
-          <button type="button" onclick="cerrarModalEditarTrabajador()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition">Cancelar</button>
-          <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow transition">Guardar Cambios</button>
+          <button type="button" onclick="cerrarModalEditarTrabajador()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition cursor-pointer">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow transition cursor-pointer">Guardar Cambios</button>
         </div>
       </form>
     </div>
   </div>
+
+  <!-- MODAL: EDITAR FERIADO INSTITUCIONAL -->
+  <div id="modal-editar-feriado" class="hidden fixed inset-0 bg-black/60 z-[160] flex items-center justify-center p-4 backdrop-blur-[1px]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📅</span>
+          <h3 class="font-black text-sm">Modificar Feriado / Día No Laborable</h3>
+        </div>
+        <button onclick="cerrarModalEditarFeriado()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+      </div>
+
+      <form onsubmit="guardarEdicionFeriadoModal(event)" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="edit-feriado-id">
+        
+        <div>
+          <label class="block font-bold text-gray-700 uppercase mb-1">Fecha no laborable:</label>
+          <input type="date" id="edit-feriado-fecha" required class="w-full p-2.5 bg-white border border-gray-300 rounded-lg font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 uppercase mb-1">Tipo de Feriado:</label>
+          <select id="edit-feriado-tipo" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg font-bold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
+            <option value="Calendario">Calendario</option>
+            <option value="Sector público">Sector público</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 uppercase mb-1">Descripción / Motivo:</label>
+          <input type="text" id="edit-feriado-motivo" required placeholder="Ej. Combate de Angamos" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:border-[#0f2a4a]">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+          <button type="button" onclick="cerrarModalEditarFeriado()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition cursor-pointer">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow transition cursor-pointer">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL: REGISTRO DE TRABAJADORES DADOS DE BAJA -->
   <div id="modal-trabajadores-baja" class="hidden fixed inset-0 bg-black/60 z-[96] flex items-center justify-center p-4 backdrop-blur-[1px]">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
@@ -1203,27 +1424,30 @@
           </div>
         </div>
 
-        <!-- PASO 2: CALCULADORA BIDIRECCIONAL DE FECHAS -->
+        <!-- PASO 2: PROGRAMACIÓN Y DURACIÓN DINÁMICA (DÍAS VS HORAS) -->
         <div id="wz-paso-2" class="hidden space-y-4">
           <div class="flex items-center space-x-2 text-xs font-bold text-[#0f2a4a]">
             <span class="w-6 h-6 rounded-full bg-[#0f2a4a] text-white flex items-center justify-center text-xs">2</span>
-            <span>Programación de Fechas y Duración</span>
+            <span id="wz-txt-paso2-tit">Programación y Esfuerzo de Trabajo</span>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-xs items-start">
             <div>
-              <label class="text-[11px] font-bold text-gray-600 uppercase">Fecha de Inicio:</label>
-              <input type="date" id="wz-input-ini" class="w-full mt-1 p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
+              <label class="block text-[11px] font-bold text-gray-600 uppercase whitespace-nowrap mb-1">Fecha Inicio:</label>
+              <input type="date" id="wz-input-ini" class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
             </div>
             <div>
-              <label class="text-[11px] font-bold text-gray-600 uppercase">Fecha Fin (Término):</label>
-              <input type="date" id="wz-input-fin" class="w-full mt-1 p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
+              <label id="wz-lbl-duracion" class="block text-[11px] font-bold text-gray-600 uppercase whitespace-nowrap mb-1">Días Duración:</label>
+              <div class="relative">
+                <input type="number" id="wz-input-dias" min="1" value="5" class="w-full p-2 pr-11 bg-gray-50 border border-gray-300 rounded-lg text-xs font-black text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
+                <span id="wz-sufijo-duracion" class="absolute inset-y-0 right-7 flex items-center text-xs font-bold text-gray-400 pointer-events-none select-none"></span>
+              </div>
             </div>
             <div>
-              <label class="text-[11px] font-bold text-gray-600 uppercase">Días Calendario:</label>
-              <input type="number" id="wz-input-dias" min="1" value="5" class="w-full mt-1 p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-black text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
+              <label id="wz-lbl-fin" class="block text-[11px] font-bold text-gray-600 uppercase whitespace-nowrap mb-1">Fecha Fin:</label>
+              <input type="date" id="wz-input-fin" class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
             </div>
             <div class="sm:col-span-3 pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500 font-semibold">
-              <span>💡 Al modificar los días se calcula la fecha fin, y al modificar la fecha fin se calculan los días.</span>
+              <span id="wz-msg-ayuda-temporal">💡 Al modificar los días se calcula la fecha fin, y al modificar la fecha fin se calculan los días.</span>
             </div>
           </div>
         </div>
@@ -1236,7 +1460,14 @@
           </div>
           <div>
             <label class="text-[11px] font-bold text-gray-600 uppercase">Personal Responsable:</label>
-            <div id="wz-lista-responsables" class="max-h-36 overflow-y-auto space-y-1.5 bg-white p-2.5 rounded-lg border border-gray-200 mt-1 shadow-sm"></div>
+            <div class="relative mt-1">
+              <input type="text" id="wz-busq-responsable" oninput="autocompletarResponsableWizard(this.value)" placeholder="🔍 Buscar trabajador por nombre o área..." class="w-full p-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <div id="wz-sug-responsables" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-36 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
+            </div>
+            <!-- Contenedor de trabajadores seleccionados -->
+            <div id="wz-responsables-seleccionados" class="flex flex-wrap gap-1.5 mt-2 min-h-[28px] p-1.5 bg-slate-50 border border-dashed border-gray-300 rounded-lg">
+              <span class="text-[11px] text-gray-400 italic p-1">Ningún responsable seleccionado aún.</span>
+            </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
@@ -1720,8 +1951,8 @@
         <div class="flex items-center space-x-2.5">
           <span class="text-xl">📊</span>
           <div>
-            <h3 class="font-black text-sm tracking-wide">Panel Analítico de Proyectos & Procesos</h3>
-            <p class="text-[10px] text-blue-200 font-medium">Análisis reactivo aislado por sesión de usuario</p>
+            <h3 class="font-black text-sm tracking-wide">Panel de gráficos estadísticos</h3>
+            <p class="text-[10px] text-blue-200 font-medium">Análisis de proyectos</p>
           </div>
         </div>
         <button onclick="cerrarModalEstadisticasHub()" class="text-white hover:text-rose-300 text-2xl font-bold leading-none cursor-pointer transition">&times;</button>
@@ -1740,9 +1971,9 @@
           </div>
         </div>
 
-        <!-- Slicer Unidad Orgánica -->
+        <!-- Slicer Unidad de organización -->
         <div class="w-48 min-w-[160px]">
-          <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Unidad Orgánica:</label>
+          <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Unidad de organización:</label>
           <select id="stat-filtro-uo" onchange="aplicarFiltrosEstadisticas()" class="w-full py-1.5 px-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
             <option value="">🏢 Todas las Unidades</option>
           </select>
@@ -1825,13 +2056,14 @@
     let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
     let proyectoActualId = null;
     let proyectoEsGestor = false;
+    let proyectoModoDuracion = "business_days"; // 'business_days' | 'hours'
 
     let actividadesGlobal = [];
     let responsablesGlobal = [];
     let nivelFiltroActivo = 4;
     
-    let modoZoom = "semanas";
-    let zoomNivelEscala = 4;
+    let modoZoom = "dias";
+    let zoomNivelEscala = 5;
     let diasTotalesAnio = [];
     let semanasTotales = [];
     let semanaInicioIndex = 0;
@@ -2094,12 +2326,15 @@
       if (uGantt) uGantt.innerText = userText;
       if (rGantt) rGantt.innerText = roleText;
 
-      // 3. Control de Acceso Botón TI
+      // 3. Control de Acceso Botones TI
+      const esAdminTI = (currentUser.rol === "ADMIN_TI");
       const btnTI = document.getElementById("btn-admin-ti-hub");
-      if (btnTI) {
-        if (currentUser.rol === "ADMIN_TI") btnTI.classList.remove("hidden");
-        else btnTI.classList.add("hidden");
-      }
+      const btnFeriados = document.getElementById("btn-admin-ti-feriados");
+      const btnProcesos = document.getElementById("btn-admin-ti-procesos");
+
+      if (btnTI) btnTI.classList.toggle("hidden", !esAdminTI);
+      if (btnFeriados) btnFeriados.classList.toggle("hidden", !esAdminTI);
+      if (btnProcesos) btnProcesos.classList.toggle("hidden", !esAdminTI);
     }
 
     // =========================================================================
@@ -2177,6 +2412,11 @@
 
       // Tecla Escape (Esc) para cancelar / cerrar ventanas con prioridad al modal visible
       if (e.key === "Escape") {
+        const modEditFer = document.getElementById("modal-editar-feriado");
+        if (modEditFer && !modEditFer.classList.contains("hidden")) {
+          cerrarModalEditarFeriado();
+          return;
+        }
         const modNotif = document.getElementById("modal-notificacion-correo");
         if (modNotif && !modNotif.classList.contains("hidden")) {
           cerrarModalNotificacionCorreo();
@@ -2228,12 +2468,33 @@
         "modal-trabajadores-baja", "modal-notificacion-correo", "modal-comentarios", 
         "modal-nuevo-proyecto", "modal-guardar-plantilla", "modal-importar-plantilla-proyecto",
         "modal-dialog-imarpe", "modal-input-custom", "modal-fecha-custom", "modal-fin-interactiva",
-        "modal-asignar-responsables", "modal-estadisticas-hub" // <-- Asegurado aquí
+        "modal-asignar-responsables", "modal-estadisticas-hub", "modal-editar-feriado"
       ];
       idsModales.forEach(id => {
         const el = document.getElementById(id);
         if (el && el.parentElement !== document.body) {
           document.body.appendChild(el);
+        }
+      });
+
+      // Cerrar menú desplegable de UUOO al hacer scroll en el Hub o hacer clic fuera
+      const viewHubEl = document.getElementById("view-hub");
+      if (viewHubEl) {
+        viewHubEl.addEventListener("scroll", () => {
+          const divSug = document.getElementById("hub-sugerencias-uo");
+          if (divSug && !divSug.classList.contains("hidden")) {
+            divSug.classList.add("hidden");
+          }
+        }, { passive: true });
+      }
+
+      document.addEventListener("click", (e) => {
+        const divSug = document.getElementById("hub-sugerencias-uo");
+        const inpBusq = document.getElementById("hub-filtro-uo-busq");
+        if (divSug && !divSug.classList.contains("hidden")) {
+          if (!divSug.contains(e.target) && e.target !== inpBusq) {
+            divSug.classList.add("hidden");
+          }
         }
       });
 
@@ -2251,13 +2512,21 @@
       aplicarVisibilidadColumnas();
       inicializarRedimensionDescripcion(); // <-- Inicializa el tirador de redimensión
 
-      // Guardado automático del Nombre del Proyecto desde la barra superior
+      // Guardado automático del Nombre del Proyecto solo si hubo cambio real
       const inputNombreProy = document.getElementById("txt-nombre-proyecto");
       if (inputNombreProy) {
+        let nombreOriginalAlEnfocar = "";
+
+        inputNombreProy.addEventListener("focus", () => {
+          nombreOriginalAlEnfocar = inputNombreProy.value.trim();
+        });
+
         const guardarNombreProyecto = async () => {
           if (!proyectoActualId || !proyectoEsGestor) return;
           const nuevoNombre = inputNombreProy.value.trim();
-          if (!nuevoNombre) return;
+          
+          // Si el nombre no cambió respecto al que tenía al hacer clic, no hacer nada
+          if (!nuevoNombre || nuevoNombre === nombreOriginalAlEnfocar) return;
 
           try {
             const res = await fetch(`/proyectos/${proyectoActualId}/nombre`, {
@@ -2270,6 +2539,7 @@
             });
 
             if (res.ok) {
+              nombreOriginalAlEnfocar = nuevoNombre;
               notificarToast("Nombre del proyecto actualizado con éxito.", "success");
             } else {
               const err = await res.json().catch(() => ({}));
@@ -2284,7 +2554,7 @@
         inputNombreProy.addEventListener("keydown", (e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            inputNombreProy.blur(); // Dispara el evento blur para guardar
+            inputNombreProy.blur();
           }
         });
       }
@@ -2617,21 +2887,21 @@
       if (cant > 0) {
         btnOcultos.classList.remove("hidden");
         if (mostrandoOcultosHub) {
-          // Estado Activo (Verde): Muestra el texto completo para regresar al panel principal
-          btnOcultos.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition flex items-center space-x-1.5 cursor-pointer whitespace-nowrap";
+          // Botón compacto en verde que no expande el ancho de la barra
+          btnOcultos.className = "h-[30px] px-2.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition flex items-center space-x-1 cursor-pointer whitespace-nowrap flex-shrink-0";
           btnOcultos.innerHTML = `
-            <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            <span>Volver al panel principal (${cant})</span>
+            <span>Ver activos (${cant})</span>
           `;
           btnOcultos.title = "Volver al panel principal de proyectos";
         } else {
-          // Estado Normal (Amarillo/Ámbar): Cuadrado compacto con el ojito clásico nítido y tooltip descriptivo
-          btnOcultos.className = "w-[34px] h-[34px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0";
+          // Botón compacto ámbar estándar
+          btnOcultos.className = "w-[30px] h-[30px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0";
           btnOcultos.innerHTML = `
-            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
@@ -2716,10 +2986,32 @@
       const listaFinal = lista.filter(p => mostrandoOcultosHub ? idsProyectosOcultos.has(p.id) : !idsProyectosOcultos.has(p.id));
 
       listaFinal.forEach(p => {
-        const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI");
+        const rolEfectivo = p.rol_efectivo || (p.es_gestor ? 'GESTOR' : 'RESPONSABLE');
+        const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI") && rolEfectivo !== "AUTORIDAD";
         const totalActs = p.total_actividades || 0;
         const esProyectoVacio = totalActs === 0;
         const puedeEliminar = esGestor && esProyectoVacio;
+        const esPublico = (p.visibilidad === "PUBLICO");
+
+        // Distintivo de Rol de usuario en este proyecto
+        let badgeRolClases = "bg-blue-50 text-blue-800 border-blue-200/80";
+        let badgeRolTexto = "👤 Responsable";
+
+        if (rolEfectivo === "GESTOR" || esGestor) {
+          badgeRolClases = "bg-amber-50 text-amber-800 border-amber-200/80";
+          badgeRolTexto = "👑 Gestor";
+        } else if (rolEfectivo === "AUTORIDAD") {
+          badgeRolClases = "bg-purple-50 text-purple-800 border-purple-200/80";
+          badgeRolTexto = "🏛️ Autoridad";
+        } else if (rolEfectivo === "VISUALIZADOR") {
+          badgeRolClases = "bg-slate-100 text-slate-700 border-slate-300";
+          badgeRolTexto = "👁️ Visualizador";
+        }
+
+        // Badge compacto de Alcance / Privacidad (Solo icono estilizado con tooltip)
+        const badgeAlcanceHTML = esPublico
+          ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-teal-50 text-teal-700 border border-teal-200 text-xs shadow-2xs cursor-help" title="Proyecto visible a nivel institucional">🌐</span>`
+          : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-xs shadow-2xs cursor-help" title="Proyecto privado">🔒</span>`;
 
         const tooltipEdit = esGestor ? 'title="Doble clic para editar descripción"' : '';
         const estiloCursor = esGestor ? 'cursor-pointer hover:text-teal-700 hover:bg-teal-50/70 p-1 -m-1 rounded transition' : '';
@@ -2751,7 +3043,7 @@
           nombreCompletoUnidad = uObj ? uObj.nombre : p.unidad_organica.trim();
         }
 
-        // Tooltip exclusivo con el nombre completo oficial de la unidad
+        // Tooltip exclusivo con el nombre completo de la unidad
         const tooltipUo = nombreCompletoUnidad ? `title="${nombreCompletoUnidad}"` : '';
         const estiloCursorUo = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
@@ -2772,10 +3064,13 @@
         card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50 relative";
         card.innerHTML = `
           <div>
-            <div class="flex items-center justify-between mb-3.5">
-              <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider whitespace-nowrap ${esGestor ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-blue-50 text-blue-800 border border-blue-200/80'}">
-                ${esGestor ? '👑 Gestor' : '👤 Responsable'}
-              </span>
+            <div class="flex items-center justify-between mb-3.5 gap-1">
+              <div class="flex items-center space-x-1.5 flex-wrap">
+                <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider whitespace-nowrap border ${badgeRolClases}">
+                  ${badgeRolTexto}
+                </span>
+                ${badgeAlcanceHTML}
+              </div>
               <div class="flex items-center space-x-1">
                 <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-100 transition cursor-pointer" title="${estaOculto ? 'Restaurar al panel principal' : 'Ocultar proyecto de la vista'}">
                   ${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}
@@ -2793,7 +3088,7 @@
             
             <h3 class="font-bold text-base text-[#0f2a4a] leading-snug flex items-center">${p.nombre}</h3>
             
-            <!-- Fila de Metadatos: Unidad Orgánica y Proceso Relacionado -->
+            <!-- Fila de Metadatos: Unidad de organización y Proceso Relacionado -->
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
               <p ${tooltipUo} 
                  ondblclick="${esGestor ? `editarUnidadOrganicaProyecto(${p.id}, '${siglaUnidad}')` : ''}"
@@ -2853,7 +3148,7 @@
             +
           </div>
           <h4 class="text-sm font-black text-gray-700 group-hover:text-[#0f2a4a] transition">Nuevo Proyecto / Programa</h4>
-          <p class="text-[11px] text-gray-400 mt-1 max-w-[200px]">Cree una estructura en blanco o seleccione una plantilla institucional.</p>
+          <p class="text-[11px] text-gray-400 mt-1 max-w-[200px]">Cree un proyecto en blanco o seleccione una plantilla.</p>
           <span class="mt-4 text-[11px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-lg border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition">Comenzar</span>
         `;
         grid.appendChild(cardNuevo);
@@ -2875,20 +3170,46 @@
       }
 
       listaFinal.forEach((p, idx) => {
-        const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI");
+        const rolEfectivo = p.rol_efectivo || (p.es_gestor ? 'GESTOR' : 'RESPONSABLE');
+        const esGestor = (p.es_gestor === 1 || p.es_gestor === true || currentUser.rol === "ADMIN_TI") && rolEfectivo !== "AUTORIDAD";
         const totalActs = p.total_actividades || 0;
         const esProyectoVacio = totalActs === 0;
         const puedeEliminar = esGestor && esProyectoVacio;
+        const esPublico = (p.visibilidad === "PUBLICO");
+
+        let badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-blue-100 text-blue-900 border border-blue-300">👤 RESPONSABLE</span>`;
+        if (rolEfectivo === "GESTOR" || esGestor) {
+          badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-amber-100 text-amber-900 border border-amber-300">👑 GESTOR</span>`;
+        } else if (rolEfectivo === "AUTORIDAD") {
+          badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-purple-100 text-purple-900 border border-purple-300">🏛️ AUTORIDAD</span>`;
+        } else if (rolEfectivo === "VISUALIZADOR") {
+          badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-slate-100 text-slate-700 border border-slate-300">👁️ VISUALIZADOR</span>`;
+        }
+
+        // Badge compacto de alcance para tabla: solo icono de tamaño fijo con tooltip explicativo
+        const badgeAlcanceHTML = esPublico
+          ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-teal-50 text-teal-700 border border-teal-200 text-xs shadow-2xs cursor-help flex-shrink-0" title="Proyecto visible a nivel institucional">🌐</span>`
+          : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-xs shadow-2xs cursor-help flex-shrink-0" title="Proyecto privado">🔒</span>`;
 
         const pct = p.avance_global || 0;
         const estaOculto = idsProyectosOcultos.has(p.id);
+
+        const descEscapada = (p.descripcion || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const tooltipDesc = esGestor ? 'title="Doble clic para editar descripción"' : '';
+        const cursorDesc = esGestor ? 'cursor-pointer hover:text-teal-700 transition' : '';
 
         tbody.innerHTML += `
           <tr class="hover:bg-gray-50 transition border-b border-gray-100">
             <td class="p-3 text-center text-gray-400 font-mono text-xs">${idx + 1}</td>
             <td class="p-3">
-              <div class="font-bold text-gray-800 text-xs">${p.nombre}</div>
-              <div class="text-[11px] text-gray-500 line-clamp-1">${p.descripcion || 'Sin descripción'}</div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-gray-800 text-xs">${p.nombre}</span>${badgeAlcanceHTML}
+              </div>
+              <div ${tooltipDesc} 
+                   ondblclick="${esGestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" 
+                   class="text-[11px] text-gray-500 line-clamp-1 ${cursorDesc}">
+                ${p.descripcion && p.descripcion.trim() !== '' ? p.descripcion : '<span class="italic text-gray-400">Sin descripción</span>'}
+              </div>
               <div class="text-[10px] text-teal-800 font-semibold mt-0.5 flex items-center gap-1">
                 <span>⚙️</span>
                 <span class="${esGestor ? 'cursor-pointer hover:underline' : ''}" 
@@ -2899,10 +3220,7 @@
               </div>
             </td>
             <td class="p-3 text-center whitespace-nowrap">
-              <span class="inline-flex items-center justify-center space-x-1 px-2.5 py-1 rounded text-[10px] font-black uppercase whitespace-nowrap ${esGestor ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}">
-                <span>${esGestor ? '👑' : '👤'}</span>
-                <span>${esGestor ? 'GESTOR' : 'RESPONSABLE'}</span>
-              </span>
+              ${badgeRolHTML}
             </td>
             <td class="p-3 text-center">
               <div class="flex items-center space-x-2 justify-center">
@@ -2976,11 +3294,40 @@
 
     function abrirModalNuevoProyecto() { 
       if (catalogoUnidadesGlobal.length === 0) cargarCatalogoUnidades();
+      if (catalogoProcesosGlobal.length === 0) cargarCatalogoProcesos();
+
+      // Limpieza de campos de texto e inputs ocultos
       document.getElementById("input-nuevo-proy-nombre").value = "";
       document.getElementById("input-nuevo-proy-desc").value = "";
       document.getElementById("input-nuevo-proy-uo-busq").value = "";
       document.getElementById("input-nuevo-proy-uo-valor").value = "";
       document.getElementById("sugerencias-uo-proyecto").classList.add("hidden");
+
+      // Resetear Proceso / Subproceso
+      const inpProcBusq = document.getElementById("input-nuevo-proy-proceso-busq");
+      if (inpProcBusq) inpProcBusq.value = "";
+      const inpProcCod = document.getElementById("input-nuevo-proy-proceso-codigo");
+      if (inpProcCod) inpProcCod.value = "";
+      const inpProcNom = document.getElementById("input-nuevo-proy-proceso-nombre");
+      if (inpProcNom) inpProcNom.value = "";
+      const inpProcPers = document.getElementById("input-nuevo-proy-proceso-personalizado");
+      if (inpProcPers) inpProcPers.value = "0";
+      const contOtro = document.getElementById("contenedor-otro-subproceso");
+      if (contOtro) contOtro.classList.add("hidden");
+      const inpOtroTexto = document.getElementById("input-otro-subproceso-texto");
+      if (inpOtroTexto) inpOtroTexto.value = "";
+      const divSugProc = document.getElementById("nuevo-proy-proceso-sugerencias");
+      if (divSugProc) divSugProc.classList.add("hidden");
+
+      // Resetear Modalidad y Privacidad por defecto
+      const selModo = document.getElementById("input-nuevo-proy-duration-mode");
+      if (selModo) selModo.value = "business_days";
+      const selVis = document.getElementById("input-nuevo-proy-visibilidad");
+      if (selVis) selVis.value = "PRIVADO";
+
+      // Limpiar y ocultar bloque de clonación previa de plantilla
+      cancelarSeleccionPlantilla();
+
       document.getElementById("modal-nuevo-proyecto").classList.remove("hidden"); 
     }
 
@@ -3024,12 +3371,22 @@
       const uoBusq = document.getElementById("input-nuevo-proy-uo-busq").value.trim();
       const uoValor = document.getElementById("input-nuevo-proy-uo-valor").value.trim();
 
+      // Captura de Modalidad Temporal y Alcance de Privacidad
+      const durationMode = document.getElementById("input-nuevo-proy-duration-mode")?.value || "business_days";
+      const visibilidad = document.getElementById("input-nuevo-proy-visibilidad")?.value || "PRIVADO";
+
+      // Captura de Proceso / Subproceso
+      const esPers = document.getElementById("input-nuevo-proy-proceso-personalizado")?.value === "1";
+      const procCod = esPers ? "OTRO" : (document.getElementById("input-nuevo-proy-proceso-codigo")?.value || "");
+      const procNom = esPers 
+        ? (document.getElementById("input-otro-subproceso-texto")?.value.trim() || "Otro subproceso")
+        : (document.getElementById("input-nuevo-proy-proceso-nombre")?.value || "");
+
       if (!nombre) {
         alert("Por favor ingresa un nombre para el proyecto.");
         return;
       }
 
-      // Validar estrictamente que la unidad pertenezca al catálogo institucional oficial
       const unidadValida = (catalogoUnidadesGlobal || []).find(u => 
         u.sigla.toUpperCase() === uoValor.toUpperCase() ||
         u.sigla.toUpperCase() === uoBusq.toUpperCase() ||
@@ -3052,7 +3409,16 @@
             "Content-Type": "application/json", 
             "Authorization": `Bearer ${token}` 
           },
-          body: JSON.stringify({ nombre, descripcion, unidad_organica: uoFinal })
+          body: JSON.stringify({ 
+            nombre: nombre, 
+            descripcion: descripcion, 
+            unidad_organica: uoFinal,
+            duration_mode: durationMode,
+            visibilidad: visibilidad,
+            proceso_codigo: procCod,
+            proceso_nombre: procNom,
+            es_proceso_personalizado: esPers ? 1 : 0
+          })
         });
         
         if (!res.ok) {
@@ -3062,7 +3428,7 @@
 
         cerrarModalNuevoProyecto();
         await cargarHubProyectos();
-        notificarToast("Proyecto creado exitosamente con unidad oficial validada.", "success");
+        notificarToast("Proyecto creado exitosamente.", "success");
       } catch (err) {
         alert(err.message);
       }
@@ -3071,7 +3437,7 @@
     function editarDescripcionProyecto(id, descActual) {
       abrirInputCustom({
         titulo: "Editar Descripción del Proyecto",
-        mensaje: "Máximo 120 caracteres para conservar el diseño de la tarjeta:",
+        mensaje: "Escribe máximo 120 caracteres:",
         tipo: "text",
         valorActual: descActual || "",
         onAceptar: async (nuevaDesc) => {
@@ -3106,7 +3472,7 @@
       }
     }
 
-    // --- MODAL DE EDICIÓN INTELIGENTE DE UNIDAD ORGÁNICA CON AUTOCOMPLETADO ---
+    // --- MODAL DE EDICIÓN INTELIGENTE DE UNIDAD DE ORGANIZACIÓN CON AUTOCOMPLETADO ---
     let proyectoEditandoUoId = null;
 
     function editarUnidadOrganicaProyecto(idProy, siglaActual) {
@@ -3146,7 +3512,7 @@
 
               <div class="relative">
                 <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Unidad (por Sigla o Nombre):</label>
-                <input type="text" id="edit-uo-input-busq" oninput="autocompletarModalUOProyecto(this.value)" placeholder="Escriba sigla o nombre completo de la oficina..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+                <input type="text" id="edit-uo-input-busq" oninput="autocompletarModalUOProyecto(this.value)" placeholder="Escriba sigla o nombre completo de unidad..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
                 <input type="hidden" id="edit-uo-input-valor">
                 
                 <!-- Lista Desplegable Flotante de Sugerencias -->
@@ -3219,7 +3585,7 @@
       const uoBusq = document.getElementById("edit-uo-input-busq")?.value.trim() || "";
       const uoVal = document.getElementById("edit-uo-input-valor")?.value.trim() || "";
 
-      // Validar estrictamente contra el catálogo oficial
+      // Validar estrictamente contra el catálogo
       const unidadValida = (catalogoUnidadesGlobal || []).find(u => 
         u.sigla.toUpperCase() === uoVal.toUpperCase() ||
         u.sigla.toUpperCase() === uoBusq.toUpperCase() ||
@@ -3439,6 +3805,18 @@
       proyectoActualId = id;
       proyectoEsGestor = (esGestor === 1 || esGestor === true);
 
+      // Detectar y guardar la modalidad configurada en este proyecto
+      const proyData = proyectosUsuarioGlobal.find(p => p.id === id);
+      proyectoModoDuracion = proyData?.duration_mode || "business_days";
+
+      // Actualizar la cabecera de la columna según sea Horas o Días
+      const thDias = document.getElementById("th-dias");
+      if (thDias) {
+        thDias.innerHTML = (proyectoModoDuracion === "hours")
+          ? `Horas <span class="text-[10px] text-teal-300 opacity-80">✎</span>`
+          : `Días <span class="text-[10px] text-teal-300 opacity-80">✎</span>`;
+      }
+
       document.getElementById("txt-nombre-proyecto").value = nombre;
       document.getElementById("txt-nombre-proyecto").disabled = !proyectoEsGestor;
 
@@ -3453,14 +3831,21 @@
 
       actualizarDisplaysUsuario();
 
+      const btnNuevaAct = document.getElementById("btn-nueva-act-gantt");
+      const btnHist = document.getElementById("btn-historial-gantt");
+      const btnPers = document.getElementById("btn-personal-gantt");
+      const btnPlantilla = document.getElementById("btn-accion-plantilla-dinamico");
+
       if (!proyectoEsGestor) {
-        document.getElementById("btn-nueva-act-gantt").classList.add("hidden");
-        document.getElementById("btn-historial-gantt").classList.add("hidden");
-        document.getElementById("btn-personal-gantt").classList.add("hidden");
+        if (btnNuevaAct) btnNuevaAct.classList.add("hidden");
+        if (btnHist) btnHist.classList.add("hidden");
+        if (btnPers) btnPers.classList.add("hidden");
+        if (btnPlantilla) btnPlantilla.classList.add("hidden");
       } else {
-        document.getElementById("btn-nueva-act-gantt").classList.remove("hidden");
-        document.getElementById("btn-historial-gantt").classList.remove("hidden");
-        document.getElementById("btn-personal-gantt").classList.remove("hidden");
+        if (btnNuevaAct) btnNuevaAct.classList.remove("hidden");
+        if (btnHist) btnHist.classList.remove("hidden");
+        if (btnPers) btnPers.classList.remove("hidden");
+        if (btnPlantilla) btnPlantilla.classList.remove("hidden");
       }
 
       const cacheKey = `cache_acts_proj_${id}`;
@@ -3721,8 +4106,15 @@
                 const yFin = maxFin.getFullYear();
                 madre.fecha_fin = `${dFin}/${mFin}/${yFin}`;
 
-                const diffDias = Math.floor((maxFin - minIni) / (1000 * 60 * 60 * 24)) + 1;
-                madre.dias = Math.max(1, diffDias);
+                if (proyectoModoDuracion === "hours") {
+                  // En horas: la madre suma el total de horas netas de sus hijas directas
+                  const totalHorasHijas = hijosDirectos.reduce((acc, h) => acc + (parseInt(h.dias) || 0), 0);
+                  madre.dias = Math.max(1, totalHorasHijas);
+                } else {
+                  // En días hábiles: mide el lapso total de calendario
+                  const diffDias = Math.floor((maxFin - minIni) / (1000 * 60 * 60 * 24)) + 1;
+                  madre.dias = Math.max(1, diffDias);
+                }
               }
             }
           }
@@ -3999,6 +4391,73 @@
     // --- ASISTENTE WIZARD DE CREACIÓN INTELIGENTE ---
     let opcionesModoWizard = [];
 
+    // --- GESTIÓN DE RESPONSABLES DINÁMICOS EN WIZARD ---
+    let wzResponsablesElegidos = [];
+
+    function autocompletarResponsableWizard(termino) {
+      const term = (termino || "").toLowerCase().trim();
+      const divSug = document.getElementById("wz-sug-responsables");
+      if (!divSug) return;
+
+      if (!term) {
+        divSug.classList.add("hidden");
+        return;
+      }
+
+      const fuente = catalogoTrabajadoresGlobal.length > 0 ? catalogoTrabajadoresGlobal : responsablesGlobal;
+      const matches = fuente.filter(t => {
+        const nom = (t.nombre_completo || t.nombre || "").toLowerCase();
+        const uo = (t.unidad_organica || t.cargo || "").toLowerCase();
+        return nom.includes(term) || uo.includes(term);
+      });
+
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = '<div class="p-2 text-gray-400 italic">Sin coincidencias</div>';
+      } else {
+        matches.slice(0, 5).forEach(t => {
+          const nom = t.nombre_completo || t.nombre;
+          const uo = t.unidad_organica || t.cargo || "";
+          const item = document.createElement("div");
+          item.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-semibold text-gray-800";
+          item.innerHTML = `<span>${nom}</span> <strong class="text-[10px] text-teal-800 bg-teal-50 border border-teal-200 px-1 rounded">${uo}</strong>`;
+          item.onclick = () => {
+            if (!wzResponsablesElegidos.includes(nom)) {
+              wzResponsablesElegidos.push(nom);
+              renderizarBadgesResponsablesWizard();
+            }
+            document.getElementById("wz-busq-responsable").value = "";
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
+
+    function renderizarBadgesResponsablesWizard() {
+      const cont = document.getElementById("wz-responsables-seleccionados");
+      if (!cont) return;
+      cont.innerHTML = "";
+
+      if (wzResponsablesElegidos.length === 0) {
+        cont.innerHTML = '<span class="text-[11px] text-gray-400 italic p-1">Ningún responsable seleccionado aún.</span>';
+        return;
+      }
+
+      wzResponsablesElegidos.forEach((nom, idx) => {
+        const badge = document.createElement("span");
+        badge.className = "inline-flex items-center gap-1.5 bg-[#0f2a4a] text-white text-[11px] font-bold px-2 py-1 rounded-md shadow-xs";
+        badge.innerHTML = `<span>${nom}</span><button type="button" onclick="quitarResponsableWizard(${idx})" class="hover:text-rose-300 font-black leading-none text-xs">×</button>`;
+        cont.appendChild(badge);
+      });
+    }
+
+    function quitarResponsableWizard(idx) {
+      wzResponsablesElegidos.splice(idx, 1);
+      renderizarBadgesResponsablesWizard();
+    }
+
     function abrirWizardCreacion(codigoBase = null, modoForzado = "hijo") {
       wizardCodigoPadre = codigoBase;
       opcionesModoWizard = [];
@@ -4077,16 +4536,46 @@
 
       cambiarModoSeleccionadoWizard(modoForzado);
 
-      // Resetear valores de los campos
+      // Resetear valores de los campos con adaptación condicional (Horas vs Días)
       const hoy = new Date();
       document.getElementById("wz-input-desc").value = "";
       document.getElementById("wz-input-ini").value = formatearFechaISO(hoy.toISOString().split("T")[0]);
-      document.getElementById("wz-input-dias").value = 5;
-      
-      const dtFinDef = new Date(hoy);
-      dtFinDef.setDate(dtFinDef.getDate() + 4);
+
+      const esHoras = (proyectoModoDuracion === "hours");
+      const lblUnidad = document.getElementById("wz-lbl-duracion");
+      const sufijoUnidad = document.getElementById("wz-sufijo-duracion");
+      const inpDias = document.getElementById("wz-input-dias");
       const inpFin = document.getElementById("wz-input-fin");
-      if (inpFin) inpFin.value = formatearFechaISO(dtFinDef.toISOString().split("T")[0]);
+      const lblFin = document.getElementById("wz-lbl-fin");
+      const msgAyuda = document.getElementById("wz-msg-ayuda-temporal");
+
+      if (esHoras) {
+        // --- PROYECTOS POR HORAS DE DEDICACIÓN NETA ---
+        if (lblUnidad) lblUnidad.innerText = "Horas Duración:";
+        if (sufijoUnidad) sufijoUnidad.innerText = "h";
+        if (lblFin) lblFin.innerText = "Fecha Fin:";
+        if (msgAyuda) msgAyuda.innerText = "💡 Duración en horas netas (8h = 1 jornada hábil). La fecha fin se proyecta automáticamente.";
+        if (inpDias) inpDias.value = 8;
+        if (inpFin) {
+          inpFin.readOnly = true;
+          inpFin.className = "w-full p-2 bg-slate-100 border border-gray-300 rounded-lg text-xs font-bold text-slate-500 cursor-not-allowed outline-none select-none";
+          inpFin.value = formatearFechaISO(hoy.toISOString().split("T")[0]);
+        }
+      } else {
+        // --- PROYECTOS POR DÍAS (LEGACY INTACTO) ---
+        if (lblUnidad) lblUnidad.innerText = "Días Duración:";
+        if (sufijoUnidad) sufijoUnidad.innerText = "";
+        if (lblFin) lblFin.innerText = "Fecha Fin:";
+        if (msgAyuda) msgAyuda.innerText = "💡 Al modificar los días se calcula la fecha fin, y al modificar la fecha fin se calculan los días.";
+        if (inpDias) inpDias.value = 5;
+        if (inpFin) {
+          inpFin.readOnly = false;
+          inpFin.className = "w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-[#0f2a4a]";
+          const dtFinDef = new Date(hoy);
+          dtFinDef.setDate(dtFinDef.getDate() + 4);
+          inpFin.value = formatearFechaISO(dtFinDef.toISOString().split("T")[0]);
+        }
+      }
 
       const selEst = document.getElementById("wz-input-estado");
       if (selEst) selEst.value = "No iniciado";
@@ -4095,23 +4584,11 @@
       const inpPred = document.getElementById("wz-input-pred");
       if (inpPred) inpPred.value = "";
 
-      const contResp = document.getElementById("wz-lista-responsables");
-      if (contResp) {
-        contResp.innerHTML = "";
-        (catalogoTrabajadoresGlobal.length > 0 ? catalogoTrabajadoresGlobal : responsablesGlobal).forEach(r => {
-          const nom = r.nombre_completo || r.nombre;
-          const uo = r.unidad_organica || r.cargo || '';
-          contResp.innerHTML += `
-            <label class="flex items-center justify-between p-1.5 rounded hover:bg-gray-50 border border-gray-100 cursor-pointer text-xs">
-              <div class="flex items-center space-x-2">
-                <input type="checkbox" value="${nom}" class="wz-chk-resp rounded text-[#0f2a4a] focus:ring-0 cursor-pointer">
-                <span class="font-semibold text-gray-800">${nom}</span>
-              </div>
-              <span class="text-[10px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">${uo}</span>
-            </label>
-          `;
-        });
-      }
+      // Limpiar buscador predictivo de responsables en Wizard
+      wzResponsablesElegidos = [];
+      renderizarBadgesResponsablesWizard();
+      const inpBusqWz = document.getElementById("wz-busq-responsable");
+      if (inpBusqWz) inpBusqWz.value = "";
 
       irAPasoWizard(1);
       document.getElementById("modal-wizard-creacion").classList.remove("hidden");
@@ -4228,10 +4705,23 @@
 
       dias.addEventListener("input", () => {
         if (bloqueando || !fIni.value || !dias.value) return;
-        const dVal = parseInt(dias.value);
-        if (dVal > 0) {
+        const val = parseFloat(dias.value);
+        if (val > 0) {
+          const esHoras = (proyectoModoDuracion === "hours");
+          let diasASumar = 0;
+
+          if (esHoras) {
+            // Regla Horas: 1 a 8 horas = mismo día hábil (0 días a sumar).
+            // Cada bloque de 8 horas subsiguiente avanza 1 día hábil adicional.
+            diasASumar = Math.max(0, Math.ceil(val / 8) - 1);
+          } else {
+            // Regla Días: Comportamiento tradicional exacto
+            diasASumar = Math.max(0, Math.ceil(val) - 1);
+          }
+
           const dt = new Date(fIni.value + "T00:00:00");
-          dt.setDate(dt.getDate() + (dVal - 1));
+          dt.setDate(dt.getDate() + diasASumar);
+
           bloqueando = true;
           fFin.value = formatearFechaISO(dt.toISOString().split("T")[0]);
           bloqueando = false;
@@ -4240,9 +4730,13 @@
 
       fIni.addEventListener("input", () => {
         if (bloqueando || !fIni.value) return;
-        const dVal = parseInt(dias.value) || 1;
+        const val = parseFloat(dias.value) || 1;
+        const esHoras = (proyectoModoDuracion === "hours");
+        const diasASumar = esHoras ? Math.max(0, Math.ceil(val / 8) - 1) : Math.max(0, Math.ceil(val) - 1);
+
         const dt = new Date(fIni.value + "T00:00:00");
-        dt.setDate(dt.getDate() + (dVal - 1));
+        dt.setDate(dt.getDate() + diasASumar);
+
         bloqueando = true;
         fFin.value = formatearFechaISO(dt.toISOString().split("T")[0]);
         bloqueando = false;
@@ -4250,6 +4744,9 @@
 
       fFin.addEventListener("input", () => {
         if (bloqueando || !fIni.value || !fFin.value) return;
+        // En proyectos por horas, la fecha fin se proyecta de forma determinista desde las horas netas
+        if (proyectoModoDuracion === "hours") return;
+
         const dt1 = new Date(fIni.value + "T00:00:00");
         const dt2 = new Date(fFin.value + "T00:00:00");
         const diff = Math.floor((dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
@@ -4269,8 +4766,7 @@
       const fIniStr = formatearFechaLatina(fIniRaw);
       const fFinStr = formatearFechaLatina(fFinRaw);
 
-      const respsMarcados = Array.from(document.querySelectorAll(".wz-chk-resp:checked")).map(cb => cb.value);
-      const respFinal = respsMarcados.length > 0 ? respsMarcados.join("; ") : "No asignado";
+      const respFinal = wzResponsablesElegidos.length > 0 ? wzResponsablesElegidos.join("; ") : "No asignado";
 
       const estado = document.getElementById("wz-input-estado").value;
       let avance = 0;
@@ -5298,6 +5794,17 @@
       renderizarTabla();
     }
 
+    function esResponsableDeActividad(act) {
+      if (!act || !act.responsable || !currentUser) return false;
+      const respStr = String(act.responsable).toLowerCase();
+      const uNom = String(currentUser.nombre_completo || "").toLowerCase().trim();
+      const uUser = String(currentUser.username || "").toLowerCase().trim();
+      
+      if (uNom && respStr.includes(uNom)) return true;
+      if (uUser && respStr.includes(uUser)) return true;
+      return false;
+    }
+
    // --- RENDERIZADO DEL GANTT VISUAL RESPONSIVO CON AFFORDANCE UX ---
     function renderizarTabla() {
       recalcularJerarquiaWBS();
@@ -5554,7 +6061,7 @@
               const leftPct = Math.min(100, Math.max(0, ((startClamped - tInicioVisible) / duracionVisibleMs) * 100));
               const widthPct = Math.min(100 - leftPct, Math.max(1.2, ((endClamped - startClamped) / duracionVisibleMs) * 100));
 
-              const esHito = (act.dias <= 1);
+              const esHito = false; // 'false' desactiva la representación en rombo y muestra siempre barras // (act.dias <= 1) activa la representación en rombo para actividades 'hito' (que duran un dia)
               let barraOElementoHTML = "";
               const miniAvataresHTML = mostrarAvatares ? obtenerMiniAvataresGanttHTML(act.responsable) : '';
               const esBarraDelgada = widthPct < 5.0;
@@ -5662,9 +6169,11 @@
 
         const paddingLeft = (nivel - 1) * 16 + 8;
         const cod = act.codigo;
-        const esMio = act.responsable && act.responsable.includes(currentUser.username);
+        const esMio = esResponsableDeActividad(act);
         
+        // Solo el Gestor puede cambiar fechas, días o descripciones
         const puedeEditarTiempos = proyectoEsGestor && !esMadre;
+        // Solo el Gestor O el Responsable directo asignado pueden cambiar Estado y % Avance
         const puedeEditarAvance = (proyectoEsGestor || esMio) && !esMadre;
 
         const claseEditable = "cell-editable cursor-pointer";
@@ -5710,19 +6219,24 @@
 
         let tdFin = '';
         if (visibilidadColumnas.fin) {
+          const esModoHoras = (proyectoModoDuracion === "hours");
           if (esMadre) {
-            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${claseBloqueada} whitespace-nowrap font-medium" title="Fecha de finalización calculada automáticamente por el cierre de subtareas">${badgeVencidoHTML} ${lockIcon}</td>`;
+            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${claseBloqueada} whitespace-nowrap font-medium" title="Fecha de finalización calculada automáticamente por el cierre de subtareas.">${badgeVencidoHTML} ${lockIcon}</td>`;
+          } else if (esModoHoras) {
+            // En proyectos por horas: fondo que hereda el color de la fila, cursor de bloqueo (not-allowed) y candado
+            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs cursor-not-allowed select-none whitespace-nowrap font-medium" title="Fecha fin calculada automáticamente según las horas hábiles de dedicación.">${badgeVencidoHTML} ${lockIcon}</td>`;
           } else {
             tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaFin('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para modificar fecha de fin' : ''}">${badgeVencidoHTML}</td>`;
           }
         }
 
+        const unidadTexto = (proyectoModoDuracion === "hours") ? "h" : "d";
         let tdDias = '';
         if (visibilidadColumnas.dias) {
           if (esMadre) {
-            tdDias = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${claseBloqueada} whitespace-nowrap" title="Duración calculada por el marco total de ejecución">${act.dias} ${lockIcon}</td>`;
+            tdDias = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${claseBloqueada} whitespace-nowrap" title="Duración calculada">${act.dias}${unidadTexto} ${lockIcon}</td>`;
           } else {
-            tdDias = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap" ondblclick="${puedeEditarTiempos ? `editarDias('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para ajustar días de duración' : ''}">${act.dias}</td>`;
+            tdDias = `<td class="p-2.5 border-r border-b border-gray-200 text-center font-bold text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap" ondblclick="${puedeEditarTiempos ? `editarDias('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para ajustar duración' : ''}">${act.dias}${unidadTexto}</td>`;
           }
         }
 
@@ -5784,7 +6298,7 @@
           ${tdAvance}
           ${tdGantt}
           <td class="p-2 text-center border-b border-gray-200 space-x-1 whitespace-nowrap">
-            ${(proyectoEsGestor || esMio) && nivel < 4 ? `<button onclick="event.stopPropagation(); abrirWizardCreacion('${cod}', 'hijo')" class="text-blue-600 hover:text-blue-800 font-bold px-1 text-sm" title="Agregar subtarea jerárquica">+</button>` : ''}
+            ${proyectoEsGestor && nivel < 4 ? `<button onclick="event.stopPropagation(); abrirWizardCreacion('${cod}', 'hijo')" class="text-blue-600 hover:text-blue-800 font-bold px-1 text-sm" title="Agregar subtarea jerárquica">+</button>` : ''}
             ${proyectoEsGestor ? `<button onclick="event.stopPropagation(); eliminarActividad('${cod}')" class="text-red-500 hover:text-red-700 font-bold px-1" title="Eliminar actividad">🗑️</button>` : ''}
           </td>
         `;
@@ -6095,6 +6609,10 @@
     let modalActivoAct = null;
     function editarFechaFin(cod) {
       if (!proyectoEsGestor) return;
+      if (proyectoModoDuracion === "hours") {
+        alert("🔒 Bloqueado: En proyectos bajo modalidad 'Por horas', la Fecha Fin se calcula automáticamente en función de las horas netas hábiles.");
+        return;
+      }
       if (tieneHijos(cod)) {
         alert("🔒 Bloqueado CPM: La Fecha de Fin se calcula automáticamente de sus desgloses.");
         return;
@@ -6149,13 +6667,15 @@
     function editarDias(cod) {
       if (!proyectoEsGestor) return;
       if (tieneHijos(cod)) {
-        alert("🔒 Bloqueado CPM: Los Días se autocalculan midiendo la ventana de ejecución total.");
+        alert("🔒 Bloqueado: La duración se autocalcula de sus subtareas.");
         return;
       }
       const act = actividadesGlobal.find(a => a.codigo === cod);
+      const esHoras = (proyectoModoDuracion === "hours");
+
       abrirInputCustom({
-        titulo: "Modificar Duración",
-        mensaje: "Consigne los Días de duración estimada:",
+        titulo: esHoras ? "Modificar Horas de Dedicación" : "Modificar Duración",
+        mensaje: esHoras ? "Ingrese las horas netas de trabajo estimadas:" : "Consigne los Días de duración estimada:",
         tipo: "number",
         valorActual: act.dias,
         onAceptar: async (diasStr) => {
@@ -6164,7 +6684,10 @@
             act.dias = d;
             const dtIni = parsearFechaUniversal(act.fecha_inicio) || new Date();
             const dtFin = new Date(dtIni);
-            dtFin.setDate(dtFin.getDate() + (d - 1));
+
+            const diasASumar = esHoras ? Math.max(0, Math.ceil(d / 8) - 1) : Math.max(0, d - 1);
+            dtFin.setDate(dtFin.getDate() + diasASumar);
+
             act.fecha_inicio = formatearFechaLatina(act.fecha_inicio);
             act.fecha_fin = `${String(dtFin.getDate()).padStart(2, '0')}/${String(dtFin.getMonth() + 1).padStart(2, '0')}/${dtFin.getFullYear()}`;
             await guardarCambioDirecto(act);
@@ -6324,23 +6847,25 @@
       }
     }
 
-    function actualizarBotonCpmUI(activo, duracionDias = 0) {
+    function actualizarBotonCpmUI(activo, duracion = 0) {
       const btn = document.getElementById("btn-toggle-cpm");
       const badge = document.getElementById("badge-duracion-cpm");
       if (!btn) return;
 
+      const sufijo = (proyectoModoDuracion === "hours") ? "h" : "d";
+      const unidadNombre = (proyectoModoDuracion === "hours") ? "horas" : "días";
+
+      // El badge flotante cortado se oculta permanentemente para evitar desperfectos visuales
+      if (badge) badge.classList.add("hidden");
+
       if (activo) {
-        btn.className = "group relative h-[29px] px-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center border border-red-700 flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap";
-        btn.title = `Ruta Crítica activa (${duracionDias} días)`;
-        if (badge) {
-          badge.innerText = `${duracionDias}d`;
-          badge.className = "absolute -top-1.5 -right-1.5 bg-red-800 text-white text-[8px] font-black px-1 py-0.2 rounded-full border border-white shadow-xs";
-          badge.classList.remove("hidden");
-        }
+        btn.className = "group h-[29px] px-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 shadow-xs flex items-center justify-center border border-red-700 flex-shrink-0 cursor-pointer whitespace-nowrap";
+        btn.title = `Ruta Crítica activa (Duración: ${duracion} ${unidadNombre})`;
+        btn.innerHTML = `<span class="text-sm">🔥</span><span class="ml-1 text-xs font-bold">Ruta Crítica: ${duracion}${sufijo}</span>`;
       } else {
-        btn.className = "group relative h-[29px] px-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center border border-gray-300 flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap";
+        btn.className = "group h-[29px] px-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-300 shadow-xs flex items-center justify-center border border-gray-300 flex-shrink-0 cursor-pointer whitespace-nowrap overflow-hidden";
         btn.title = "Activar / Desactivar Ruta Crítica (CPM)";
-        if (badge) badge.classList.add("hidden");
+        btn.innerHTML = `<span class="text-sm">🔥</span><span class="max-w-0 opacity-0 group-hover:max-w-[110px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 text-xs font-bold overflow-hidden">Ruta Crítica</span>`;
       }
     }
 
@@ -6375,12 +6900,15 @@
         const predsActuales = (act.predecesores || "").split(",").map(s => s.trim().replace(/\.+$/, "")).filter(Boolean);
 
         let opcionesHTML = "";
+        const deshabilitarChecks = !proyectoEsGestor ? 'disabled' : '';
+        const cursorClase = !proyectoEsGestor ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:bg-teal-50';
+
         posiblesPreds.forEach(p => {
           const pCod = String(p.codigo).replace(/\.+$/, "");
           const estaMarcado = predsActuales.includes(pCod);
           opcionesHTML += `
-            <label class="inline-flex items-center space-x-1.5 bg-gray-50 hover:bg-teal-50 px-2 py-1 rounded border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700 mr-1.5 mb-1.5 shadow-xs">
-              <input type="checkbox" data-act-cod="${codLimpio}" value="${pCod}" ${estaMarcado ? 'checked' : ''} class="chk-dep-item rounded text-[#0f2a4a] focus:ring-0 cursor-pointer">
+            <label class="inline-flex items-center space-x-1.5 bg-gray-50 px-2 py-1 rounded border border-gray-200 text-[11px] font-bold text-gray-700 mr-1.5 mb-1.5 shadow-xs ${cursorClase}">
+              <input type="checkbox" data-act-cod="${codLimpio}" value="${pCod}" ${estaMarcado ? 'checked' : ''} ${deshabilitarChecks} class="chk-dep-item rounded text-[#0f2a4a] focus:ring-0">
               <span>[${pCod}] ${p.descripcion.substring(0, 20)}...</span>
             </label>
           `;
@@ -6390,15 +6918,25 @@
           opcionesHTML = `<span class="text-gray-400 italic text-[11px]">Sin otras actividades para enlazar</span>`;
         }
 
+        const sufijoDep = (proyectoModoDuracion === "hours") ? "h" : "d";
         tbody.innerHTML += `
           <tr class="hover:bg-gray-50 border-b border-gray-100">
             <td class="p-2.5 font-mono font-bold text-center text-[#0f2a4a]">${act.codigo}</td>
             <td class="p-2.5 font-semibold text-gray-800">${act.descripcion}</td>
-            <td class="p-2.5 text-center font-bold text-teal-800">${act.dias}d</td>
+            <td class="p-2.5 text-center font-bold text-teal-800">${act.dias}${sufijoDep}</td>
             <td class="p-2.5 flex flex-wrap items-center">${opcionesHTML}</td>
           </tr>
         `;
       });
+
+      const btnGuardarDep = document.querySelector("#modal-dependencias button[onclick='guardarTodasDependencias()']");
+      if (btnGuardarDep) {
+        if (!proyectoEsGestor) {
+          btnGuardarDep.classList.add("hidden");
+        } else {
+          btnGuardarDep.classList.remove("hidden");
+        }
+      }
 
       modal.classList.remove("hidden");
     }
@@ -6489,7 +7027,7 @@
     }
 
     // =========================================================================
-    // CENTRO DE GESTIÓN TI (CUENTAS, TRABAJADORES Y ESTRUCTURA ORGÁNICA)
+    // CENTRO DE GESTIÓN TI (CUENTAS, TRABAJADORES Y ESTRUCTURA DE ORGANIZACIÓN)
     // =========================================================================
     let tabTIActiva = 'cuentas';
     let catalogoUnidadesGlobal = [];
@@ -6503,12 +7041,143 @@
       }
 
       document.getElementById("modal-admin-ti").classList.remove("hidden");
-      cambiarTabTI('cuentas');
+      cambiarTabTI('trabajadores');
 
-      // Carga secuencial limpia y fluida para evitar saturar conexiones
-      await cargarListaUsuariosTI();
-      await cargarDirectorioTrabajadores();
-      await cargarCatalogoUnidades();
+      // Precarga en paralelo de todos los módulos TI para apertura en 0ms
+      await Promise.all([
+        cargarDirectorioTrabajadores(),
+        cargarCatalogoUnidades(),
+        cargarListaFeriados(),
+        cargarListaProcesosTI()
+      ]);
+    }
+
+    function abrirModalEditarTrabajador(id) {
+      const trabajador = (catalogoTrabajadoresGlobal || []).find(t => t.id === id);
+      if (!trabajador) return;
+
+      document.getElementById("edit-tra-id").value = trabajador.id;
+      document.getElementById("edit-tra-nombres").value = trabajador.nombres || "";
+      document.getElementById("edit-tra-apellidos").value = trabajador.apellidos || "";
+      document.getElementById("edit-tra-uo-busq").value = trabajador.unidad_organica || "";
+      document.getElementById("edit-tra-uo-valor").value = trabajador.unidad_organica || "";
+      
+      const selCargo = document.getElementById("edit-tra-cargo");
+      if (selCargo) {
+        selCargo.value = trabajador.cargo || "Sin cargo / nivel";
+      }
+
+      const selNivel = document.getElementById("edit-tra-nivel-mando");
+      if (selNivel) {
+        selNivel.value = String(trabajador.es_directivo === 1 ? "1" : "0");
+      }
+
+      const usuarioCorreo = (trabajador.correo || "").split("@")[0];
+      document.getElementById("edit-tra-correo-user").value = usuarioCorreo;
+
+      document.getElementById("edit-tra-sugerencias-uo").classList.add("hidden");
+      document.getElementById("modal-editar-trabajador-ti").classList.remove("hidden");
+    }
+
+    function cerrarModalEditarTrabajador() {
+      const m = document.getElementById("modal-editar-trabajador-ti");
+      if (m) m.classList.add("hidden");
+    }
+
+    function autocompletarUOEdicion(termino) {
+      const term = (termino || "").toLowerCase().trim();
+      const divSug = document.getElementById("edit-tra-sugerencias-uo");
+      if (!divSug) return;
+
+      if (!term) {
+        divSug.innerHTML = "";
+        divSug.classList.add("hidden");
+        return;
+      }
+
+      const matches = (catalogoUnidadesGlobal || []).filter(u => 
+        (u.estado === 'ACTIVO' || !u.estado) && (
+          u.sigla.toLowerCase().includes(term) || 
+          u.nombre.toLowerCase().includes(term)
+        )
+      );
+
+      divSug.innerHTML = "";
+      if (matches.length === 0) {
+        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">Sin coincidencias</div>`;
+      } else {
+        matches.slice(0, 6).forEach(u => {
+          const item = document.createElement("div");
+          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
+          item.innerHTML = `
+            <span class="text-gray-800">${u.nombre}</span>
+            <strong class="text-[#0f2a4a] ml-2 bg-slate-100 px-1.5 py-0.5 rounded border text-[11px]">[${u.sigla}]</strong>
+          `;
+          item.onclick = () => {
+            document.getElementById("edit-tra-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+            document.getElementById("edit-tra-uo-valor").value = u.sigla;
+            divSug.classList.add("hidden");
+          };
+          divSug.appendChild(item);
+        });
+      }
+      divSug.classList.remove("hidden");
+    }
+
+    async function guardarEdicionTrabajador(e) {
+      e.preventDefault();
+      const id = document.getElementById("edit-tra-id").value;
+      const nombres = document.getElementById("edit-tra-nombres").value.trim();
+      const apellidos = document.getElementById("edit-tra-apellidos").value.trim();
+      const uo = document.getElementById("edit-tra-uo-valor").value || document.getElementById("edit-tra-uo-busq").value.trim();
+      const correo_user = document.getElementById("edit-tra-correo-user").value.trim();
+      const cargo = document.getElementById("edit-tra-cargo")?.value || "Sin cargo / nivel";
+      const esDirectivo = parseInt(document.getElementById("edit-tra-nivel-mando")?.value || "0");
+
+      if (!nombres || !apellidos || !uo || !correo_user) {
+        alert("Por favor complete todos los campos requeridos.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/trabajadores/${id}`, {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${token}` 
+          },
+          body: JSON.stringify({
+            nombres: nombres,
+            apellidos: apellidos,
+            unidad_organica: uo,
+            correo_usuario: correo_user,
+            cargo: cargo,
+            es_directivo: esDirectivo
+          })
+        });
+
+        if (res.ok) {
+          cerrarModalEditarTrabajador();
+          notificarToast("Datos y jerarquía del trabajador actualizados con éxito.", "success");
+          await cargarDirectorioTrabajadores();
+          await cargarCatalogoUnidades();
+          if (proyectoActualId) {
+            await cargarActividades();
+          }
+        } else {
+          const err = await res.json().catch(() => ({}));
+          let mensajeError = "Error al actualizar los datos del trabajador.";
+          if (typeof err.detail === "string") {
+            mensajeError = err.detail;
+          } else if (Array.isArray(err.detail)) {
+            mensajeError = err.detail.map(d => d.msg || JSON.stringify(d)).join("\n");
+          }
+          alert(mensajeError);
+        }
+      } catch (err) {
+        console.error("Error al actualizar trabajador:", err);
+        alert("Error de conexión con el servidor.");
+      }
     }
 
     async function cargarListaUsuariosTI() {
@@ -6554,46 +7223,187 @@
 
     function cambiarTabTI(tab) {
       tabTIActiva = tab;
-      const tabs = ['cuentas', 'trabajadores', 'unidades'];
+      const tabs = ['cuentas', 'trabajadores', 'unidades', 'feriados', 'procesos'];
       tabs.forEach(t => {
         const btn = document.getElementById(`ti-tab-btn-${t}`);
         const content = document.getElementById(`ti-tab-content-${t}`);
+        if (!btn || !content) return;
         if (t === tab) {
-          btn.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold";
+          btn.className = "px-3.5 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold whitespace-nowrap";
           content.classList.remove("hidden");
         } else {
-          btn.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold";
+          btn.className = "px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap";
           content.classList.add("hidden");
         }
       });
+
+      // Disparar carga de datos correspondiente según pestaña seleccionada
+      if (tab === 'cuentas') cargarListaUsuariosTI();
+      if (tab === 'trabajadores') cargarDirectorioTrabajadores();
+      if (tab === 'unidades') cargarCatalogoUnidades();
+      if (tab === 'feriados') cargarListaFeriados();
+      if (tab === 'procesos') cargarListaProcesosTI();
     }
 
-    // --- CARGA Y RENDERIZADO DE UNIDADES ORGÁNICAS ---
+    // --- CARGA Y RENDERIZADO ULTRA-RÁPIDO DE UNIDADES ORGÁNICAS ROF ---
     async function cargarCatalogoUnidades() {
+      const tbody = document.getElementById("uo-tabla-cuerpo");
+
       try {
-        const res = await fetch("/unidades-organicas", {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (res.status === 401) {
-          cerrarSesion();
+        // 1. Cargar unidades orgánicas en paralelo con trabajadores solo si no existen
+        const promesas = [
+          fetch("/unidades-organicas", { headers: { "Authorization": `Bearer ${token}` } })
+        ];
+
+        if (!catalogoTrabajadoresGlobal || catalogoTrabajadoresGlobal.length === 0) {
+          promesas.push(
+            fetch("/trabajadores", { headers: { "Authorization": `Bearer ${token}` } }).catch(() => null)
+          );
+        }
+
+        const [resUo, resTrab] = await Promise.all(promesas);
+
+        if (resTrab && resTrab.ok) {
+          catalogoTrabajadoresGlobal = await resTrab.json();
+        }
+
+        if (!resUo.ok) {
+          if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error al consultar unidades orgánicas.</td></tr>`;
           return;
         }
-        if (!res.ok) return;
-        catalogoUnidadesGlobal = await res.json();
-        const tbody = document.getElementById("uo-tabla-cuerpo");
+
+        catalogoUnidadesGlobal = await resUo.json();
         if (!tbody) return;
-        tbody.innerHTML = "";
+
+        if (!catalogoUnidadesGlobal || catalogoUnidadesGlobal.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">No hay unidades registradas.</td></tr>`;
+          return;
+        }
+
+        // 2. Pre-construir la lista de opciones de directivos UNA SOLA VEZ en memoria (Optimización de rendimiento)
+        const listaPersonas = (catalogoTrabajadoresGlobal && catalogoTrabajadoresGlobal.length > 0)
+          ? catalogoTrabajadoresGlobal
+          : (usuariosTIGlobal || []);
+
+        // 3. Actualizar desplegable del formulario superior
+        const selPadre = document.getElementById("uo-input-padre");
+        if (selPadre) {
+          let opcionesFormPadre = '<option value="">(Ninguna unidad de organización)</option>';
+          catalogoUnidadesGlobal.forEach(u => {
+            opcionesFormPadre += `<option value="${u.sigla}">[${u.sigla}] ${u.nombre}</option>`;
+          });
+          selPadre.innerHTML = opcionesFormPadre;
+        }
+
+        // 4. Renderizado eficiente con DocumentFragment para fluidez total (0ms de retraso)
+        let htmlFilas = "";
+
         catalogoUnidadesGlobal.forEach(u => {
-          tbody.innerHTML += `
-            <tr class="hover:bg-gray-50 border-b border-gray-100">
-              <td class="p-2.5 font-bold text-[#0f2a4a]">${u.sigla}</td>
-              <td class="p-2.5 font-semibold text-gray-700">${u.nombre}</td>
-              <td class="p-2.5 text-gray-500 text-[11px]">${u.tipo_organo}</td>
+          const siglaPadreActual = String(u.sigla_padre || "").trim().toUpperCase();
+
+          // Selector de Dependencia ROF
+          let opcionesPadre = `<option value="" ${siglaPadreActual === "" ? "selected" : ""}>(Nivel Máximo / Alta Dirección)</option>`;
+          
+          catalogoUnidadesGlobal.forEach(padreCand => {
+            const siglaCand = String(padreCand.sigla || "").trim().toUpperCase();
+            if (siglaCand !== String(u.sigla).trim().toUpperCase()) {
+              const estaSeleccionado = (siglaPadreActual === siglaCand) ? "selected" : "";
+              opcionesPadre += `<option value="${padreCand.sigla}" ${estaSeleccionado}>[${padreCand.sigla}] ${padreCand.nombre}</option>`;
+            }
+          });
+
+          // Selector de Titular / Directivo
+          let opcionesTitular = '<option value="">(Sin titular asignado)</option>';
+          listaPersonas.forEach(p => {
+            const pId = p.id;
+            const pNombre = p.nombre_completo || p.username;
+            const pCargo = p.cargo ? ` - ${p.cargo}` : '';
+            const estaAsignado = (u.titular_trabajador_id === pId || u.titular_usuario_id === pId);
+            opcionesTitular += `<option value="${pId}" ${estaAsignado ? 'selected' : ''}>${pNombre}${pCargo}</option>`;
+          });
+
+          htmlFilas += `
+            <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
+              <td class="p-2.5 font-bold text-[#0f2a4a] text-xs font-mono whitespace-nowrap">${u.sigla}</td>
+              <td class="p-2.5 font-semibold text-gray-800 text-xs">${u.nombre}</td>
+              <td class="p-2.5 min-w-[220px]">
+                <select onchange="actualizarDependenciaROF(${u.id}, this.value, '${u.sigla}')" 
+                        class="w-full text-[11px] font-bold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer text-slate-700">
+                  ${opcionesPadre}
+                </select>
+              </td>
+              <td class="p-2.5 min-w-[210px]">
+                <select onchange="asignarTitularUnidad(${u.id}, this.value, '${u.sigla}')" 
+                        class="w-full text-[11px] font-semibold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer">
+                  ${opcionesTitular}
+                </select>
+              </td>
             </tr>
           `;
         });
+
+        tbody.innerHTML = htmlFilas;
+
       } catch (e) {
-        console.error("Error cargando unidades:", e);
+        console.error("Error al cargar unidades:", e);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error de conexión al cargar unidades.</td></tr>`;
+      }
+    }
+
+    async function actualizarDependenciaROF(unidadId, siglaPadre, siglaHijo) {
+      try {
+        const payload = {
+          sigla_padre: siglaPadre ? siglaPadre.trim() : null
+        };
+
+        const res = await fetch(`/unidades-organicas/${unidadId}/dependencia`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const destino = siglaPadre ? `[${siglaPadre}]` : "Alta Dirección";
+          notificarToast(`Dependencia de [${siglaHijo}] actualizada hacia ${destino}.`, "success");
+          await cargarCatalogoUnidades();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al actualizar la dependencia ROF.");
+          await cargarCatalogoUnidades();
+        }
+      } catch (e) {
+        alert("Error de conexión al actualizar la dependencia jerárquica.");
+      }
+    }
+
+    async function asignarTitularUnidad(unidadId, personaId, sigla) {
+      try {
+        const payload = {
+          titular_trabajador_id: personaId ? parseInt(personaId) : null,
+          titular_usuario_id: null
+        };
+
+        const res = await fetch(`/unidades-organicas/${unidadId}/titular`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          notificarToast(`Titular de [${sigla}] actualizado con éxito.`, "success");
+          await cargarCatalogoUnidades();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al actualizar titular.");
+        }
+      } catch (e) {
+        alert("Error de conexión al asignar titular.");
       }
     }
 
@@ -6706,20 +7516,29 @@
 
       actualizarBotonTrabajadoresBajaUI();
 
-      // En la lista principal solo mostramos estrictamente a los trabajadores ACTIVOS
       const activos = (lista || []).filter(t => t.estado === "ACTIVO" || !t.estado);
 
       if (activos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 font-semibold italic">No se encontraron trabajadores activos con ese criterio.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400 font-semibold italic">No se encontraron trabajadores activos con ese criterio.</td></tr>`;
         return;
       }
 
       activos.forEach(t => {
+        const usuarioLogin = (t.correo || "").split("@")[0];
+        const cargoTexto = t.cargo || "Sin cargo / nivel";
+        const badgeCargo = t.es_directivo === 1
+          ? `<span class="bg-purple-50 text-purple-800 border border-purple-200 px-1.5 py-0.5 rounded text-[10px] font-bold" title="Cargo: ${cargoTexto}">🏛️ ${cargoTexto}</span>`
+          : `<span class="text-gray-600 font-semibold text-[11px]">${cargoTexto}</span>`;
+
         tbody.innerHTML += `
           <tr class="hover:bg-gray-50 border-b border-gray-100">
-            <td class="p-2.5 font-bold text-gray-800">${t.nombre_completo}</td>
-            <td class="p-2.5 font-semibold text-teal-800"><span class="bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${t.unidad_organica}</span></td>
-            <td class="p-2.5 font-mono text-blue-600">${t.correo}</td>
+            <td class="p-2.5 font-bold text-gray-800 text-xs">${t.nombre_completo}</td>
+            <td class="p-2.5 font-semibold text-teal-800"><span class="bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-xs">${t.unidad_organica}</span></td>
+            <td class="p-2.5 whitespace-nowrap">${badgeCargo}</td>
+            <td class="p-2.5 font-mono text-gray-600 text-xs">@${usuarioLogin}</td>
+            <td class="p-2.5 text-center whitespace-nowrap">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800">ACTIVO</span>
+            </td>
             <td class="p-2.5 text-center whitespace-nowrap space-x-1.5">
               <button onclick="abrirModalEditarTrabajador(${t.id})" class="p-1 rounded text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition font-bold cursor-pointer" title="Editar datos del trabajador">
                 ✏️
@@ -6750,6 +7569,10 @@
       const apellidos = document.getElementById("tra-input-apellidos").value.trim();
       const uo = document.getElementById("tra-input-uo-valor").value || document.getElementById("tra-input-uo-busq").value.trim();
       const correo_user = document.getElementById("tra-input-correo-user").value.trim();
+      const cargo = document.getElementById("tra-input-cargo")?.value.trim() || "Sin cargo / nivel";
+      const esDirectivo = parseInt(document.getElementById("tra-input-nivel-mando")?.value || "0");
+      const crearAcceso = document.getElementById("tra-chk-crear-acceso")?.checked !== false;
+      const passInicial = document.getElementById("tra-input-pass-inicial")?.value.trim() || "imarpe123";
 
       if (!nombres || !apellidos || !uo || !correo_user) {
         alert("Por favor complete todos los campos requeridos.");
@@ -6763,7 +7586,17 @@
             "Content-Type": "application/json", 
             "Authorization": `Bearer ${token}` 
           },
-          body: JSON.stringify({ nombres, apellidos, unidad_organica: uo, correo_usuario: correo_user })
+          body: JSON.stringify({ 
+            nombres, 
+            apellidos, 
+            unidad_organica: uo, 
+            correo_usuario: correo_user,
+            cargo: cargo,
+            es_directivo: esDirectivo,
+            crear_acceso: crearAcceso,
+            password_inicial: passInicial,
+            rol_sistema: "OPERADOR"
+          })
         });
 
         if (res.status === 401) {
@@ -7586,6 +8419,7 @@
         btnBlanco.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold";
         contentBlanco.classList.add("hidden");
         contentPlantilla.classList.remove("hidden");
+        cancelarSeleccionPlantilla(); // Asegurar que arranque limpio sin preselección residual
         cargarGaleriaPlantillas();
       } else {
         btnBlanco.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs flex items-center space-x-1.5 font-bold";
@@ -7659,17 +8493,87 @@
       document.getElementById("txt-plantilla-elegida-tit").innerText = `📋 ${plantilla.nombre}`;
       document.getElementById("txt-plantilla-elegida-cat").innerText = plantilla.categoria || "General";
       document.getElementById("np-input-clon-nombre").value = plantilla.nombre;
+      document.getElementById("np-input-clon-desc").value = plantilla.descripcion || "";
+      document.getElementById("np-input-clon-uo-busq").value = "";
+      document.getElementById("np-input-clon-uo-valor").value = "";
+      document.getElementById("np-input-clon-proceso-busq").value = "";
+      document.getElementById("np-input-clon-proceso-codigo").value = "";
+      document.getElementById("np-input-clon-proceso-nombre").value = "";
+      document.getElementById("np-input-clon-proceso-personalizado").value = "0";
       
+      const contOtro = document.getElementById("contenedor-otro-subproceso-clon");
+      if (contOtro) contOtro.classList.add("hidden");
+      const inpOtroTexto = document.getElementById("input-otro-subproceso-clon-texto");
+      if (inpOtroTexto) inpOtroTexto.value = "";
+
+      const selModo = document.getElementById("np-input-clon-duration-mode");
+      if (selModo) selModo.value = "business_days";
+      const selVis = document.getElementById("np-input-clon-visibilidad");
+      if (selVis) selVis.value = "PRIVADO";
+
       const hoyISO = new Date().toISOString().split("T")[0];
       document.getElementById("np-input-clon-fechaini").value = hoyISO;
 
-      document.getElementById("bloque-config-clonacion").classList.remove("hidden");
-      document.getElementById("bloque-config-clonacion").scrollIntoView({ behavior: 'smooth' });
+      const bloque = document.getElementById("bloque-config-clonacion");
+      bloque.classList.remove("hidden");
+      bloque.scrollIntoView({ behavior: 'smooth' });
     }
 
     function cancelarSeleccionPlantilla() {
       plantillaSeleccionadaId = null;
-      document.getElementById("bloque-config-clonacion").classList.add("hidden");
+      const bloque = document.getElementById("bloque-config-clonacion");
+      if (bloque) bloque.classList.add("hidden");
+    }
+
+    function autocompletarProcesoClonacion(term) {
+      const q = (term || "").toLowerCase().trim();
+      const div = document.getElementById("sugerencias-proceso-clonacion");
+      const contOtro = document.getElementById("contenedor-otro-subproceso-clon");
+      if (!div) return;
+
+      if (!q) {
+        div.classList.add("hidden");
+        return;
+      }
+
+      div.innerHTML = "";
+
+      const matches = (catalogoProcesosGlobal || []).filter(p => 
+        p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
+      );
+
+      matches.slice(0, 6).forEach(p => {
+        const row = document.createElement("div");
+        row.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-semibold text-gray-800";
+        row.innerHTML = `<span>${p.nombre}</span> <strong class="text-[#0f2a4a] bg-gray-100 px-1.5 py-0.5 rounded text-[10px]">[${p.codigo}]</strong>`;
+        row.onclick = () => {
+          document.getElementById("np-input-clon-proceso-busq").value = `${p.nombre} [${p.codigo}]`;
+          document.getElementById("np-input-clon-proceso-codigo").value = p.codigo;
+          document.getElementById("np-input-clon-proceso-nombre").value = p.nombre;
+          document.getElementById("np-input-clon-proceso-personalizado").value = "0";
+          div.classList.add("hidden");
+          if (contOtro) contOtro.classList.add("hidden");
+        };
+        div.appendChild(row);
+      });
+
+      const itemOtro = document.createElement("div");
+      itemOtro.className = "p-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold cursor-pointer border-t border-amber-200 flex items-center justify-between";
+      itemOtro.innerHTML = `<span>⚙️ Otro subproceso (Personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
+      itemOtro.onclick = () => {
+        document.getElementById("np-input-clon-proceso-busq").value = "Otro subproceso";
+        document.getElementById("np-input-clon-proceso-codigo").value = "OTRO";
+        document.getElementById("np-input-clon-proceso-nombre").value = "";
+        document.getElementById("np-input-clon-proceso-personalizado").value = "1";
+        div.classList.add("hidden");
+        if (contOtro) {
+          contOtro.classList.remove("hidden");
+          document.getElementById("input-otro-subproceso-clon-texto")?.focus();
+        }
+      };
+      div.appendChild(itemOtro);
+
+      div.classList.remove("hidden");
     }
 
     function autocompletarUOClonacion(termino) {
@@ -7709,6 +8613,15 @@
       const nombre = document.getElementById("np-input-clon-nombre").value.trim();
       const uo = document.getElementById("np-input-clon-uo-valor").value || document.getElementById("np-input-clon-uo-busq").value.trim();
       const fIniISO = document.getElementById("np-input-clon-fechaini").value;
+      const desc = document.getElementById("np-input-clon-desc")?.value.trim() || "";
+      const durMode = document.getElementById("np-input-clon-duration-mode")?.value || "business_days";
+      const visib = document.getElementById("np-input-clon-visibilidad")?.value || "PRIVADO";
+
+      const esPers = document.getElementById("np-input-clon-proceso-personalizado")?.value === "1";
+      const procCod = esPers ? "OTRO" : (document.getElementById("np-input-clon-proceso-codigo")?.value || "");
+      const procNom = esPers 
+        ? (document.getElementById("input-otro-subproceso-clon-texto")?.value.trim() || "Otro subproceso")
+        : (document.getElementById("np-input-clon-proceso-nombre")?.value || "");
 
       if (!nombre) {
         alert("Por favor ingrese un nombre para el proyecto.");
@@ -7727,8 +8640,14 @@
           body: JSON.stringify({
             plantilla_id: plantillaSeleccionadaId,
             nombre_proyecto: nombre,
+            descripcion: desc,
             unidad_organica: uo,
-            fecha_inicio: fIniLatina
+            fecha_inicio: fIniLatina,
+            proceso_codigo: procCod,
+            proceso_nombre: procNom,
+            es_proceso_personalizado: esPers ? 1 : 0,
+            duration_mode: durMode,
+            visibilidad: visib
           })
         });
 
@@ -7964,115 +8883,6 @@
         window.addEventListener("mousemove", alMoverMouse);
         window.addEventListener("mouseup", alSoltarMouse);
       };
-    }
-
-    // =========================================================================
-    // EDICIÓN DE TRABAJADORES (DIRECTORIO INSTITUCIONAL TI)
-    // =========================================================================
-    function abrirModalEditarTrabajador(id) {
-      const trabajador = (catalogoTrabajadoresGlobal || []).find(t => t.id === id);
-      if (!trabajador) return;
-
-      document.getElementById("edit-tra-id").value = trabajador.id;
-      document.getElementById("edit-tra-nombres").value = trabajador.nombres || "";
-      document.getElementById("edit-tra-apellidos").value = trabajador.apellidos || "";
-      document.getElementById("edit-tra-uo-busq").value = trabajador.unidad_organica || "";
-      document.getElementById("edit-tra-uo-valor").value = trabajador.unidad_organica || "";
-      
-      const usuarioCorreo = (trabajador.correo || "").split("@")[0];
-      document.getElementById("edit-tra-correo-user").value = usuarioCorreo;
-
-      document.getElementById("edit-tra-sugerencias-uo").classList.add("hidden");
-      document.getElementById("modal-editar-trabajador-ti").classList.remove("hidden");
-    }
-
-    function cerrarModalEditarTrabajador() {
-      document.getElementById("modal-editar-trabajador-ti").classList.add("hidden");
-    }
-
-    function autocompletarUOEdicion(termino) {
-      const term = (termino || "").toLowerCase().trim();
-      const divSug = document.getElementById("edit-tra-sugerencias-uo");
-      if (!divSug) return;
-
-      if (!term) {
-        divSug.innerHTML = "";
-        divSug.classList.add("hidden");
-        return;
-      }
-
-      const matches = (catalogoUnidadesGlobal || []).filter(u => 
-        (u.estado === 'ACTIVO' || !u.estado) && (
-          u.sigla.toLowerCase().includes(term) || 
-          u.nombre.toLowerCase().includes(term)
-        )
-      );
-
-      divSug.innerHTML = "";
-      if (matches.length === 0) {
-        divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">Sin coincidencias</div>`;
-      } else {
-        matches.slice(0, 6).forEach(u => {
-          const item = document.createElement("div");
-          item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
-          item.innerHTML = `
-            <span class="text-gray-800">${u.nombre}</span>
-            <strong class="text-[#0f2a4a] ml-2 bg-slate-100 px-1.5 py-0.5 rounded border text-[11px]">[${u.sigla}]</strong>
-          `;
-          item.onclick = () => {
-            document.getElementById("edit-tra-uo-busq").value = `${u.sigla} - ${u.nombre}`;
-            document.getElementById("edit-tra-uo-valor").value = u.sigla;
-            divSug.classList.add("hidden");
-          };
-          divSug.appendChild(item);
-        });
-      }
-      divSug.classList.remove("hidden");
-    }
-
-    async function guardarEdicionTrabajador(e) {
-      e.preventDefault();
-      const id = document.getElementById("edit-tra-id").value;
-      const nombres = document.getElementById("edit-tra-nombres").value.trim();
-      const apellidos = document.getElementById("edit-tra-apellidos").value.trim();
-      const uo = document.getElementById("edit-tra-uo-valor").value || document.getElementById("edit-tra-uo-busq").value.trim();
-      const correo_user = document.getElementById("edit-tra-correo-user").value.trim();
-
-      if (!nombres || !apellidos || !uo || !correo_user) {
-        alert("Por favor complete todos los campos requeridos.");
-        return;
-      }
-
-      try {
-        const res = await fetch(`/trabajadores/${id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            nombres: nombres,
-            apellidos: apellidos,
-            unidad_organica: uo,
-            correo_usuario: correo_user
-          })
-        });
-
-        if (res.ok) {
-          cerrarModalEditarTrabajador();
-          notificarToast("Datos del trabajador actualizados con éxito.", "success");
-          await cargarDirectorioTrabajadores();
-          if (proyectoActualId) {
-            await cargarActividades();
-          }
-        } else {
-          const err = await res.json().catch(() => ({}));
-          alert(err.detail || "Error al actualizar los datos del trabajador.");
-        }
-      } catch (err) {
-        console.error("Error al actualizar trabajador:", err);
-        alert("Error de conexión con el servidor.");
-      }
     }
 
     // =========================================================================
@@ -8665,10 +9475,291 @@
       document.getElementById("stat-filtro-estado").value = "";
       aplicarFiltrosEstadisticas();
     }
-  </script>
-</body>
-</html>
 
+    // =========================================================================
+    // CONTROLADOR: GESTIÓN DE FERIADOS INSTITUCIONALES Y PROYECCIÓN ANUAL
+    // =========================================================================
+    async function abrirModalFeriados() {
+      document.getElementById("modal-feriados").classList.remove("hidden");
+      await cargarListaFeriados();
+    }
+
+    function cerrarModalFeriados() {
+      document.getElementById("modal-feriados").classList.add("hidden");
+    }
+
+    async function cargarListaFeriados() {
+      const tbody = document.getElementById("tabla-feriados-body");
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 font-semibold animate-pulse">Sincronizando calendario institucional...</td></tr>';
+
+      const anoSel = document.getElementById("sel-filtro-ano-feriados")?.value || "";
+      const url = anoSel ? `/feriados?year=${anoSel}` : "/feriados";
+
+      try {
+        const res = await fetch(url, {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (!res.ok) throw new Error("Error al obtener feriados");
+        const feriados = await res.json();
+        tbody.innerHTML = "";
+
+        if (feriados.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-400 italic font-semibold">No hay feriados registrados para este periodo. Use el botón "+ Agregar" o "Proyectar Feriados para Siguiente Año".</td></tr>';
+          return;
+        }
+
+        feriados.forEach(function(f) {
+          const fFecha = f.fecha || "";
+          const fMotivo = (f.motivo || f.descripcion || "").replace(/'/g, "\\'");
+          const fTipo = f.tipo || "Calendario";
+          const fId = f.id;
+
+          const badgeTipo = fTipo === "Sector público"
+            ? `<span class="bg-purple-50 text-purple-800 border border-purple-200 px-2 py-0.5 rounded text-[10px] font-bold">Sector público</span>`
+            : `<span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded text-[10px] font-bold">Calendario</span>`;
+
+          const fila = document.createElement("tr");
+          fila.className = "hover:bg-gray-50 border-b border-gray-100";
+          fila.innerHTML = `
+            <td class="p-2.5 font-bold font-mono text-gray-800">${fFecha}</td>
+            <td class="p-2.5">${badgeTipo}</td>
+            <td class="p-2.5 font-semibold text-gray-800">${f.descripcion || f.motivo}</td>
+            <td class="p-2.5 text-center whitespace-nowrap space-x-1.5">
+              <button onclick="iniciarEdicionFeriado(${fId}, '${fFecha}', '${fMotivo}', '${fTipo}')" class="p-1 text-blue-600 hover:text-blue-800 font-bold hover:bg-blue-50 rounded transition cursor-pointer" title="Modificar feriado">
+                ✏️
+              </button>
+              <button onclick="eliminarFeriado(${fId})" class="p-1 text-rose-500 hover:text-rose-700 font-bold hover:bg-rose-50 rounded transition cursor-pointer" title="Eliminar feriado">
+                🗑️
+              </button>
+            </td>
+          `;
+          tbody.appendChild(fila);
+        });
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error al cargar calendario de feriados.</td></tr>';
+      }
+    }
+
+    async function guardarFeriado(e) {
+      e.preventDefault();
+      const fecha = document.getElementById("input-feriado-fecha").value;
+      const motivo = document.getElementById("input-feriado-motivo").value.trim();
+      const tipo = document.getElementById("input-feriado-tipo").value;
+
+      if (!fecha || !motivo) return;
+
+      try {
+        const res = await fetch("/feriados", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ fecha: fecha, motivo: motivo, tipo: tipo })
+        });
+        if (res.ok) {
+          notificarToast("Feriado registrado en el calendario.", "success");
+          document.getElementById("input-feriado-fecha").value = "";
+          document.getElementById("input-feriado-motivo").value = "";
+          await cargarListaFeriados();
+        } else {
+          const err = await res.json().catch(function() { return {}; });
+          alert(err.detail || "Error al registrar feriado.");
+        }
+      } catch (err) {
+        alert("Error de conexión al registrar feriado.");
+      }
+    }
+
+    function iniciarEdicionFeriado(id, fechaActual, motivoActual, tipoActual) {
+      document.getElementById("edit-feriado-id").value = id;
+      document.getElementById("edit-feriado-fecha").value = fechaActual;
+      document.getElementById("edit-feriado-motivo").value = motivoActual;
+      document.getElementById("edit-feriado-tipo").value = tipoActual || "Calendario";
+
+      document.getElementById("modal-editar-feriado").classList.remove("hidden");
+    }
+
+    function cerrarModalEditarFeriado() {
+      const modal = document.getElementById("modal-editar-feriado");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    async function guardarEdicionFeriadoModal(e) {
+      e.preventDefault();
+      const id = document.getElementById("edit-feriado-id").value;
+      const fecha = document.getElementById("edit-feriado-fecha").value;
+      const motivo = document.getElementById("edit-feriado-motivo").value.trim();
+      const tipo = document.getElementById("edit-feriado-tipo").value;
+
+      if (!fecha || !motivo) {
+        alert("Por favor complete todos los campos.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/feriados/${id}`, {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": "Bearer " + token 
+          },
+          body: JSON.stringify({ fecha: fecha, motivo: motivo, tipo: tipo })
+        });
+
+        if (res.ok) {
+          cerrarModalEditarFeriado();
+          notificarToast("Feriado actualizado con éxito.", "success");
+          await cargarListaFeriados();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al actualizar feriado.");
+        }
+      } catch (e) {
+        alert("Error de conexión al intentar actualizar el feriado.");
+      }
+    }
+
+    async function eliminarFeriado(id) {
+      const confirma = await confirmModal("¿Desea eliminar esta fecha del calendario institucional?", "Eliminar Feriado", "danger");
+      if (!confirma) return;
+
+      try {
+        const res = await fetch("/feriados/" + id, {
+          method: "DELETE",
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (res.ok) {
+          notificarToast("Feriado eliminado con éxito.", "info");
+          await cargarListaFeriados();
+        } else {
+          alert("Error al eliminar feriado.");
+        }
+      } catch (err) {
+        alert("Error al eliminar feriado.");
+      }
+    }
+
+    async function proyectarFeriadosSiguienteAno() {
+      const confirma = await confirmModal(
+        "¿Desea proyectar los feriados institucionales para el siguiente año fiscal?\n\nEl sistema copiará las festividades de ley y recalculará automáticamente la Semana Santa correspondiente al nuevo año.",
+        "Proyección Anual de Feriados",
+        "question"
+      );
+      if (!confirma) return;
+
+      try {
+        const res = await fetch("/feriados/proyectar-siguiente-ano", {
+          method: "POST",
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          notificarToast(data.mensaje, "success", 5000);
+          const selAno = document.getElementById("sel-filtro-ano-feriados");
+          if (selAno) selAno.value = data.year_proyectado;
+          await cargarListaFeriados();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al proyectar feriados.");
+        }
+      } catch (e) {
+        alert("Error de conexión al proyectar calendario.");
+      }
+    }
+
+    // =========================================================================
+    // CONTROLADOR: CATÁLOGO TI DE PROCESOS
+    // =========================================================================
+    async function abrirModalProcesosTI() {
+      document.getElementById("modal-procesos-ti").classList.remove("hidden");
+      await cargarListaProcesosTI();
+    }
+
+    function cerrarModalProcesosTI() {
+      document.getElementById("modal-procesos-ti").classList.add("hidden");
+    }
+
+    async function cargarListaProcesosTI() {
+      const tbody = document.getElementById("tabla-procesos-ti-body");
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400">Cargando procesos...</td></tr>';
+
+      try {
+        const res = await fetch("/procesos-institucionales", {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (!res.ok) throw new Error("Error al obtener catálogo");
+        catalogoProcesosGlobal = await res.json();
+        tbody.innerHTML = "";
+
+        if (catalogoProcesosGlobal.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400 italic">No hay procesos registrados.</td></tr>';
+          return;
+        }
+
+        catalogoProcesosGlobal.forEach(function(p) {
+          const pId = p.id;
+          const pCodigo = p.codigo || "";
+          const pNombre = (p.nombre || "").replace(/'/g, "\\'");
+
+          const fila = document.createElement("tr");
+          fila.className = "hover:bg-gray-50 border-b border-gray-100";
+          fila.innerHTML = 
+            '<td class="p-2.5 font-bold font-mono text-[#0f2a4a]">[' + pCodigo + ']</td>' +
+            '<td class="p-2.5 font-semibold text-gray-800">' + (p.nombre || "") + '</td>' +
+            '<td class="p-2.5 text-center">' +
+              '<button onclick="eliminarProcesoTI(' + pId + ', \'' + pNombre + '\')" class="text-rose-500 hover:text-rose-700 font-bold px-1" title="Eliminar proceso">🗑️</button>' +
+            '</td>';
+          tbody.appendChild(fila);
+        });
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-rose-500">Error al cargar catálogo de procesos.</td></tr>';
+      }
+    }
+
+    async function guardarProcesoTI(e) {
+      e.preventDefault();
+      const codigo = document.getElementById("input-proc-ti-codigo").value.trim();
+      const nombre = document.getElementById("input-proc-ti-nombre").value.trim();
+
+      if (!codigo || !nombre) return;
+
+      try {
+        const res = await fetch("/procesos-institucionales", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ codigo: codigo, nombre: nombre })
+        });
+        if (res.ok) {
+          notificarToast("Proceso institucional registrado.", "success");
+          document.getElementById("input-proc-ti-codigo").value = "";
+          document.getElementById("input-proc-ti-nombre").value = "";
+          await cargarListaProcesosTI();
+        } else {
+          const err = await res.json().catch(function() { return {}; });
+          alert(err.detail || "Error al registrar proceso.");
+        }
+      } catch (err) {
+        alert("Error de conexión al registrar proceso.");
+      }
+    }
+
+    async function eliminarProcesoTI(id, nombre) {
+      const confirma = await confirmModal("¿Está seguro de eliminar el proceso '" + nombre + "'?", "Eliminar Proceso TI", "danger");
+      if (!confirma) return;
+
+      try {
+        const res = await fetch("/procesos-institucionales/" + id, {
+          method: "DELETE",
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (res.ok) {
+          notificarToast("Proceso eliminado correctamente.", "info");
+          await cargarListaProcesosTI();
+        }
+      } catch (err) {
+        alert("Error al eliminar proceso.");
+      }
+    }
   </script>
 </body>
 </html>

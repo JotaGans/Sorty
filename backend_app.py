@@ -25,6 +25,68 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 DATA_DIR = "/data" if os.path.exists("/data") else "."
 DB_PATH = os.path.join(DATA_DIR, "imarpe_gantt.db")
 
+# --- FUNCIONES MATEMÁTICAS DE CALENDARIO LABORAL INSTITUCIONAL ---
+
+def calcular_jueves_viernes_santo(year: int):
+    """Calcula automáticamente las fechas de Jueves y Viernes Santo según el algoritmo Butcher."""
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = b // 4
+    e = b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i = c // 4
+    k = c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    mes = (h + l - 7 * m + 114) // 31
+    dia = ((h + l - 7 * m + 114) % 31) + 1
+    domingo_resurreccion = datetime(year, mes, dia).date()
+    jueves_santo = domingo_resurreccion - timedelta(days=3)
+    viernes_santo = domingo_resurreccion - timedelta(days=2)
+    return jueves_santo, viernes_santo
+
+def obtener_set_feriados(db: sqlite3.Connection) -> set:
+    """Retorna un conjunto con todas las fechas feriadas registradas en formato YYYY-MM-DD."""
+    try:
+        rows = db.execute("SELECT fecha FROM feriados_institucionales").fetchall()
+        return {r[0] for r in rows}
+    except Exception:
+        return set()
+
+def es_dia_laborable(dt: datetime.date, feriados_set: set) -> bool:
+    """Verifica si una fecha es día hábil (Lunes a Viernes y no feriado)."""
+    if dt.weekday() >= 5:  # 5: Sábado, 6: Domingo
+        return False
+    return dt.isoformat() not in feriados_set
+
+def calcular_fecha_fin_habil(fecha_ini_date: datetime.date, dias_habiles: int, feriados_set: set) -> datetime.date:
+    """Calcula la fecha final considerando días hábiles (L-V) excluyendo feriados."""
+    if dias_habiles <= 1:
+        return fecha_ini_date
+    
+    cur = fecha_ini_date
+    contados = 1
+    while contados < dias_habiles:
+        cur += datetime.timedelta(days=1)
+        if es_dia_laborable(cur, feriados_set):
+            contados += 1
+    return cur
+
+def contar_dias_habiles_entre(fecha_ini: datetime.date, fecha_fin: datetime.date, feriados_set: set) -> int:
+    """Cuenta los días hábiles netos entre dos fechas inclusive."""
+    if fecha_fin < fecha_ini:
+        return 1
+    cur = fecha_ini
+    dias = 0
+    while cur <= fecha_fin:
+        if es_dia_laborable(cur, feriados_set):
+            dias += 1
+        cur += datetime.timedelta(days=1)
+    return max(1, dias)
+
 app = FastAPI(title="IMARPE Project Management Engine", version="9.3")
 
 app.add_middleware(
@@ -106,31 +168,38 @@ class UnidadOrganicaModel(BaseModel):
     nombre: str
     sigla: str
     tipo_organo: Optional[str] = "Órgano de Línea"
+    sigla_padre: Optional[str] = None
+    titular_usuario_id: Optional[int] = None
+
+class AsignarTitularModel(BaseModel):
+    titular_trabajador_id: Optional[int] = None
+    titular_usuario_id: Optional[int] = None
+
+class ActualizarDependenciaROFModel(BaseModel):
+    sigla_padre: Optional[str] = None
 
 class TrabajadorAltaModel(BaseModel):
     nombres: str
     apellidos: str
     unidad_organica: str
     correo_usuario: str  # parte antes del @imarpe.gob.pe
+    cargo: Optional[str] = "Especialista"
+    es_directivo: Optional[int] = 0
+    crear_acceso: Optional[bool] = True
+    password_inicial: Optional[str] = "imarpe123"
+    rol_sistema: Optional[str] = "OPERADOR"
 
 class TrabajadorActualizarModel(BaseModel):
-    id: int
     nombres: str
     apellidos: str
     unidad_organica: str
-    correo: str
+    correo_usuario: str
+    cargo: Optional[str] = "Sin cargo / nivel"
+    es_directivo: Optional[int] = 0
 
 class PermisoProyectoUpdate(BaseModel):
     usuario_id: int
     nivel: str  # 'NINGUNO' | 'LECTURA' | 'GESTOR'
-
-class ProyectoCrearModel(BaseModel):
-    nombre: str
-    descripcion: Optional[str] = ""
-    unidad_organica: Optional[str] = ""
-    proceso_codigo: Optional[str] = ""
-    proceso_nombre: Optional[str] = ""
-    es_proceso_personalizado: Optional[int] = 0
 
 class ProyectoDescripcionUpdate(BaseModel):
     descripcion: str
@@ -147,10 +216,49 @@ class ProcesoItemModel(BaseModel):
     nivel: int
     codigo_padre: Optional[str] = None
 
+class ProcesoEditarModel(BaseModel):
+    codigo: str
+    nombre: str
+    nivel: int
+    codigo_padre: Optional[str] = None
+    estado: Optional[str] = "ACTIVO"
+
 class ProyectoProcesoUpdate(BaseModel):
     proceso_codigo: Optional[str] = ""
     proceso_nombre: Optional[str] = ""
     es_proceso_personalizado: Optional[int] = 0
+
+class FeriadoToggleModel(BaseModel):
+    fecha: str  # 'YYYY-MM-DD'
+    descripcion: Optional[str] = "Feriado / Día no laborable"
+    tipo: Optional[str] = "Calendario"
+
+class FeriadoCrearModel(BaseModel):
+    fecha: str
+    motivo: str
+    tipo: Optional[str] = "Calendario"
+
+class FeriadoEditarModel(BaseModel):
+    fecha: str
+    motivo: str
+    tipo: str
+
+class FeriadoCrearModel(BaseModel):
+    fecha: str
+    motivo: str
+    tipo: Optional[str] = "FERIADO"
+
+class ProyectoCrearModel(BaseModel):
+    nombre: str
+    descripcion: Optional[str] = ""
+    unidad_organica: Optional[str] = ""
+    duration_mode: Optional[str] = "business_days"
+    unidad_tiempo: Optional[str] = "DIAS"
+    horas_por_dia: Optional[int] = 8
+    proceso_codigo: Optional[str] = ""
+    proceso_nombre: Optional[str] = ""
+    es_proceso_personalizado: Optional[int] = 0
+    visibilidad: Optional[str] = "PRIVADO"  # 'PRIVADO' | 'PUBLICO'
 
 class ActividadModel(BaseModel):
     proyecto_id: Optional[int] = 1
@@ -216,6 +324,11 @@ class CrearProyectoDesdePlantillaModel(BaseModel):
     descripcion: Optional[str] = ""
     unidad_organica: Optional[str] = ""
     fecha_inicio: str  # Formato DD/MM/YYYY
+    proceso_codigo: Optional[str] = ""
+    proceso_nombre: Optional[str] = ""
+    es_proceso_personalizado: Optional[int] = 0
+    duration_mode: Optional[str] = "business_days"
+    visibilidad: Optional[str] = "PRIVADO"
 
 # --- INICIALIZACIÓN Y MIGRACIÓN DE BD ---
 def init_db():
@@ -404,12 +517,98 @@ def init_db():
         )
     """)
 
-    # Migración de columnas de procesos en proyectos
-    for col, defn in [("proceso_codigo", "TEXT"), ("proceso_nombre", "TEXT"), ("es_proceso_personalizado", "INTEGER DEFAULT 0")]:
+    # Migración de columnas de procesos, temporalidad y privacidad en proyectos
+    for col, defn in [
+        ("proceso_codigo", "TEXT"), 
+        ("proceso_nombre", "TEXT"), 
+        ("es_proceso_personalizado", "INTEGER DEFAULT 0"),
+        ("duration_mode", "TEXT DEFAULT 'business_days'"),
+        ("unidad_tiempo", "TEXT DEFAULT 'DIAS'"),
+        ("horas_por_dia", "INTEGER DEFAULT 8"),
+        ("visibilidad", "TEXT DEFAULT 'PRIVADO'")  # 'PRIVADO' | 'PUBLICO'
+    ]:
         try:
             c.execute(f"ALTER TABLE proyectos ADD COLUMN {col} {defn}")
         except sqlite3.OperationalError:
             pass
+
+    # Migración de jerarquía ROF y titular en unidades orgánicas (trabajador o usuario)
+    for col, defn in [
+        ("sigla_padre", "TEXT"),
+        ("titular_usuario_id", "INTEGER"),
+        ("titular_trabajador_id", "INTEGER")
+    ]:
+        try:
+            c.execute(f"ALTER TABLE unidades_organicas ADD COLUMN {col} {defn}")
+        except sqlite3.OperationalError:
+            pass
+
+    # Migración para cargo y nivel directivo en trabajadores
+    for col, defn in [("cargo", "TEXT DEFAULT 'Sin cargo / nivel'"), ("es_directivo", "INTEGER DEFAULT 0")]:
+        try:
+            c.execute(f"ALTER TABLE trabajadores ADD COLUMN {col} {defn}")
+        except sqlite3.OperationalError:
+            pass
+
+    # Tabla Feriados y Días No Laborables Institucionales con Clasificación Oficial
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS feriados_institucionales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT UNIQUE NOT NULL,
+            descripcion TEXT,
+            tipo TEXT DEFAULT 'Calendario',
+            creado_por TEXT DEFAULT 'ADMIN_TI',
+            fecha_registro TEXT
+        )
+    """)
+    try:
+        c.execute("ALTER TABLE feriados_institucionales ADD COLUMN tipo TEXT DEFAULT 'Calendario'")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("CREATE INDEX IF NOT EXISTS idx_feriados_fecha ON feriados_institucionales(fecha)")
+    except sqlite3.OperationalError:
+        pass
+
+    # Semilla Oficial de Feriados Nacionales e Institucionales Perú
+    year_actual = 2026
+    jueves_santo, viernes_santo = calcular_jueves_viernes_santo(year_actual)
+
+    feriados_base = [
+        (f"{year_actual}-01-01", "Calendario", "Año Nuevo"),
+        (f"{year_actual}-01-02", "Sector público", "Día no laborable para el sector público"),
+        (jueves_santo.isoformat(), "Calendario", "Jueves Santo"),
+        (viernes_santo.isoformat(), "Calendario", "Viernes Santo"),
+        (f"{year_actual}-05-01", "Calendario", "Día del Trabajo"),
+        (f"{year_actual}-06-07", "Calendario", "Batalla de Arica y Día de la Bandera"),
+        (f"{year_actual}-06-29", "Calendario", "Día de San Pedro y San Pablo"),
+        (f"{year_actual}-07-23", "Calendario", "Día de la Fuerza Aérea del Perú"),
+        (f"{year_actual}-07-27", "Sector público", "Día no laborable para el sector público"),
+        (f"{year_actual}-07-28", "Calendario", "Fiestas Patrias"),
+        (f"{year_actual}-07-29", "Calendario", "Fiestas Patrias"),
+        (f"{year_actual}-08-06", "Calendario", "Batalla de Junín"),
+        (f"{year_actual}-08-30", "Calendario", "Santa Rosa de Lima"),
+        (f"{year_actual}-10-08", "Calendario", "Combate de Angamos"),
+        (f"{year_actual}-11-01", "Calendario", "Día de Todos los Santos"),
+        (f"{year_actual}-12-08", "Calendario", "Inmaculada Concepción"),
+        (f"{year_actual}-12-09", "Calendario", "Batalla de Ayacucho"),
+        (f"{year_actual}-12-25", "Calendario", "Navidad"),
+        (f"{year_actual}-12-26", "Sector público", "Día no laborable para el sector público")
+    ]
+
+    for f_fecha, f_tipo, f_desc in feriados_base:
+        existe_f = c.execute("SELECT id FROM feriados_institucionales WHERE fecha = ?", (f_fecha,)).fetchone()
+        if not existe_f:
+            c.execute("""
+                INSERT INTO feriados_institucionales (fecha, descripcion, tipo, creado_por, fecha_registro)
+                VALUES (?, ?, ?, 'SISTEMA', ?)
+            """, (f_fecha, f_desc, f_tipo, ahora_peru_str()))
+        else:
+            c.execute("""
+                UPDATE feriados_institucionales 
+                SET descripcion = ?, tipo = ? 
+                WHERE id = ?
+            """, (f_desc, f_tipo, existe_f[0]))
 
     # Tabla Procesos Institucionales
     c.execute("""
@@ -564,60 +763,85 @@ def init_db():
         except sqlite3.OperationalError:
             pass
 
-    # Semilla oficial de Unidades Orgánicas del IMARPE
-    c.execute("SELECT COUNT(*) FROM unidades_organicas")
-    if c.fetchone()[0] == 0:
-        unidades_semilla = [
-            ("Consejo Directivo", "CD", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
-            ("Presidencia Ejecutiva", "PE", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
-            ("Gerencia Científica", "GC", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
-            ("Gerencia General", "GG", "ÓRGANOS DE LA ALTA DIRECCIÓN"),
-            ("Órgano de Control Institucional", "OCI", "ÓRGANOS DE CONTROL"),
-            ("Oficina de Asesoría Jurídica", "OAJ", "ÓRGANOS DE ASESORAMIENTO"),
-            ("Oficina de Planeamiento, Presupuesto y Modernización", "OPPM", "ÓRGANOS DE ASESORAMIENTO"),
-            ("Oficina de Administración", "OA", "ÓRGANOS DE APOYO"),
-            ("Unidad de Abastecimiento y Control Patrimonial", "UACP", "ÓRGANOS DE APOYO"),
-            ("Unidad de Gestión Financiera", "UGF", "ÓRGANOS DE APOYO"),
-            ("Oficina de Recursos Humanos", "ORH", "ÓRGANOS DE APOYO"),
-            ("Oficina de Tecnologías de la Información", "OTI", "ÓRGANOS DE APOYO"),
-            ("Dirección de Investigaciones del Subsistema Pelágico", "DISP", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Recursos Neríticos Pelágicos", "SIRNP", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Recursos Transzonales y Altamente Migratorios", "SIRTAM", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Dinámica Poblacional en Recursos Pelágicos", "SIDPRP", "ÓRGANOS DE LINEA"),
-            ("Dirección de Investigaciones del Subsistema Bentodemersal", "DISB", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Peces Demersales y Costeros", "SIPDC", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Biodiversidad Acuática", "SIBA", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Invertebrados y Macroalgas Marinas", "SIIMM", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Pesca Artesanal", "SIPA", "ÓRGANOS DE LINEA"),
-            ("Dirección de Investigaciones en Ciencias Marinas", "DICM", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Física y Modelado del Océano", "SIFMO", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Química y Geología", "SIQG", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Biología del Océano", "SIBO", "ÓRGANOS DE LINEA"),
-            ("Dirección de Investigaciones en Acuicultura", "DIA", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Sistemas Acuícolas", "SISA", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Recursos de Aguas Continentales", "SIRAC", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Calidad Acuática de Ambientes Litorales", "SICAAL", "ÓRGANOS DE LINEA"),
-            ("Dirección de Investigaciones en Pesca y Desarrollo Tecnológico", "DIPDT", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Tecnología Hidroacústica", "SITH", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Sensoramiento Remoto", "SISR", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Investigaciones en Sistemas y Métodos de Pesca", "SISMP", "ÓRGANOS DE LINEA"),
-            ("Subdirección de Ediciones y Difusión del Conocimiento Científico y Tecnológico", "SEDCCT", "ÓRGANOS DE LINEA"),
-            ("Sedes Desconcentrada Tumbes", "SD Tumbes", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Paita", "SD Paita", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Santa Rosa", "SD Santa Rosa", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Huanchaco", "SD Huanchaco", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Chimbote", "SD Chimbote", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Huacho", "SD Huacho", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Pisco", "SD Pisco", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Camaná", "SD Camaná", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Ilo", "SD Ilo", "ÓRGANOS DESCONCENTRADOS"),
-            ("Sedes Desconcentrada Puno", "SD Puno", "ÓRGANOS DESCONCENTRADOS"),
-            ("Centro de Plataformas Flotantes de Investigación Marina y Continental", "CPFIMC", "ÓRGANOS DESCONCENTRADOS")
-        ]
-        c.executemany("""
-            INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, estado)
-            VALUES (?, ?, ?, 'ACTIVO')
-        """, unidades_semilla)
+    # Semilla oficial y sincronización jerárquica ROF de Unidades Orgánicas
+    unidades_semilla = [
+        # Nivel 1: Alta Dirección
+        ("Consejo Directivo", "CD", "ÓRGANOS DE LA ALTA DIRECCIÓN", None),
+        ("Presidencia Ejecutiva", "PE", "ÓRGANOS DE LA ALTA DIRECCIÓN", "CD"),
+        ("Gerencia General", "GG", "ÓRGANOS DE LA ALTA DIRECCIÓN", "PE"),
+        ("Gerencia Científica", "GC", "ÓRGANOS DE LA ALTA DIRECCIÓN", "PE"),
+        
+        # Control y Asesoramiento
+        ("Órgano de Control Institucional", "OCI", "ÓRGANOS DE CONTROL", "PE"),
+        ("Oficina de Asesoría Jurídica", "OAJ", "ÓRGANOS DE ASESORAMIENTO", "GG"),
+        ("Oficina de Planeamiento, Presupuesto y Modernización", "OPPM", "ÓRGANOS DE ASESORAMIENTO", "GG"),
+        
+        # Órganos de Apoyo
+        ("Oficina de Administración", "OA", "ÓRGANOS DE APOYO", "GG"),
+        ("Unidad de Abastecimiento y Control Patrimonial", "UACP", "ÓRGANOS DE APOYO", "OA"),
+        ("Unidad de Gestión Financiera", "UGF", "ÓRGANOS DE APOYO", "OA"),
+        ("Oficina de Recursos Humanos", "ORH", "ÓRGANOS DE APOYO", "GG"),
+        ("Oficina de Tecnologías de la Información", "OTI", "ÓRGANOS DE APOYO", "GG"),
+        
+        # Órganos de Línea (Dependen de Gerencia Científica)
+        ("Dirección de Investigaciones del Subsistema Pelágico", "DISP", "ÓRGANOS DE LINEA", "GC"),
+        ("Subdirección de Investigaciones en Recursos Neríticos Pelágicos", "SIRNP", "ÓRGANOS DE LINEA", "DISP"),
+        ("Subdirección de Investigaciones en Recursos Transzonales y Altamente Migratorios", "SIRTAM", "ÓRGANOS DE LINEA", "DISP"),
+        ("Subdirección de Investigaciones en Dinámica Poblacional en Recursos Pelágicos", "SIDPRP", "ÓRGANOS DE LINEA", "DISP"),
+        
+        ("Dirección de Investigaciones del Subsistema Bentodemersal", "DISB", "ÓRGANOS DE LINEA", "GC"),
+        ("Subdirección de Investigaciones en Peces Demersales y Costeros", "SIPDC", "ÓRGANOS DE LINEA", "DISB"),
+        ("Subdirección de Investigaciones en Biodiversidad Acuática", "SIBA", "ÓRGANOS DE LINEA", "DISB"),
+        ("Subdirección de Investigaciones en Invertebrados y Macroalgas Marinas", "SIIMM", "ÓRGANOS DE LINEA", "DISB"),
+        ("Subdirección de Investigaciones en Pesca Artesanal", "SIPA", "ÓRGANOS DE LINEA", "DISB"),
+        
+        ("Dirección de Investigaciones en Ciencias Marinas", "DICM", "ÓRGANOS DE LINEA", "GC"),
+        ("Subdirección de Investigaciones en Física y Modelado del Océano", "SIFMO", "ÓRGANOS DE LINEA", "DICM"),
+        ("Subdirección de Investigaciones en Química y Geología", "SIQG", "ÓRGANOS DE LINEA", "DICM"),
+        ("Subdirección de Investigaciones en Biología del Océano", "SIBO", "ÓRGANOS DE LINEA", "DICM"),
+        
+        ("Dirección de Investigaciones en Acuicultura", "DIA", "ÓRGANOS DE LINEA", "GC"),
+        ("Subdirección de Investigaciones en Sistemas Acuícolas", "SISA", "ÓRGANOS DE LINEA", "DIA"),
+        ("Subdirección de Investigaciones en Recursos de Aguas Continentales", "SIRAC", "ÓRGANOS DE LINEA", "DIA"),
+        ("Subdirección de Investigaciones en Calidad Acuática de Ambientes Litorales", "SICAAL", "ÓRGANOS DE LINEA", "DIA"),
+        
+        ("Dirección de Investigaciones en Pesca y Desarrollo Tecnológico", "DIPDT", "ÓRGANOS DE LINEA", "GC"),
+        ("Subdirección de Investigaciones en Tecnología Hidroacústica", "SITH", "ÓRGANOS DE LINEA", "DIPDT"),
+        ("Subdirección de Investigaciones en Sensoramiento Remoto", "SISR", "ÓRGANOS DE LINEA", "DIPDT"),
+        ("Subdirección de Investigaciones en Sistemas y Métodos de Pesca", "SISMP", "ÓRGANOS DE LINEA", "DIPDT"),
+        ("Subdirección de Ediciones y Difusión del Conocimiento Científico y Tecnológico", "SEDCCT", "ÓRGANOS DE LINEA", "DIPDT"),
+        
+        # Órganos Desconcentrados (Dependen de Gerencia Científica)
+        ("Sede Desconcentrada Tumbes", "SD Tumbes", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Paita", "SD Paita", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Santa Rosa", "SD Santa Rosa", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Huanchaco", "SD Huanchaco", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Chimbote", "SD Chimbote", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Huacho", "SD Huacho", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Pisco", "SD Pisco", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Camaná", "SD Camaná", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Ilo", "SD Ilo", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Puno", "SD Puno", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Centro de Plataformas Flotantes de Investigación Marina y Continental", "CPFIMC", "ÓRGANOS DESCONCENTRADOS", "GC")
+    ]
+
+    # Sincronización respetando las dependencias que configure el Administrador TI
+    for nom, sig, tipo, padre in unidades_semilla:
+        uo_existente = c.execute("SELECT id, sigla_padre FROM unidades_organicas WHERE sigla = ?", (sig,)).fetchone()
+        if uo_existente:
+            # Solo actualiza sigla_padre si actualmente está vacía en BD
+            c.execute("""
+                UPDATE unidades_organicas 
+                SET nombre = ?, tipo_organo = ?, 
+                    sigla_padre = COALESCE(sigla_padre, ?), 
+                    estado = 'ACTIVO'
+                WHERE id = ?
+            """, (nom, tipo, padre, uo_existente[0]))
+        else:
+            c.execute("""
+                INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, sigla_padre, estado)
+                VALUES (?, ?, ?, ?, 'ACTIVO')
+            """, (nom, sig, tipo, padre))
 
 # Tabla Comentarios de Actividad (Colaborativo tipo Word 365)
     c.execute("""
@@ -851,24 +1075,121 @@ def actualizar_rol_global_usuario(
 # --- DIRECTORIO DE TRABAJADORES Y UNIDADES ORGÁNICAS ---
 @app.get("/unidades-organicas")
 def listar_unidades_organicas(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT id, nombre, sigla, tipo_organo, estado FROM unidades_organicas WHERE estado = 'ACTIVO' ORDER BY tipo_organo ASC, nombre ASC").fetchall()
-    return [dict(r) for r in rows]
+    try:
+        rows = db.execute("""
+            SELECT uo.id, uo.nombre, uo.sigla, 
+                   COALESCE(uo.tipo_organo, 'ÓRGANOS DE LÍNEA') as tipo_organo, 
+                   COALESCE(uo.sigla_padre, '') as sigla_padre, 
+                   uo.titular_usuario_id, 
+                   uo.titular_trabajador_id, 
+                   COALESCE(uo.estado, 'ACTIVO') as estado,
+                   COALESCE(t.nombre_completo, u.nombre_completo, '') as titular_nombre,
+                   COALESCE(t.cargo, '') as titular_cargo,
+                   COALESCE(t.correo, '') as titular_correo
+            FROM unidades_organicas uo
+            LEFT JOIN trabajadores t ON uo.titular_trabajador_id = t.id
+            LEFT JOIN usuarios u ON uo.titular_usuario_id = u.id
+            WHERE uo.estado = 'ACTIVO' OR uo.estado IS NULL
+            ORDER BY uo.id ASC
+        """).fetchall()
+        return [dict(r) for r in rows]
+    except Exception:
+        # Respaldo de alta tolerancia preservando rigurosamente sigla_padre
+        rows = db.execute("""
+            SELECT id, nombre, sigla, 
+                   COALESCE(sigla_padre, '') as sigla_padre, 
+                   titular_usuario_id, titular_trabajador_id 
+            FROM unidades_organicas 
+            WHERE estado = 'ACTIVO' OR estado IS NULL
+            ORDER BY id ASC
+        """).fetchall()
+        return [dict(r) for r in rows]
 
 @app.post("/unidades-organicas")
 def crear_unidad_organica(data: UnidadOrganicaModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     if user["rol"] != "ADMIN_TI":
         raise HTTPException(status_code=403, detail="Solo el Administrador TI puede gestionar la estructura orgánica.")
     try:
-        db.execute("INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, estado) VALUES (?, ?, ?, 'ACTIVO')",
-                   (data.nombre.strip(), data.sigla.strip().upper(), data.tipo_organo.strip()))
+        db.execute("""
+            INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, sigla_padre, titular_usuario_id, estado) 
+            VALUES (?, ?, ?, ?, ?, 'ACTIVO')
+        """, (
+            data.nombre.strip(), 
+            data.sigla.strip().upper(), 
+            data.tipo_organo.strip(),
+            (data.sigla_padre or "").strip().upper() or None,
+            data.titular_usuario_id
+        ))
         db.commit()
         return {"mensaje": "Unidad Orgánica registrada exitosamente"}
     except sqlite3.IntegrityError:
         raise HTTPException(status_code=400, detail="La sigla ingresada ya existe.")
 
+@app.put("/unidades-organicas/{unidad_id}/titular")
+def asignar_titular_unidad(unidad_id: int, data: AsignarTitularModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede asignar directivos y titulares de unidades.")
+
+    t_id = data.titular_trabajador_id
+    u_id = data.titular_usuario_id
+
+    # Si se seleccionó un trabajador del directorio, buscar si ya cuenta con usuario de login
+    if t_id and not u_id:
+        trab = db.execute("SELECT nombre_completo, correo FROM trabajadores WHERE id = ?", (t_id,)).fetchone()
+        if trab:
+            u_row = db.execute("""
+                SELECT id FROM usuarios 
+                WHERE LOWER(nombre_completo) = LOWER(?) 
+                   OR LOWER(username) = LOWER(?)
+                   OR LOWER(?) LIKE LOWER(username || '@%')
+                LIMIT 1
+            """, (trab["nombre_completo"], trab["correo"].split("@")[0] if trab["correo"] else "", trab["correo"] or "")).fetchone()
+            if u_row:
+                u_id = u_row["id"]
+
+    db.execute("""
+        UPDATE unidades_organicas 
+        SET titular_trabajador_id = ?, titular_usuario_id = ? 
+        WHERE id = ?
+    """, (t_id, u_id, unidad_id))
+    db.commit()
+    return {"mensaje": "Titular de unidad asignado exitosamente."}
+
+@app.put("/unidades-organicas/{unidad_id}/dependencia")
+def actualizar_dependencia_rof_unidad(
+    unidad_id: int, 
+    data: ActualizarDependenciaROFModel, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar la estructura jerárquica del ROF.")
+
+    padre_limpio = data.sigla_padre.strip().upper() if data.sigla_padre else None
+
+    # Validar que una unidad orgánica no dependa jerárquicamente de sí misma
+    actual = db.execute("SELECT sigla FROM unidades_organicas WHERE id = ?", (unidad_id,)).fetchone()
+    if actual and padre_limpio == actual["sigla"]:
+        raise HTTPException(status_code=400, detail="Una unidad no puede depender jerárquicamente de sí misma.")
+
+    db.execute("""
+        UPDATE unidades_organicas 
+        SET sigla_padre = ? 
+        WHERE id = ?
+    """, (padre_limpio, unidad_id))
+    db.commit()
+    return {"mensaje": "Dependencia jerárquica ROF actualizada con éxito."}
+
 @app.get("/trabajadores")
 def listar_trabajadores(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT id, nombres, apellidos, nombre_completo, unidad_organica, correo, estado FROM trabajadores ORDER BY nombre_completo ASC").fetchall()
+    rows = db.execute("""
+        SELECT id, nombres, apellidos, nombre_completo, unidad_organica, correo, 
+               COALESCE(cargo, 'Sin cargo / nivel') as cargo, 
+               COALESCE(es_directivo, 0) as es_directivo, 
+               COALESCE(estado, 'ACTIVO') as estado 
+        FROM trabajadores 
+        ORDER BY nombre_completo ASC
+    """).fetchall()
     return [dict(r) for r in rows]
 
 @app.post("/trabajadores")
@@ -882,27 +1203,60 @@ def crear_trabajador(data: TrabajadorAltaModel, user: dict = Depends(get_current
     
     usuario_correo = data.correo_usuario.strip().lower().replace("@imarpe.gob.pe", "")
     correo_final = f"{usuario_correo}@imarpe.gob.pe"
+    cargo_final = (data.cargo or "Especialista").strip()
+    es_dir = int(data.es_directivo or 0)
+    uo_final = data.unidad_organica.strip().upper()
 
     try:
+        # 1. Registrar en tabla Trabajadores
         db.execute("""
-            INSERT INTO trabajadores (nombres, apellidos, nombre_completo, unidad_organica, correo, estado)
-            VALUES (?, ?, ?, ?, ?, 'ACTIVO')
-        """, (nombres_limp, apellidos_limp, nombre_completo, data.unidad_organica.strip(), correo_final))
-        
+            INSERT INTO trabajadores (nombres, apellidos, nombre_completo, unidad_organica, correo, cargo, es_directivo, estado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVO')
+        """, (nombres_limp, apellidos_limp, nombre_completo, uo_final, correo_final, cargo_final, es_dir))
+        trabajador_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        # 2. Registrar en catálogo de Responsables para WBS
         db.execute("""
             INSERT OR REPLACE INTO responsables (nombre, cargo, correo)
             VALUES (?, ?, ?)
-        """, (nombre_completo, data.unidad_organica.strip(), correo_final))
-        
+        """, (nombre_completo, cargo_final, correo_final))
+
+        # 3. Si se solicita crear acceso, generar cuenta de usuario automáticamente sin duplicar trabajo
+        if data.crear_acceso:
+            pass_hasheada = hash_password(data.password_inicial or "imarpe123")
+            rol_sist = data.rol_sistema if data.rol_sistema in ("ADMIN_TI", "OPERADOR") else "OPERADOR"
+            
+            # Verificar si el username ya existía
+            u_existe = db.execute("SELECT id FROM usuarios WHERE username = ?", (usuario_correo,)).fetchone()
+            if not u_existe:
+                db.execute("""
+                    INSERT INTO usuarios (username, password, nombre_completo, rol, estado)
+                    VALUES (?, ?, ?, ?, 'ACTIVO')
+                """, (usuario_correo, pass_hasheada, nombre_completo, rol_sist))
+                nuevo_user_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+            else:
+                nuevo_user_id = u_existe[0]
+                db.execute("""
+                    UPDATE usuarios SET nombre_completo = ?, rol = ?, estado = 'ACTIVO' WHERE id = ?
+                """, (nombre_completo, rol_sist, nuevo_user_id))
+
+            # 4. Si fue marcado como Directivo / Titular, vincularlo automáticamente como autoridad de su UO
+            if es_dir == 1:
+                db.execute("""
+                    UPDATE unidades_organicas 
+                    SET titular_trabajador_id = ?, titular_usuario_id = ? 
+                    WHERE sigla = ?
+                """, (trabajador_id, nuevo_user_id, uo_final))
+
         db.commit()
-        return {"mensaje": "Trabajador registrado en el directorio institucional"}
+        return {"mensaje": "Trabajador incorporado exitosamente con identidad unificada."}
     except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="El correo institucional ya se encuentra registrado.")
+        raise HTTPException(status_code=400, detail="El correo o usuario ya se encuentra registrado.")
 
 @app.put("/trabajadores/{trabajador_id}")
 def actualizar_trabajador(
     trabajador_id: int, 
-    data: TrabajadorAltaModel, 
+    data: TrabajadorActualizarModel, 
     user: dict = Depends(get_current_user), 
     db: sqlite3.Connection = Depends(get_db)
 ):
@@ -921,39 +1275,46 @@ def actualizar_trabajador(
     usuario_correo = data.correo_usuario.strip().lower().replace("@imarpe.gob.pe", "")
     correo_final = f"{usuario_correo}@imarpe.gob.pe"
     antiguo_correo = actual["correo"]
+    cargo_final = (data.cargo or "Sin cargo / nivel").strip()
+    es_dir = int(data.es_directivo or 0)
+    uo_final = data.unidad_organica.strip().upper()
 
-    # Verificar si el nuevo correo ya existe en otro trabajador
     correo_ocupado = db.execute("SELECT id FROM trabajadores WHERE correo = ? AND id != ?", (correo_final, trabajador_id)).fetchone()
     if correo_ocupado:
         raise HTTPException(status_code=400, detail="El correo electrónico ya pertenece a otro trabajador.")
 
-    # 1. Actualizar tabla trabajadores
+    # 1. Actualizar tabla trabajadores con cargo y nivel de mando
     db.execute("""
         UPDATE trabajadores 
-        SET nombres = ?, apellidos = ?, nombre_completo = ?, unidad_organica = ?, correo = ?
+        SET nombres = ?, apellidos = ?, nombre_completo = ?, unidad_organica = ?, correo = ?, cargo = ?, es_directivo = ?
         WHERE id = ?
-    """, (nombres_limp, apellidos_limp, nuevo_nombre_completo, data.unidad_organica.strip(), correo_final, trabajador_id))
+    """, (nombres_limp, apellidos_limp, nuevo_nombre_completo, uo_final, correo_final, cargo_final, es_dir, trabajador_id))
 
-    # 2. Actualizar o sincronizar en catálogo de responsables
+    # 2. Actualizar catálogo de responsables
     db.execute("""
         UPDATE responsables 
         SET nombre = ?, cargo = ?, correo = ?
         WHERE nombre = ? OR correo = ?
-    """, (nuevo_nombre_completo, data.unidad_organica.strip(), correo_final, antiguo_nombre_completo, antiguo_correo))
+    """, (nuevo_nombre_completo, cargo_final, correo_final, antiguo_nombre_completo, antiguo_correo))
 
-    # 3. Sincronizar nombre en la cuenta de usuario si coincide
-    db.execute("""
-        UPDATE usuarios 
-        SET nombre_completo = ?
-        WHERE nombre_completo = ?
-    """, (nuevo_nombre_completo, antiguo_nombre_completo))
+    # 3. Sincronizar en tabla usuarios
+    u_row = db.execute("SELECT id FROM usuarios WHERE username = ? OR nombre_completo = ?", (usuario_correo, antiguo_nombre_completo)).fetchone()
+    if u_row:
+        db.execute("""
+            UPDATE usuarios 
+            SET nombre_completo = ?, username = ?
+            WHERE id = ?
+        """, (nuevo_nombre_completo, usuario_correo, u_row["id"]))
+        user_vinculado_id = u_row["id"]
+    else:
+        user_vinculado_id = None
 
-    # 4. Actualizar asignaciones en actividades si cambió el nombre
-    if antiguo_nombre_completo != nuevo_nombre_completo:
-        acts = db.execute("SELECT proyecto_id, codigo, responsable FROM actividades WHERE responsable LIKE ?", (f"%{antiguo_nombre_completo}%",)).fetchall()
-        for a in acts:
-            nuevo_resp = a["responsable"].replace(antiguo_nombre_completo, nuevo_nombre_completo)
-            db.execute("UPDATE actividades SET responsable = ? WHERE proyecto_id = ? AND codigo = ?", (nuevo_resp, a["proyecto_id"], a["codigo"]))
+    if es_dir == 1 and user_vinculado_id:
+        db.execute("""
+            UPDATE unidades_organicas 
+            SET titular_trabajador_id = ?, titular_usuario_id = ?
+            WHERE sigla = ?
+        """, (trabajador_id, user_vinculado_id, uo_final))
 
     db.commit()
     return {"status": "success", "mensaje": "Datos del trabajador actualizados correctamente."}
@@ -976,13 +1337,14 @@ def alternar_estado_trabajador(
     db.commit()
     return {"status": "success", "mensaje": f"Estado actualizado a {nuevo_estado}", "nuevo_estado": nuevo_estado}
 
-# --- CATÁLOGO DE PROCESOS INSTITUCIONALES ---
+# --- CATÁLOGO DE PROCESOS INSTITUCIONALES (CRUD COMPLETO TI) ---
 @app.get("/procesos-institucionales")
-def listar_procesos_institucionales(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("""
+def listar_procesos_institucionales(todos: bool = False, db: sqlite3.Connection = Depends(get_db)):
+    filtro = "" if todos else "WHERE estado = 'ACTIVO'"
+    rows = db.execute(f"""
         SELECT id, codigo, nombre, nivel, codigo_padre, estado 
         FROM procesos_institucionales 
-        WHERE estado = 'ACTIVO' 
+        {filtro}
         ORDER BY codigo ASC
     """).fetchall()
     return [dict(r) for r in rows]
@@ -990,36 +1352,280 @@ def listar_procesos_institucionales(db: sqlite3.Connection = Depends(get_db)):
 @app.post("/procesos-institucionales")
 def registrar_proceso_admin(data: ProcesoItemModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     if user.get("rol") != "ADMIN_TI":
-        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede gestionar el catálogo oficial de procesos.")
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede incorporar procesos al catálogo oficial.")
+    cod_limpio = data.codigo.strip().upper()
+    nom_limpio = data.nombre.strip()
     try:
         db.execute("""
             INSERT INTO procesos_institucionales (codigo, nombre, nivel, codigo_padre, estado, creado_por)
             VALUES (?, ?, ?, ?, 'ACTIVO', ?)
-        """, (data.codigo.strip(), data.nombre.strip(), data.nivel, data.codigo_padre, user["username"]))
+        """, (cod_limpio, nom_limpio, data.nivel, data.codigo_padre, user["username"]))
         db.commit()
         return {"mensaje": "Proceso registrado exitosamente"}
     except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="El código de proceso ya se encuentra registrado.")
+        raise HTTPException(status_code=400, detail=f"El código de proceso '{cod_limpio}' ya existe en la base de datos.")
+
+@app.put("/procesos-institucionales/{proceso_id}")
+def editar_proceso_admin(proceso_id: int, data: ProcesoEditarModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar procesos institucionales.")
+    
+    proc_actual = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proceso_id,)).fetchone()
+    if not proc_actual:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado.")
+
+    nuevo_cod = data.codigo.strip().upper()
+    nuevo_nom = data.nombre.strip()
+    cod_anterior = proc_actual["codigo"]
+
+    try:
+        db.execute("""
+            UPDATE procesos_institucionales 
+            SET codigo = ?, nombre = ?, nivel = ?, codigo_padre = ?, estado = ?
+            WHERE id = ?
+        """, (nuevo_cod, nuevo_nom, data.nivel, data.codigo_padre, data.estado, proceso_id))
+        
+        # Propagar actualización a proyectos vinculados si el código o nombre cambió
+        db.execute("""
+            UPDATE proyectos 
+            SET proceso_codigo = ?, proceso_nombre = ? 
+            WHERE proceso_codigo = ? AND es_proceso_personalizado = 0
+        """, (nuevo_cod, nuevo_nom, cod_anterior))
+        
+        db.commit()
+        return {"mensaje": "Proceso actualizado correctamente y propagado a los proyectos vinculados."}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail=f"El código '{nuevo_cod}' ya está en uso por otro proceso.")
+
+@app.delete("/procesos-institucionales/{proceso_id}")
+def eliminar_proceso_admin(proceso_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede eliminar procesos institucionales.")
+    
+    proc = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proceso_id,)).fetchone()
+    if not proc:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado.")
+    
+    # Validación de Integridad Institucional: Verificar si proyectos vigentes dependen de este proceso
+    en_uso = db.execute("SELECT COUNT(*) FROM proyectos WHERE proceso_codigo = ?", (proc["codigo"],)).fetchone()[0]
+    if en_uso > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"No se puede eliminar el proceso [{proc['codigo']}] porque existen {en_uso} proyecto(s) asociados a él. Puede cambiar su estado a 'INACTIVO' para deshabilitarlo de nuevos proyectos."
+        )
+
+    db.execute("DELETE FROM procesos_institucionales WHERE id = ?", (proceso_id,))
+    db.commit()
+    return {"mensaje": f"Proceso [{proc['codigo']}] eliminado con éxito."}
+
+# --- CALENDARIO LABORAL Y FERIADOS INSTITUCIONALES (TI) ---
+@app.get("/feriados")
+def listar_feriados(year: Optional[int] = None, db: sqlite3.Connection = Depends(get_db)):
+    if year:
+        rows = db.execute("""
+            SELECT id, fecha, descripcion, 
+                   COALESCE(descripcion, '') as motivo, 
+                   COALESCE(tipo, 'Calendario') as tipo, creado_por 
+            FROM feriados_institucionales 
+            WHERE fecha LIKE ?
+            ORDER BY fecha ASC
+        """, (f"{year}-%",)).fetchall()
+    else:
+        rows = db.execute("""
+            SELECT id, fecha, descripcion, 
+                   COALESCE(descripcion, '') as motivo, 
+                   COALESCE(tipo, 'Calendario') as tipo, creado_por 
+            FROM feriados_institucionales 
+            ORDER BY fecha ASC
+        """).fetchall()
+    return [dict(r) for r in rows]
+
+@app.post("/feriados")
+def agregar_feriado(data: FeriadoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede registrar feriados.")
+    
+    fecha_str = data.fecha.strip()
+    motivo_str = data.motivo.strip()
+    tipo_str = data.tipo.strip() if data.tipo else "Calendario"
+
+    if not fecha_str or not motivo_str:
+        raise HTTPException(status_code=400, detail="La fecha y el motivo son obligatorios.")
+
+    try:
+        db.execute("""
+            INSERT INTO feriados_institucionales (fecha, descripcion, tipo, creado_por, fecha_registro)
+            VALUES (?, ?, ?, ?, ?)
+        """, (fecha_str, motivo_str, tipo_str, user["username"], ahora_peru_str()))
+        db.commit()
+        return {"mensaje": "Feriado registrado exitosamente"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail=f"La fecha {fecha_str} ya se encuentra registrada en el calendario.")
+
+@app.put("/feriados/{feriado_id}")
+def editar_feriado(feriado_id: int, data: FeriadoEditarModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar feriados.")
+    
+    actual = db.execute("SELECT id FROM feriados_institucionales WHERE id = ?", (feriado_id,)).fetchone()
+    if not actual:
+        raise HTTPException(status_code=404, detail="Feriado no encontrado.")
+
+    try:
+        db.execute("""
+            UPDATE feriados_institucionales
+            SET fecha = ?, descripcion = ?, tipo = ?
+            WHERE id = ?
+        """, (data.fecha.strip(), data.motivo.strip(), data.tipo.strip(), feriado_id))
+        db.commit()
+        return {"mensaje": "Feriado modificado exitosamente."}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Ya existe otro feriado registrado en esa fecha.")
+
+@app.delete("/feriados/{feriado_id}")
+def eliminar_feriado(feriado_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede eliminar feriados.")
+    
+    db.execute("DELETE FROM feriados_institucionales WHERE id = ?", (feriado_id,))
+    db.commit()
+    return {"mensaje": "Feriado eliminado exitosamente"}
+
+@app.post("/feriados/proyectar-siguiente-ano")
+def proyectar_feriados_siguiente_ano(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    """Clona y proyecta los feriados institucionales para el siguiente año fiscal con recálculo automático de Semana Santa."""
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede proyectar los feriados del siguiente año.")
+    
+    year_actual = datetime.now(ZONA_PERU).year
+    year_siguiente = year_actual + 1
+
+    feriados_origen = db.execute("SELECT fecha, descripcion, tipo FROM feriados_institucionales WHERE fecha LIKE ?", (f"{year_actual}-%",)).fetchall()
+    if not feriados_origen:
+        raise HTTPException(status_code=400, detail=f"No hay feriados registrados en el año base {year_actual} para proyectar.")
+
+    jueves_santo_sig, viernes_santo_sig = calcular_jueves_viernes_santo(year_siguiente)
+    insertados = 0
+
+    for f in feriados_origen:
+        f_tipo = f["tipo"]
+        f_desc = f["descripcion"]
+        
+        if "Jueves Santo" in f_desc:
+            nueva_fecha = jueves_santo_sig.isoformat()
+        elif "Viernes Santo" in f_desc:
+            nueva_fecha = viernes_santo_sig.isoformat()
+        else:
+            partes = f["fecha"].split("-")
+            nueva_fecha = f"{year_siguiente}-{partes[1]}-{partes[2]}"
+
+        try:
+            db.execute("""
+                INSERT INTO feriados_institucionales (fecha, descripcion, tipo, creado_por, fecha_registro)
+                VALUES (?, ?, ?, ?, ?)
+            """, (nueva_fecha, f_desc, f_tipo, user["username"], ahora_peru_str()))
+            insertados += 1
+        except sqlite3.IntegrityError:
+            pass
+
+    db.commit()
+    return {
+        "mensaje": f"Se han proyectado y registrado {insertados} feriados para el año fiscal {year_siguiente}.",
+        "year_proyectado": year_siguiente,
+        "total_incorporados": insertados
+    }
+
+@app.post("/feriados/toggle")
+def toggle_feriado_admin(data: FeriadoToggleModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede configurar el calendario de feriados.")
+    
+    fecha_str = data.fecha.strip()
+    existente = db.execute("SELECT id FROM feriados_institucionales WHERE fecha = ?", (fecha_str,)).fetchone()
+    
+    if existente:
+        db.execute("DELETE FROM feriados_institucionales WHERE id = ?", (existente[0],))
+        db.commit()
+        return {"accion": "ELIMINADO", "fecha": fecha_str, "mensaje": f"La fecha {fecha_str} fue retirada de feriados."}
+    else:
+        db.execute("""
+            INSERT INTO feriados_institucionales (fecha, descripcion, tipo, creado_por, fecha_registro)
+            VALUES (?, ?, ?, ?, ?)
+        """, (fecha_str, data.descripcion.strip(), data.tipo, user["username"], ahora_peru_str()))
+        db.commit()
+        return {"accion": "REGISTRADO", "fecha": fecha_str, "mensaje": f"La fecha {fecha_str} fue registrada como feriado / no laborable."}
 
 # --- HUB DE PROYECTOS ---
 @app.get("/proyectos")
 def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     u_id = user["id"]
     u_nom = user.get("nombre_completo", "")
+    es_admin_ti = (user.get("rol") == "ADMIN_TI")
 
+    # Identificar si el usuario actual es titular/directivo de alguna unidad orgánica
+    uo_row = db.execute("""
+        SELECT uo.sigla
+        FROM unidades_organicas uo
+        LEFT JOIN trabajadores t ON uo.titular_trabajador_id = t.id
+        LEFT JOIN usuarios u ON (uo.titular_usuario_id = u.id OR u.nombre_completo = t.nombre_completo OR t.correo LIKE u.username || '@%')
+        WHERE u.id = ? AND uo.estado = 'ACTIVO'
+        LIMIT 1
+    """, (u_id,)).fetchone()
+
+    # Si es titular directo de una unidad de mando, esa es su sigla de autoridad; de lo contrario queda vacía
+    mi_sigla_autoridad = uo_row["sigla"] if uo_row else ""
+
+    # Consulta con CTE recursiva para obtener todas las unidades subordinadas a mi cargo
     query = """
+        WITH RECURSIVE ArbolSubordinadas(sigla) AS (
+            SELECT sigla FROM unidades_organicas WHERE sigla = ?
+            UNION ALL
+            SELECT uo.sigla FROM unidades_organicas uo
+            JOIN ArbolSubordinadas a ON uo.sigla_padre = a.sigla
+        )
         SELECT DISTINCT p.id, p.nombre, p.descripcion, p.unidad_organica, 
-               p.proceso_codigo, p.proceso_nombre, p.es_proceso_personalizado, p.fecha_creacion,
-               CASE WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 1 ELSE 0 END as es_gestor
+               p.proceso_codigo, p.proceso_nombre, p.es_proceso_personalizado,
+               COALESCE(p.duration_mode, CASE WHEN p.unidad_tiempo = 'HORAS' THEN 'hours' ELSE 'business_days' END) as duration_mode,
+               COALESCE(p.visibilidad, 'PRIVADO') as visibilidad,
+               p.unidad_tiempo, p.horas_por_dia, p.fecha_creacion,
+               CASE 
+                   WHEN pu.es_gestor = 1 OR p.creador_id = ? OR ? = 1 THEN 1 
+                   ELSE 0 
+               END as es_gestor,
+               CASE 
+                   WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 'GESTOR'
+                   WHEN a.responsable LIKE ? THEN 'RESPONSABLE'
+                   WHEN pu.permiso IS NOT NULL THEN pu.permiso
+                   WHEN p.visibilidad = 'PUBLICO' AND (p.unidad_organica IN (SELECT sigla FROM ArbolSubordinadas) OR ? = 'PE') THEN 'AUTORIDAD'
+                   ELSE 'VISUALIZADOR'
+               END as rol_efectivo
         FROM proyectos p
         LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
         LEFT JOIN actividades a ON p.id = a.proyecto_id
-        WHERE p.creador_id = ? 
-           OR pu.usuario_id = ? 
-           OR a.responsable LIKE ?
+        WHERE ? = 1                                           -- Admin TI ve todo
+           OR p.creador_id = ?                                -- Creador siempre lo ve
+           OR pu.usuario_id = ?                               -- Invitado explícito
+           OR a.responsable LIKE ?                            -- Responsable de tareas asignadas
+           OR (                                               -- Cadena de Mando ROF para Proyectos Públicos
+               p.visibilidad = 'PUBLICO' AND (
+                   ? = 'PE'                                   -- Presidencia Ejecutiva ve todo lo público
+                   OR p.unidad_organica IN (SELECT sigla FROM ArbolSubordinadas)
+               )
+           )
         ORDER BY p.id DESC
     """
-    rows = db.execute(query, (u_id, u_id, u_id, u_id, f"%{u_nom}%")).fetchall()
+    
+    resp_like = f"%{u_nom}%"
+    es_admin_flag = 1 if es_admin_ti else 0
+
+    rows = db.execute(query, (
+        mi_sigla_autoridad, 
+        u_id, es_admin_flag,
+        u_id, resp_like, mi_sigla_autoridad,
+        u_id,
+        es_admin_flag, u_id, u_id, resp_like,
+        mi_sigla_autoridad
+    )).fetchall()
     
     proyectos_resumen = []
     for r in rows:
@@ -1039,7 +1645,7 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
             acts_dict[cod] = {
                 "codigo": cod,
                 "avance": int(a["avance"] or 0),
-                "estado": str(a["estado"] or "Pendiente")
+                "estado": str(a["estado"] or "No iniciado")
             }
 
         def round_half_up(n):
@@ -1071,9 +1677,25 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
 
 @app.post("/proyectos")
 def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    modo_duracion = str(p.duration_mode or "").strip().lower()
+    if modo_duracion not in ("business_days", "hours"):
+        modo_duracion = "hours" if (p.unidad_tiempo or "").upper() == "HORAS" else "business_days"
+
+    unidad_tiempo = "HORAS" if modo_duracion == "hours" else "DIAS"
+    horas_dia = int(p.horas_por_dia or 8)
+
+    # Visibilidad: PRIVADO por default, PUBLICO opcional
+    visibilidad_final = (p.visibilidad or "PRIVADO").upper().strip()
+    if visibilidad_final not in ("PRIVADO", "PUBLICO"):
+        visibilidad_final = "PRIVADO"
+
     db.execute("""
-        INSERT INTO proyectos (nombre, descripcion, unidad_organica, proceso_codigo, proceso_nombre, es_proceso_personalizado, creador_id) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO proyectos (
+            nombre, descripcion, unidad_organica, proceso_codigo, proceso_nombre, 
+            es_proceso_personalizado, duration_mode, unidad_tiempo, horas_por_dia, 
+            visibilidad, creador_id
+        ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         p.nombre.strip(), 
         p.descripcion.strip(), 
@@ -1081,16 +1703,20 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
         (p.proceso_codigo or "").strip(),
         (p.proceso_nombre or "").strip(),
         int(p.es_proceso_personalizado or 0),
+        modo_duracion,
+        unidad_tiempo,
+        horas_dia,
+        visibilidad_final,
         user["id"]
     ))
     nuevo_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
-    db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor) VALUES (?, ?, 1)", (nuevo_id, user["id"]))
+    db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor, permiso) VALUES (?, ?, 1, 'GESTOR')", (nuevo_id, user["id"]))
     db.execute("""
         INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle) 
         VALUES (?, ?, ?, 'Creación Proyecto', ?)
-    """, (nuevo_id, ahora_peru_str(), user["username"], f"Proyecto creado: '{p.nombre.strip()}'"))
+    """, (nuevo_id, ahora_peru_str(), user["username"], f"Proyecto creado: '{p.nombre.strip()}' [Modalidad: {modo_duracion} | Alcance: {visibilidad_final}]"))
     db.commit()
-    return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id}
+    return {"mensaje": "Proyecto creado exitosamente", "proyecto_id": nuevo_id, "duration_mode": modo_duracion, "visibilidad": visibilidad_final}
 
 @app.put("/proyectos/{proyecto_id}/descripcion")
 def actualizar_descripcion_proyecto(proyecto_id: int, data: ProyectoDescripcionUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
@@ -1217,6 +1843,25 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         dias_val = int(act.dias if act.dias is not None else 1)
         pred = str(act.predecesores or "").strip()
 
+        # BLINDAJE DE SEGURIDAD CONTRA MANIPULACIÓN: RECALCULAR FECHA FIN EN PROYECTOS POR HORAS
+        proy_info = db.execute("SELECT duration_mode, unidad_tiempo, horas_por_dia FROM proyectos WHERE id = ?", (p_id,)).fetchone()
+        es_modo_horas = bool(proy_info and (proy_info["duration_mode"] == "hours" or proy_info["unidad_tiempo"] == "HORAS"))
+
+        if es_modo_horas and f_ini:
+            try:
+                partes_ini = f_ini.split("/")
+                dt_ini = datetime(int(partes_ini[2]), int(partes_ini[1]), int(partes_ini[0])).date()
+                horas_dia = int(proy_info["horas_por_dia"] or 8)
+                # Días hábiles necesarios según las horas netas ingresadas (ej. 1 a 8h = 1 día)
+                dias_habiles_necesarios = max(1, (dias_val + horas_dia - 1) // horas_dia)
+                
+                # Obtener feriados institucionales para cálculo legal exacto
+                feriados_db = obtener_set_feriados(db)
+                dt_fin_calculada = calcular_fecha_fin_habil(dt_ini, dias_habiles_necesarios, feriados_db)
+                f_fin = dt_fin_calculada.strftime("%d/%m/%Y")
+            except Exception:
+                pass  # Si el formato no fuera legible, conserva el string original
+
         # Validación amplia de permisos de Gestor o Admin TI
         es_gestor = db.execute("""
             SELECT 1 FROM proyectos p 
@@ -1232,8 +1877,17 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         """, (p_id, cod, f"{cod}.")).fetchone()
 
         if not es_admin_o_gestor:
-            if not existe or user.get("nombre_completo", user["username"]) not in (existe["responsable"] or ""):
-                raise HTTPException(status_code=403, detail="Permiso denegado: Solo puedes modificar tus actividades asignadas.")
+            u_nombre = (user.get("nombre_completo") or "").strip().lower()
+            u_user = (user.get("username") or "").strip().lower()
+            resp_db = (existe["responsable"] or "").strip().lower() if existe else ""
+
+            es_responsable_valido = bool(
+                (u_nombre and u_nombre in resp_db) or 
+                (u_user and u_user in resp_db)
+            )
+
+            if not existe or not es_responsable_valido:
+                raise HTTPException(status_code=403, detail="Acceso restringido: Solo el Gestor o el Responsable asignado pueden actualizar el avance de esta actividad.")
 
         ahora_str = ahora_peru_str()
 
@@ -1712,44 +2366,67 @@ def actualizar_permiso_personal(
     db.commit()
     return {"mensaje": "Permiso actualizado exitosamente"}
 
-# --- ALGORITMO FORMAL CPM (CRITICAL PATH METHOD) ---
+# --- ALGORITMO FORMAL CPM CON PROTECCIÓN DE CICLOS Y SOPORTE HORAS/DÍAS ---
 @app.get("/ruta-critica")
 def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    p_id = int(proyecto_id or 1)
+    
+    # 1. Obtener modalidad temporal del proyecto (horas o días)
+    proy = db.execute("SELECT duration_mode, unidad_tiempo FROM proyectos WHERE id = ?", (p_id,)).fetchone()
+    modo_duracion = "hours" if (proy and (proy["duration_mode"] == "hours" or proy["unidad_tiempo"] == "HORAS")) else "business_days"
+
     rows = db.execute("""
         SELECT codigo, descripcion, dias, predecesores, fecha_inicio, fecha_fin 
         FROM actividades 
         WHERE proyecto_id = ? 
         ORDER BY codigo ASC
-    """, (proyecto_id,)).fetchall()
+    """, (p_id,)).fetchall()
 
     if not rows:
-        return {"duracion_proyecto_dias": 0, "detalles": {}}
+        return {"duracion_proyecto_dias": 0, "modo_duracion": modo_duracion, "detalles": {}}
 
-    todos_codigos = [r["codigo"] for r in rows]
+    todos_codigos = [str(r["codigo"]).rstrip(".") for r in rows]
     actividades_dict = {}
     
     for r in rows:
-        cod = r["codigo"]
-        cod_limpio = cod.rstrip(".")
-        es_madre = any(otro.startswith(f"{cod_limpio}.") and otro != cod for otro in todos_codigos)
+        cod = str(r["codigo"]).rstrip(".")
+        es_madre = any(otro.startswith(f"{cod}.") and otro != cod for otro in todos_codigos)
         
+        preds_raw = [p.strip().rstrip(".") for p in (r["predecesores"] or "").split(",") if p.strip()]
+        # Filtrar predecesores válidos y evitar auto-dependencia (1 depende de 1)
+        preds_validos = [p for p in preds_raw if p in todos_codigos and p != cod]
+
         actividades_dict[cod] = {
             "codigo": cod,
             "descripcion": r["descripcion"],
             "duracion": max(1, int(r["dias"] or 1)),
-            "predecesores": [p.strip() for p in (r["predecesores"] or "").split(",") if p.strip() and p.strip() in todos_codigos],
+            "predecesores": preds_validos,
             "es_madre": es_madre,
             "ES": 0, "EF": 0, "LS": 0, "LF": 0, "holgura": 0, "es_critica": False
         }
 
+    # Evaluar únicamente nodos terminales (hojas)
     nodos = {k: v for k, v in actividades_dict.items() if not v["es_madre"]}
     if not nodos:
         nodos = actividades_dict
 
-    # 1. Forward Pass
+    # Limpieza de dependencias circulares directas (A -> B y B -> A)
+    for cod, n in nodos.items():
+        preds_limpios = []
+        for pred in n["predecesores"]:
+            if pred in nodos and cod in nodos[pred]["predecesores"]:
+                # Romper enlace circular: se respeta el orden natural WBS (el menor código manda)
+                if cod > pred:
+                    preds_limpios.append(pred)
+            else:
+                preds_limpios.append(pred)
+        n["predecesores"] = preds_limpios
+
+    # 1. Forward Pass con detector de convergencia estricto
     cambio = True
     pasadas = 0
-    while cambio and pasadas < len(nodos) * 2:
+    max_pasadas = len(nodos) + 2
+    while cambio and pasadas < max_pasadas:
         cambio = False
         pasadas += 1
         for cod, n in nodos.items():
@@ -1769,11 +2446,11 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
     # 2. Backward Pass
     for n in nodos.values():
         n["LF"] = duracion_total
-        n["LS"] = duracion_total - n["duracion"]
+        n["LS"] = max(0, duracion_total - n["duracion"])
 
     cambio = True
     pasadas = 0
-    while cambio and pasadas < len(nodos) * 2:
+    while cambio and pasadas < max_pasadas:
         cambio = False
         pasadas += 1
         for cod, n in nodos.items():
@@ -1781,7 +2458,7 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
             if sucesores:
                 min_ls_suc = min(s["LS"] for s in sucesores)
                 nuevo_lf = min_ls_suc
-                nuevo_ls = nuevo_lf - n["duracion"]
+                nuevo_ls = max(0, nuevo_lf - n["duracion"])
                 if nuevo_lf != n["LF"] or nuevo_ls != n["LS"]:
                     n["LF"] = nuevo_lf
                     n["LS"] = nuevo_ls
@@ -1792,7 +2469,11 @@ def calcular_cpm(proyecto_id: Optional[int] = 1, user: dict = Depends(get_curren
         n["holgura"] = max(0, n["LS"] - n["ES"])
         n["es_critica"] = (n["holgura"] == 0 and n["duracion"] > 0)
 
-    return {"duracion_proyecto_dias": duracion_total, "detalles": nodos}
+    return {
+        "duracion_proyecto_dias": duracion_total,
+        "modo_duracion": modo_duracion,
+        "detalles": nodos
+    }
 
 # --- NOTIFICACIONES ---
 @app.post("/notificaciones/asignacion")
@@ -2072,10 +2753,33 @@ def crear_proyecto_desde_plantilla(
     if not acts_plantilla:
         raise HTTPException(status_code=400, detail="La plantilla seleccionada no contiene actividades.")
 
+    modo_duracion = str(data.duration_mode or "business_days").strip().lower()
+    if modo_duracion not in ("business_days", "hours"):
+        modo_duracion = "business_days"
+    unidad_tiempo = "HORAS" if modo_duracion == "hours" else "DIAS"
+
+    visib = (data.visibilidad or "PRIVADO").upper().strip()
+    if visib not in ("PRIVADO", "PUBLICO"):
+        visib = "PRIVADO"
+
     db.execute("""
-        INSERT INTO proyectos (nombre, descripcion, unidad_organica, creador_id)
-        VALUES (?, ?, ?, ?)
-    """, (data.nombre_proyecto.strip(), (data.descripcion or plantilla["descripcion"] or "").strip(), (data.unidad_organica or "").strip(), user["id"]))
+        INSERT INTO proyectos (
+            nombre, descripcion, unidad_organica, proceso_codigo, proceso_nombre,
+            es_proceso_personalizado, duration_mode, unidad_tiempo, visibilidad, creador_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        data.nombre_proyecto.strip(),
+        (data.descripcion or plantilla["descripcion"] or "").strip(),
+        (data.unidad_organica or "").strip(),
+        (data.proceso_codigo or "").strip(),
+        (data.proceso_nombre or "").strip(),
+        int(data.es_proceso_personalizado or 0),
+        modo_duracion,
+        unidad_tiempo,
+        visib,
+        user["id"]
+    ))
     
     nuevo_proy_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor, permiso) VALUES (?, ?, 1, 'GESTOR')", (nuevo_proy_id, user["id"]))
