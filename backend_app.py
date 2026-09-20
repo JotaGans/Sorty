@@ -27,6 +27,27 @@ DB_PATH = os.path.join(DATA_DIR, "imarpe_gantt.db")
 
 # --- FUNCIONES MATEMÁTICAS DE CALENDARIO LABORAL INSTITUCIONAL ---
 
+def calcular_jueves_viernes_santo(year: int):
+    """Calcula automáticamente las fechas de Jueves y Viernes Santo según el algoritmo Butcher."""
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = b // 4
+    e = b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i = c // 4
+    k = c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    mes = (h + l - 7 * m + 114) // 31
+    dia = ((h + l - 7 * m + 114) % 31) + 1
+    domingo_resurreccion = datetime(year, mes, dia).date()
+    jueves_santo = domingo_resurreccion - timedelta(days=3)
+    viernes_santo = domingo_resurreccion - timedelta(days=2)
+    return jueves_santo, viernes_santo
+
 def obtener_set_feriados(db: sqlite3.Connection) -> set:
     """Retorna un conjunto con todas las fechas feriadas registradas en formato YYYY-MM-DD."""
     try:
@@ -206,6 +227,21 @@ class ProyectoProcesoUpdate(BaseModel):
 class FeriadoToggleModel(BaseModel):
     fecha: str  # 'YYYY-MM-DD'
     descripcion: Optional[str] = "Feriado / Día no laborable"
+    tipo: Optional[str] = "Calendario"
+
+class FeriadoCrearModel(BaseModel):
+    fecha: str
+    motivo: str
+    tipo: Optional[str] = "Calendario"
+
+class FeriadoEditarModel(BaseModel):
+    fecha: str
+    motivo: str
+    tipo: str
+
+class FeriadoCrearModel(BaseModel):
+    fecha: str
+    motivo: str
     tipo: Optional[str] = "FERIADO"
 
 class ProyectoCrearModel(BaseModel):
@@ -509,21 +545,65 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
-    # Tabla Feriados y Días No Laborables Institucionales
+    # Tabla Feriados y Días No Laborables Institucionales con Clasificación Oficial
     c.execute("""
         CREATE TABLE IF NOT EXISTS feriados_institucionales (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             fecha TEXT UNIQUE NOT NULL,
             descripcion TEXT,
-            tipo TEXT DEFAULT 'FERIADO',
+            tipo TEXT DEFAULT 'Calendario',
             creado_por TEXT DEFAULT 'ADMIN_TI',
             fecha_registro TEXT
         )
     """)
     try:
+        c.execute("ALTER TABLE feriados_institucionales ADD COLUMN tipo TEXT DEFAULT 'Calendario'")
+    except sqlite3.OperationalError:
+        pass
+    try:
         c.execute("CREATE INDEX IF NOT EXISTS idx_feriados_fecha ON feriados_institucionales(fecha)")
     except sqlite3.OperationalError:
         pass
+
+    # Semilla Oficial de Feriados Nacionales e Institucionales Perú
+    year_actual = 2026
+    jueves_santo, viernes_santo = calcular_jueves_viernes_santo(year_actual)
+
+    feriados_base = [
+        (f"{year_actual}-01-01", "Calendario", "Año Nuevo"),
+        (f"{year_actual}-01-02", "Sector público", "Día no laborable para el sector público"),
+        (jueves_santo.isoformat(), "Calendario", "Jueves Santo"),
+        (viernes_santo.isoformat(), "Calendario", "Viernes Santo"),
+        (f"{year_actual}-05-01", "Calendario", "Día del Trabajo"),
+        (f"{year_actual}-06-07", "Calendario", "Batalla de Arica y Día de la Bandera"),
+        (f"{year_actual}-06-29", "Calendario", "Día de San Pedro y San Pablo"),
+        (f"{year_actual}-07-23", "Calendario", "Día de la Fuerza Aérea del Perú"),
+        (f"{year_actual}-07-27", "Sector público", "Día no laborable para el sector público"),
+        (f"{year_actual}-07-28", "Calendario", "Fiestas Patrias"),
+        (f"{year_actual}-07-29", "Calendario", "Fiestas Patrias"),
+        (f"{year_actual}-08-06", "Calendario", "Batalla de Junín"),
+        (f"{year_actual}-08-30", "Calendario", "Santa Rosa de Lima"),
+        (f"{year_actual}-10-08", "Calendario", "Combate de Angamos"),
+        (f"{year_actual}-11-01", "Calendario", "Día de Todos los Santos"),
+        (f"{year_actual}-12-08", "Calendario", "Inmaculada Concepción"),
+        (f"{year_actual}-12-09", "Calendario", "Batalla de Ayacucho"),
+        (f"{year_actual}-12-25", "Calendario", "Navidad"),
+        (f"{year_actual}-12-26", "Sector público", "Día no laborable para el sector público")
+    ]
+
+    for f_fecha, f_tipo, f_desc in feriados_base:
+        existe_f = c.execute("SELECT id FROM feriados_institucionales WHERE fecha = ?", (f_fecha,)).fetchone()
+        if not existe_f:
+            c.execute("""
+                INSERT INTO feriados_institucionales (fecha, descripcion, tipo, creado_por, fecha_registro)
+                VALUES (?, ?, ?, 'SISTEMA', ?)
+            """, (f_fecha, f_desc, f_tipo, ahora_peru_str()))
+        else:
+            c.execute("""
+                UPDATE feriados_institucionales 
+                SET descripcion = ?, tipo = ? 
+                WHERE id = ?
+            """, (f_desc, f_tipo, existe_f[0]))
 
     # Tabla Procesos Institucionales
     c.execute("""
@@ -1285,9 +1365,120 @@ def eliminar_proceso_admin(proceso_id: int, user: dict = Depends(get_current_use
 
 # --- CALENDARIO LABORAL Y FERIADOS INSTITUCIONALES (TI) ---
 @app.get("/feriados")
-def listar_feriados(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT id, fecha, descripcion, tipo, creado_por FROM feriados_institucionales ORDER BY fecha ASC").fetchall()
+def listar_feriados(year: Optional[int] = None, db: sqlite3.Connection = Depends(get_db)):
+    if year:
+        rows = db.execute("""
+            SELECT id, fecha, descripcion, 
+                   COALESCE(descripcion, '') as motivo, 
+                   COALESCE(tipo, 'Calendario') as tipo, creado_por 
+            FROM feriados_institucionales 
+            WHERE fecha LIKE ?
+            ORDER BY fecha ASC
+        """, (f"{year}-%",)).fetchall()
+    else:
+        rows = db.execute("""
+            SELECT id, fecha, descripcion, 
+                   COALESCE(descripcion, '') as motivo, 
+                   COALESCE(tipo, 'Calendario') as tipo, creado_por 
+            FROM feriados_institucionales 
+            ORDER BY fecha ASC
+        """).fetchall()
     return [dict(r) for r in rows]
+
+@app.post("/feriados")
+def agregar_feriado(data: FeriadoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede registrar feriados.")
+    
+    fecha_str = data.fecha.strip()
+    motivo_str = data.motivo.strip()
+    tipo_str = data.tipo.strip() if data.tipo else "Calendario"
+
+    if not fecha_str or not motivo_str:
+        raise HTTPException(status_code=400, detail="La fecha y el motivo son obligatorios.")
+
+    try:
+        db.execute("""
+            INSERT INTO feriados_institucionales (fecha, descripcion, tipo, creado_por, fecha_registro)
+            VALUES (?, ?, ?, ?, ?)
+        """, (fecha_str, motivo_str, tipo_str, user["username"], ahora_peru_str()))
+        db.commit()
+        return {"mensaje": "Feriado registrado exitosamente"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail=f"La fecha {fecha_str} ya se encuentra registrada en el calendario.")
+
+@app.put("/feriados/{feriado_id}")
+def editar_feriado(feriado_id: int, data: FeriadoEditarModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar feriados.")
+    
+    actual = db.execute("SELECT id FROM feriados_institucionales WHERE id = ?", (feriado_id,)).fetchone()
+    if not actual:
+        raise HTTPException(status_code=404, detail="Feriado no encontrado.")
+
+    try:
+        db.execute("""
+            UPDATE feriados_institucionales
+            SET fecha = ?, descripcion = ?, tipo = ?
+            WHERE id = ?
+        """, (data.fecha.strip(), data.motivo.strip(), data.tipo.strip(), feriado_id))
+        db.commit()
+        return {"mensaje": "Feriado modificado exitosamente."}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Ya existe otro feriado registrado en esa fecha.")
+
+@app.delete("/feriados/{feriado_id}")
+def eliminar_feriado(feriado_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede eliminar feriados.")
+    
+    db.execute("DELETE FROM feriados_institucionales WHERE id = ?", (feriado_id,))
+    db.commit()
+    return {"mensaje": "Feriado eliminado exitosamente"}
+
+@app.post("/feriados/proyectar-siguiente-ano")
+def proyectar_feriados_siguiente_ano(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    """Clona y proyecta los feriados institucionales para el siguiente año fiscal con recálculo automático de Semana Santa."""
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede proyectar los feriados del siguiente año.")
+    
+    year_actual = datetime.now(ZONA_PERU).year
+    year_siguiente = year_actual + 1
+
+    feriados_origen = db.execute("SELECT fecha, descripcion, tipo FROM feriados_institucionales WHERE fecha LIKE ?", (f"{year_actual}-%",)).fetchall()
+    if not feriados_origen:
+        raise HTTPException(status_code=400, detail=f"No hay feriados registrados en el año base {year_actual} para proyectar.")
+
+    jueves_santo_sig, viernes_santo_sig = calcular_jueves_viernes_santo(year_siguiente)
+    insertados = 0
+
+    for f in feriados_origen:
+        f_tipo = f["tipo"]
+        f_desc = f["descripcion"]
+        
+        if "Jueves Santo" in f_desc:
+            nueva_fecha = jueves_santo_sig.isoformat()
+        elif "Viernes Santo" in f_desc:
+            nueva_fecha = viernes_santo_sig.isoformat()
+        else:
+            partes = f["fecha"].split("-")
+            nueva_fecha = f"{year_siguiente}-{partes[1]}-{partes[2]}"
+
+        try:
+            db.execute("""
+                INSERT INTO feriados_institucionales (fecha, descripcion, tipo, creado_por, fecha_registro)
+                VALUES (?, ?, ?, ?, ?)
+            """, (nueva_fecha, f_desc, f_tipo, user["username"], ahora_peru_str()))
+            insertados += 1
+        except sqlite3.IntegrityError:
+            pass
+
+    db.commit()
+    return {
+        "mensaje": f"Se han proyectado y registrado {insertados} feriados para el año fiscal {year_siguiente}.",
+        "year_proyectado": year_siguiente,
+        "total_incorporados": insertados
+    }
 
 @app.post("/feriados/toggle")
 def toggle_feriado_admin(data: FeriadoToggleModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):

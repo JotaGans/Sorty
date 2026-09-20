@@ -1108,29 +1108,63 @@
         </div>
       </div>
 
-      <!-- Tab 4: Feriados Institucionales -->
+      <!-- Tab 4: Feriados Institucionales y Calendario Laboral -->
       <div id="ti-tab-content-feriados" class="hidden p-5 overflow-y-auto space-y-4 flex-1 bg-[#f8f9fa] text-xs">
-        <form onsubmit="guardarFeriado(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-white p-3 rounded-xl border border-gray-200 shadow-xs">
+        
+        <!-- Formulario de Alta con Selector de Tipo -->
+        <form onsubmit="guardarFeriado(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-xs items-end">
+          <div class="md:col-span-3">
+            <label class="block font-bold text-gray-700 uppercase mb-1 text-[11px]">Fecha no laborable:</label>
+            <input type="date" id="input-feriado-fecha" required class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
+          </div>
+          
+          <div class="md:col-span-3">
+            <label class="block font-bold text-gray-700 uppercase mb-1 text-[11px]">Tipo de Feriado:</label>
+            <select id="input-feriado-tipo" class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
+              <option value="Calendario">Calendario</option>
+              <option value="Sector público">Sector público</option>
+            </select>
+          </div>
+
           <div class="md:col-span-4">
-            <label class="block font-bold text-gray-600 mb-1">Fecha no laborable:</label>
-            <input type="date" id="input-feriado-fecha" required class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+            <label class="block font-bold text-gray-700 uppercase mb-1 text-[11px]">Descripción / Motivo:</label>
+            <input type="text" id="input-feriado-motivo" required placeholder="Ej. Santa Rosa de Lima" class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:border-[#0f2a4a]">
           </div>
-          <div class="md:col-span-6">
-            <label class="block font-bold text-gray-600 mb-1">Motivo / Conmemoración:</label>
-            <input type="text" id="input-feriado-motivo" required placeholder="Ej. Santa Rosa de Lima" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-          </div>
-          <div class="md:col-span-2 flex items-end">
-            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 rounded transition shadow">+ Agregar</button>
+
+          <div class="md:col-span-2">
+            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-black py-2 rounded-lg transition shadow flex items-center justify-center space-x-1 cursor-pointer">
+              <span>+ Agregar</span>
+            </button>
           </div>
         </form>
 
-        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
+        <!-- Barra de Gestión Anual y Proyección -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-gray-200 shadow-2xs">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-gray-700">Año de Consulta:</span>
+            <select id="sel-filtro-ano-feriados" onchange="cargarListaFeriados()" class="p-1 px-2.5 bg-slate-50 border border-gray-300 rounded-lg font-black text-[#0f2a4a] outline-none cursor-pointer">
+              <option value="">Todos los años</option>
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+            </select>
+          </div>
+
+          <button type="button" onclick="proyectarFeriadosSiguienteAno()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold px-3.5 py-1.5 rounded-lg text-xs transition shadow flex items-center space-x-1.5 cursor-pointer" title="Cargar y proyectar automáticamente los feriados para el siguiente año">
+            <span>📅 Proyectar Feriados para Siguiente Año</span>
+          </button>
+        </div>
+
+        <!-- Tabla con Edición y Clasificación -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-72 overflow-y-auto">
           <table class="w-full text-xs text-left">
             <thead class="sticky top-0 bg-[#0f2a4a] text-white">
               <tr>
-                <th class="p-2.5 font-bold w-32">Fecha</th>
+                <th class="p-2.5 font-bold w-28">Fecha</th>
+                <th class="p-2.5 font-bold w-36">Tipo Feriado</th>
                 <th class="p-2.5 font-bold">Descripción</th>
-                <th class="p-2.5 font-bold text-center w-20">Acción</th>
+                <th class="p-2.5 font-bold text-center w-28 whitespace-nowrap">Acción</th>
               </tr>
             </thead>
             <tbody id="tabla-feriados-body" class="divide-y divide-gray-100 font-medium"></tbody>
@@ -9235,7 +9269,7 @@
     }
 
     // =========================================================================
-    // CONTROLADOR: GESTIÓN DE FERIADOS INSTITUCIONALES
+    // CONTROLADOR: GESTIÓN DE FERIADOS INSTITUCIONALES Y PROYECCIÓN ANUAL
     // =========================================================================
     async function abrirModalFeriados() {
       document.getElementById("modal-feriados").classList.remove("hidden");
@@ -9249,10 +9283,13 @@
     async function cargarListaFeriados() {
       const tbody = document.getElementById("tabla-feriados-body");
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400">Cargando feriados...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 font-semibold animate-pulse">Sincronizando calendario institucional...</td></tr>';
+
+      const anoSel = document.getElementById("sel-filtro-ano-feriados")?.value || "";
+      const url = anoSel ? `/feriados?year=${anoSel}` : "/feriados";
 
       try {
-        const res = await fetch("/feriados", {
+        const res = await fetch(url, {
           headers: { "Authorization": "Bearer " + token }
         });
         if (!res.ok) throw new Error("Error al obtener feriados");
@@ -9260,27 +9297,39 @@
         tbody.innerHTML = "";
 
         if (feriados.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400 italic">No hay feriados registrados.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-400 italic font-semibold">No hay feriados registrados para este periodo. Use el botón "+ Agregar" o "Proyectar Feriados para Siguiente Año".</td></tr>';
           return;
         }
 
         feriados.forEach(function(f) {
-          const fFecha = f.fecha || f.holiday_date || "";
-          const fMotivo = f.motivo || f.description || "";
+          const fFecha = f.fecha || "";
+          const fMotivo = (f.motivo || f.descripcion || "").replace(/'/g, "\\'");
+          const fTipo = f.tipo || "Calendario";
           const fId = f.id;
+
+          const badgeTipo = fTipo === "Sector público"
+            ? `<span class="bg-purple-50 text-purple-800 border border-purple-200 px-2 py-0.5 rounded text-[10px] font-bold">Sector público</span>`
+            : `<span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded text-[10px] font-bold">Calendario</span>`;
 
           const fila = document.createElement("tr");
           fila.className = "hover:bg-gray-50 border-b border-gray-100";
-          fila.innerHTML = 
-            '<td class="p-2.5 font-bold font-mono text-gray-700">' + fFecha + '</td>' +
-            '<td class="p-2.5 font-semibold text-gray-800">' + fMotivo + '</td>' +
-            '<td class="p-2.5 text-center">' +
-              '<button onclick="eliminarFeriado(' + fId + ')" class="text-rose-500 hover:text-rose-700 font-bold px-1" title="Eliminar feriado">🗑️</button>' +
-            '</td>';
+          fila.innerHTML = `
+            <td class="p-2.5 font-bold font-mono text-gray-800">${fFecha}</td>
+            <td class="p-2.5">${badgeTipo}</td>
+            <td class="p-2.5 font-semibold text-gray-800">${f.descripcion || f.motivo}</td>
+            <td class="p-2.5 text-center whitespace-nowrap space-x-1.5">
+              <button onclick="iniciarEdicionFeriado(${fId}, '${fFecha}', '${fMotivo}', '${fTipo}')" class="p-1 text-blue-600 hover:text-blue-800 font-bold hover:bg-blue-50 rounded transition cursor-pointer" title="Modificar feriado">
+                ✏️
+              </button>
+              <button onclick="eliminarFeriado(${fId})" class="p-1 text-rose-500 hover:text-rose-700 font-bold hover:bg-rose-50 rounded transition cursor-pointer" title="Eliminar feriado">
+                🗑️
+              </button>
+            </td>
+          `;
           tbody.appendChild(fila);
         });
       } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-rose-500">Error al cargar feriados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error al cargar calendario de feriados.</td></tr>';
       }
     }
 
@@ -9288,6 +9337,7 @@
       e.preventDefault();
       const fecha = document.getElementById("input-feriado-fecha").value;
       const motivo = document.getElementById("input-feriado-motivo").value.trim();
+      const tipo = document.getElementById("input-feriado-tipo").value;
 
       if (!fecha || !motivo) return;
 
@@ -9295,10 +9345,10 @@
         const res = await fetch("/feriados", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-          body: JSON.stringify({ fecha: fecha, motivo: motivo })
+          body: JSON.stringify({ fecha: fecha, motivo: motivo, tipo: tipo })
         });
         if (res.ok) {
-          notificarToast("Feriado agregado al calendario institucional.", "success");
+          notificarToast("Feriado registrado en el calendario.", "success");
           document.getElementById("input-feriado-fecha").value = "";
           document.getElementById("input-feriado-motivo").value = "";
           await cargarListaFeriados();
@@ -9308,6 +9358,35 @@
         }
       } catch (err) {
         alert("Error de conexión al registrar feriado.");
+      }
+    }
+
+    async function iniciarEdicionFeriado(id, fechaActual, motivoActual, tipoActual) {
+      const nuevaFecha = prompt("Modificar fecha (YYYY-MM-DD):", fechaActual);
+      if (!nuevaFecha) return;
+
+      const nuevoMotivo = prompt("Modificar descripción / motivo:", motivoActual);
+      if (!nuevoMotivo) return;
+
+      const nuevoTipo = confirm(`¿El feriado es de tipo 'Sector público'?\n(Presione Aceptar para 'Sector público', o Cancelar para 'Calendario')`)
+        ? "Sector público"
+        : "Calendario";
+
+      try {
+        const res = await fetch(`/feriados/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ fecha: nuevaFecha.trim(), motivo: nuevoMotivo.trim(), tipo: nuevoTipo })
+        });
+        if (res.ok) {
+          notificarToast("Feriado actualizado con éxito.", "success");
+          await cargarListaFeriados();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al actualizar feriado.");
+        }
+      } catch (e) {
+        alert("Error de conexión al actualizar.");
       }
     }
 
@@ -9323,9 +9402,39 @@
         if (res.ok) {
           notificarToast("Feriado eliminado con éxito.", "info");
           await cargarListaFeriados();
+        } else {
+          alert("Error al eliminar feriado.");
         }
       } catch (err) {
         alert("Error al eliminar feriado.");
+      }
+    }
+
+    async function proyectarFeriadosSiguienteAno() {
+      const confirma = await confirmModal(
+        "¿Desea proyectar los feriados institucionales para el siguiente año fiscal?\n\nEl sistema copiará las festividades de ley y recalculará automáticamente la Semana Santa correspondiente al nuevo año.",
+        "Proyección Anual de Feriados",
+        "question"
+      );
+      if (!confirma) return;
+
+      try {
+        const res = await fetch("/feriados/proyectar-siguiente-ano", {
+          method: "POST",
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          notificarToast(data.mensaje, "success", 5000);
+          const selAno = document.getElementById("sel-filtro-ano-feriados");
+          if (selAno) selAno.value = data.year_proyectado;
+          await cargarListaFeriados();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al proyectar feriados.");
+        }
+      } catch (e) {
+        alert("Error de conexión al proyectar calendario.");
       }
     }
 
