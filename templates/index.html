@@ -1001,6 +1001,7 @@
             <div>
               <label class="block font-bold text-gray-600 mb-1">Cargo / Nivel</label>
               <select id="tra-input-cargo" class="w-full p-2 border border-gray-300 rounded font-semibold text-gray-800 outline-none focus:border-[#0f2a4a] bg-white cursor-pointer">
+                <option value="Sin cargo / nivel">Sin cargo / nivel</option>
                 <option value="Presidente Ejecutivo">Presidente Ejecutivo</option>
                 <option value="Gerente">Gerente</option>
                 <option value="Asesor">Asesor</option>
@@ -1024,8 +1025,8 @@
             <div>
               <label class="block font-bold text-gray-600 mb-1">Nivel de Mando Institucional:</label>
               <select id="tra-input-nivel-mando" class="w-full p-2 border border-gray-300 rounded font-bold text-gray-700 outline-none focus:border-[#0f2a4a] bg-slate-50 cursor-pointer">
-                <option value="0">Personal Operativo / Especialista</option>
-                <option value="1">🏛️ DIRECTIVO / TITULAR DE UNIDAD</option>
+                <option value="0">Personal Operativo</option>
+                <option value="1">🏛️ Directivo / Titular de unidad</option>
               </select>
             </div>
 
@@ -1253,6 +1254,7 @@
           <div>
             <label class="block font-bold text-gray-600 mb-1">Cargo / Nivel:</label>
             <select id="edit-tra-cargo" class="w-full p-2 border border-gray-300 rounded font-semibold text-gray-800 outline-none focus:border-[#0f2a4a] bg-white cursor-pointer">
+              <option value="Sin cargo / nivel">Sin cargo / nivel</option>
               <option value="Presidente Ejecutivo">Presidente Ejecutivo</option>
               <option value="Gerente">Gerente</option>
               <option value="Asesor">Asesor</option>
@@ -1276,8 +1278,8 @@
           <div>
             <label class="block font-bold text-gray-600 mb-1">Nivel de Mando:</label>
             <select id="edit-tra-nivel-mando" class="w-full p-2 border border-gray-300 rounded font-bold text-gray-700 outline-none focus:border-[#0f2a4a] bg-slate-50 cursor-pointer">
-              <option value="0">Personal Operativo / Especialista</option>
-              <option value="1">🏛️ DIRECTIVO / TITULAR</option>
+              <option value="0">Personal Operativo</option>
+              <option value="1">🏛️ Directivo / Titular de unidad</option>
             </select>
           </div>
 
@@ -7033,7 +7035,7 @@
       
       const selCargo = document.getElementById("edit-tra-cargo");
       if (selCargo) {
-        selCargo.value = trabajador.cargo || "Especialista";
+        selCargo.value = trabajador.cargo || "Sin cargo / nivel";
       }
 
       const selNivel = document.getElementById("edit-tra-nivel-mando");
@@ -7055,7 +7057,7 @@
       const apellidos = document.getElementById("edit-tra-apellidos").value.trim();
       const uo = document.getElementById("edit-tra-uo-valor").value || document.getElementById("edit-tra-uo-busq").value.trim();
       const correo_user = document.getElementById("edit-tra-correo-user").value.trim();
-      const cargo = document.getElementById("edit-tra-cargo")?.value || "Especialista";
+      const cargo = document.getElementById("edit-tra-cargo")?.value || "Sin cargo / nivel";
       const esDirectivo = parseInt(document.getElementById("edit-tra-nivel-mando")?.value || "0");
 
       if (!nombres || !apellidos || !uo || !correo_user) {
@@ -7487,7 +7489,7 @@
       const apellidos = document.getElementById("tra-input-apellidos").value.trim();
       const uo = document.getElementById("tra-input-uo-valor").value || document.getElementById("tra-input-uo-busq").value.trim();
       const correo_user = document.getElementById("tra-input-correo-user").value.trim();
-      const cargo = document.getElementById("tra-input-cargo")?.value.trim() || "Especialista";
+      const cargo = document.getElementById("tra-input-cargo")?.value.trim() || "Sin cargo / nivel";
       const esDirectivo = parseInt(document.getElementById("tra-input-nivel-mando")?.value || "0");
       const crearAcceso = document.getElementById("tra-chk-crear-acceso")?.checked !== false;
       const passInicial = document.getElementById("tra-input-pass-inicial")?.value.trim() || "imarpe123";
