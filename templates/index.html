@@ -357,34 +357,34 @@
       </div>
 
       <!-- BARRA OPERATIVA DE ACCIONES: FILTROS MULTICRITERIO, VISTAS Y ANALÍTICA -->
-      <div class="bg-white rounded-xl p-3.5 mb-4 border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <!-- Grupo Izquierda: Buscador + Búsqueda Inteligente UO + Estado -->
-        <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+      <div class="bg-white rounded-xl p-2.5 mb-4 border border-gray-200 shadow-xs flex flex-nowrap items-center justify-between gap-2 overflow-x-auto">
+        <!-- Grupo Izquierda: Buscador + Búsqueda Inteligente UO + Estado en 1 sola línea rígida -->
+        <div class="flex flex-nowrap items-center gap-2 flex-shrink-0">
           <!-- Buscador Rápido de Texto Compacto -->
-          <div class="relative w-48 max-w-[195px] flex-shrink-0">
+          <div class="relative w-40 flex-shrink-0">
             <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400 text-xs">🔍</span>
-            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por proyecto..." class="w-full pl-7 pr-2.5 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" title="Buscar por nombre o descripción">
+            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar proyecto..." class="w-full pl-7 pr-2 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" title="Buscar por nombre o descripción">
           </div>
 
-          <!-- Búsqueda Inteligente Compacta por Unidad Orgánica con Botón de Limpieza Rápida -->
-          <div class="relative w-36 sm:w-40 flex-shrink-0">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400 text-xs">🏢</span>
-            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por UUOO" class="w-full pl-7 pr-6 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" autocomplete="off" title="Filtrar por Unidad Orgánica">
+          <!-- Búsqueda Inteligente Compacta por Unidad Orgánica -->
+          <div class="relative w-32 flex-shrink-0">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none text-gray-400 text-xs">🏢</span>
+            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Por UUOO" class="w-full pl-6 pr-5 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" autocomplete="off" title="Filtrar por Unidad Orgánica">
             <input type="hidden" id="hub-filtro-uo-valor" onchange="filtrarProyectosHub()">
             
             <!-- Botón Limpiar Filtro (X) -->
-            <button type="button" id="btn-limpiar-filtro-uo" onclick="limpiarFiltroUnidadHub()" class="hidden absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-rose-600 transition cursor-pointer" title="Limpiar filtro de unidad">
-              <span class="text-[11px] font-black bg-gray-200 hover:bg-rose-100 rounded-full w-3.5 h-3.5 flex items-center justify-center">×</span>
+            <button type="button" id="btn-limpiar-filtro-uo" onclick="limpiarFiltroUnidadHub()" class="hidden absolute inset-y-0 right-0 pr-1.5 flex items-center text-gray-400 hover:text-rose-600 transition cursor-pointer" title="Limpiar filtro de unidad">
+              <span class="text-[10px] font-black bg-gray-200 hover:bg-rose-100 rounded-full w-3 h-3 flex items-center justify-center">×</span>
             </button>
 
             <!-- Lista Desplegable Flotante Inteligente -->
             <div id="hub-sugerencias-uo" class="hidden absolute top-full left-0 w-64 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[100] text-xs divide-y divide-gray-100"></div>
           </div>
 
-          <!-- Filtro por Estado Global del Proyecto -->
-          <div class="relative min-w-[130px]">
-            <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-2 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
-              <option value="">📊 Todos los Estados</option>
+          <!-- Filtro por Estado Global Compacto -->
+          <div class="relative w-32 flex-shrink-0">
+            <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg px-2 py-1.5 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
+              <option value="">📊 Todos</option>
               <option value="Ejecutado">Ejecutado</option>
               <option value="En proceso">En proceso</option>
               <option value="No iniciado">No iniciado</option>
@@ -2735,21 +2735,21 @@
       if (cant > 0) {
         btnOcultos.classList.remove("hidden");
         if (mostrandoOcultosHub) {
-          // Estado Activo (Verde): Muestra el texto completo para regresar al panel principal
-          btnOcultos.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition flex items-center space-x-1.5 cursor-pointer whitespace-nowrap";
+          // Botón compacto en verde que no expande el ancho de la barra
+          btnOcultos.className = "h-[30px] px-2.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition flex items-center space-x-1 cursor-pointer whitespace-nowrap flex-shrink-0";
           btnOcultos.innerHTML = `
-            <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            <span>Volver al panel principal (${cant})</span>
+            <span>Ver activos (${cant})</span>
           `;
           btnOcultos.title = "Volver al panel principal de proyectos";
         } else {
-          // Estado Normal (Amarillo/Ámbar): Cuadrado compacto con el ojito clásico nítido y tooltip descriptivo
-          btnOcultos.className = "w-[34px] h-[34px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0";
+          // Botón compacto ámbar estándar
+          btnOcultos.className = "w-[30px] h-[30px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0";
           btnOcultos.innerHTML = `
-            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
