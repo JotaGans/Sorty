@@ -363,13 +363,13 @@
           <!-- Buscador Rápido de Texto -->
           <div class="relative flex-1 min-w-[200px] max-w-xs">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🔍</span>
-            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por nombre o descripción" class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition">
+            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por nombre de proyecto" class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition">
           </div>
 
           <!-- Búsqueda Inteligente Compacta por Unidad de organización con Botón de Limpieza Rápida -->
           <div class="relative min-w-[200px] max-w-[220px]">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🏢</span>
-            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por unidad orgánica" class="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por UUOO" class="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
             <input type="hidden" id="hub-filtro-uo-valor" onchange="filtrarProyectosHub()">
             
             <!-- Botón Limpiar Filtro (X) -->
@@ -644,7 +644,7 @@
           </button>
 
           <!-- Historial -->
-          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="group h-[29px] px-2 bg-[#718093] hover:bg-[#576574] text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap" title="Historial de Cambios y Auditoría">
+          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="group h-[29px] px-2 bg-[#718093] hover:bg-[#576574] text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap" title="Historial de cambios">
             <span class="text-sm">📜</span>
             <span class="max-w-0 opacity-0 group-hover:max-w-[110px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] text-xs font-bold overflow-hidden">Historial</span>
           </button>
@@ -1825,8 +1825,8 @@
         <div class="flex items-center space-x-2.5">
           <span class="text-xl">📊</span>
           <div>
-            <h3 class="font-black text-sm tracking-wide">Panel Analítico de Proyectos & Procesos</h3>
-            <p class="text-[10px] text-blue-200 font-medium">Análisis reactivo aislado por sesión de usuario</p>
+            <h3 class="font-black text-sm tracking-wide">Panel de gráficos estadísticos</h3>
+            <p class="text-[10px] text-blue-200 font-medium">Análisis de proyectos</p>
           </div>
         </div>
         <button onclick="cerrarModalEstadisticasHub()" class="text-white hover:text-rose-300 text-2xl font-bold leading-none cursor-pointer transition">&times;</button>
