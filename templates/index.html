@@ -7088,7 +7088,7 @@
             const siglaCand = String(padreCand.sigla || "").trim().toUpperCase();
             if (siglaCand !== String(u.sigla).trim().toUpperCase()) {
               const estaSeleccionado = (siglaPadreActual === siglaCand) ? "selected" : "";
-              opcionesPadre += `<option value="${siglaCand}" ${estaSeleccionado}>↑ [${siglaCand}] ${padreCand.nombre}</option>`;
+              opcionesPadre += `<option value="${padreCand.sigla}" ${estaSeleccionado}>[${padreCand.sigla}] ${padreCand.nombre}</option>`;
             }
           });
 

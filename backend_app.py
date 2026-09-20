@@ -810,16 +810,16 @@ def init_db():
         ("Subdirección de Ediciones y Difusión del Conocimiento Científico y Tecnológico", "SEDCCT", "ÓRGANOS DE LINEA", "DIPDT"),
         
         # Órganos Desconcentrados (Dependen de Gerencia Científica)
-        ("Sedes Desconcentrada Tumbes", "SD Tumbes", "ÓRGANOS DESCONCENTRADOS", "GC"),
-        ("Sedes Desconcentrada Paita", "SD Paita", "ÓRGANOS DESCONCENTRADOS", "GC"),
-        ("Sedes Desconcentrada Santa Rosa", "SD Santa Rosa", "ÓRGANOS DESCONCENTRADOS", "GC"),
-        ("Sedes Desconcentrada Huanchaco", "SD Huanchaco", "ÓRGANOS DESCONCENTRADOS", "GC"),
-        ("Sedes Desconcentrada Chimbote", "SD Chimbote", "ÓRGANOS DESCONCENTRADOS", "GC"),
-        ("Sedes Desconcentrada Huacho", "SD Huacho", "ÓRGANOS DESCONCENTRADOS", "GC"),
-        ("Sedes Desconcentrada Pisco", "SD Pisco", "ÓRGANOS DESCONCENTRADOS", "GC"),
-        ("Sedes Desconcentrada Camaná", "SD Camaná", "ÓRGANOS DESCONCENTRADOS", "GC"),
-        ("Sedes Desconcentrada Ilo", "SD Ilo", "ÓRGANOS DESCONCENTRADOS", "GC"),
-        ("Sedes Desconcentrada Puno", "SD Puno", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Tumbes", "SD Tumbes", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Paita", "SD Paita", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Santa Rosa", "SD Santa Rosa", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Huanchaco", "SD Huanchaco", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Chimbote", "SD Chimbote", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Huacho", "SD Huacho", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Pisco", "SD Pisco", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Camaná", "SD Camaná", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Ilo", "SD Ilo", "ÓRGANOS DESCONCENTRADOS", "GC"),
+        ("Sede Desconcentrada Puno", "SD Puno", "ÓRGANOS DESCONCENTRADOS", "GC"),
         ("Centro de Plataformas Flotantes de Investigación Marina y Continental", "CPFIMC", "ÓRGANOS DESCONCENTRADOS", "GC")
     ]
 
