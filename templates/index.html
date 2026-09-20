@@ -384,7 +384,7 @@
           <!-- Filtro por Estado Global Compacto -->
           <div class="relative w-32 flex-shrink-0">
             <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg px-2 py-1.5 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
-              <option value="">📊 Todos</option>
+              <option value="">📊 Todos los estados</option>
               <option value="Ejecutado">Ejecutado</option>
               <option value="En proceso">En proceso</option>
               <option value="No iniciado">No iniciado</option>
@@ -3034,9 +3034,10 @@
           badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-slate-100 text-slate-700 border border-slate-300">👁️ VISUALIZADOR</span>`;
         }
 
+        // Badge compacto de alcance para tabla: solo icono de tamaño fijo con tooltip explicativo
         const badgeAlcanceHTML = esPublico
-          ? `<span class="text-[9px] font-bold text-teal-700 bg-teal-50 border border-teal-200 px-1.5 py-0.2 rounded ml-1">🌐 Institucional</span>`
-          : `<span class="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded ml-1">🔒 Privado</span>`;
+          ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-teal-50 text-teal-700 border border-teal-200 text-xs shadow-2xs cursor-help flex-shrink-0" title="Proyecto visible a nivel institucional">🌐</span>`
+          : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-xs shadow-2xs cursor-help flex-shrink-0" title="Proyecto privado">🔒</span>`;
 
         const pct = p.avance_global || 0;
         const estaOculto = idsProyectosOcultos.has(p.id);
