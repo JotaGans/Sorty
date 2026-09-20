@@ -1001,7 +1001,7 @@
             <div>
               <label class="block font-bold text-gray-600 mb-1">Cargo / Nivel</label>
               <select id="tra-input-cargo" class="w-full p-2 border border-gray-300 rounded font-semibold text-gray-800 outline-none focus:border-[#0f2a4a] bg-white cursor-pointer">
-                <option value="Sin cargo / nivel">Sin cargo / nivel</option>
+                <option value="Sin cargo / nivel" selected>Sin cargo / nivel</option>
                 <option value="Presidente Ejecutivo">Presidente Ejecutivo</option>
                 <option value="Gerente">Gerente</option>
                 <option value="Asesor">Asesor</option>
@@ -1009,7 +1009,7 @@
                 <option value="Coordinador">Coordinador</option>
                 <option value="Jefe adjunto">Jefe adjunto</option>
                 <option value="Investigador">Investigador</option>
-                <option value="Especialista" selected>Especialista</option>
+                <option value="Especialista">Especialista</option>
                 <option value="Analista">Analista</option>
                 <option value="Profesional">Profesional</option>
                 <option value="Asistente">Asistente</option>
@@ -7446,9 +7446,10 @@
 
       activos.forEach(t => {
         const usuarioLogin = (t.correo || "").split("@")[0];
+        const cargoTexto = t.cargo || "Sin cargo / nivel";
         const badgeCargo = t.es_directivo === 1
-          ? `<span class="bg-purple-50 text-purple-800 border border-purple-200 px-1.5 py-0.5 rounded text-[10px] font-bold">🏛️ Directivo</span>`
-          : `<span class="text-gray-500 text-[11px]">${t.cargo || 'Especialista'}</span>`;
+          ? `<span class="bg-purple-50 text-purple-800 border border-purple-200 px-1.5 py-0.5 rounded text-[10px] font-bold" title="Cargo: ${cargoTexto}">🏛️ ${cargoTexto}</span>`
+          : `<span class="text-gray-600 font-semibold text-[11px]">${cargoTexto}</span>`;
 
         tbody.innerHTML += `
           <tr class="hover:bg-gray-50 border-b border-gray-100">
@@ -8805,9 +8806,6 @@
       };
     }
 
-    // =========================================================================
-    // EDICIÓN DE TRABAJADORES (DIRECTORIO INSTITUCIONAL TI)
-    // =========================================================================
     function abrirModalEditarTrabajador(id) {
       const trabajador = (catalogoTrabajadoresGlobal || []).find(t => t.id === id);
       if (!trabajador) return;
@@ -8818,6 +8816,16 @@
       document.getElementById("edit-tra-uo-busq").value = trabajador.unidad_organica || "";
       document.getElementById("edit-tra-uo-valor").value = trabajador.unidad_organica || "";
       
+      const selCargo = document.getElementById("edit-tra-cargo");
+      if (selCargo) {
+        selCargo.value = trabajador.cargo || "Sin cargo / nivel";
+      }
+
+      const selNivel = document.getElementById("edit-tra-nivel-mando");
+      if (selNivel) {
+        selNivel.value = trabajador.es_directivo === 1 ? "1" : "0";
+      }
+
       const usuarioCorreo = (trabajador.correo || "").split("@")[0];
       document.getElementById("edit-tra-correo-user").value = usuarioCorreo;
 
@@ -8827,6 +8835,57 @@
 
     function cerrarModalEditarTrabajador() {
       document.getElementById("modal-editar-trabajador-ti").classList.add("hidden");
+    }
+
+    async function guardarEdicionTrabajador(e) {
+      e.preventDefault();
+      const id = document.getElementById("edit-tra-id").value;
+      const nombres = document.getElementById("edit-tra-nombres").value.trim();
+      const apellidos = document.getElementById("edit-tra-apellidos").value.trim();
+      const uo = document.getElementById("edit-tra-uo-valor").value || document.getElementById("edit-tra-uo-busq").value.trim();
+      const correo_user = document.getElementById("edit-tra-correo-user").value.trim();
+      const cargo = document.getElementById("edit-tra-cargo")?.value || "Sin cargo / nivel";
+      const esDirectivo = parseInt(document.getElementById("edit-tra-nivel-mando")?.value || "0");
+
+      if (!nombres || !apellidos || !uo || !correo_user) {
+        alert("Por favor complete todos los campos requeridos.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/trabajadores/${id}`, {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${token}` 
+          },
+          body: JSON.stringify({
+            id: parseInt(id),
+            nombres: nombres,
+            apellidos: apellidos,
+            unidad_organica: uo,
+            correo_usuario: correo_user,
+            cargo: cargo,
+            es_directivo: esDirectivo
+          })
+        });
+
+        if (res.ok) {
+          cerrarModalEditarTrabajador();
+          notificarToast("Datos y jerarquía del trabajador actualizados con éxito.", "success");
+          await cargarDirectorioTrabajadores();
+          await cargarCatalogoUnidades();
+          if (proyectoActualId) {
+            await cargarActividades();
+          }
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al actualizar los datos del trabajador.");
+        }
+      } catch (err) {
+        console.error("Error al actualizar trabajador:", err);
+        alert("Error de conexión con el servidor.");
+      }
     }
 
     function autocompletarUOEdicion(termino) {

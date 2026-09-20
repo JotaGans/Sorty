@@ -544,11 +544,12 @@ def init_db():
         except sqlite3.OperationalError:
             pass
 
-    # Migración para nivel directivo en trabajadores
-    try:
-        c.execute("ALTER TABLE trabajadores ADD COLUMN es_directivo INTEGER DEFAULT 0")
-    except sqlite3.OperationalError:
-        pass
+    # Migración para cargo y nivel directivo en trabajadores
+    for col, defn in [("cargo", "TEXT DEFAULT 'Sin cargo / nivel'"), ("es_directivo", "INTEGER DEFAULT 0")]:
+        try:
+            c.execute(f"ALTER TABLE trabajadores ADD COLUMN {col} {defn}")
+        except sqlite3.OperationalError:
+            pass
 
     # Tabla Feriados y Días No Laborables Institucionales con Clasificación Oficial
     c.execute("""
@@ -1182,7 +1183,14 @@ def actualizar_dependencia_rof_unidad(
 
 @app.get("/trabajadores")
 def listar_trabajadores(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT id, nombres, apellidos, nombre_completo, unidad_organica, correo, estado FROM trabajadores ORDER BY nombre_completo ASC").fetchall()
+    rows = db.execute("""
+        SELECT id, nombres, apellidos, nombre_completo, unidad_organica, correo, 
+               COALESCE(cargo, 'Sin cargo / nivel') as cargo, 
+               COALESCE(es_directivo, 0) as es_directivo, 
+               COALESCE(estado, 'ACTIVO') as estado 
+        FROM trabajadores 
+        ORDER BY nombre_completo ASC
+    """).fetchall()
     return [dict(r) for r in rows]
 
 @app.post("/trabajadores")
