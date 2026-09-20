@@ -369,7 +369,7 @@
           <!-- Búsqueda Inteligente Compacta por Unidad de organización con Botón de Limpieza Rápida -->
           <div class="relative min-w-[200px] max-w-[220px]">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🏢</span>
-            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por unidad de organización" class="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por unidad orgánica" class="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
             <input type="hidden" id="hub-filtro-uo-valor" onchange="filtrarProyectosHub()">
             
             <!-- Botón Limpiar Filtro (X) -->
@@ -746,7 +746,7 @@
           </div>
           <div class="relative">
             <label class="text-[11px] font-bold text-gray-600 uppercase">Unidad de Organización Responsable:</label>
-            <input type="text" id="input-nuevo-proy-uo-busq" oninput="autocompletarUOProyecto(this.value)" placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+            <input type="text" id="input-nuevo-proy-uo-busq" oninput="autocompletarUOProyecto(this.value)" placeholder="Escriba sigla o unidad (ej. OPPM)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
             <input type="hidden" id="input-nuevo-proy-uo-valor">
             <div id="sugerencias-uo-proyecto" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
           </div>
@@ -786,7 +786,7 @@
               <label class="text-[11px] font-bold text-gray-600 uppercase">Alcance / Privacidad del Proyecto:</label>
               <select id="input-nuevo-proy-visibilidad" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]">
                 <option value="PRIVADO" selected>🔒 Privado (Solo miembros asignados)</option>
-                <option value="PUBLICO">🌐 Institucional (Cadena de Mando ROF)</option>
+                <option value="PUBLICO">🌐 Institucional</option>
               </select>
             </div>
           </div>
@@ -822,7 +822,7 @@
 
             <div class="relative">
               <label class="block font-bold text-gray-600 mb-1">Unidad de Organización Responsable:</label>
-              <input type="text" id="np-input-clon-uo-busq" oninput="autocompletarUOClonacion(this.value)" placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <input type="text" id="np-input-clon-uo-busq" oninput="autocompletarUOClonacion(this.value)" placeholder="Escriba sigla o unidad (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
               <input type="hidden" id="np-input-clon-uo-valor">
               <div id="sugerencias-uo-clonacion" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-36 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
             </div>
@@ -867,7 +867,7 @@
               <label class="block font-bold text-gray-600 mb-1">Alcance / Privacidad del Proyecto:</label>
               <select id="np-input-clon-visibilidad" class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]">
                 <option value="PRIVADO" selected>🔒 Privado (Solo miembros asignados)</option>
-                <option value="PUBLICO">🌐 Institucional (Cadena de Mando ROF)</option>
+                <option value="PUBLICO">🌐 Institucional</option>
               </select>
             </div>
           </div>
@@ -993,18 +993,18 @@
             
             <div class="relative">
               <label class="block font-bold text-gray-600 mb-1">Unidad de Organización (Sigla / Nombre)</label>
-              <input type="text" id="tra-input-uo-busq" oninput="autocompletarUnidadOrganica(this.value)" required placeholder="Escriba sigla o área (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <input type="text" id="tra-input-uo-busq" oninput="autocompletarUnidadOrganica(this.value)" required placeholder="Escriba sigla o unidad (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
               <input type="hidden" id="tra-input-uo-valor">
               <div id="tra-sugerencias-uo" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-44 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
             </div>
 
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Cargo Institucional</label>
+              <label class="block font-bold text-gray-600 mb-1">Cargo</label>
               <input type="text" id="tra-input-cargo" placeholder="Ej. Director General, Especialista..." class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
 
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Nivel de Mando Institucional:</label>
+              <label class="block font-bold text-gray-600 mb-1">Nivel de mando:</label>
               <select id="tra-input-nivel-mando" class="w-full p-2 border border-gray-300 rounded font-bold text-gray-700 outline-none focus:border-[#0f2a4a] bg-slate-50">
                 <option value="0">Personal Operativo / Especialista</option>
                 <option value="1">🏛️ DIRECTIVO / TITULAR DE UNIDAD</option>
@@ -1032,7 +1032,7 @@
             </div>
           </div>
 
-          <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg transition shadow">+ Guardar en Directorio y Habilitar Acceso</button>
+          <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg transition shadow">+ Guardar en directorio y habilitar acceso</button>
         </form>
 
         <div>
@@ -3352,7 +3352,7 @@
 
               <div class="relative">
                 <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Unidad (por Sigla o Nombre):</label>
-                <input type="text" id="edit-uo-input-busq" oninput="autocompletarModalUOProyecto(this.value)" placeholder="Escriba sigla o nombre completo de la oficina..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+                <input type="text" id="edit-uo-input-busq" oninput="autocompletarModalUOProyecto(this.value)" placeholder="Escriba sigla o nombre completo de unidad..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
                 <input type="hidden" id="edit-uo-input-valor">
                 
                 <!-- Lista Desplegable Flotante de Sugerencias -->
