@@ -6220,11 +6220,11 @@
         let tdFin = '';
         if (visibilidadColumnas.fin) {
           const esModoHoras = (proyectoModoDuracion === "hours");
-          if (esMadre || esModoHoras) {
-            const mensajeTooltip = esModoHoras 
-              ? "Fecha fin supeditada y calculada automáticamente según las horas hábiles de dedicación." 
-              : "Fecha de finalización calculada automáticamente por el cierre de subtareas.";
-            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${claseBloqueada} whitespace-nowrap font-medium" title="${mensajeTooltip}">${badgeVencidoHTML} ${lockIcon}</td>`;
+          if (esMadre) {
+            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${claseBloqueada} whitespace-nowrap font-medium" title="Fecha de finalización calculada automáticamente por el cierre de subtareas.">${badgeVencidoHTML} ${lockIcon}</td>`;
+          } else if (esModoHoras) {
+            // En proyectos por horas: fondo transparente que hereda el color de la fila, cursor no editable y candado
+            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs cursor-default select-none whitespace-nowrap font-medium" title="Fecha fin calculada automáticamente según las horas hábiles de dedicación.">${badgeVencidoHTML} ${lockIcon}</td>`;
           } else {
             tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaFin('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para modificar fecha de fin' : ''}">${badgeVencidoHTML}</td>`;
           }
