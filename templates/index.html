@@ -367,9 +367,9 @@
           </div>
 
           <!-- Búsqueda Inteligente Compacta por Unidad Orgánica -->
-          <div class="relative w-32 flex-shrink-0">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none text-gray-400 text-xs">🏢</span>
-            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Por UUOO" class="w-full pl-6 pr-5 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" autocomplete="off" title="Filtrar por Unidad Orgánica">
+          <div class="relative w-44 flex-shrink-0">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400 text-xs">🏢</span>
+            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Buscar por UUOO" class="w-full pl-7 pr-5 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" autocomplete="off" title="Filtrar por Unidad Orgánica">
             <input type="hidden" id="hub-filtro-uo-valor" onchange="filtrarProyectosHub()">
             
             <!-- Botón Limpiar Filtro (X) -->
@@ -382,8 +382,8 @@
           </div>
 
           <!-- Filtro por Estado Global Compacto -->
-          <div class="relative w-32 flex-shrink-0">
-            <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg px-2 py-1.5 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
+          <div class="relative w-44 flex-shrink-0">
+            <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 py-1.5 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer truncate" title="Filtrar por estado del proyecto">
               <option value="">📊 Todos los estados</option>
               <option value="Ejecutado">Ejecutado</option>
               <option value="En proceso">En proceso</option>
