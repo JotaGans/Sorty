@@ -1248,6 +1248,47 @@
       </form>
     </div>
   </div>
+
+  <!-- MODAL: EDITAR FERIADO INSTITUCIONAL -->
+  <div id="modal-editar-feriado" class="hidden fixed inset-0 bg-black/60 z-[160] flex items-center justify-center p-4 backdrop-blur-[1px]">
+    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-300">
+      <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📅</span>
+          <h3 class="font-black text-sm">Modificar Feriado / Día No Laborable</h3>
+        </div>
+        <button onclick="cerrarModalEditarFeriado()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+      </div>
+
+      <form onsubmit="guardarEdicionFeriadoModal(event)" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="edit-feriado-id">
+        
+        <div>
+          <label class="block font-bold text-gray-700 uppercase mb-1">Fecha no laborable:</label>
+          <input type="date" id="edit-feriado-fecha" required class="w-full p-2.5 bg-white border border-gray-300 rounded-lg font-bold text-gray-800 outline-none focus:border-[#0f2a4a]">
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 uppercase mb-1">Tipo de Feriado:</label>
+          <select id="edit-feriado-tipo" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg font-bold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
+            <option value="Calendario">Calendario</option>
+            <option value="Sector público">Sector público</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 uppercase mb-1">Descripción / Motivo:</label>
+          <input type="text" id="edit-feriado-motivo" required placeholder="Ej. Combate de Angamos" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:border-[#0f2a4a]">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+          <button type="button" onclick="cerrarModalEditarFeriado()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition cursor-pointer">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow transition cursor-pointer">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL: REGISTRO DE TRABAJADORES DADOS DE BAJA -->
   <div id="modal-trabajadores-baja" class="hidden fixed inset-0 bg-black/60 z-[96] flex items-center justify-center p-4 backdrop-blur-[1px]">
     <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-300 flex flex-col max-h-[85vh]">
@@ -2320,6 +2361,11 @@
 
       // Tecla Escape (Esc) para cancelar / cerrar ventanas con prioridad al modal visible
       if (e.key === "Escape") {
+        const modEditFer = document.getElementById("modal-editar-feriado");
+        if (modEditFer && !modEditFer.classList.contains("hidden")) {
+          cerrarModalEditarFeriado();
+          return;
+        }
         const modNotif = document.getElementById("modal-notificacion-correo");
         if (modNotif && !modNotif.classList.contains("hidden")) {
           cerrarModalNotificacionCorreo();
@@ -2371,7 +2417,7 @@
         "modal-trabajadores-baja", "modal-notificacion-correo", "modal-comentarios", 
         "modal-nuevo-proyecto", "modal-guardar-plantilla", "modal-importar-plantilla-proyecto",
         "modal-dialog-imarpe", "modal-input-custom", "modal-fecha-custom", "modal-fin-interactiva",
-        "modal-asignar-responsables", "modal-estadisticas-hub" // <-- Asegurado aquí
+        "modal-asignar-responsables", "modal-estadisticas-hub", "modal-editar-feriado"
       ];
       idsModales.forEach(id => {
         const el = document.getElementById(id);
@@ -9361,24 +9407,44 @@
       }
     }
 
-    async function iniciarEdicionFeriado(id, fechaActual, motivoActual, tipoActual) {
-      const nuevaFecha = prompt("Modificar fecha (YYYY-MM-DD):", fechaActual);
-      if (!nuevaFecha) return;
+    function iniciarEdicionFeriado(id, fechaActual, motivoActual, tipoActual) {
+      document.getElementById("edit-feriado-id").value = id;
+      document.getElementById("edit-feriado-fecha").value = fechaActual;
+      document.getElementById("edit-feriado-motivo").value = motivoActual;
+      document.getElementById("edit-feriado-tipo").value = tipoActual || "Calendario";
 
-      const nuevoMotivo = prompt("Modificar descripción / motivo:", motivoActual);
-      if (!nuevoMotivo) return;
+      document.getElementById("modal-editar-feriado").classList.remove("hidden");
+    }
 
-      const nuevoTipo = confirm(`¿El feriado es de tipo 'Sector público'?\n(Presione Aceptar para 'Sector público', o Cancelar para 'Calendario')`)
-        ? "Sector público"
-        : "Calendario";
+    function cerrarModalEditarFeriado() {
+      const modal = document.getElementById("modal-editar-feriado");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    async function guardarEdicionFeriadoModal(e) {
+      e.preventDefault();
+      const id = document.getElementById("edit-feriado-id").value;
+      const fecha = document.getElementById("edit-feriado-fecha").value;
+      const motivo = document.getElementById("edit-feriado-motivo").value.trim();
+      const tipo = document.getElementById("edit-feriado-tipo").value;
+
+      if (!fecha || !motivo) {
+        alert("Por favor complete todos los campos.");
+        return;
+      }
 
       try {
         const res = await fetch(`/feriados/${id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-          body: JSON.stringify({ fecha: nuevaFecha.trim(), motivo: nuevoMotivo.trim(), tipo: nuevoTipo })
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": "Bearer " + token 
+          },
+          body: JSON.stringify({ fecha: fecha, motivo: motivo, tipo: tipo })
         });
+
         if (res.ok) {
+          cerrarModalEditarFeriado();
           notificarToast("Feriado actualizado con éxito.", "success");
           await cargarListaFeriados();
         } else {
@@ -9386,7 +9452,7 @@
           alert(err.detail || "Error al actualizar feriado.");
         }
       } catch (e) {
-        alert("Error de conexión al actualizar.");
+        alert("Error de conexión al intentar actualizar el feriado.");
       }
     }
 
