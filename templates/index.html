@@ -366,19 +366,19 @@
             <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por nombre de proyecto" class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition">
           </div>
 
-          <!-- Búsqueda Inteligente Compacta por Unidad de organización con Botón de Limpieza Rápida -->
-          <div class="relative min-w-[200px] max-w-[220px]">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🏢</span>
-            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por UUOO" class="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+          <!-- Búsqueda Inteligente Compacta por Unidad Orgánica con Botón de Limpieza Rápida -->
+          <div class="relative w-36 sm:w-40 flex-shrink-0">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400 text-xs">🏢</span>
+            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por UUOO" class="w-full pl-7 pr-6 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" autocomplete="off" title="Filtrar por Unidad Orgánica">
             <input type="hidden" id="hub-filtro-uo-valor" onchange="filtrarProyectosHub()">
             
             <!-- Botón Limpiar Filtro (X) -->
-            <button type="button" id="btn-limpiar-filtro-uo" onclick="limpiarFiltroUnidadHub()" class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-rose-600 transition cursor-pointer" title="Limpiar filtro de unidad">
-              <span class="text-xs font-black bg-gray-200 hover:bg-rose-100 rounded-full w-4 h-4 flex items-center justify-center">×</span>
+            <button type="button" id="btn-limpiar-filtro-uo" onclick="limpiarFiltroUnidadHub()" class="hidden absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-rose-600 transition cursor-pointer" title="Limpiar filtro de unidad">
+              <span class="text-[11px] font-black bg-gray-200 hover:bg-rose-100 rounded-full w-3.5 h-3.5 flex items-center justify-center">×</span>
             </button>
 
             <!-- Lista Desplegable Flotante Inteligente -->
-            <div id="hub-sugerencias-uo" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[100] text-xs divide-y divide-gray-100"></div>
+            <div id="hub-sugerencias-uo" class="hidden absolute top-full left-0 w-64 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[100] text-xs divide-y divide-gray-100"></div>
           </div>
 
           <!-- Filtro por Estado Global del Proyecto -->
