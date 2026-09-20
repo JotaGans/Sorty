@@ -319,10 +319,10 @@
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
         <div class="flex items-center space-x-2.5">
-          <!-- BOTÓN: ALTA DE USUARIOS -->
+          <!-- BOTÓN: BASE DE DATOS TI -->
           <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-teal-500">
             <span>🛡️</span>
-            <span>Gestión TI: Alta de Usuarios</span>
+            <span>Gestión TI: Base de datos</span>
           </button>
 
           <div class="text-right border-l border-blue-900/60 pl-3">
@@ -363,13 +363,13 @@
           <!-- Buscador Rápido de Texto -->
           <div class="relative flex-1 min-w-[200px] max-w-xs">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🔍</span>
-            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por nombre o desc..." class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition">
+            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar por nombre o descripción" class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition">
           </div>
 
-          <!-- Búsqueda Inteligente Compacta por Unidad Orgánica con Botón de Limpieza Rápida -->
+          <!-- Búsqueda Inteligente Compacta por Unidad de organización con Botón de Limpieza Rápida -->
           <div class="relative min-w-[200px] max-w-[220px]">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 text-xs">🏢</span>
-            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por unidad u oficina..." class="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por unidad de organización" class="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
             <input type="hidden" id="hub-filtro-uo-valor" onchange="filtrarProyectosHub()">
             
             <!-- Botón Limpiar Filtro (X) -->
@@ -674,7 +674,7 @@
             <th id="th-codigo" class="p-2.5 font-bold w-20 md:w-24 whitespace-nowrap">Código</th>
             <th id="th-descripcion" class="p-2.5 font-bold min-w-[180px] whitespace-nowrap select-none" style="position: sticky !important; top: 0 !important; z-index: 35 !important; background-color: #0f2a4a !important;">
               <div class="flex items-center justify-between pr-3">
-                <span class="truncate">Descripción de Actividad</span>
+                <span class="truncate">Descripción de actividad</span>
                 <span class="text-[10px] text-teal-300 opacity-80 flex-shrink-0">✎</span>
               </div>
               <!-- Tirador interactivo con línea ultra-fina -->
@@ -733,7 +733,7 @@
         </button>
         <button id="np-tab-btn-plantilla" onclick="cambiarTabNuevoProyecto('plantilla')" class="px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold">
           <span>📋</span>
-          <span>Desde Plantilla Institucional</span>
+          <span>Desde Plantilla de proyecto</span>
         </button>
       </div>
 
@@ -754,7 +754,7 @@
       <!-- Campo: Proceso / Subproceso Relacionado -->
           <div class="relative">
             <label class="text-[11px] font-bold text-gray-600 uppercase">Proceso / Subproceso Relacionado:</label>
-            <input type="text" id="input-nuevo-proy-proceso-busq" oninput="autocompletarProcesoNuevoProy(this.value)" placeholder="Buscar por denominación o código oficial (ej: E2.1.2)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+            <input type="text" id="input-nuevo-proy-proceso-busq" oninput="autocompletarProcesoNuevoProy(this.value)" placeholder="Buscar por denominación o código del proceso (ej: E2.1.2)..." class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
             <input type="hidden" id="input-nuevo-proy-proceso-codigo">
             <input type="hidden" id="input-nuevo-proy-proceso-nombre">
             <input type="hidden" id="input-nuevo-proy-proceso-personalizado" value="0">
@@ -835,7 +835,7 @@
             <!-- Proceso / Subproceso en Plantilla -->
             <div class="relative sm:col-span-2">
               <label class="block font-bold text-gray-600 mb-1">Proceso / Subproceso Relacionado:</label>
-              <input type="text" id="np-input-clon-proceso-busq" oninput="autocompletarProcesoClonacion(this.value)" placeholder="Buscar por denominación o código oficial (ej: E2.1.2)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <input type="text" id="np-input-clon-proceso-busq" oninput="autocompletarProcesoClonacion(this.value)" placeholder="Buscar por denominación o código del proceso (ej: E2.1.2)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
               <input type="hidden" id="np-input-clon-proceso-codigo">
               <input type="hidden" id="np-input-clon-proceso-nombre">
               <input type="hidden" id="np-input-clon-proceso-personalizado" value="0">
@@ -892,7 +892,7 @@
       <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
         <div class="flex items-center space-x-2">
           <span class="text-xl">📥</span>
-          <h3 class="font-black text-sm">Guardar como Plantilla Institucional</h3>
+          <h3 class="font-black text-sm">Guardar como Plantilla de proyecto</h3>
         </div>
         <button onclick="cerrarModalGuardarPlantilla()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
       </div>
@@ -977,18 +977,18 @@
       <div id="ti-tab-content-trabajadores" class="p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
         <form onsubmit="registrarTrabajadorTI(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
           <div class="flex items-center justify-between border-b border-gray-100 pb-2">
-            <h4 class="text-xs font-black uppercase text-[#0f2a4a] tracking-wider">Directorio Institucional & Alta Única de Personal</h4>
-            <span class="text-[10px] bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded font-bold">Autogestión de Acceso</span>
+            <h4 class="text-xs font-black uppercase text-[#0f2a4a] tracking-wider">Directorio de trabajadores & Altas de usuario</h4>
+            <span class="text-[10px] bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded font-bold">Gestión de accesos</span>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
               <label class="block font-bold text-gray-600 mb-1">Nombres</label>
-              <input type="text" id="tra-input-nombres" required placeholder="Ej. Luis Orlando" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+              <input type="text" id="tra-input-nombres" required placeholder="Ej. Pedro Luciano" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
             <div>
               <label class="block font-bold text-gray-600 mb-1">Apellidos</label>
-              <input type="text" id="tra-input-apellidos" required placeholder="Ej. Aguilar Villanueva" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+              <input type="text" id="tra-input-apellidos" required placeholder="Ej. Salas Ramos" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
             
             <div class="relative">
@@ -1014,7 +1014,7 @@
             <div>
               <label class="block font-bold text-gray-600 mb-1">Usuario / Correo Institucional</label>
               <div class="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
-                <input type="text" id="tra-input-correo-user" required placeholder="laguilar" class="w-full p-2 font-semibold outline-none text-right">
+                <input type="text" id="tra-input-correo-user" required placeholder="psalas" class="w-full p-2 font-semibold outline-none text-right">
                 <span class="bg-gray-100 px-2 py-2 text-gray-500 font-bold text-xs border-l border-gray-200">@imarpe.gob.pe</span>
               </div>
             </div>
@@ -1024,11 +1024,11 @@
           <div class="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200">
             <label class="inline-flex items-center space-x-2 font-bold text-[#0f2a4a] cursor-pointer">
               <input type="checkbox" id="tra-chk-crear-acceso" checked class="rounded text-[#0f2a4a] focus:ring-0">
-              <span>Habilitar cuenta de acceso al software inmediatamente</span>
+              <span>Habilitar acceso al aplicativo</span>
             </label>
             <div class="flex items-center space-x-2">
               <span class="text-gray-500 font-semibold">Contraseña Inicial:</span>
-              <input type="text" id="tra-input-pass-inicial" value="imarpe2026" class="p-1 px-2 border border-gray-300 rounded text-xs font-mono font-bold text-teal-800 bg-white w-28 text-center outline-none">
+              <input type="text" id="tra-input-pass-inicial" value="imarpe123" class="p-1 px-2 border border-gray-300 rounded text-xs font-mono font-bold text-teal-800 bg-white w-28 text-center outline-none">
             </div>
           </div>
 
@@ -1054,7 +1054,7 @@
               <thead class="bg-[#0f2a4a] text-white">
                 <tr>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Apellidos y Nombres</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad Orgánica</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad de organización</th>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Cargo / Nivel</th>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Usuario Login</th>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-24">Acceso</th>
@@ -1070,24 +1070,24 @@
       <!-- Tab 3: Unidades -->
       <div id="ti-tab-content-unidades" class="hidden p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
         <form onsubmit="registrarNuevaUnidadOrganica(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
-          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Agregar Dependencia / Unidad Orgánica</h4>
+          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Agregar Unidad de organización</h4>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div class="sm:col-span-2">
               <label class="block font-bold text-gray-600 mb-1">Nombre Completo de la Unidad</label>
-              <input type="text" id="uo-input-nombre" required placeholder="Ej. Subdirección de Investigaciones..." class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+              <input type="text" id="uo-input-nombre" required placeholder="Ej. Oficina de Planeamiento, Presupuesto y Modernización" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
             </div>
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Sigla Oficial</label>
+              <label class="block font-bold text-gray-600 mb-1">Siglas</label>
               <input type="text" id="uo-input-sigla" required placeholder="Ej. OPPM" class="w-full p-2 border border-gray-300 rounded font-bold outline-none focus:border-[#0f2a4a] uppercase">
             </div>
             <div class="sm:col-span-3">
               <label class="block font-bold text-gray-600 mb-1">Depende Jerárquicamente de (Unidad Padre según ROF):</label>
               <select id="uo-input-padre" class="w-full p-2 border border-gray-300 rounded text-xs font-semibold outline-none bg-gray-50 focus:bg-white focus:border-[#0f2a4a]">
-                <option value="">(Ninguna - Nivel Máximo / Alta Dirección)</option>
+                <option value="">(Ninguna unidad de organización)</option>
               </select>
             </div>
           </div>
-          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2 rounded-lg transition shadow">+ Guardar Unidad Orgánica</button>
+          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2 rounded-lg transition shadow">+ Guardar Unidad de organización</button>
         </form>
 
         <div>
@@ -1142,12 +1142,12 @@
       <div id="ti-tab-content-procesos" class="hidden p-5 overflow-y-auto space-y-4 flex-1 bg-[#f8f9fa] text-xs">
         <form onsubmit="guardarProcesoTI(event)" class="bg-white p-3 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-3 shadow-xs">
           <div class="md:col-span-3">
-            <label class="block font-bold text-gray-600 mb-1">Código Oficial:</label>
+            <label class="block font-bold text-gray-600 mb-1">Código del proceso:</label>
             <input type="text" id="input-proc-ti-codigo" required placeholder="Ej. E2.1" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
           </div>
           <div class="md:col-span-7">
             <label class="block font-bold text-gray-600 mb-1">Denominación del Proceso:</label>
-            <input type="text" id="input-proc-ti-nombre" required placeholder="Ej. Planificación Operativa Institucional" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+            <input type="text" id="input-proc-ti-nombre" required placeholder="Ej. Planeamiento Operativo Institucional" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
           </div>
           <div class="md:col-span-2 flex items-end">
             <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold py-2 rounded transition shadow">+ Guardar</button>
@@ -1845,9 +1845,9 @@
           </div>
         </div>
 
-        <!-- Slicer Unidad Orgánica -->
+        <!-- Slicer Unidad de organización -->
         <div class="w-48 min-w-[160px]">
-          <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Unidad Orgánica:</label>
+          <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Unidad de organización:</label>
           <select id="stat-filtro-uo" onchange="aplicarFiltrosEstadisticas()" class="w-full py-1.5 px-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer">
             <option value="">🏢 Todas las Unidades</option>
           </select>
@@ -2891,7 +2891,7 @@
           nombreCompletoUnidad = uObj ? uObj.nombre : p.unidad_organica.trim();
         }
 
-        // Tooltip exclusivo con el nombre completo oficial de la unidad
+        // Tooltip exclusivo con el nombre completo de la unidad
         const tooltipUo = nombreCompletoUnidad ? `title="${nombreCompletoUnidad}"` : '';
         const estiloCursorUo = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
@@ -2936,7 +2936,7 @@
             
             <h3 class="font-bold text-base text-[#0f2a4a] leading-snug flex items-center">${p.nombre}</h3>
             
-            <!-- Fila de Metadatos: Unidad Orgánica y Proceso Relacionado -->
+            <!-- Fila de Metadatos: Unidad de organización y Proceso Relacionado -->
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
               <p ${tooltipUo} 
                  ondblclick="${esGestor ? `editarUnidadOrganicaProyecto(${p.id}, '${siglaUnidad}')` : ''}"
@@ -2996,7 +2996,7 @@
             +
           </div>
           <h4 class="text-sm font-black text-gray-700 group-hover:text-[#0f2a4a] transition">Nuevo Proyecto / Programa</h4>
-          <p class="text-[11px] text-gray-400 mt-1 max-w-[200px]">Cree una estructura en blanco o seleccione una plantilla institucional.</p>
+          <p class="text-[11px] text-gray-400 mt-1 max-w-[200px]">Cree un proyecto en blanco o seleccione una plantilla.</p>
           <span class="mt-4 text-[11px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-lg border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition">Comenzar</span>
         `;
         grid.appendChild(cardNuevo);
@@ -3235,7 +3235,7 @@
       );
 
       if (!unidadValida) {
-        alert("⚠️ La Unidad de Organización no existe:\nDebe buscar y seleccionar una unidad oficial.");
+        alert("⚠️ La Unidad de Organización no existe:\nDebe buscar y seleccionar una unidad que exista oficialmente.");
         document.getElementById("input-nuevo-proy-uo-busq").focus();
         return;
       }
@@ -3312,7 +3312,7 @@
       }
     }
 
-    // --- MODAL DE EDICIÓN INTELIGENTE DE UNIDAD ORGÁNICA CON AUTOCOMPLETADO ---
+    // --- MODAL DE EDICIÓN INTELIGENTE DE UNIDAD DE ORGANIZACIÓN CON AUTOCOMPLETADO ---
     let proyectoEditandoUoId = null;
 
     function editarUnidadOrganicaProyecto(idProy, siglaActual) {
@@ -3425,7 +3425,7 @@
       const uoBusq = document.getElementById("edit-uo-input-busq")?.value.trim() || "";
       const uoVal = document.getElementById("edit-uo-input-valor")?.value.trim() || "";
 
-      // Validar estrictamente contra el catálogo oficial
+      // Validar estrictamente contra el catálogo
       const unidadValida = (catalogoUnidadesGlobal || []).find(u => 
         u.sigla.toUpperCase() === uoVal.toUpperCase() ||
         u.sigla.toUpperCase() === uoBusq.toUpperCase() ||
@@ -6859,7 +6859,7 @@
     }
 
     // =========================================================================
-    // CENTRO DE GESTIÓN TI (CUENTAS, TRABAJADORES Y ESTRUCTURA ORGÁNICA)
+    // CENTRO DE GESTIÓN TI (CUENTAS, TRABAJADORES Y ESTRUCTURA DE ORGANIZACIÓN)
     // =========================================================================
     let tabTIActiva = 'cuentas';
     let catalogoUnidadesGlobal = [];
@@ -6944,11 +6944,11 @@
       if (tab === 'procesos') cargarListaProcesosTI();
     }
 
-    // --- CARGA Y RENDERIZADO DE UNIDADES ORGÁNICAS ROF ---
+    // --- CARGA Y RENDERIZADO DE UNIDADES DE ORGANIZACIÓN ROF ---
     async function cargarCatalogoUnidades() {
       const tbody = document.getElementById("uo-tabla-cuerpo");
       if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 font-semibold animate-pulse">Sincronizando catálogo oficial del ROF...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 font-semibold animate-pulse">Sincronizando catálogo de unidades de organización del ROF...</td></tr>`;
       }
 
       try {
@@ -6960,12 +6960,12 @@
           } catch (_) {}
         }
 
-        // 2. Obtener catálogo oficial de unidades
+        // 2. Obtener catálogo de unidades
         const res = await fetch("/unidades-organicas", {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {
-          if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error al consultar unidades orgánicas.</td></tr>`;
+          if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error al consultar unidades de organización.</td></tr>`;
           return;
         }
 
@@ -6981,7 +6981,7 @@
         // 3. Poblar desplegable de Unidad Padre
         const selPadre = document.getElementById("uo-input-padre");
         if (selPadre) {
-          selPadre.innerHTML = '<option value="">(Ninguna - Nivel Máximo / Alta Dirección)</option>';
+          selPadre.innerHTML = '<option value="">(Ninguna unidad de organización)</option>';
           catalogoUnidadesGlobal.forEach(u => {
             selPadre.innerHTML += `<option value="${u.sigla}">[${u.sigla}] ${u.nombre}</option>`;
           });
@@ -7220,7 +7220,7 @@
       const cargo = document.getElementById("tra-input-cargo")?.value.trim() || "Especialista";
       const esDirectivo = parseInt(document.getElementById("tra-input-nivel-mando")?.value || "0");
       const crearAcceso = document.getElementById("tra-chk-crear-acceso")?.checked !== false;
-      const passInicial = document.getElementById("tra-input-pass-inicial")?.value.trim() || "imarpe2026";
+      const passInicial = document.getElementById("tra-input-pass-inicial")?.value.trim() || "imarpe123";
 
       if (!nombres || !apellidos || !uo || !correo_user) {
         alert("Por favor complete todos los campos requeridos.");

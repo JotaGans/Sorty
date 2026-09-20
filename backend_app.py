@@ -162,7 +162,7 @@ class TrabajadorAltaModel(BaseModel):
     cargo: Optional[str] = "Especialista"
     es_directivo: Optional[int] = 0
     crear_acceso: Optional[bool] = True
-    password_inicial: Optional[str] = "imarpe2026"
+    password_inicial: Optional[str] = "imarpe123"
     rol_sistema: Optional[str] = "OPERADOR"
 
 class TrabajadorActualizarModel(BaseModel):
@@ -1095,7 +1095,7 @@ def crear_trabajador(data: TrabajadorAltaModel, user: dict = Depends(get_current
 
         # 3. Si se solicita crear acceso, generar cuenta de usuario automáticamente sin duplicar trabajo
         if data.crear_acceso:
-            pass_hasheada = hash_password(data.password_inicial or "imarpe2026")
+            pass_hasheada = hash_password(data.password_inicial or "imarpe123")
             rol_sist = data.rol_sistema if data.rol_sistema in ("ADMIN_TI", "OPERADOR") else "OPERADOR"
             
             # Verificar si el username ya existía
