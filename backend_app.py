@@ -175,6 +175,9 @@ class AsignarTitularModel(BaseModel):
     titular_trabajador_id: Optional[int] = None
     titular_usuario_id: Optional[int] = None
 
+class ActualizarDependenciaROFModel(BaseModel):
+    sigla_padre: Optional[str] = None
+
 class TrabajadorAltaModel(BaseModel):
     nombres: str
     apellidos: str
@@ -1138,6 +1141,31 @@ def asignar_titular_unidad(unidad_id: int, data: AsignarTitularModel, user: dict
     """, (t_id, u_id, unidad_id))
     db.commit()
     return {"mensaje": "Titular de unidad asignado exitosamente."}
+
+@app.put("/unidades-organicas/{unidad_id}/dependencia")
+def actualizar_dependencia_rof_unidad(
+    unidad_id: int, 
+    data: ActualizarDependenciaROFModel, 
+    user: dict = Depends(get_current_user), 
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar la estructura jerárquica del ROF.")
+
+    padre_limpio = data.sigla_padre.strip().upper() if data.sigla_padre else None
+
+    # Validar que una unidad orgánica no dependa jerárquicamente de sí misma
+    actual = db.execute("SELECT sigla FROM unidades_organicas WHERE id = ?", (unidad_id,)).fetchone()
+    if actual and padre_limpio == actual["sigla"]:
+        raise HTTPException(status_code=400, detail="Una unidad no puede depender jerárquicamente de sí misma.")
+
+    db.execute("""
+        UPDATE unidades_organicas 
+        SET sigla_padre = ? 
+        WHERE id = ?
+    """, (padre_limpio, unidad_id))
+    db.commit()
+    return {"mensaje": "Dependencia jerárquica ROF actualizada con éxito."}
 
 @app.get("/trabajadores")
 def listar_trabajadores(db: sqlite3.Connection = Depends(get_db)):

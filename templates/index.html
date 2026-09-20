@@ -7075,10 +7075,16 @@
 
         // 5. Dibujar cada fila del catálogo institucional
         catalogoUnidadesGlobal.forEach(u => {
-          const padreTxt = u.sigla_padre 
-            ? `<span class="bg-slate-100 px-2 py-0.5 rounded text-[10px] text-slate-700 font-mono font-bold" title="Depende de ${u.sigla_padre}">↑ ${u.sigla_padre}</span>` 
-            : `<span class="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Alta Dirección</span>`;
+          // 1. Opciones para el selector de Dependencia Jerárquica ROF (Unidad Padre)
+          let opcionesPadre = '<option value="">(Nivel Máximo / Alta Dirección)</option>';
+          catalogoUnidadesGlobal.forEach(padreCand => {
+            if (padreCand.sigla !== u.sigla) {
+              const seleccionado = (u.sigla_padre === padreCand.sigla) ? 'selected' : '';
+              opcionesPadre += `<option value="${padreCand.sigla}" ${seleccionado}>↑ [${padreCand.sigla}] ${padreCand.nombre}</option>`;
+            }
+          });
 
+          // 2. Opciones para el selector de Titular / Directivo
           let opcionesTitular = '<option value="">(Sin titular asignado)</option>';
           listaPersonas.forEach(p => {
             const pId = p.id;
@@ -7091,12 +7097,19 @@
 
           tbody.innerHTML += `
             <tr class="hover:bg-gray-50 border-b border-gray-100">
-              <td class="p-2.5 font-bold text-[#0f2a4a] text-xs font-mono">${u.sigla}</td>
+              <td class="p-2.5 font-bold text-[#0f2a4a] text-xs font-mono whitespace-nowrap">${u.sigla}</td>
               <td class="p-2.5 font-semibold text-gray-800 text-xs">${u.nombre}</td>
-              <td class="p-2.5 text-gray-500 text-[11px] whitespace-nowrap">${padreTxt}</td>
-              <td class="p-2.5">
+              <td class="p-2.5 min-w-[220px]">
+                <select onchange="actualizarDependenciaROF(${u.id}, this.value, '${u.sigla}')" 
+                        class="w-full text-[11px] font-bold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer text-slate-700" 
+                        title="Seleccione la unidad de inmediata superior jerarquía">
+                  ${opcionesPadre}
+                </select>
+              </td>
+              <td class="p-2.5 min-w-[210px]">
                 <select onchange="asignarTitularUnidad(${u.id}, this.value, '${u.sigla}')" 
-                        class="w-full text-xs font-semibold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer">
+                        class="w-full text-[11px] font-semibold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer"
+                        title="Seleccione el directivo o titular responsable">
                   ${opcionesTitular}
                 </select>
               </td>
@@ -7106,6 +7119,35 @@
       } catch (e) {
         console.error("Error al cargar unidades:", e);
         if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error de conexión al cargar unidades.</td></tr>`;
+      }
+    }
+
+    async function actualizarDependenciaROF(unidadId, siglaPadre, siglaHijo) {
+      try {
+        const payload = {
+          sigla_padre: siglaPadre ? siglaPadre.trim() : null
+        };
+
+        const res = await fetch(`/unidades-organicas/${unidadId}/dependencia`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const destino = siglaPadre ? `[${siglaPadre}]` : "Alta Dirección";
+          notificarToast(`Dependencia de [${siglaHijo}] actualizada hacia ${destino}.`, "success");
+          await cargarCatalogoUnidades();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Error al actualizar la dependencia ROF.");
+          await cargarCatalogoUnidades();
+        }
+      } catch (e) {
+        alert("Error de conexión al actualizar la dependencia jerárquica.");
       }
     }
 
