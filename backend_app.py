@@ -1843,6 +1843,25 @@ def guardar_actividad(act: ActividadModel, user: dict = Depends(get_current_user
         dias_val = int(act.dias if act.dias is not None else 1)
         pred = str(act.predecesores or "").strip()
 
+        # BLINDAJE DE SEGURIDAD CONTRA MANIPULACIÓN: RECALCULAR FECHA FIN EN PROYECTOS POR HORAS
+        proy_info = db.execute("SELECT duration_mode, unidad_tiempo, horas_por_dia FROM proyectos WHERE id = ?", (p_id,)).fetchone()
+        es_modo_horas = bool(proy_info and (proy_info["duration_mode"] == "hours" or proy_info["unidad_tiempo"] == "HORAS"))
+
+        if es_modo_horas and f_ini:
+            try:
+                partes_ini = f_ini.split("/")
+                dt_ini = datetime(int(partes_ini[2]), int(partes_ini[1]), int(partes_ini[0])).date()
+                horas_dia = int(proy_info["horas_por_dia"] or 8)
+                # Días hábiles necesarios según las horas netas ingresadas (ej. 1 a 8h = 1 día)
+                dias_habiles_necesarios = max(1, (dias_val + horas_dia - 1) // horas_dia)
+                
+                # Obtener feriados institucionales para cálculo legal exacto
+                feriados_db = obtener_set_feriados(db)
+                dt_fin_calculada = calcular_fecha_fin_habil(dt_ini, dias_habiles_necesarios, feriados_db)
+                f_fin = dt_fin_calculada.strftime("%d/%m/%Y")
+            except Exception:
+                pass  # Si el formato no fuera legible, conserva el string original
+
         # Validación amplia de permisos de Gestor o Admin TI
         es_gestor = db.execute("""
             SELECT 1 FROM proyectos p 

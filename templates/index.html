@@ -6219,8 +6219,12 @@
 
         let tdFin = '';
         if (visibilidadColumnas.fin) {
-          if (esMadre) {
-            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${claseBloqueada} whitespace-nowrap font-medium" title="Fecha de finalización calculada automáticamente por el cierre de subtareas">${badgeVencidoHTML} ${lockIcon}</td>`;
+          const esModoHoras = (proyectoModoDuracion === "hours");
+          if (esMadre || esModoHoras) {
+            const mensajeTooltip = esModoHoras 
+              ? "Fecha fin supeditada y calculada automáticamente según las horas hábiles de dedicación." 
+              : "Fecha de finalización calculada automáticamente por el cierre de subtareas.";
+            tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${claseBloqueada} whitespace-nowrap font-medium" title="${mensajeTooltip}">${badgeVencidoHTML} ${lockIcon}</td>`;
           } else {
             tdFin = `<td class="p-2.5 border-r border-b border-gray-200 hidden sm:table-cell text-xs ${puedeEditarTiempos ? claseEditable : ''} whitespace-nowrap font-medium" ondblclick="${puedeEditarTiempos ? `editarFechaFin('${cod}')` : ''}" title="${puedeEditarTiempos ? 'Doble clic para modificar fecha de fin' : ''}">${badgeVencidoHTML}</td>`;
           }
@@ -6605,6 +6609,10 @@
     let modalActivoAct = null;
     function editarFechaFin(cod) {
       if (!proyectoEsGestor) return;
+      if (proyectoModoDuracion === "hours") {
+        alert("🔒 Bloqueado: En proyectos bajo modalidad 'Por horas', la Fecha Fin se calcula automáticamente en función de las horas netas hábiles.");
+        return;
+      }
       if (tieneHijos(cod)) {
         alert("🔒 Bloqueado CPM: La Fecha de Fin se calcula automáticamente de sus desgloses.");
         return;
