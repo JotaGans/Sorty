@@ -6061,7 +6061,7 @@
               const leftPct = Math.min(100, Math.max(0, ((startClamped - tInicioVisible) / duracionVisibleMs) * 100));
               const widthPct = Math.min(100 - leftPct, Math.max(1.2, ((endClamped - startClamped) / duracionVisibleMs) * 100));
 
-              const esHito = (act.dias <= 1);
+              const esHito = false; // 'false' desactiva la representación en rombo y muestra siempre barras // (act.dias <= 1) activa la representación en rombo para actividades 'hito' (que duran un dia)
               let barraOElementoHTML = "";
               const miniAvataresHTML = mostrarAvatares ? obtenerMiniAvataresGanttHTML(act.responsable) : '';
               const esBarraDelgada = widthPct < 5.0;
