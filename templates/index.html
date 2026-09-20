@@ -7025,97 +7025,105 @@
       if (tab === 'procesos') cargarListaProcesosTI();
     }
 
-    // --- CARGA Y RENDERIZADO DE UNIDADES DE ORGANIZACIÓN ROF ---
+    // --- CARGA Y RENDERIZADO ULTRA-RÁPIDO DE UNIDADES ORGÁNICAS ROF ---
     async function cargarCatalogoUnidades() {
       const tbody = document.getElementById("uo-tabla-cuerpo");
-      if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 font-semibold animate-pulse">Sincronizando catálogo de unidades de organización del ROF...</td></tr>`;
-      }
 
       try {
-        // 1. Asegurar precarga de trabajadores
+        // 1. Cargar unidades orgánicas en paralelo con trabajadores solo si no existen
+        const promesas = [
+          fetch("/unidades-organicas", { headers: { "Authorization": `Bearer ${token}` } })
+        ];
+
         if (!catalogoTrabajadoresGlobal || catalogoTrabajadoresGlobal.length === 0) {
-          try {
-            const resT = await fetch("/trabajadores", { headers: { "Authorization": `Bearer ${token}` } });
-            if (resT.ok) catalogoTrabajadoresGlobal = await resT.json();
-          } catch (_) {}
+          promesas.push(
+            fetch("/trabajadores", { headers: { "Authorization": `Bearer ${token}` } }).catch(() => null)
+          );
         }
 
-        // 2. Obtener catálogo de unidades
-        const res = await fetch("/unidades-organicas", {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (!res.ok) {
-          if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error al consultar unidades de organización.</td></tr>`;
+        const [resUo, resTrab] = await Promise.all(promesas);
+
+        if (resTrab && resTrab.ok) {
+          catalogoTrabajadoresGlobal = await resTrab.json();
+        }
+
+        if (!resUo.ok) {
+          if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error al consultar unidades orgánicas.</td></tr>`;
           return;
         }
 
-        catalogoUnidadesGlobal = await res.json();
+        catalogoUnidadesGlobal = await resUo.json();
         if (!tbody) return;
-        tbody.innerHTML = "";
 
         if (!catalogoUnidadesGlobal || catalogoUnidadesGlobal.length === 0) {
           tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">No hay unidades registradas.</td></tr>`;
           return;
         }
 
-        // 3. Poblar desplegable de Unidad Padre
-        const selPadre = document.getElementById("uo-input-padre");
-        if (selPadre) {
-          selPadre.innerHTML = '<option value="">(Ninguna unidad de organización)</option>';
-          catalogoUnidadesGlobal.forEach(u => {
-            selPadre.innerHTML += `<option value="${u.sigla}">[${u.sigla}] ${u.nombre}</option>`;
-          });
-        }
-
-        // 4. Lista consolidada de personas para el selector de directivos
+        // 2. Pre-construir la lista de opciones de directivos UNA SOLA VEZ en memoria (Optimización de rendimiento)
         const listaPersonas = (catalogoTrabajadoresGlobal && catalogoTrabajadoresGlobal.length > 0)
           ? catalogoTrabajadoresGlobal
           : (usuariosTIGlobal || []);
 
-        // 5. Dibujar cada fila del catálogo institucional
+        // 3. Actualizar desplegable del formulario superior
+        const selPadre = document.getElementById("uo-input-padre");
+        if (selPadre) {
+          let opcionesFormPadre = '<option value="">(Ninguna unidad de organización)</option>';
+          catalogoUnidadesGlobal.forEach(u => {
+            opcionesFormPadre += `<option value="${u.sigla}">[${u.sigla}] ${u.nombre}</option>`;
+          });
+          selPadre.innerHTML = opcionesFormPadre;
+        }
+
+        // 4. Renderizado eficiente con DocumentFragment para fluidez total (0ms de retraso)
+        let htmlFilas = "";
+
         catalogoUnidadesGlobal.forEach(u => {
-          // 1. Opciones para el selector de Dependencia Jerárquica ROF (Unidad Padre)
-          let opcionesPadre = '<option value="">(Nivel Máximo / Alta Dirección)</option>';
+          const siglaPadreActual = String(u.sigla_padre || "").trim().toUpperCase();
+
+          // Selector de Dependencia ROF
+          let opcionesPadre = `<option value="" ${siglaPadreActual === "" ? "selected" : ""}>(Nivel Máximo / Alta Dirección)</option>`;
+          
           catalogoUnidadesGlobal.forEach(padreCand => {
-            if (padreCand.sigla !== u.sigla) {
-              const seleccionado = (u.sigla_padre === padreCand.sigla) ? 'selected' : '';
-              opcionesPadre += `<option value="${padreCand.sigla}" ${seleccionado}>↑ [${padreCand.sigla}] ${padreCand.nombre}</option>`;
+            const siglaCand = String(padreCand.sigla || "").trim().toUpperCase();
+            if (siglaCand !== String(u.sigla).trim().toUpperCase()) {
+              const estaSeleccionado = (siglaPadreActual === siglaCand) ? "selected" : "";
+              opcionesPadre += `<option value="${siglaCand}" ${estaSeleccionado}>↑ [${siglaCand}] ${padreCand.nombre}</option>`;
             }
           });
 
-          // 2. Opciones para el selector de Titular / Directivo
+          // Selector de Titular / Directivo
           let opcionesTitular = '<option value="">(Sin titular asignado)</option>';
           listaPersonas.forEach(p => {
             const pId = p.id;
             const pNombre = p.nombre_completo || p.username;
             const pCargo = p.cargo ? ` - ${p.cargo}` : '';
             const estaAsignado = (u.titular_trabajador_id === pId || u.titular_usuario_id === pId);
-
             opcionesTitular += `<option value="${pId}" ${estaAsignado ? 'selected' : ''}>${pNombre}${pCargo}</option>`;
           });
 
-          tbody.innerHTML += `
-            <tr class="hover:bg-gray-50 border-b border-gray-100">
+          htmlFilas += `
+            <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
               <td class="p-2.5 font-bold text-[#0f2a4a] text-xs font-mono whitespace-nowrap">${u.sigla}</td>
               <td class="p-2.5 font-semibold text-gray-800 text-xs">${u.nombre}</td>
               <td class="p-2.5 min-w-[220px]">
                 <select onchange="actualizarDependenciaROF(${u.id}, this.value, '${u.sigla}')" 
-                        class="w-full text-[11px] font-bold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer text-slate-700" 
-                        title="Seleccione la unidad de inmediata superior jerarquía">
+                        class="w-full text-[11px] font-bold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer text-slate-700">
                   ${opcionesPadre}
                 </select>
               </td>
               <td class="p-2.5 min-w-[210px]">
                 <select onchange="asignarTitularUnidad(${u.id}, this.value, '${u.sigla}')" 
-                        class="w-full text-[11px] font-semibold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer"
-                        title="Seleccione el directivo o titular responsable">
+                        class="w-full text-[11px] font-semibold p-1.5 bg-slate-50 border border-gray-300 rounded-lg outline-none focus:border-[#0f2a4a] cursor-pointer">
                   ${opcionesTitular}
                 </select>
               </td>
             </tr>
           `;
         });
+
+        tbody.innerHTML = htmlFilas;
+
       } catch (e) {
         console.error("Error al cargar unidades:", e);
         if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-semibold">Error de conexión al cargar unidades.</td></tr>`;

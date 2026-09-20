@@ -823,13 +823,16 @@ def init_db():
         ("Centro de Plataformas Flotantes de Investigación Marina y Continental", "CPFIMC", "ÓRGANOS DESCONCENTRADOS", "GC")
     ]
 
-    # Sincronización e inserción robusta tolerante a versiones previas de SQLite
+    # Sincronización respetando las dependencias que configure el Administrador TI
     for nom, sig, tipo, padre in unidades_semilla:
-        uo_existente = c.execute("SELECT id FROM unidades_organicas WHERE sigla = ?", (sig,)).fetchone()
+        uo_existente = c.execute("SELECT id, sigla_padre FROM unidades_organicas WHERE sigla = ?", (sig,)).fetchone()
         if uo_existente:
+            # Solo actualiza sigla_padre si actualmente está vacía en BD
             c.execute("""
                 UPDATE unidades_organicas 
-                SET nombre = ?, tipo_organo = ?, sigla_padre = ?, estado = 'ACTIVO'
+                SET nombre = ?, tipo_organo = ?, 
+                    sigla_padre = COALESCE(sigla_padre, ?), 
+                    estado = 'ACTIVO'
                 WHERE id = ?
             """, (nom, tipo, padre, uo_existente[0]))
         else:
@@ -1074,13 +1077,13 @@ def listar_unidades_organicas(db: sqlite3.Connection = Depends(get_db)):
         rows = db.execute("""
             SELECT uo.id, uo.nombre, uo.sigla, 
                    COALESCE(uo.tipo_organo, 'ÓRGANOS DE LÍNEA') as tipo_organo, 
-                   uo.sigla_padre, 
+                   COALESCE(uo.sigla_padre, '') as sigla_padre, 
                    uo.titular_usuario_id, 
                    uo.titular_trabajador_id, 
-                   uo.estado,
+                   COALESCE(uo.estado, 'ACTIVO') as estado,
                    COALESCE(t.nombre_completo, u.nombre_completo, '') as titular_nombre,
-                   t.cargo as titular_cargo,
-                   t.correo as titular_correo
+                   COALESCE(t.cargo, '') as titular_cargo,
+                   COALESCE(t.correo, '') as titular_correo
             FROM unidades_organicas uo
             LEFT JOIN trabajadores t ON uo.titular_trabajador_id = t.id
             LEFT JOIN usuarios u ON uo.titular_usuario_id = u.id
@@ -1088,8 +1091,16 @@ def listar_unidades_organicas(db: sqlite3.Connection = Depends(get_db)):
             ORDER BY uo.id ASC
         """).fetchall()
         return [dict(r) for r in rows]
-    except Exception as e:
-        rows = db.execute("SELECT id, nombre, sigla FROM unidades_organicas").fetchall()
+    except Exception:
+        # Respaldo de alta tolerancia preservando rigurosamente sigla_padre
+        rows = db.execute("""
+            SELECT id, nombre, sigla, 
+                   COALESCE(sigla_padre, '') as sigla_padre, 
+                   titular_usuario_id, titular_trabajador_id 
+            FROM unidades_organicas 
+            WHERE estado = 'ACTIVO' OR estado IS NULL
+            ORDER BY id ASC
+        """).fetchall()
         return [dict(r) for r in rows]
 
 @app.post("/unidades-organicas")
