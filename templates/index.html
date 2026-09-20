@@ -967,69 +967,14 @@
       </div>
 
       <div class="flex border-b border-gray-200 bg-gray-100 text-xs font-bold px-4 pt-2 space-x-1 flex-shrink-0 overflow-x-auto">
-        <button id="ti-tab-btn-cuentas" onclick="cambiarTabTI('cuentas')" class="px-3.5 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold whitespace-nowrap">🔑 Cuentas de acceso</button>
-        <button id="ti-tab-btn-trabajadores" onclick="cambiarTabTI('trabajadores')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">👥 Trabajadores</button>
+        <button id="ti-tab-btn-trabajadores" onclick="cambiarTabTI('trabajadores')" class="px-3.5 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold whitespace-nowrap">👥 Directorio & Cuentas</button>
         <button id="ti-tab-btn-unidades" onclick="cambiarTabTI('unidades')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">🏢 Unidades de organización</button>
         <button id="ti-tab-btn-feriados" onclick="cambiarTabTI('feriados')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">📅 Feriados</button>
         <button id="ti-tab-btn-procesos" onclick="cambiarTabTI('procesos')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">⚙️ Procesos</button>
       </div>
 
-      <!-- Tab 1: Cuentas -->
-      <div id="ti-tab-content-cuentas" class="p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
-        <form onsubmit="darAltaUsuario(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
-          <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Alta de Usuario para Acceso al Sistema</h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div>
-              <label class="block font-bold text-gray-600 mb-1">Nombres</label>
-              <input type="text" id="ti-input-nombres" required placeholder="Ej. Jesús Gianfranco" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-            </div>
-            <div>
-              <label class="block font-bold text-gray-600 mb-1">Apellidos</label>
-              <input type="text" id="ti-input-apellidos" required placeholder="Ej. Salas Guerrero" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-            </div>
-            <div>
-              <label class="block font-bold text-gray-600 mb-1">Usuario (Login)</label>
-              <input type="text" id="ti-input-user" required placeholder="Ej. jsalas" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-            </div>
-            <div>
-              <label class="block font-bold text-gray-600 mb-1">Contraseña Inicial</label>
-              <input type="password" id="ti-input-pass" required placeholder="••••••••" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-            </div>
-            <div class="sm:col-span-2">
-              <label class="block font-bold text-gray-600 mb-1">Rol Global en el Software</label>
-              <select id="ti-input-rol" class="w-full p-2 border border-gray-300 rounded font-bold outline-none">
-                <option value="OPERADOR">OPERADOR (Gestor / Responsable de Proyectos)</option>
-                <option value="ADMIN_TI">ADMINISTRADOR TI (Gestión Institucional Total)</option>
-              </select>
-            </div>
-          </div>
-          <button type="submit" class="w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs py-2 rounded-lg transition shadow">Dar de Alta Cuenta</button>
-        </form>
-
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider">Cuentas Registradas</h4>
-            <input type="text" id="ti-filtro-usuarios" oninput="filtrarUsuariosTI()" placeholder="🔍 Buscar por nombre o @usuario..." class="text-xs bg-white border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:border-[#0f2a4a] w-56 font-semibold">
-          </div>
-          <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
-            <table class="w-full text-xs text-left">
-              <thead class="bg-[#0f2a4a] text-white">
-                <tr>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 min-w-[200px]">Apellidos y Nombres</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-28 whitespace-nowrap">Usuario</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-36 whitespace-nowrap">Rol</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-20 whitespace-nowrap">Estado</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-24 whitespace-nowrap">Acción</th>
-                </tr>
-              </thead>
-              <tbody id="ti-tabla-usuarios" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
       <!-- Tab 2: Trabajadores -->
-      <div id="ti-tab-content-trabajadores" class="hidden p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
+      <div id="ti-tab-content-trabajadores" class="p-5 overflow-y-auto space-y-5 flex-1 bg-[#f8f9fa]">
         <form onsubmit="registrarTrabajadorTI(event)" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
           <div class="flex items-center justify-between border-b border-gray-100 pb-2">
             <h4 class="text-xs font-black uppercase text-[#0f2a4a] tracking-wider">Directorio Institucional & Alta Única de Personal</h4>
@@ -1110,8 +1055,10 @@
                 <tr>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Apellidos y Nombres</th>
                   <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad Orgánica</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Correo Electrónico</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-36 whitespace-nowrap">Acción</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Cargo / Nivel</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Usuario Login</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-24">Acceso</th>
+                  <th class="p-2.5 font-bold text-white border-b border-blue-900 text-center w-32 whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
               <tbody id="tra-tabla-directorio" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
@@ -6926,10 +6873,8 @@
       }
 
       document.getElementById("modal-admin-ti").classList.remove("hidden");
-      cambiarTabTI('cuentas');
+      cambiarTabTI('trabajadores'); // <-- Inicia directamente en el Directorio Unificado
 
-      // Carga secuencial limpia y fluida para evitar saturar conexiones
-      await cargarListaUsuariosTI();
       await cargarDirectorioTrabajadores();
       await cargarCatalogoUnidades();
     }
@@ -7220,20 +7165,28 @@
 
       actualizarBotonTrabajadoresBajaUI();
 
-      // En la lista principal solo mostramos estrictamente a los trabajadores ACTIVOS
       const activos = (lista || []).filter(t => t.estado === "ACTIVO" || !t.estado);
 
       if (activos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 font-semibold italic">No se encontraron trabajadores activos con ese criterio.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400 font-semibold italic">No se encontraron trabajadores activos con ese criterio.</td></tr>`;
         return;
       }
 
       activos.forEach(t => {
+        const usuarioLogin = (t.correo || "").split("@")[0];
+        const badgeCargo = t.es_directivo === 1
+          ? `<span class="bg-purple-50 text-purple-800 border border-purple-200 px-1.5 py-0.5 rounded text-[10px] font-bold">🏛️ Directivo</span>`
+          : `<span class="text-gray-500 text-[11px]">${t.cargo || 'Especialista'}</span>`;
+
         tbody.innerHTML += `
           <tr class="hover:bg-gray-50 border-b border-gray-100">
-            <td class="p-2.5 font-bold text-gray-800">${t.nombre_completo}</td>
-            <td class="p-2.5 font-semibold text-teal-800"><span class="bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${t.unidad_organica}</span></td>
-            <td class="p-2.5 font-mono text-blue-600">${t.correo}</td>
+            <td class="p-2.5 font-bold text-gray-800 text-xs">${t.nombre_completo}</td>
+            <td class="p-2.5 font-semibold text-teal-800"><span class="bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-xs">${t.unidad_organica}</span></td>
+            <td class="p-2.5 whitespace-nowrap">${badgeCargo}</td>
+            <td class="p-2.5 font-mono text-gray-600 text-xs">@${usuarioLogin}</td>
+            <td class="p-2.5 text-center whitespace-nowrap">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800">ACTIVO</span>
+            </td>
             <td class="p-2.5 text-center whitespace-nowrap space-x-1.5">
               <button onclick="abrirModalEditarTrabajador(${t.id})" class="p-1 rounded text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition font-bold cursor-pointer" title="Editar datos del trabajador">
                 ✏️
