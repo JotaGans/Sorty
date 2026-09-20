@@ -190,12 +190,11 @@ class TrabajadorAltaModel(BaseModel):
     rol_sistema: Optional[str] = "OPERADOR"
 
 class TrabajadorActualizarModel(BaseModel):
-    id: int
     nombres: str
     apellidos: str
     unidad_organica: str
     correo_usuario: str
-    cargo: Optional[str] = "Especialista"
+    cargo: Optional[str] = "Sin cargo / nivel"
     es_directivo: Optional[int] = 0
 
 class PermisoProyectoUpdate(BaseModel):
@@ -1276,7 +1275,7 @@ def actualizar_trabajador(
     usuario_correo = data.correo_usuario.strip().lower().replace("@imarpe.gob.pe", "")
     correo_final = f"{usuario_correo}@imarpe.gob.pe"
     antiguo_correo = actual["correo"]
-    cargo_final = (data.cargo or "Especialista").strip()
+    cargo_final = (data.cargo or "Sin cargo / nivel").strip()
     es_dir = int(data.es_directivo or 0)
     uo_final = data.unidad_organica.strip().upper()
 
@@ -1285,7 +1284,7 @@ def actualizar_trabajador(
     if correo_ocupado:
         raise HTTPException(status_code=400, detail="El correo electrónico ya pertenece a otro trabajador.")
 
-    # 1. Actualizar tabla trabajadores (incluyendo cargo y directivo)
+    # 1. Actualizar tabla trabajadores
     db.execute("""
         UPDATE trabajadores 
         SET nombres = ?, apellidos = ?, nombre_completo = ?, unidad_organica = ?, correo = ?, cargo = ?, es_directivo = ?
@@ -1318,20 +1317,6 @@ def actualizar_trabajador(
             SET titular_trabajador_id = ?, titular_usuario_id = ?
             WHERE sigla = ?
         """, (trabajador_id, user_vinculado_id, uo_final))
-
-    # 3. Sincronizar nombre en la cuenta de usuario si coincide
-    db.execute("""
-        UPDATE usuarios 
-        SET nombre_completo = ?
-        WHERE nombre_completo = ?
-    """, (nuevo_nombre_completo, antiguo_nombre_completo))
-
-    # 4. Actualizar asignaciones en actividades si cambió el nombre
-    if antiguo_nombre_completo != nuevo_nombre_completo:
-        acts = db.execute("SELECT proyecto_id, codigo, responsable FROM actividades WHERE responsable LIKE ?", (f"%{antiguo_nombre_completo}%",)).fetchall()
-        for a in acts:
-            nuevo_resp = a["responsable"].replace(antiguo_nombre_completo, nuevo_nombre_completo)
-            db.execute("UPDATE actividades SET responsable = ? WHERE proyecto_id = ? AND codigo = ?", (nuevo_resp, a["proyecto_id"], a["codigo"]))
 
     db.commit()
     return {"status": "success", "mensaje": "Datos del trabajador actualizados correctamente."}

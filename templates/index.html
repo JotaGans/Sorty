@@ -7073,7 +7073,6 @@
             "Authorization": `Bearer ${token}` 
           },
           body: JSON.stringify({
-            id: parseInt(id),
             nombres: nombres,
             apellidos: apellidos,
             unidad_organica: uo,
@@ -7093,7 +7092,13 @@
           }
         } else {
           const err = await res.json().catch(() => ({}));
-          alert(err.detail || "Error al actualizar los datos del trabajador.");
+          let mensajeError = "Error al actualizar los datos del trabajador.";
+          if (typeof err.detail === "string") {
+            mensajeError = err.detail;
+          } else if (Array.isArray(err.detail)) {
+            mensajeError = err.detail.map(d => d.msg || JSON.stringify(d)).join("\n");
+          }
+          alert(mensajeError);
         }
       } catch (err) {
         console.error("Error al actualizar trabajador:", err);
@@ -8835,57 +8840,6 @@
 
     function cerrarModalEditarTrabajador() {
       document.getElementById("modal-editar-trabajador-ti").classList.add("hidden");
-    }
-
-    async function guardarEdicionTrabajador(e) {
-      e.preventDefault();
-      const id = document.getElementById("edit-tra-id").value;
-      const nombres = document.getElementById("edit-tra-nombres").value.trim();
-      const apellidos = document.getElementById("edit-tra-apellidos").value.trim();
-      const uo = document.getElementById("edit-tra-uo-valor").value || document.getElementById("edit-tra-uo-busq").value.trim();
-      const correo_user = document.getElementById("edit-tra-correo-user").value.trim();
-      const cargo = document.getElementById("edit-tra-cargo")?.value || "Sin cargo / nivel";
-      const esDirectivo = parseInt(document.getElementById("edit-tra-nivel-mando")?.value || "0");
-
-      if (!nombres || !apellidos || !uo || !correo_user) {
-        alert("Por favor complete todos los campos requeridos.");
-        return;
-      }
-
-      try {
-        const res = await fetch(`/trabajadores/${id}`, {
-          method: "PUT",
-          headers: { 
-            "Content-Type": "application/json", 
-            "Authorization": `Bearer ${token}` 
-          },
-          body: JSON.stringify({
-            id: parseInt(id),
-            nombres: nombres,
-            apellidos: apellidos,
-            unidad_organica: uo,
-            correo_usuario: correo_user,
-            cargo: cargo,
-            es_directivo: esDirectivo
-          })
-        });
-
-        if (res.ok) {
-          cerrarModalEditarTrabajador();
-          notificarToast("Datos y jerarquía del trabajador actualizados con éxito.", "success");
-          await cargarDirectorioTrabajadores();
-          await cargarCatalogoUnidades();
-          if (proyectoActualId) {
-            await cargarActividades();
-          }
-        } else {
-          const err = await res.json().catch(() => ({}));
-          alert(err.detail || "Error al actualizar los datos del trabajador.");
-        }
-      } catch (err) {
-        console.error("Error al actualizar trabajador:", err);
-        alert("Error de conexión con el servidor.");
-      }
     }
 
     function autocompletarUOEdicion(termino) {
