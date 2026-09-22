@@ -7,6 +7,7 @@ from app.models.schemas import Token
 
 router = APIRouter(tags=["Autenticación"])
 
+# 1. Endpoint de Inicio de Sesión y Generación de Token JWT
 @router.post("/token", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: sqlite3.Connection = Depends(get_db)):
     user = db.execute("""

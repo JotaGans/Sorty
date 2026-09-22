@@ -7,7 +7,6 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-
 from app.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.database.connection import get_db
 
@@ -54,11 +53,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: sqlite3.Connection
         raise credentials_exception
 
     user = db.execute(
-        "SELECT id, username, nombre_completo, rol, estado FROM usuarios WHERE username = ?", 
+        "SELECT id, username, nombre_completo, rol, estado FROM usuarios WHERE username = ?",
         (username,)
     ).fetchone()
     
     if not user or user["estado"] != "ACTIVO":
         raise credentials_exception
-        
     return dict(user)

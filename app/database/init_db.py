@@ -23,8 +23,8 @@ def calcular_jueves_viernes_santo(year: int):
     domingo = datetime(year, mes, dia).date()
     return domingo - timedelta(days=3), domingo - timedelta(days=2)
 
-def init_database():
-    # Migración transparente de datos históricos: si existe la base previa y no la nueva, se clona
+def init_db():
+    # Migración transparente de datos históricos si existe la BD previa
     if not os.path.exists(DB_PATH):
         if os.path.exists(LEGACY_DB_PATH):
             try:
@@ -43,7 +43,7 @@ def init_database():
     conn.execute("PRAGMA synchronous = NORMAL;")
     c = conn.cursor()
 
-    # 1. Tabla Usuarios
+    # 1. Tabla Usuarios y control de acceso
     c.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,7 +78,7 @@ def init_database():
             WHERE username = 'admin'
         """, (hashed_admin_pass,))
 
-    # 3. Tabla Proyectos
+    # 3. Tabla Proyectos y Programas
     c.execute("""
         CREATE TABLE IF NOT EXISTS proyectos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,7 +108,7 @@ def init_database():
         except sqlite3.OperationalError:
             pass
 
-    # 4. Tabla Permisos Proyecto
+    # 4. Tabla Permisos de Proyecto (Gestores y Visualizadores)
     c.execute("""
         CREATE TABLE IF NOT EXISTS proyecto_usuarios (
             proyecto_id INTEGER,
@@ -123,7 +123,7 @@ def init_database():
     except sqlite3.OperationalError:
         pass
 
-    # 5. Tabla Actividades WBS
+    # 5. Tabla Actividades WBS y Cronograma
     c.execute("""
         CREATE TABLE IF NOT EXISTS actividades (
             proyecto_id INTEGER DEFAULT 1,
@@ -152,13 +152,20 @@ def init_database():
         )
     """)
 
-    # 7. Tabla Responsables y Configuración
+    # 7. Tabla Responsables y Alertas por Correo
     c.execute("""
         CREATE TABLE IF NOT EXISTS responsables (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT UNIQUE,
             cargo TEXT,
             correo TEXT
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS configuracion (
+            clave TEXT PRIMARY KEY,
+            valor TEXT
         )
     """)
 
@@ -217,7 +224,7 @@ def init_database():
         except sqlite3.OperationalError:
             pass
 
-    # 10. Feriados Institucionales
+    # 10. Feriados Institucionales y Calendario Laboral
     c.execute("""
         CREATE TABLE IF NOT EXISTS feriados_institucionales (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -259,7 +266,7 @@ def init_database():
         )
     """)
 
-    # 13. Plantillas Maestras
+    # 13. Plantillas Maestras de Proyecto
     c.execute("""
         CREATE TABLE IF NOT EXISTS plantillas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -284,7 +291,7 @@ def init_database():
         )
     """)
 
-    # Índices de aceleración
+    # Índices de aceleración de consultas
     for idx_sql in [
         "CREATE INDEX IF NOT EXISTS idx_historial_proy ON historial(proyecto_id, timestamp DESC)",
         "CREATE INDEX IF NOT EXISTS idx_actividades_proy ON actividades(proyecto_id, codigo)",
@@ -301,7 +308,14 @@ def init_database():
         except sqlite3.OperationalError:
             pass
 
-    # Proyecto semilla inicial si la BD es completamente nueva
+    # Normalización de roles a las categorías oficiales
+    c.execute("""
+        UPDATE usuarios 
+        SET rol = 'OPERADOR' 
+        WHERE rol NOT IN ('ADMIN_TI', 'OPERADOR')
+    """)
+
+    # Proyecto semilla si la base de datos es nueva
     c.execute("SELECT id FROM proyectos WHERE id = 1")
     if not c.fetchone():
         c.execute("INSERT INTO proyectos (id, nombre, creador_id) VALUES (1, 'GESTIÓN DE CONVENIOS', ?)", (admin_id,))
@@ -405,7 +419,7 @@ def init_database():
                 VALUES (?, ?, ?, 'SISTEMA', ?)
             """, (f_fecha, f_desc, f_tipo, ahora_peru_str()))
 
-    # Semilla de Catálogo de Procesos (103 nodos)
+    # Semilla de Catálogo Oficial de Procesos IMARPE
     c.execute("SELECT COUNT(*) FROM procesos_institucionales")
     if c.fetchone()[0] == 0:
         procesos_semilla = [
@@ -517,6 +531,60 @@ def init_database():
             INSERT INTO procesos_institucionales (codigo, nombre, nivel, codigo_padre, estado)
             VALUES (?, ?, ?, ?, 'ACTIVO')
         """, procesos_semilla)
+
+    # Semilla de Plantillas Maestras
+    c.execute("SELECT COUNT(*) FROM plantillas")
+    if c.fetchone()[0] == 0:
+        plantillas_semilla = [
+            (
+                "Gestión y Formalización de Convenios",
+                "Estructura estándar para la negociación, revisión técnica-legal y suscripción de convenios interinstitucionales.",
+                "Convenios y Cooperación",
+                admin_id,
+                [
+                    ("1", "FASE 1: ACTOS PREPARATORIOS Y PROPUESTA", 10, ""),
+                    ("1.1", "Recepción y revisión técnica de la propuesta", 4, ""),
+                    ("1.2", "Evaluación de viabilidad y objetivos conjuntos", 3, "1.1"),
+                    ("1.3", "Elaboración del informe técnico preliminar", 3, "1.2"),
+                    ("2", "FASE 2: REVISIÓN Y OPINIÓN LEGAL", 12, "1"),
+                    ("2.1", "Remisión de expediente a Asesoría Jurídica", 2, "1.3"),
+                    ("2.2", "Subsanación de observaciones técnicas", 5, "2.1"),
+                    ("2.3", "Emisión de Dictamen Legal favorable", 5, "2.2"),
+                    ("3", "FASE 3: SUSCRIPCIÓN Y REGISTRO OFICIAL", 6, "2"),
+                    ("3.1", "Firma y protocolización del convenio", 3, "2.3"),
+                    ("3.2", "Publicación y distribución a órganos ejecutores", 3, "3.1")
+                ]
+            ),
+            (
+                "Estandarización y Optimización de Procesos",
+                "Metodología ágil para el levantamiento, rediseño, validación y formalización de trámites internos.",
+                "Modernización y Procesos",
+                admin_id,
+                [
+                    ("1", "FASE 1: DIAGNÓSTICO Y LEVANTAMIENTO AS-IS", 15, ""),
+                    ("1.1", "Planificación de entrevistas y talleres de trabajo", 3, ""),
+                    ("1.2", "Ejecución de entrevistas a personal operativo y táctico", 7, "1.1"),
+                    ("1.3", "Mapeo y diagramación del flujo actual (AS-IS)", 5, "1.2"),
+                    ("2", "FASE 2: REDISEÑO Y PROPUESTA TO-BE", 14, "1"),
+                    ("2.1", "Identificación de cuellos de botella y demoras", 4, "1.3"),
+                    ("2.2", "Diseño de la propuesta optimizada (TO-BE)", 6, "2.1"),
+                    ("2.3", "Taller de validación con líderes de proceso", 4, "2.2"),
+                    ("3", "FASE 3: FORMALIZACIÓN Y MANUALES", 10, "2"),
+                    ("3.1", "Redacción de la ficha técnica y manual de procedimiento", 6, "2.3"),
+                    ("3.2", "Aprobación formal e implementación operativa", 4, "3.1")
+                ]
+            )
+        ]
+
+        for p_nom, p_desc, p_cat, p_creador, acts in plantillas_semilla:
+            c.execute("INSERT INTO plantillas (nombre, descripcion, categoria, creador_id) VALUES (?, ?, ?, ?)",
+                      (p_nom, p_desc, p_cat, p_creador))
+            p_id = c.lastrowid
+            for cod, desc, dias, pred in acts:
+                c.execute("""
+                    INSERT INTO plantillas_actividades (plantilla_id, codigo, descripcion, dias, predecesores)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (p_id, cod, desc, dias, pred))
 
     conn.commit()
     conn.close()
