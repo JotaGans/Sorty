@@ -3637,6 +3637,53 @@ async function eliminarProcesoTI(id, nombre) {
   }
 }
 
+// --- GESTIÓN INSTITUCIONAL TI (CONTROL DE MODAL Y PESTAÑAS) ---
+async function abrirModalAdminTI() {
+  const modal = document.getElementById("modal-admin-ti");
+  if (!modal) return;
+  modal.classList.remove("hidden");
+  cambiarTabTI("directorio");
+}
+
+function cerrarModalAdminTI() {
+  const modal = document.getElementById("modal-admin-ti");
+  if (modal) modal.classList.add("hidden");
+}
+
+async function cambiarTabTI(tab) {
+  const tabs = ["directorio", "uo", "feriados", "procesos"];
+  
+  tabs.forEach(t => {
+    const btn = document.getElementById(`ti-tab-btn-${t}`);
+    const sec = document.getElementById(`ti-tab-content-${t}`) || document.getElementById(`ti-tab-${t}`);
+    
+    if (btn) {
+      if (t === tab) {
+        btn.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t-2 border-teal-600 font-bold shadow-xs flex items-center space-x-1.5";
+      } else {
+        btn.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-semibold flex items-center space-x-1.5";
+      }
+    }
+    
+    if (sec) {
+      if (t === tab) sec.classList.remove("hidden");
+      else sec.classList.add("hidden");
+    }
+  });
+
+  // Disparar las consultas correspondientes a la base de datos según la pestaña activa
+  if (tab === "directorio") {
+    await cargarDirectorioTrabajadores();
+  } else if (tab === "uo") {
+    await cargarCatalogoUnidades();
+  } else if (tab === "feriados") {
+    await cargarListaFeriados();
+  } else if (tab === "procesos") {
+    await cargarListaProcesosTI();
+  }
+}
+// -------------------------------------------------------------
+
 // --- EXPOSICIÓN DIRECTA AL ÁMBITO GLOBAL (window) ---
 try { window.cambiarTabTI = cambiarTabTI; } catch (e) {}
 try { window.cerrarModalAdminTI = cerrarModalAdminTI; } catch (e) {}
