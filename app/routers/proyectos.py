@@ -22,67 +22,78 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
     u_nom = user.get("nombre_completo", "")
     es_admin_ti = (user.get("rol") == "ADMIN_TI")
 
-    uo_row = db.execute("""
-        SELECT uo.sigla
-        FROM unidades_organicas uo
-        LEFT JOIN trabajadores t ON uo.titular_trabajador_id = t.id
-        LEFT JOIN usuarios u ON (uo.titular_usuario_id = u.id OR u.nombre_completo = t.nombre_completo OR t.correo LIKE u.username || '@%')
-        WHERE u.id = ? AND uo.estado = 'ACTIVO'
-        LIMIT 1
-    """, (u_id,)).fetchone()
+    # Si es Administrador TI, permitimos ver todos los proyectos directamente sin restricciones de ROF
+    if es_admin_ti:
+        rows = db.execute("""
+            SELECT DISTINCT p.id, p.nombre, p.descripcion, p.unidad_organica, 
+                   p.proceso_codigo, p.proceso_nombre, p.es_proceso_personalizado,
+                   COALESCE(p.duration_mode, CASE WHEN p.unidad_tiempo = 'HORAS' THEN 'hours' ELSE 'business_days' END) as duration_mode,
+                   COALESCE(p.visibilidad, 'PRIVADO') as visibilidad,
+                   p.unidad_tiempo, p.horas_por_dia, p.fecha_creacion,
+                   1 as es_gestor,
+                   'GESTOR' as rol_efectivo
+            FROM proyectos p
+            ORDER BY p.id DESC
+        """).fetchall()
+    else:
+        # Lógica estándar para operadores / usuarios regulares
+        uo_row = db.execute("""
+            SELECT uo.sigla
+            FROM unidades_organicas uo
+            LEFT JOIN trabajadores t ON uo.titular_trabajador_id = t.id
+            LEFT JOIN usuarios u ON (uo.titular_usuario_id = u.id OR u.nombre_completo = t.nombre_completo OR t.correo LIKE u.username || '@%')
+            WHERE u.id = ? AND uo.estado = 'ACTIVO'
+            LIMIT 1
+        """, (u_id,)).fetchone()
 
-    mi_sigla_autoridad = uo_row["sigla"] if uo_row else ""
+        mi_sigla_autoridad = uo_row["sigla"] if uo_row else ""
+        resp_like = f"%{u_nom}%"
 
-    query = """
-        WITH RECURSIVE ArbolSubordinadas(sigla) AS (
-            SELECT sigla FROM unidades_organicas WHERE sigla = ?
-            UNION ALL
-            SELECT uo.sigla FROM unidades_organicas uo
-            JOIN ArbolSubordinadas a ON uo.sigla_padre = a.sigla
-        )
-        SELECT DISTINCT p.id, p.nombre, p.descripcion, p.unidad_organica, 
-               p.proceso_codigo, p.proceso_nombre, p.es_proceso_personalizado,
-               COALESCE(p.duration_mode, CASE WHEN p.unidad_tiempo = 'HORAS' THEN 'hours' ELSE 'business_days' END) as duration_mode,
-               COALESCE(p.visibilidad, 'PRIVADO') as visibilidad,
-               p.unidad_tiempo, p.horas_por_dia, p.fecha_creacion,
-               CASE 
-                   WHEN pu.es_gestor = 1 OR p.creador_id = ? OR ? = 1 THEN 1 
-                   ELSE 0 
-               END as es_gestor,
-               CASE 
-                   WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 'GESTOR'
-                   WHEN a.responsable LIKE ? THEN 'RESPONSABLE'
-                   WHEN pu.permiso IS NOT NULL THEN pu.permiso
-                   WHEN p.visibilidad = 'PUBLICO' AND (p.unidad_organica IN (SELECT sigla FROM ArbolSubordinadas) OR ? = 'PE') THEN 'AUTORIDAD'
-                   ELSE 'VISUALIZADOR'
-               END as rol_efectivo
-        FROM proyectos p
-        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
-        LEFT JOIN actividades a ON p.id = a.proyecto_id
-        WHERE ? = 1
-           OR p.creador_id = ?
-           OR pu.usuario_id = ?
-           OR a.responsable LIKE ?
-           OR (
-               p.visibilidad = 'PUBLICO' AND (
-                   ? = 'PE'
-                   OR p.unidad_organica IN (SELECT sigla FROM ArbolSubordinadas)
+        query = """
+            WITH RECURSIVE ArbolSubordinadas(sigla) AS (
+                SELECT sigla FROM unidades_organicas WHERE sigla = ?
+                UNION ALL
+                SELECT uo.sigla FROM unidades_organicas uo
+                JOIN ArbolSubordinadas a ON uo.sigla_padre = a.sigla
+            )
+            SELECT DISTINCT p.id, p.nombre, p.descripcion, p.unidad_organica, 
+                   p.proceso_codigo, p.proceso_nombre, p.es_proceso_personalizado,
+                   COALESCE(p.duration_mode, CASE WHEN p.unidad_tiempo = 'HORAS' THEN 'hours' ELSE 'business_days' END) as duration_mode,
+                   COALESCE(p.visibilidad, 'PRIVADO') as visibilidad,
+                   p.unidad_tiempo, p.horas_por_dia, p.fecha_creacion,
+                   CASE 
+                       WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 1 
+                       ELSE 0 
+                   END as es_gestor,
+                   CASE 
+                       WHEN pu.es_gestor = 1 OR p.creador_id = ? THEN 'GESTOR'
+                       WHEN a.responsable LIKE ? THEN 'RESPONSABLE'
+                       WHEN pu.permiso IS NOT NULL THEN pu.permiso
+                       WHEN p.visibilidad = 'PUBLICO' AND (p.unidad_organica IN (SELECT sigla FROM ArbolSubordinadas) OR ? = 'PE') THEN 'AUTORIDAD'
+                       ELSE 'VISUALIZADOR'
+                   END as rol_efectivo
+            FROM proyectos p
+            LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+            LEFT JOIN actividades a ON p.id = a.proyecto_id
+            WHERE p.creador_id = ?
+               OR pu.usuario_id = ?
+               OR a.responsable LIKE ?
+               OR (
+                   p.visibilidad = 'PUBLICO' AND (
+                       ? = 'PE'
+                       OR p.unidad_organica IN (SELECT sigla FROM ArbolSubordinadas)
+                   )
                )
-           )
-        ORDER BY p.id DESC
-    """
-    
-    resp_like = f"%{u_nom}%"
-    es_admin_flag = 1 if es_admin_ti else 0
-
-    rows = db.execute(query, (
-        mi_sigla_autoridad, 
-        u_id, es_admin_flag,
-        u_id, resp_like, mi_sigla_autoridad,
-        u_id,
-        es_admin_flag, u_id, u_id, resp_like,
-        mi_sigla_autoridad
-    )).fetchall()
+            ORDER BY p.id DESC
+        """
+        rows = db.execute(query, (
+            mi_sigla_autoridad, 
+            u_id, 
+            u_id, resp_like, mi_sigla_autoridad,
+            u_id,
+            u_id, u_id, resp_like,
+            mi_sigla_autoridad
+        )).fetchall()
     
     proyectos_resumen = []
     for r in rows:
