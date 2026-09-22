@@ -1480,6 +1480,131 @@ async function solicitarDarDeBajaTrabajador(id, nombre) {
   await alternarEstadoTrabajador(id);
 }
 
+// --- EDICIÓN DE TRABAJADOR EN DIRECTORIO TI ---
+function abrirModalEditarTrabajador(id) {
+  const t = (catalogoTrabajadoresGlobal || []).find(item => item.id === id);
+  if (!t) {
+    alert("No se encontró el registro del trabajador.");
+    return;
+  }
+
+  document.getElementById("edit-tra-id").value = t.id;
+  document.getElementById("edit-tra-nombres").value = t.nombres || (t.nombre_completo ? t.nombre_completo.split(", ")[1] || t.nombre_completo : "");
+  document.getElementById("edit-tra-apellidos").value = t.apellidos || (t.nombre_completo ? t.nombre_completo.split(", ")[0] || "" : "");
+  
+  const uoInputBusq = document.getElementById("edit-tra-uo-busq");
+  const uoInputVal = document.getElementById("edit-tra-uo-valor");
+  if (uoInputBusq) uoInputBusq.value = t.unidad_organica || "";
+  if (uoInputVal) uoInputVal.value = t.unidad_organica || "";
+
+  const cargoSelect = document.getElementById("edit-tra-cargo");
+  if (cargoSelect) cargoSelect.value = t.cargo || "Sin cargo / nivel";
+
+  const nivelMandoSelect = document.getElementById("edit-tra-nivel-mando");
+  if (nivelMandoSelect) nivelMandoSelect.value = String(t.es_directivo || 0);
+
+  const usuarioLogin = (t.correo || "").split("@")[0];
+  document.getElementById("edit-tra-correo-user").value = usuarioLogin;
+
+  const modal = document.getElementById("modal-editar-trabajador-ti");
+  if (modal) modal.classList.remove("hidden");
+}
+
+function cerrarModalEditarTrabajador() {
+  const modal = document.getElementById("modal-editar-trabajador-ti");
+  if (modal) modal.classList.add("hidden");
+  const divSug = document.getElementById("edit-tra-sugerencias-uo");
+  if (divSug) divSug.classList.add("hidden");
+}
+
+function autocompletarUOEdicion(termino) {
+  const term = (termino || "").toLowerCase().trim();
+  const divSug = document.getElementById("edit-tra-sugerencias-uo");
+  if (!divSug) return;
+
+  if (!term) {
+    divSug.innerHTML = "";
+    divSug.classList.add("hidden");
+    return;
+  }
+
+  const matches = (catalogoUnidadesGlobal || []).filter(u => 
+    (u.estado === 'ACTIVO' || !u.estado) && (
+      u.sigla.toLowerCase().includes(term) || 
+      u.nombre.toLowerCase().includes(term)
+    )
+  );
+
+  divSug.innerHTML = "";
+  if (matches.length === 0) {
+    divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">Sin coincidencias</div>`;
+  } else {
+    matches.slice(0, 6).forEach(u => {
+      const item = document.createElement("div");
+      item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
+      item.innerHTML = `
+        <span class="text-gray-800">${u.nombre}</span>
+        <strong class="text-[#0f2a4a] ml-2 bg-slate-100 px-1.5 py-0.5 rounded border text-[11px]">[${u.sigla}]</strong>
+      `;
+      item.onclick = () => {
+        document.getElementById("edit-tra-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+        document.getElementById("edit-tra-uo-valor").value = u.sigla;
+        divSug.classList.add("hidden");
+      };
+      divSug.appendChild(item);
+    });
+  }
+  divSug.classList.remove("hidden");
+}
+
+async function guardarEdicionTrabajador(e) {
+  e.preventDefault();
+  const id = document.getElementById("edit-tra-id").value;
+  const nombres = document.getElementById("edit-tra-nombres").value.trim();
+  const apellidos = document.getElementById("edit-tra-apellidos").value.trim();
+  const uo = document.getElementById("edit-tra-uo-valor").value || document.getElementById("edit-tra-uo-busq").value.trim();
+  const cargo = document.getElementById("edit-tra-cargo").value;
+  const esDirectivo = parseInt(document.getElementById("edit-tra-nivel-mando").value || "0");
+  const usuarioLogin = document.getElementById("edit-tra-correo-user").value.trim();
+
+  if (!nombres || !apellidos || !uo || !usuarioLogin) {
+    alert("Por favor complete todos los campos obligatorios.");
+    return;
+  }
+
+  const payload = {
+    nombres: nombres,
+    apellidos: apellidos,
+    unidad_organica: uo,
+    cargo: cargo,
+    es_directivo: esDirectivo,
+    correo_usuario: usuarioLogin
+  };
+
+  try {
+    const res = await fetch(`/trabajadores/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      cerrarModalEditarTrabajador();
+      notificarToast("Datos del trabajador actualizados con éxito.", "success");
+      await cargarDirectorioTrabajadores();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Error al actualizar los datos del trabajador.");
+    }
+  } catch (error) {
+    console.error("Error al guardar trabajador:", error);
+    alert("Error de conexión al guardar cambios del trabajador.");
+  }
+}
+
 async function registrarTrabajadorTI(e) {
   e.preventDefault();
   const nombres = document.getElementById("tra-input-nombres").value.trim();
@@ -3721,4 +3846,8 @@ try { window.filtrarProyectosHub = filtrarProyectosHub; } catch (e) {}
 try { window.cambiarVistaHub = cambiarVistaHub; } catch (e) {}
 try { window.hubLimpiarTodosFiltros = hubLimpiarTodosFiltros; } catch (e) {}
 try { window.cerrarMenuContextual = cerrarMenuContextual; } catch (e) {}
+try { window.abrirModalEditarTrabajador = abrirModalEditarTrabajador; } catch (e) {}
+try { window.cerrarModalEditarTrabajador = cerrarModalEditarTrabajador; } catch (e) {}
+try { window.guardarEdicionTrabajador = guardarEdicionTrabajador; } catch (e) {}
+try { window.autocompletarUOEdicion = autocompletarUOEdicion; } catch (e) {}
 // ----------------------------------------------------
