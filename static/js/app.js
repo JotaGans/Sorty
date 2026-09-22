@@ -7,6 +7,9 @@ var configurarCalculadoraModalFin = window.configurarCalculadoraModalFin;
 window.configurarCalculadoraModalFinWizard = function() {};
 var configurarCalculadoraModalFinWizard = window.configurarCalculadoraModalFinWizard;
 
+window.configurarCalculadoraWizard = function() {};
+var configurarCalculadoraWizard = window.configurarCalculadoraWizard;
+
 window.cerrarMenuContextual = function() {
   const m = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
   if (m) m.classList.add('hidden');
