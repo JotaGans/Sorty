@@ -3637,41 +3637,29 @@ async function eliminarProcesoTI(id, nombre) {
   }
 }
 
-// --- EXPOSICIÓN TOTAL AL ÁMBITO GLOBAL (window) ---
-const funcionesGlobales = [
-  'ingresarAlProyecto',
-  'abrirModalNuevoProyecto',
-  'cerrarModalNuevoProyecto',
-  'abrirModalAdminTI',
-  'cerrarModalAdminTI',
-  'cambiarTabTI',
-  'filtrarDirectorioTrabajadores',
-  'abrirModalAsignarPermisos',
-  'cerrarModalAsignarPermisos',
-  'guardarPermisosProyecto',
-  'eliminarProyectoActual',
-  'abrirModalCrearActividad',
-  'cerrarModalCrearActividad',
-  'abrirModalEditarActividad',
-  'cerrarModalEditarActividad',
-  'construirCalendarioAnual',
-  'sincronizarCheckboxesColumnas',
-  'aplicarVisibilidadColumnas',
-  'renderizarGantt',
-  'cargarHubProyectos',
-  'filtrarProyectosHub',
-  'cambiarVistaHub',
-  'hubLimpiarTodosFiltros',
-  'cerrarMenuContextual'
-];
-
-funcionesGlobales.forEach(fn => {
-  try {
-    if (typeof eval(fn) === 'function') {
-      window[fn] = eval(fn);
-    }
-  } catch (e) {
-    // Si la función no existe en este proyecto, se ignora silenciosamente
-  }
-});
-// --------------------------------------------------
+// --- EXPOSICIÓN DIRECTA AL ÁMBITO GLOBAL (window) ---
+try { window.cambiarTabTI = cambiarTabTI; } catch (e) {}
+try { window.cerrarModalAdminTI = cerrarModalAdminTI; } catch (e) {}
+try { window.abrirModalAdminTI = abrirModalAdminTI; } catch (e) {}
+try { window.ingresarAlProyecto = ingresarAlProyecto; } catch (e) {}
+try { window.abrirModalNuevoProyecto = abrirModalNuevoProyecto; } catch (e) {}
+try { window.cerrarModalNuevoProyecto = cerrarModalNuevoProyecto; } catch (e) {}
+try { window.filtrarDirectorioTrabajadores = filtrarDirectorioTrabajadores; } catch (e) {}
+try { window.abrirModalAsignarPermisos = abrirModalAsignarPermisos; } catch (e) {}
+try { window.cerrarModalAsignarPermisos = cerrarModalAsignarPermisos; } catch (e) {}
+try { window.guardarPermisosProyecto = guardarPermisosProyecto; } catch (e) {}
+try { window.eliminarProyectoActual = eliminarProyectoActual; } catch (e) {}
+try { window.abrirModalCrearActividad = abrirModalCrearActividad; } catch (e) {}
+try { window.cerrarModalCrearActividad = cerrarModalCrearActividad; } catch (e) {}
+try { window.abrirModalEditarActividad = abrirModalEditarActividad; } catch (e) {}
+try { window.cerrarModalEditarActividad = cerrarModalEditarActividad; } catch (e) {}
+try { window.construirCalendarioAnual = construirCalendarioAnual; } catch (e) {}
+try { window.sincronizarCheckboxesColumnas = sincronizarCheckboxesColumnas; } catch (e) {}
+try { window.aplicarVisibilidadColumnas = aplicarVisibilidadColumnas; } catch (e) {}
+try { window.renderizarGantt = renderizarGantt; } catch (e) {}
+try { window.cargarHubProyectos = cargarHubProyectos; } catch (e) {}
+try { window.filtrarProyectosHub = filtrarProyectosHub; } catch (e) {}
+try { window.cambiarVistaHub = cambiarVistaHub; } catch (e) {}
+try { window.hubLimpiarTodosFiltros = hubLimpiarTodosFiltros; } catch (e) {}
+try { window.cerrarMenuContextual = cerrarMenuContextual; } catch (e) {}
+// ----------------------------------------------------
