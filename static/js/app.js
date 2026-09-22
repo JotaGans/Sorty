@@ -10,6 +10,9 @@ var configurarCalculadoraModalFinWizard = window.configurarCalculadoraModalFinWi
 window.configurarCalculadoraWizard = function() {};
 var configurarCalculadoraWizard = window.configurarCalculadoraWizard;
 
+window.construirCalendarioAnual = window.construirCalendarioAnual || function() {};
+var construirCalendarioAnual = window.construirCalendarioAnual;
+
 window.cerrarMenuContextual = function() {
   const m = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
   if (m) m.classList.add('hidden');
@@ -3625,3 +3628,4 @@ if (typeof abrirModalAdminTI === 'function') window.abrirModalAdminTI = abrirMod
 if (typeof ingresarAlProyecto === 'function') window.ingresarAlProyecto = ingresarAlProyecto;
 if (typeof abrirModalNuevoProyecto === 'function') window.abrirModalNuevoProyecto = abrirModalNuevoProyecto;
 if (typeof filtrarDirectorioTrabajadores === 'function') window.filtrarDirectorioTrabajadores = filtrarDirectorioTrabajadores;
+if (typeof construirCalendarioAnual === 'function') window.construirCalendarioAnual = construirCalendarioAnual;
