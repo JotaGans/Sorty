@@ -3646,10 +3646,8 @@ async function abrirModalAdminTI() {
   if (!modal) return;
   modal.classList.remove("hidden");
   
-  // Garantizar apertura limpia en la primera pestaña y cargar sus datos
-  setTimeout(async () => {
-    await cambiarTabTI("directorio");
-  }, 50);
+  // Abrir por defecto en la pestaña de trabajadores
+  await cambiarTabTI("trabajadores");
 }
 
 function cerrarModalAdminTI() {
@@ -3658,41 +3656,37 @@ function cerrarModalAdminTI() {
 }
 
 async function cambiarTabTI(tab) {
-  const tabs = ["directorio", "uo", "feriados", "procesos"];
+  // Las 4 pestañas exactas según los IDs de tu index.html
+  const tabs = ["trabajadores", "unidades", "feriados", "procesos"];
 
-  // 1. Alternar estilos de los botones superiores respetando el recuadro negro nativo
+  // 1. Alternar estilos de los botones (pestaña activa con fondo blanco y borde)
   tabs.forEach(t => {
-    const btn = document.getElementById(`ti-tab-btn-${t}`) || 
-                document.getElementById(`btn-tab-ti-${t}`) ||
-                document.querySelector(`button[onclick*="cambiarTabTI('${t}')"]`);
-                
+    const btn = document.getElementById(`ti-tab-btn-${t}`);
     if (btn) {
       if (t === tab) {
-        btn.className = "px-4 py-2 rounded-lg bg-white text-[#0f2a4a] border-2 border-black font-extrabold shadow-sm flex items-center space-x-1.5 transition cursor-pointer";
+        btn.className = "px-3.5 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold whitespace-nowrap cursor-pointer";
       } else {
-        btn.className = "px-4 py-2 rounded-lg text-gray-500 hover:text-[#0f2a4a] border border-transparent font-semibold flex items-center space-x-1.5 transition cursor-pointer";
+        btn.className = "px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap cursor-pointer";
       }
     }
   });
 
-  // 2. Mostrar exclusivamente la sección activa y ocultar las demás
+  // 2. Mostrar exclusivamente el contenido de la pestaña seleccionada y ocultar los demás
   tabs.forEach(t => {
-    const contenedores = document.querySelectorAll(
-      `#ti-seccion-${t}, #ti-tab-content-${t}, #ti-tab-${t}, #sec-ti-${t}`
-    );
-    contenedores.forEach(c => {
+    const content = document.getElementById(`ti-tab-content-${t}`);
+    if (content) {
       if (t === tab) {
-        c.classList.remove("hidden");
+        content.classList.remove("hidden");
       } else {
-        c.classList.add("hidden");
+        content.classList.add("hidden");
       }
-    });
+    }
   });
 
-  // 3. Consultas a la base de datos según la pestaña activa
-  if (tab === "directorio") {
+  // 3. Cargar la data respectiva desde la base de datos
+  if (tab === "trabajadores") {
     await cargarDirectorioTrabajadores();
-  } else if (tab === "uo") {
+  } else if (tab === "unidades") {
     await cargarCatalogoUnidades();
   } else if (tab === "feriados") {
     await cargarListaFeriados();
