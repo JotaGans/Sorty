@@ -1,6 +1,7 @@
 // --- INICIALIZACIÓN GLOBAL Y STUBS DE ARRANQUE ---
 var catalogoUnidadesGlobal = window.catalogoUnidadesGlobal || [];
 var catalogoTrabajadoresGlobal = window.catalogoTrabajadoresGlobal || [];
+var usuariosTIGlobal = window.usuariosTIGlobal || [];
 var feriadosPersonalizadosGlobal = window.feriadosPersonalizadosGlobal || [];
 
 // Funciones invocadas durante DOMContentLoaded o llamadas tempranas
@@ -1168,7 +1169,9 @@ function renderizarTablaHub(lista) {
 
 // --- CARGA Y RENDERIZADO DE UNIDADES ORGÁNICAS ROF ---
 async function cargarCatalogoUnidades() {
-  const tbody = document.getElementById("uo-tabla-cuerpo");
+  const tbody = document.getElementById("uo-tabla-cuerpo") || 
+                document.getElementById("tabla-unidades-organicas-body") ||
+                document.getElementById("uo-tabla-directorio");
 
   try {
     const promesas = [
@@ -3642,7 +3645,11 @@ async function abrirModalAdminTI() {
   const modal = document.getElementById("modal-admin-ti");
   if (!modal) return;
   modal.classList.remove("hidden");
-  cambiarTabTI("directorio");
+  
+  // Garantizar apertura limpia en la primera pestaña y cargar sus datos
+  setTimeout(async () => {
+    await cambiarTabTI("directorio");
+  }, 50);
 }
 
 function cerrarModalAdminTI() {
@@ -3651,51 +3658,38 @@ function cerrarModalAdminTI() {
 }
 
 async function cambiarTabTI(tab) {
-  // Lista de identificadores de las 4 pestañas
   const tabs = ["directorio", "uo", "feriados", "procesos"];
-  
+
+  // 1. Alternar estilos de los botones superiores respetando el recuadro negro nativo
   tabs.forEach(t => {
-    // Manejar el botón de la pestaña
     const btn = document.getElementById(`ti-tab-btn-${t}`) || 
                 document.getElementById(`btn-tab-ti-${t}`) ||
                 document.querySelector(`button[onclick*="cambiarTabTI('${t}')"]`);
                 
     if (btn) {
       if (t === tab) {
-        btn.classList.add("bg-white", "text-[#0f2a4a]", "shadow-xs");
-        btn.classList.remove("text-gray-500", "hover:text-[#0f2a4a]");
+        btn.className = "px-4 py-2 rounded-lg bg-white text-[#0f2a4a] border-2 border-black font-extrabold shadow-sm flex items-center space-x-1.5 transition cursor-pointer";
       } else {
-        btn.classList.remove("bg-white", "text-[#0f2a4a]", "shadow-xs");
-        btn.classList.add("text-gray-500", "hover:text-[#0f2a4a]");
+        btn.className = "px-4 py-2 rounded-lg text-gray-500 hover:text-[#0f2a4a] border border-transparent font-semibold flex items-center space-x-1.5 transition cursor-pointer";
       }
     }
-    
-    // Localizar el contenedor de la sección por cualquiera de sus variantes de id
-    const sec = document.getElementById(`ti-seccion-${t}`) || 
-                document.getElementById(`ti-tab-content-${t}`) || 
-                document.getElementById(`ti-tab-${t}`) ||
-                document.getElementById(`sec-ti-${t}`);
-                
-    if (sec) {
+  });
+
+  // 2. Mostrar exclusivamente la sección activa y ocultar las demás
+  tabs.forEach(t => {
+    const contenedores = document.querySelectorAll(
+      `#ti-seccion-${t}, #ti-tab-content-${t}, #ti-tab-${t}, #sec-ti-${t}`
+    );
+    contenedores.forEach(c => {
       if (t === tab) {
-        sec.classList.remove("hidden");
+        c.classList.remove("hidden");
       } else {
-        sec.classList.add("hidden");
+        c.classList.add("hidden");
       }
-    }
+    });
   });
 
-  // Ocultar explícitamente cualquier otra sección hermana para evitar solapamientos
-  const todasLasSecciones = document.querySelectorAll("[id^='ti-seccion-'], [id^='ti-tab-content-']");
-  todasLasSecciones.forEach(sec => {
-    if (sec.id.includes(tab)) {
-      sec.classList.remove("hidden");
-    } else {
-      sec.classList.add("hidden");
-    }
-  });
-
-  // Consultar a la base de datos según la pestaña activa
+  // 3. Consultas a la base de datos según la pestaña activa
   if (tab === "directorio") {
     await cargarDirectorioTrabajadores();
   } else if (tab === "uo") {
