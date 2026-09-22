@@ -3989,6 +3989,87 @@ function volverAlHub() {
   cargarHubProyectos();
 }
 
+// Ingresar a un proyecto y cargar su vista Gantt / WBS
+async function ingresarAlProyecto(id, nombre, esGestor = false) {
+  proyectoActualId = id;
+  proyectoEsGestor = Boolean(esGestor || currentUser.rol === "ADMIN_TI");
+
+  // Alternar vistas: Ocultar Hub y mostrar Dashboard + Barra superior Gantt
+  const viewHub = document.getElementById("view-hub");
+  const viewDashboard = document.getElementById("view-dashboard");
+  const bloqueSuperior = document.getElementById("bloque-superior-gantt");
+
+  if (viewHub) viewHub.classList.add("hidden");
+  if (viewDashboard) viewDashboard.classList.remove("hidden");
+  if (bloqueSuperior) bloqueSuperior.classList.remove("hidden");
+
+  // Actualizar nombre del proyecto en el encabezado
+  const txtNombre = document.getElementById("txt-nombre-proyecto");
+  if (txtNombre) {
+    txtNombre.value = nombre || `Proyecto #${id}`;
+    txtNombre.readOnly = !proyectoEsGestor;
+  }
+
+  // Actualizar badge de rol en la barra superior Gantt
+  const badgeRol = document.getElementById("badge-rol-gantt");
+  if (badgeRol) {
+    if (proyectoEsGestor) {
+      badgeRol.className = "h-10 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-extrabold uppercase px-3.5 rounded-xl shadow-xs flex items-center space-x-1.5 whitespace-nowrap";
+      badgeRol.innerHTML = `<span>👑</span><span>GESTOR DE PROYECTO</span>`;
+    } else {
+      badgeRol.className = "h-10 bg-blue-100 text-blue-900 border border-blue-300 text-[11px] font-extrabold uppercase px-3.5 rounded-xl shadow-xs flex items-center space-x-1.5 whitespace-nowrap";
+      badgeRol.innerHTML = `<span>👤</span><span>RESPONSABLE</span>`;
+    }
+  }
+
+  // Cargar comentarios y actividades del proyecto
+  await cargarComentariosProyecto();
+  await cargarActividades();
+  actualizarBotonPlantillaDinamico();
+}
+
+async function cargarActividades() {
+  if (!proyectoActualId) return;
+  const tbody = document.getElementById("lista-actividades");
+  if (tbody && (!actividadesGlobal || actividadesGlobal.length === 0)) {
+    tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold animate-pulse">Cargando cronograma del proyecto...</td></tr>`;
+  }
+
+  try {
+    const res = await fetch(`/proyectos/${proyectoActualId}/actividades`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    if (res.status === 401) {
+      cerrarSesion();
+      return;
+    }
+
+    if (!res.ok) throw new Error("Error al cargar actividades");
+
+    const data = await res.json();
+    actividadesGlobal = Array.isArray(data) ? data : (data.actividades || []);
+    
+    // Si la API devuelve configuración del proyecto (modo duración, etc.)
+    if (data.duration_mode) proyectoModoDuracion = data.duration_mode;
+
+    if (typeof poblarFiltroResponsablesDinamico === 'function') {
+      poblarFiltroResponsablesDinamico();
+    }
+    if (typeof recalcularKPIsActividades === 'function') {
+      recalcularKPIsActividades();
+    }
+    if (typeof renderizarTabla === 'function') {
+      renderizarTabla();
+    }
+  } catch (err) {
+    console.error("Error al cargar actividades:", err);
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-rose-500 font-semibold">Error al cargar las actividades del proyecto.</td></tr>`;
+    }
+  }
+}
+
 // Exportar Resumen Consolidado de Proyectos a Excel (.CSV)
 function exportarResumenProyectosExcel() {
   if (!proyectosUsuarioGlobal || proyectosUsuarioGlobal.length === 0) {
