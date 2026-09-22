@@ -3821,6 +3821,222 @@ async function cambiarTabTI(tab) {
 }
 // -------------------------------------------------------------
 
+// =====================================================================
+// FUNCIONES COMPLEMENTARIAS REQUERIDAS POR index.html
+// =====================================================================
+
+// Guardar nueva Unidad de Organización (Pestaña Unidades)
+async function registrarNuevaUnidadOrganica(e) {
+  e.preventDefault();
+  const nombre = document.getElementById("uo-input-nombre").value.trim();
+  const sigla = document.getElementById("uo-input-sigla").value.trim().toUpperCase();
+  const siglaPadre = document.getElementById("uo-input-padre")?.value || null;
+
+  if (!nombre || !sigla) {
+    alert("Por favor ingrese el nombre y la sigla de la unidad.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/unidades-organicas", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        nombre: nombre,
+        sigla: sigla,
+        sigla_padre: siglaPadre ? siglaPadre.trim() : null
+      })
+    });
+
+    if (res.ok) {
+      notificarToast(`Unidad [${sigla}] registrada exitosamente.`, "success");
+      document.getElementById("uo-input-nombre").value = "";
+      document.getElementById("uo-input-sigla").value = "";
+      if (document.getElementById("uo-input-padre")) document.getElementById("uo-input-padre").value = "";
+      await cargarCatalogoUnidades();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Error al registrar la unidad orgánica.");
+    }
+  } catch (err) {
+    alert("Error de conexión al registrar la unidad.");
+  }
+}
+
+// Autocompletado de UUOO en creación de proyecto en blanco
+function autocompletarUOProyecto(termino) {
+  const term = (termino || "").toLowerCase().trim();
+  const divSug = document.getElementById("sugerencias-uo-proyecto");
+  if (!divSug) return;
+
+  if (!term) {
+    divSug.innerHTML = "";
+    divSug.classList.add("hidden");
+    return;
+  }
+
+  const matches = (catalogoUnidadesGlobal || []).filter(u =>
+    (u.estado === 'ACTIVO' || !u.estado) && (
+      u.sigla.toLowerCase().includes(term) ||
+      u.nombre.toLowerCase().includes(term)
+    )
+  );
+
+  divSug.innerHTML = "";
+  if (matches.length === 0) {
+    divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">Sin coincidencias</div>`;
+  } else {
+    matches.slice(0, 6).forEach(u => {
+      const item = document.createElement("div");
+      item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
+      item.innerHTML = `
+        <span class="text-gray-800">${u.nombre}</span>
+        <strong class="text-[#0f2a4a] ml-2 bg-slate-100 px-1.5 py-0.5 rounded border text-[11px]">[${u.sigla}]</strong>
+      `;
+      item.onclick = () => {
+        document.getElementById("input-nuevo-proy-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+        document.getElementById("input-nuevo-proy-uo-valor").value = u.sigla;
+        divSug.classList.add("hidden");
+      };
+      divSug.appendChild(item);
+    });
+  }
+  divSug.classList.remove("hidden");
+}
+
+// Crear Nuevo Proyecto en Blanco
+async function guardarNuevoProyecto(e) {
+  e.preventDefault();
+  const nombre = document.getElementById("input-nuevo-proy-nombre").value.trim();
+  const uo = document.getElementById("input-nuevo-proy-uo-valor").value || document.getElementById("input-nuevo-proy-uo-busq").value.trim();
+  const desc = document.getElementById("input-nuevo-proy-desc")?.value.trim() || "";
+  const durMode = document.getElementById("input-nuevo-proy-duration-mode")?.value || "business_days";
+  const visib = document.getElementById("input-nuevo-proy-visibilidad")?.value || "PRIVADO";
+
+  const esPers = document.getElementById("input-nuevo-proy-proceso-personalizado")?.value === "1";
+  const procCod = esPers ? "OTRO" : (document.getElementById("input-nuevo-proy-proceso-codigo")?.value || "");
+  const procNom = esPers 
+    ? (document.getElementById("input-otro-subproceso-texto")?.value.trim() || "Otro subproceso")
+    : (document.getElementById("input-nuevo-proy-proceso-nombre")?.value || "");
+
+  if (!nombre) {
+    alert("Por favor ingrese un nombre para el proyecto.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/proyectos", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        nombre: nombre,
+        descripcion: desc,
+        unidad_organica: uo,
+        proceso_codigo: procCod,
+        proceso_nombre: procNom,
+        es_proceso_personalizado: esPers ? 1 : 0,
+        duration_mode: durMode,
+        visibilidad: visib
+      })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      cerrarModalNuevoProyecto();
+      notificarToast("Proyecto creado exitosamente.", "success");
+      await cargarHubProyectos();
+      if (data.id || data.proyecto_id) {
+        ingresarAlProyecto(data.id || data.proyecto_id, nombre, true);
+      }
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Error al crear proyecto.");
+    }
+  } catch (err) {
+    alert("Error de conexión al crear el proyecto.");
+  }
+}
+
+function abrirModalNuevoProyecto() {
+  const m = document.getElementById("modal-nuevo-proyecto");
+  if (!m) return;
+  m.classList.remove("hidden");
+  cambiarTabNuevoProyecto("blanco");
+}
+
+function cerrarModalNuevoProyecto() {
+  const m = document.getElementById("modal-nuevo-proyecto");
+  if (m) m.classList.add("hidden");
+}
+
+// Navegación: Volver al Hub desde el Gantt
+function volverAlHub() {
+  const viewDashboard = document.getElementById("view-dashboard");
+  const bloqueSuperior = document.getElementById("bloque-superior-gantt");
+  const viewHub = document.getElementById("view-hub");
+
+  if (viewDashboard) viewDashboard.classList.add("hidden");
+  if (bloqueSuperior) bloqueSuperior.classList.add("hidden");
+  if (viewHub) viewHub.classList.remove("hidden");
+
+  proyectoActualId = null;
+  cargarHubProyectos();
+}
+
+// Exportar Resumen Consolidado de Proyectos a Excel (.CSV)
+function exportarResumenProyectosExcel() {
+  if (!proyectosUsuarioGlobal || proyectosUsuarioGlobal.length === 0) {
+    alert("No hay proyectos en vista para exportar.");
+    return;
+  }
+
+  let csvContent = "\uFEFF";
+  csvContent += "ID;Nombre del Proyecto;Unidad Organica;Proceso;Avance Global (%);Ejecutadas;En Proceso;No Iniciadas;Visibilidad\n";
+
+  proyectosUsuarioGlobal.forEach(p => {
+    const nom = `"${(p.nombre || '').replace(/"/g, '""')}"`;
+    const uo = `"${(p.unidad_organica || '').replace(/"/g, '""')}"`;
+    const proc = `"${(p.proceso_nombre || p.proceso_codigo || 'Sin proceso').replace(/"/g, '""')}"`;
+    const av = p.avance_global || 0;
+    const ejec = p.ejecutadas || 0;
+    const procCount = p.en_proceso || 0;
+    const pend = p.pendientes || 0;
+    const vis = p.visibilidad || 'PRIVADO';
+
+    csvContent += `${p.id};${nom};${uo};${proc};${av}%;${ejec};${procCount};${pend};${vis}\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `Reporte_Proyectos_IMARPE_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  notificarToast("Reporte descargado correctamente.", "success");
+}
+
+// Limpieza de filtros en Gantt
+function limpiarTodosFiltros() {
+  const fBusq = document.getElementById("filtro-busqueda");
+  const fResp = document.getElementById("filtro-responsable-select");
+  const fNivel = document.getElementById("sel-filtro-nivel");
+  if (fBusq) fBusq.value = "";
+  if (fResp) fResp.value = "";
+  if (fNivel) fNivel.value = "4";
+  nivelFiltroActivo = 4;
+  if (typeof aplicarFiltrosGlobales === 'function') aplicarFiltrosGlobales();
+  const badge = document.getElementById("badge-filtro-activo");
+  if (badge) badge.classList.add("hidden");
+}
+
 // --- EXPOSICIÓN DIRECTA AL ÁMBITO GLOBAL (window) ---
 try { window.cambiarTabTI = cambiarTabTI; } catch (e) {}
 try { window.cerrarModalAdminTI = cerrarModalAdminTI; } catch (e) {}
@@ -3850,4 +4066,10 @@ try { window.abrirModalEditarTrabajador = abrirModalEditarTrabajador; } catch (e
 try { window.cerrarModalEditarTrabajador = cerrarModalEditarTrabajador; } catch (e) {}
 try { window.guardarEdicionTrabajador = guardarEdicionTrabajador; } catch (e) {}
 try { window.autocompletarUOEdicion = autocompletarUOEdicion; } catch (e) {}
+try { window.registrarNuevaUnidadOrganica = registrarNuevaUnidadOrganica; } catch (e) {}
+try { window.guardarNuevoProyecto = guardarNuevoProyecto; } catch (e) {}
+try { window.autocompletarUOProyecto = autocompletarUOProyecto; } catch (e) {}
+try { window.volverAlHub = volverAlHub; } catch (e) {}
+try { window.exportarResumenProyectosExcel = exportarResumenProyectosExcel; } catch (e) {}
+try { window.limpiarTodosFiltros = limpiarTodosFiltros; } catch (e) {}
 // ----------------------------------------------------
