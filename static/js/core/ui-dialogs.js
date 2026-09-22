@@ -189,23 +189,30 @@ export function formatearFechaISO(fechaStr) {
 }
 
 // Vinculación a window para compatibilidad total con HTML nativo
-window.alert = function(msg) {
-  mostrarMensajeInstitucional({
+export function alert(msg) {
+  return mostrarMensajeInstitucional({
     titulo: "Notificación del Sistema",
     mensaje: msg,
     tipo: (String(msg).includes("⚠️") || String(msg).includes("Error") || String(msg).includes("inválido")) ? "warning" : "info",
     esConfirmacion: false
   });
-};
+}
 
-window.confirmModal = function(msg, titulo = "Confirmación Requerida", tipo = "question") {
+export function confirmModal(msg, titulo = "Confirmación Requerida", tipo = "question") {
   return mostrarMensajeInstitucional({
     titulo: titulo,
     mensaje: msg,
     tipo: tipo,
     esConfirmacion: true
   });
-};
+}
+
+// Vinculación a window para compatibilidad global
+window.alert = alert;
+window.confirmModal = confirmModal;
+window.notificarToast = notificarToast;
+window.cerrarDialogoImarpe = cerrarDialogoImarpe;
+window.cerrarInputCustom = cerrarInputCustom;
 
 window.notificarToast = notificarToast;
 window.cerrarDialogoImarpe = cerrarDialogoImarpe;
