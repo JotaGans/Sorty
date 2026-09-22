@@ -1,0 +1,405 @@
+import sqlite3
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException
+from app.database.connection import get_db
+from app.core.security import get_current_user, hash_password
+from app.core.config import ZONA_PERU, ahora_peru_str
+from app.database.init_db import calcular_jueves_viernes_santo
+from app.models.schemas import (
+    UsuarioAltaModel, UsuarioEstadoUpdate, UsuarioRolUpdate,
+    UnidadOrganicaModel, AsignarTitularModel, ActualizarDependenciaROFModel,
+    TrabajadorAltaModel, TrabajadorActualizarModel,
+    FeriadoCrearModel, FeriadoEditarModel, FeriadoToggleModel,
+    ProcesoItemModel, ProcesoEditarModel
+)
+
+router = APIRouter(tags=["Gestión TI"])
+
+# --- USUARIOS ---
+@router.get("/usuarios")
+def listar_usuarios(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Acceso denegado: Solo Admin TI.")
+    rows = db.execute("""
+        SELECT id, username, COALESCE(nombre_completo, username) as nombre_completo, rol, COALESCE(estado, 'ACTIVO') as estado 
+        FROM usuarios ORDER BY id DESC
+    """).fetchall()
+    return [dict(r) for r in rows]
+
+@router.post("/usuarios")
+def alta_usuario(nuevo: UsuarioAltaModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede dar de alta usuarios.")
+    user_limpio = nuevo.username.strip().lower()
+    nombre_comp = f"{nuevo.apellidos.strip()}, {nuevo.nombres.strip()}"
+    existe = db.execute("SELECT id FROM usuarios WHERE username = ?", (user_limpio,)).fetchone()
+    if existe:
+        raise HTTPException(status_code=400, detail="El nombre de usuario ya está registrado.")
+    hashed = hash_password(nuevo.password)
+    db.execute("""
+        INSERT INTO usuarios (username, password, nombre_completo, rol, estado) 
+        VALUES (?, ?, ?, ?, 'ACTIVO')
+    """, (user_limpio, hashed, nombre_comp, nuevo.rol))
+    db.execute("INSERT OR IGNORE INTO responsables (nombre, cargo, correo) VALUES (?, ?, ?)",
+               (nombre_comp, "Personal IMARPE", f"{user_limpio}@imarpe.gob.pe"))
+    db.commit()
+    return {"mensaje": "Usuario dado de alta exitosamente"}
+
+@router.put("/usuarios/estado")
+def alternar_estado_usuario(data: UsuarioEstadoUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar el estado de usuarios.")
+    if data.usuario_id == user["id"]:
+        raise HTTPException(status_code=400, detail="No puedes desactivar tu propia cuenta activa.")
+    db.execute("UPDATE usuarios SET estado = ? WHERE id = ?", (data.estado, data.usuario_id))
+    db.commit()
+    return {"mensaje": f"Estado actualizado a {data.estado}"}
+
+@router.put("/usuarios/rol")
+def actualizar_rol_global_usuario(data: UsuarioRolUpdate, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar roles globales.")
+    if data.rol not in ["ADMIN_TI", "OPERADOR"]:
+        raise HTTPException(status_code=400, detail="Rol no válido.")
+    if data.usuario_id == user["id"] and data.rol != "ADMIN_TI":
+        raise HTTPException(status_code=400, detail="No puedes quitarte el rol de Administrador TI a ti mismo.")
+    db.execute("UPDATE usuarios SET rol = ? WHERE id = ?", (data.rol, data.usuario_id))
+    db.commit()
+    return {"mensaje": f"Rol actualizado a {data.rol}"}
+
+# --- UNIDADES ORGÁNICAS ---
+@router.get("/unidades-organicas")
+def listar_unidades_organicas(db: sqlite3.Connection = Depends(get_db)):
+    try:
+        rows = db.execute("""
+            SELECT uo.id, uo.nombre, uo.sigla, 
+                   COALESCE(uo.tipo_organo, 'ÓRGANOS DE LÍNEA') as tipo_organo, 
+                   COALESCE(uo.sigla_padre, '') as sigla_padre, 
+                   uo.titular_usuario_id, uo.titular_trabajador_id, 
+                   COALESCE(uo.estado, 'ACTIVO') as estado,
+                   COALESCE(t.nombre_completo, u.nombre_completo, '') as titular_nombre,
+                   COALESCE(t.cargo, '') as titular_cargo,
+                   COALESCE(t.correo, '') as titular_correo
+            FROM unidades_organicas uo
+            LEFT JOIN trabajadores t ON uo.titular_trabajador_id = t.id
+            LEFT JOIN usuarios u ON uo.titular_usuario_id = u.id
+            WHERE uo.estado = 'ACTIVO' OR uo.estado IS NULL
+            ORDER BY uo.id ASC
+        """).fetchall()
+        return [dict(r) for r in rows]
+    except Exception:
+        rows = db.execute("""
+            SELECT id, nombre, sigla, COALESCE(sigla_padre, '') as sigla_padre, titular_usuario_id, titular_trabajador_id 
+            FROM unidades_organicas WHERE estado = 'ACTIVO' OR estado IS NULL ORDER BY id ASC
+        """).fetchall()
+        return [dict(r) for r in rows]
+
+@router.post("/unidades-organicas")
+def crear_unidad_organica(data: UnidadOrganicaModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede gestionar la estructura orgánica.")
+    try:
+        db.execute("""
+            INSERT INTO unidades_organicas (nombre, sigla, tipo_organo, sigla_padre, titular_usuario_id, estado) 
+            VALUES (?, ?, ?, ?, ?, 'ACTIVO')
+        """, (data.nombre.strip(), data.sigla.strip().upper(), data.tipo_organo.strip(),
+              (data.sigla_padre or "").strip().upper() or None, data.titular_usuario_id))
+        db.commit()
+        return {"mensaje": "Unidad Orgánica registrada exitosamente"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="La sigla ingresada ya existe.")
+
+@router.put("/unidades-organicas/{unidad_id}/titular")
+def asignar_titular_unidad(unidad_id: int, data: AsignarTitularModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede asignar directivos y titulares.")
+    t_id = data.titular_trabajador_id
+    u_id = data.titular_usuario_id
+    if t_id and not u_id:
+        trab = db.execute("SELECT nombre_completo, correo FROM trabajadores WHERE id = ?", (t_id,)).fetchone()
+        if trab:
+            u_row = db.execute("""
+                SELECT id FROM usuarios 
+                WHERE LOWER(nombre_completo) = LOWER(?) OR LOWER(username) = LOWER(?) OR LOWER(?) LIKE LOWER(username || '@%')
+                LIMIT 1
+            """, (trab["nombre_completo"], trab["correo"].split("@")[0] if trab["correo"] else "", trab["correo"] or "")).fetchone()
+            if u_row:
+                u_id = u_row["id"]
+
+    db.execute("UPDATE unidades_organicas SET titular_trabajador_id = ?, titular_usuario_id = ? WHERE id = ?", (t_id, u_id, unidad_id))
+    db.commit()
+    return {"mensaje": "Titular de unidad asignado exitosamente."}
+
+@router.put("/unidades-organicas/{unidad_id}/dependencia")
+def actualizar_dependencia_rof_unidad(unidad_id: int, data: ActualizarDependenciaROFModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar la estructura jerárquica del ROF.")
+    padre_limpio = data.sigla_padre.strip().upper() if data.sigla_padre else None
+    actual = db.execute("SELECT sigla FROM unidades_organicas WHERE id = ?", (unidad_id,)).fetchone()
+    if actual and padre_limpio == actual["sigla"]:
+        raise HTTPException(status_code=400, detail="Una unidad no puede depender jerárquicamente de sí misma.")
+    db.execute("UPDATE unidades_organicas SET sigla_padre = ? WHERE id = ?", (padre_limpio, unidad_id))
+    db.commit()
+    return {"mensaje": "Dependencia jerárquica ROF actualizada con éxito."}
+
+# --- TRABAJADORES ---
+@router.get("/trabajadores")
+def listar_trabajadores(db: sqlite3.Connection = Depends(get_db)):
+    rows = db.execute("""
+        SELECT id, nombres, apellidos, nombre_completo, unidad_organica, correo, 
+               COALESCE(cargo, 'Sin cargo / nivel') as cargo, 
+               COALESCE(es_directivo, 0) as es_directivo, 
+               COALESCE(estado, 'ACTIVO') as estado 
+        FROM trabajadores ORDER BY nombre_completo ASC
+    """).fetchall()
+    return [dict(r) for r in rows]
+
+@router.post("/trabajadores")
+def crear_trabajador(data: TrabajadorAltaModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede registrar trabajadores.")
+    nombres_limp = data.nombres.strip()
+    apellidos_limp = data.apellidos.strip()
+    nombre_completo = f"{apellidos_limp}, {nombres_limp}"
+    usuario_correo = data.correo_usuario.strip().lower().replace("@imarpe.gob.pe", "")
+    correo_final = f"{usuario_correo}@imarpe.gob.pe"
+    cargo_final = (data.cargo or "Sin cargo / nivel").strip()
+    es_dir = int(data.es_directivo or 0)
+    uo_final = data.unidad_organica.strip().upper()
+
+    try:
+        db.execute("""
+            INSERT INTO trabajadores (nombres, apellidos, nombre_completo, unidad_organica, correo, cargo, es_directivo, estado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVO')
+        """, (nombres_limp, apellidos_limp, nombre_completo, uo_final, correo_final, cargo_final, es_dir))
+        trabajador_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        db.execute("INSERT OR REPLACE INTO responsables (nombre, cargo, correo) VALUES (?, ?, ?)",
+                   (nombre_completo, cargo_final, correo_final))
+
+        if data.crear_acceso:
+            pass_hasheada = hash_password(data.password_inicial or "imarpe123")
+            rol_sist = data.rol_sistema if data.rol_sistema in ("ADMIN_TI", "OPERADOR") else "OPERADOR"
+            u_existe = db.execute("SELECT id FROM usuarios WHERE username = ?", (usuario_correo,)).fetchone()
+            if not u_existe:
+                db.execute("""
+                    INSERT INTO usuarios (username, password, nombre_completo, rol, estado)
+                    VALUES (?, ?, ?, ?, 'ACTIVO')
+                """, (usuario_correo, pass_hasheada, nombre_completo, rol_sist))
+                nuevo_user_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+            else:
+                nuevo_user_id = u_existe[0]
+                db.execute("UPDATE usuarios SET nombre_completo = ?, rol = ?, estado = 'ACTIVO' WHERE id = ?",
+                           (nombre_completo, rol_sist, nuevo_user_id))
+
+            if es_dir == 1:
+                db.execute("UPDATE unidades_organicas SET titular_trabajador_id = ?, titular_usuario_id = ? WHERE sigla = ?",
+                           (trabajador_id, nuevo_user_id, uo_final))
+
+        db.commit()
+        return {"mensaje": "Trabajador incorporado exitosamente con identidad unificada."}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="El correo o usuario ya se encuentra registrado.")
+
+@router.put("/trabajadores/{trabajador_id}")
+def actualizar_trabajador(trabajador_id: int, data: TrabajadorActualizarModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede editar trabajadores.")
+    actual = db.execute("SELECT * FROM trabajadores WHERE id = ?", (trabajador_id,)).fetchone()
+    if not actual:
+        raise HTTPException(status_code=404, detail="Trabajador no encontrado.")
+
+    nombres_limp = data.nombres.strip()
+    apellidos_limp = data.apellidos.strip()
+    nuevo_nombre_completo = f"{apellidos_limp}, {nombres_limp}"
+    antiguo_nombre_completo = actual["nombre_completo"]
+    usuario_correo = data.correo_usuario.strip().lower().replace("@imarpe.gob.pe", "")
+    correo_final = f"{usuario_correo}@imarpe.gob.pe"
+    antiguo_correo = actual["correo"]
+    cargo_final = (data.cargo or "Sin cargo / nivel").strip()
+    es_dir = int(data.es_directivo or 0)
+    uo_final = data.unidad_organica.strip().upper()
+
+    correo_ocupado = db.execute("SELECT id FROM trabajadores WHERE correo = ? AND id != ?", (correo_final, trabajador_id)).fetchone()
+    if correo_ocupado:
+        raise HTTPException(status_code=400, detail="El correo electrónico ya pertenece a otro trabajador.")
+
+    db.execute("""
+        UPDATE trabajadores 
+        SET nombres = ?, apellidos = ?, nombre_completo = ?, unidad_organica = ?, correo = ?, cargo = ?, es_directivo = ?
+        WHERE id = ?
+    """, (nombres_limp, apellidos_limp, nuevo_nombre_completo, uo_final, correo_final, cargo_final, es_dir, trabajador_id))
+
+    db.execute("""
+        UPDATE responsables SET nombre = ?, cargo = ?, correo = ? WHERE nombre = ? OR correo = ?
+    """, (nuevo_nombre_completo, cargo_final, correo_final, antiguo_nombre_completo, antiguo_correo))
+
+    u_row = db.execute("SELECT id FROM usuarios WHERE username = ? OR nombre_completo = ?", (usuario_correo, antiguo_nombre_completo)).fetchone()
+    if u_row:
+        db.execute("UPDATE usuarios SET nombre_completo = ?, username = ? WHERE id = ?", (nuevo_nombre_completo, usuario_correo, u_row["id"]))
+        user_vinculado_id = u_row["id"]
+    else:
+        user_vinculado_id = None
+
+    if es_dir == 1 and user_vinculado_id:
+        db.execute("UPDATE unidades_organicas SET titular_trabajador_id = ?, titular_usuario_id = ? WHERE sigla = ?",
+                   (trabajador_id, user_vinculado_id, uo_final))
+
+    db.commit()
+    return {"status": "success", "mensaje": "Datos del trabajador actualizados correctamente."}
+
+@router.api_route("/trabajadores/estado/{trabajador_id}", methods=["PUT", "POST"])
+def alternar_estado_trabajador(trabajador_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Acceso denegado: solo Administrador TI puede cambiar estado de trabajadores.")
+    actual = db.execute("SELECT estado FROM trabajadores WHERE id = ?", (trabajador_id,)).fetchone()
+    if not actual:
+        raise HTTPException(status_code=404, detail="Trabajador no encontrado")
+    nuevo_estado = "INACTIVO" if actual["estado"] == "ACTIVO" else "ACTIVO"
+    db.execute("UPDATE trabajadores SET estado = ? WHERE id = ?", (nuevo_estado, trabajador_id))
+    db.commit()
+    return {"status": "success", "mensaje": f"Estado actualizado a {nuevo_estado}", "nuevo_estado": nuevo_estado}
+
+# --- FERIADOS ---
+@router.get("/feriados")
+def listar_feriados(year: Optional[int] = None, db: sqlite3.Connection = Depends(get_db)):
+    filtro = (f"{year}-%",) if year else ()
+    clausula = "WHERE fecha LIKE ?" if year else ""
+    rows = db.execute(f"""
+        SELECT id, fecha, descripcion, COALESCE(descripcion, '') as motivo, COALESCE(tipo, 'Calendario') as tipo, creado_por 
+        FROM feriados_institucionales {clausula} ORDER BY fecha ASC
+    """, filtro).fetchall()
+    return [dict(r) for r in rows]
+
+@router.post("/feriados")
+def agregar_feriado(data: FeriadoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede registrar feriados.")
+    fecha_str = data.fecha.strip()
+    motivo_str = data.motivo.strip()
+    tipo_str = data.tipo.strip() if data.tipo else "Calendario"
+    if not fecha_str or not motivo_str:
+        raise HTTPException(status_code=400, detail="La fecha y el motivo son obligatorios.")
+    try:
+        db.execute("""
+            INSERT INTO feriados_institucionales (fecha, descripcion, tipo, creado_por, fecha_registro)
+            VALUES (?, ?, ?, ?, ?)
+        """, (fecha_str, motivo_str, tipo_str, user["username"], ahora_peru_str()))
+        db.commit()
+        return {"mensaje": "Feriado registrado exitosamente"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail=f"La fecha {fecha_str} ya se encuentra registrada en el calendario.")
+
+@router.put("/feriados/{feriado_id}")
+def editar_feriado(feriado_id: int, data: FeriadoEditarModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar feriados.")
+    actual = db.execute("SELECT id FROM feriados_institucionales WHERE id = ?", (feriado_id,)).fetchone()
+    if not actual:
+        raise HTTPException(status_code=404, detail="Feriado no encontrado.")
+    try:
+        db.execute("""
+            UPDATE feriados_institucionales SET fecha = ?, descripcion = ?, tipo = ? WHERE id = ?
+        """, (data.fecha.strip(), data.motivo.strip(), data.tipo.strip(), feriado_id))
+        db.commit()
+        return {"mensaje": "Feriado modificado exitosamente."}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Ya existe otro feriado registrado en esa fecha.")
+
+@router.delete("/feriados/{feriado_id}")
+def eliminar_feriado(feriado_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede eliminar feriados.")
+    db.execute("DELETE FROM feriados_institucionales WHERE id = ?", (feriado_id,))
+    db.commit()
+    return {"mensaje": "Feriado eliminado exitosamente"}
+
+@router.post("/feriados/proyectar-siguiente-ano")
+def proyectar_feriados_siguiente_ano(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede proyectar los feriados.")
+    year_actual = datetime.now(ZONA_PERU).year
+    year_siguiente = year_actual + 1
+    feriados_origen = db.execute("SELECT fecha, descripcion, tipo FROM feriados_institucionales WHERE fecha LIKE ?", (f"{year_actual}-%",)).fetchall()
+    if not feriados_origen:
+        raise HTTPException(status_code=400, detail=f"No hay feriados en el año base {year_actual}.")
+    jueves_santo_sig, viernes_santo_sig = calcular_jueves_viernes_santo(year_siguiente)
+    insertados = 0
+    for f in feriados_origen:
+        f_tipo = f["tipo"]
+        f_desc = f["descripcion"]
+        if "Jueves Santo" in f_desc:
+            nueva_fecha = jueves_santo_sig.isoformat()
+        elif "Viernes Santo" in f_desc:
+            nueva_fecha = viernes_santo_sig.isoformat()
+        else:
+            partes = f["fecha"].split("-")
+            nueva_fecha = f"{year_siguiente}-{partes[1]}-{partes[2]}"
+        try:
+            db.execute("""
+                INSERT INTO feriados_institucionales (fecha, descripcion, tipo, creado_por, fecha_registro)
+                VALUES (?, ?, ?, ?, ?)
+            """, (nueva_fecha, f_desc, f_tipo, user["username"], ahora_peru_str()))
+            insertados += 1
+        except sqlite3.IntegrityError:
+            pass
+    db.commit()
+    return {"mensaje": f"Se han proyectado {insertados} feriados para el año fiscal {year_siguiente}.", "year_proyectado": year_siguiente}
+
+# --- PROCESOS INSTITUCIONALES ---
+@router.get("/procesos-institucionales")
+def listar_procesos_institucionales(todos: bool = False, db: sqlite3.Connection = Depends(get_db)):
+    filtro = "" if todos else "WHERE estado = 'ACTIVO'"
+    rows = db.execute(f"SELECT id, codigo, nombre, nivel, codigo_padre, estado FROM procesos_institucionales {filtro} ORDER BY codigo ASC").fetchall()
+    return [dict(r) for r in rows]
+
+@router.post("/procesos-institucionales")
+def registrar_proceso_admin(data: ProcesoItemModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede incorporar procesos.")
+    cod_limpio = data.codigo.strip().upper()
+    nom_limpio = data.nombre.strip()
+    try:
+        db.execute("""
+            INSERT INTO procesos_institucionales (codigo, nombre, nivel, codigo_padre, estado, creado_por)
+            VALUES (?, ?, ?, ?, 'ACTIVO', ?)
+        """, (cod_limpio, nom_limpio, data.nivel, data.codigo_padre, user["username"]))
+        db.commit()
+        return {"mensaje": "Proceso registrado exitosamente"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail=f"El código '{cod_limpio}' ya existe.")
+
+@router.put("/procesos-institucionales/{proceso_id}")
+def editar_proceso_admin(proceso_id: int, data: ProcesoEditarModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar procesos.")
+    proc_actual = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proceso_id,)).fetchone()
+    if not proc_actual:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado.")
+    nuevo_cod = data.codigo.strip().upper()
+    nuevo_nom = data.nombre.strip()
+    try:
+        db.execute("""
+            UPDATE procesos_institucionales SET codigo = ?, nombre = ?, nivel = ?, codigo_padre = ?, estado = ? WHERE id = ?
+        """, (nuevo_cod, nuevo_nom, data.nivel, data.codigo_padre, data.estado, proceso_id))
+        db.execute("""
+            UPDATE proyectos SET proceso_codigo = ?, proceso_nombre = ? WHERE proceso_codigo = ? AND es_proceso_personalizado = 0
+        """, (nuevo_cod, nuevo_nom, proc_actual["codigo"]))
+        db.commit()
+        return {"mensaje": "Proceso actualizado correctamente."}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail=f"El código '{nuevo_cod}' ya está en uso.")
+
+@router.delete("/procesos-institucionales/{proceso_id}")
+def eliminar_proceso_admin(proceso_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
+    if user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede eliminar procesos.")
+    proc = db.execute("SELECT codigo FROM procesos_institucionales WHERE id = ?", (proceso_id,)).fetchone()
+    if not proc:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado.")
+    en_uso = db.execute("SELECT COUNT(*) FROM proyectos WHERE proceso_codigo = ?", (proc["codigo"],)).fetchone()[0]
+    if en_uso > 0:
+        raise HTTPException(status_code=400, detail=f"No se puede eliminar: existen {en_uso} proyecto(s) asociados a él.")
+    db.execute("DELETE FROM procesos_institucionales WHERE id = ?", (proceso_id,))
+    db.commit()
+    return {"mensaje": f"Proceso [{proc['codigo']}] eliminado con éxito."}
