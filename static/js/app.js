@@ -1,13 +1,17 @@
+// --- INICIALIZACIÓN GLOBAL DE CATALOGOS Y STUBS DE ARRANQUE ---
 var catalogoUnidadesGlobal = window.catalogoUnidadesGlobal || [];
 var catalogoTrabajadoresGlobal = window.catalogoTrabajadoresGlobal || [];
+var catalogoProcesosGlobal = window.catalogoProcesosGlobal || [];
+var feriadosPersonalizadosGlobal = window.feriadosPersonalizadosGlobal || [];
 
-window.configurarCalculadoraModalFin = function() {};
+// Funciones invocadas durante DOMContentLoaded o llamadas tempranas
+window.configurarCalculadoraModalFin = window.configurarCalculadoraModalFin || function() {};
 var configurarCalculadoraModalFin = window.configurarCalculadoraModalFin;
 
-window.configurarCalculadoraModalFinWizard = function() {};
+window.configurarCalculadoraModalFinWizard = window.configurarCalculadoraModalFinWizard || function() {};
 var configurarCalculadoraModalFinWizard = window.configurarCalculadoraModalFinWizard;
 
-window.configurarCalculadoraWizard = function() {};
+window.configurarCalculadoraWizard = window.configurarCalculadoraWizard || function() {};
 var configurarCalculadoraWizard = window.configurarCalculadoraWizard;
 
 window.construirCalendarioAnual = window.construirCalendarioAnual || function() {};
@@ -16,11 +20,21 @@ var construirCalendarioAnual = window.construirCalendarioAnual;
 window.sincronizarCheckboxesColumnas = window.sincronizarCheckboxesColumnas || function() {};
 var sincronizarCheckboxesColumnas = window.sincronizarCheckboxesColumnas;
 
+window.aplicarVisibilidadColumnas = window.aplicarVisibilidadColumnas || function() {};
+var aplicarVisibilidadColumnas = window.aplicarVisibilidadColumnas;
+
+window.configurarCalculadoraModalCrear = window.configurarCalculadoraModalCrear || function() {};
+var configurarCalculadoraModalCrear = window.configurarCalculadoraModalCrear;
+
+window.configurarCalculadoraModalEditar = window.configurarCalculadoraModalEditar || function() {};
+var configurarCalculadoraModalEditar = window.configurarCalculadoraModalEditar;
+
 window.cerrarMenuContextual = function() {
   const m = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
   if (m) m.classList.add('hidden');
 };
 var cerrarMenuContextual = window.cerrarMenuContextual;
+// -------------------------------------------------------------
 
 let token = localStorage.getItem("token");
 let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
@@ -3624,12 +3638,41 @@ async function eliminarProcesoTI(id, nombre) {
   }
 }
 
-// Exponer funciones al objeto window para eventos onclick del HTML
-if (typeof cambiarTabTI === 'function') window.cambiarTabTI = cambiarTabTI;
-if (typeof cerrarModalAdminTI === 'function') window.cerrarModalAdminTI = cerrarModalAdminTI;
-if (typeof abrirModalAdminTI === 'function') window.abrirModalAdminTI = abrirModalAdminTI;
-if (typeof ingresarAlProyecto === 'function') window.ingresarAlProyecto = ingresarAlProyecto;
-if (typeof abrirModalNuevoProyecto === 'function') window.abrirModalNuevoProyecto = abrirModalNuevoProyecto;
-if (typeof filtrarDirectorioTrabajadores === 'function') window.filtrarDirectorioTrabajadores = filtrarDirectorioTrabajadores;
-if (typeof construirCalendarioAnual === 'function') window.construirCalendarioAnual = construirCalendarioAnual;
-if (typeof sincronizarCheckboxesColumnas === 'function') window.sincronizarCheckboxesColumnas = sincronizarCheckboxesColumnas;
+// --- EXPOSICIÓN TOTAL AL ÁMBITO GLOBAL (window) ---
+const funcionesGlobales = [
+  'ingresarAlProyecto',
+  'abrirModalNuevoProyecto',
+  'cerrarModalNuevoProyecto',
+  'abrirModalAdminTI',
+  'cerrarModalAdminTI',
+  'cambiarTabTI',
+  'filtrarDirectorioTrabajadores',
+  'abrirModalAsignarPermisos',
+  'cerrarModalAsignarPermisos',
+  'guardarPermisosProyecto',
+  'eliminarProyectoActual',
+  'abrirModalCrearActividad',
+  'cerrarModalCrearActividad',
+  'abrirModalEditarActividad',
+  'cerrarModalEditarActividad',
+  'construirCalendarioAnual',
+  'sincronizarCheckboxesColumnas',
+  'aplicarVisibilidadColumnas',
+  'renderizarGantt',
+  'cargarHubProyectos',
+  'filtrarProyectosHub',
+  'cambiarVistaHub',
+  'hubLimpiarTodosFiltros',
+  'cerrarMenuContextual'
+];
+
+funcionesGlobales.forEach(fn => {
+  try {
+    if (typeof eval(fn) === 'function') {
+      window[fn] = eval(fn);
+    }
+  } catch (e) {
+    // Si la función no existe en este proyecto, se ignora silenciosamente
+  }
+});
+// --------------------------------------------------
