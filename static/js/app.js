@@ -3651,27 +3651,51 @@ function cerrarModalAdminTI() {
 }
 
 async function cambiarTabTI(tab) {
+  // Lista de identificadores de las 4 pestañas
   const tabs = ["directorio", "uo", "feriados", "procesos"];
   
   tabs.forEach(t => {
-    const btn = document.getElementById(`ti-tab-btn-${t}`);
-    const sec = document.getElementById(`ti-tab-content-${t}`) || document.getElementById(`ti-tab-${t}`);
-    
+    // Manejar el botón de la pestaña
+    const btn = document.getElementById(`ti-tab-btn-${t}`) || 
+                document.getElementById(`btn-tab-ti-${t}`) ||
+                document.querySelector(`button[onclick*="cambiarTabTI('${t}')"]`);
+                
     if (btn) {
       if (t === tab) {
-        btn.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t-2 border-teal-600 font-bold shadow-xs flex items-center space-x-1.5";
+        btn.classList.add("bg-white", "text-[#0f2a4a]", "shadow-xs");
+        btn.classList.remove("text-gray-500", "hover:text-[#0f2a4a]");
       } else {
-        btn.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-semibold flex items-center space-x-1.5";
+        btn.classList.remove("bg-white", "text-[#0f2a4a]", "shadow-xs");
+        btn.classList.add("text-gray-500", "hover:text-[#0f2a4a]");
       }
     }
     
+    // Localizar el contenedor de la sección por cualquiera de sus variantes de id
+    const sec = document.getElementById(`ti-seccion-${t}`) || 
+                document.getElementById(`ti-tab-content-${t}`) || 
+                document.getElementById(`ti-tab-${t}`) ||
+                document.getElementById(`sec-ti-${t}`);
+                
     if (sec) {
-      if (t === tab) sec.classList.remove("hidden");
-      else sec.classList.add("hidden");
+      if (t === tab) {
+        sec.classList.remove("hidden");
+      } else {
+        sec.classList.add("hidden");
+      }
     }
   });
 
-  // Disparar las consultas correspondientes a la base de datos según la pestaña activa
+  // Ocultar explícitamente cualquier otra sección hermana para evitar solapamientos
+  const todasLasSecciones = document.querySelectorAll("[id^='ti-seccion-'], [id^='ti-tab-content-']");
+  todasLasSecciones.forEach(sec => {
+    if (sec.id.includes(tab)) {
+      sec.classList.remove("hidden");
+    } else {
+      sec.classList.add("hidden");
+    }
+  });
+
+  // Consultar a la base de datos según la pestaña activa
   if (tab === "directorio") {
     await cargarDirectorioTrabajadores();
   } else if (tab === "uo") {
