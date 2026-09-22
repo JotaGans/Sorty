@@ -24,18 +24,27 @@ def calcular_jueves_viernes_santo(year: int):
     return domingo - timedelta(days=3), domingo - timedelta(days=2)
 
 def init_db():
-    # Migración transparente de datos históricos si existe la BD previa
+    # Asegurar copia desde el repositorio hacia /data si en /data no existe o está vacía
+    origen_repo = "imarpe_sgp.db" if os.path.exists("imarpe_sgp.db") else ("imarpe_gantt.db" if os.path.exists("imarpe_gantt.db") else None)
+    
+    debe_copiar = False
     if not os.path.exists(DB_PATH):
-        if os.path.exists(LEGACY_DB_PATH):
-            try:
-                shutil.copy(LEGACY_DB_PATH, DB_PATH)
-            except Exception:
-                pass
-        elif os.path.exists("imarpe_gantt.db"):
-            try:
-                shutil.copy("imarpe_gantt.db", DB_PATH)
-            except Exception:
-                pass
+        debe_copiar = True
+    elif origen_repo and os.path.exists(origen_repo):
+        # Si la base en /data pesa menos de 50 KB (está recién inicializada) y el repo tiene datos
+        if os.path.getsize(DB_PATH) < 50000 and os.path.getsize(origen_repo) > os.path.getsize(DB_PATH):
+            debe_copiar = True
+
+    if debe_copiar and origen_repo:
+        try:
+            shutil.copy(origen_repo, DB_PATH)
+        except Exception:
+            pass
+    elif not os.path.exists(DB_PATH) and os.path.exists(LEGACY_DB_PATH):
+        try:
+            shutil.copy(LEGACY_DB_PATH, DB_PATH)
+        except Exception:
+            pass
 
     conn = sqlite3.connect(DB_PATH, timeout=30.0, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL;")
