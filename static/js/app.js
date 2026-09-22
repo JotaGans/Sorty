@@ -13,6 +13,9 @@ var configurarCalculadoraWizard = window.configurarCalculadoraWizard;
 window.construirCalendarioAnual = window.construirCalendarioAnual || function() {};
 var construirCalendarioAnual = window.construirCalendarioAnual;
 
+window.sincronizarCheckboxesColumnas = window.sincronizarCheckboxesColumnas || function() {};
+var sincronizarCheckboxesColumnas = window.sincronizarCheckboxesColumnas;
+
 window.cerrarMenuContextual = function() {
   const m = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
   if (m) m.classList.add('hidden');
@@ -3629,3 +3632,4 @@ if (typeof ingresarAlProyecto === 'function') window.ingresarAlProyecto = ingres
 if (typeof abrirModalNuevoProyecto === 'function') window.abrirModalNuevoProyecto = abrirModalNuevoProyecto;
 if (typeof filtrarDirectorioTrabajadores === 'function') window.filtrarDirectorioTrabajadores = filtrarDirectorioTrabajadores;
 if (typeof construirCalendarioAnual === 'function') window.construirCalendarioAnual = construirCalendarioAnual;
+if (typeof sincronizarCheckboxesColumnas === 'function') window.sincronizarCheckboxesColumnas = sincronizarCheckboxesColumnas;
