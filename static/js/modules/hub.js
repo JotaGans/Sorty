@@ -406,6 +406,305 @@ export async function guardarNuevoProyecto(e) {
   }
 }
 
+export function editarDescripcionProyecto(id, descActual) {
+  abrirInputCustom({
+    titulo: "Editar Descripción del Proyecto",
+    mensaje: "Escribe máximo 120 caracteres:",
+    tipo: "text",
+    valorActual: descActual || "",
+    onAceptar: async (nuevaDesc) => {
+      const descFinal = (nuevaDesc || "").trim().substring(0, 120);
+      try {
+        const res = await apiFetch(`/proyectos/${id}/descripcion`, {
+          method: "PUT",
+          body: JSON.stringify({ descripcion: descFinal })
+        });
+        if (res.ok) {
+          await cargarHubProyectos();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "No se pudo actualizar la descripción.");
+        }
+      } catch (e) {
+        alert("Error de conexión al actualizar la descripción.");
+      }
+    }
+  });
+}
+
+let proyectoEditandoUoId = null;
+
+export function editarUnidadOrganicaProyecto(idProy, siglaActual) {
+  const proyectoObj = (state.proyectosUsuarioGlobal || []).find(p => p.id === idProy);
+  const esGestor = proyectoObj ? (proyectoObj.es_gestor === 1 || proyectoObj.es_gestor === true || state.currentUser.rol === "ADMIN_TI") : false;
+
+  if (!esGestor) {
+    alert("Solo el Gestor del Proyecto puede modificar la unidad de organización.");
+    return;
+  }
+
+  proyectoEditandoUoId = idProy;
+  if (!state.catalogoUnidadesGlobal || state.catalogoUnidadesGlobal.length === 0) {
+    cargarCatalogoUnidades();
+  }
+
+  const modalEl = document.getElementById("modal-editar-uo-proyecto");
+  if (modalEl) modalEl.remove();
+
+  const modalHtml = `
+    <div id="modal-editar-uo-proyecto" class="fixed inset-0 bg-black/60 z-[120] flex items-center justify-center p-4 backdrop-blur-[1px]">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 flex flex-col">
+        <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl">🏢</span>
+            <h3 class="font-black text-sm tracking-wide">Modificar Unidad de Organización</h3>
+          </div>
+          <button onclick="cerrarModalEditarUoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+        </div>
+        <div class="p-6 space-y-4 text-xs">
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-950 font-medium">
+            Unidad actual: <strong class="text-[#0f2a4a]">[${siglaActual}]</strong>
+          </div>
+          <div class="relative">
+            <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Unidad:</label>
+            <input type="text" id="edit-uo-input-busq" oninput="autocompletarModalUOProyecto(this.value)" placeholder="Sigla o nombre..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg font-semibold outline-none focus:bg-white focus:border-[#0f2a4a]" autocomplete="off">
+            <input type="hidden" id="edit-uo-input-valor">
+            <div id="edit-uo-sugerencias" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[130] text-xs divide-y divide-gray-100"></div>
+          </div>
+        </div>
+        <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end space-x-2">
+          <button type="button" onclick="cerrarModalEditarUoProyecto()" class="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg cursor-pointer">Cancelar</button>
+          <button type="button" onclick="confirmarCambioUoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg shadow cursor-pointer">Actualizar Unidad</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  setTimeout(() => document.getElementById("edit-uo-input-busq")?.focus(), 100);
+}
+
+export function autocompletarModalUOProyecto(termino) {
+  const term = (termino || "").toLowerCase().trim();
+  const divSug = document.getElementById("edit-uo-sugerencias");
+  if (!divSug) return;
+
+  if (!term) {
+    divSug.innerHTML = "";
+    divSug.classList.add("hidden");
+    document.getElementById("edit-uo-input-valor").value = "";
+    return;
+  }
+
+  const matches = (state.catalogoUnidadesGlobal || []).filter(u =>
+    (u.estado === 'ACTIVO' || !u.estado) && (u.sigla.toLowerCase().includes(term) || u.nombre.toLowerCase().includes(term))
+  );
+
+  divSug.innerHTML = "";
+  if (matches.length === 0) {
+    divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">No se encontraron unidades</div>`;
+  } else {
+    matches.slice(0, 6).forEach(u => {
+      const item = document.createElement("div");
+      item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
+      item.innerHTML = `<span class="text-gray-800 truncate pr-2">${u.nombre}</span><strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${u.sigla}]</strong>`;
+      item.onclick = () => {
+        document.getElementById("edit-uo-input-busq").value = `${u.sigla} - ${u.nombre}`;
+        document.getElementById("edit-uo-input-valor").value = u.sigla;
+        divSug.classList.add("hidden");
+      };
+      divSug.appendChild(item);
+    });
+  }
+  divSug.classList.remove("hidden");
+}
+
+export function cerrarModalEditarUoProyecto() {
+  document.getElementById("modal-editar-uo-proyecto")?.remove();
+  proyectoEditandoUoId = null;
+}
+
+export async function confirmarCambioUoProyecto() {
+  const uoBusq = document.getElementById("edit-uo-input-busq")?.value.trim() || "";
+  const uoVal = document.getElementById("edit-uo-input-valor")?.value.trim() || "";
+  const unidadValida = (state.catalogoUnidadesGlobal || []).find(u =>
+    u.sigla.toUpperCase() === uoVal.toUpperCase() || u.sigla.toUpperCase() === uoBusq.toUpperCase() || `${u.sigla} - ${u.nombre}`.toUpperCase() === uoBusq.toUpperCase()
+  );
+
+  if (!unidadValida) {
+    alert("Debe seleccionar una unidad válida.");
+    return;
+  }
+
+  const siglaFinal = unidadValida.sigla;
+  const idProy = proyectoEditandoUoId;
+  cerrarModalEditarUoProyecto();
+
+  try {
+    const res = await apiFetch(`/proyectos/${idProy}/unidad-organica`, {
+      method: "PUT",
+      body: JSON.stringify({ unidad_organica: siglaFinal })
+    });
+    if (res.ok) {
+      notificarToast(`Unidad actualizada a [${siglaFinal}].`, "success");
+      await cargarHubProyectos();
+    } else {
+      alert("No se pudo actualizar la unidad.");
+    }
+  } catch (e) {
+    alert("Error de conexión al actualizar unidad.");
+  }
+}
+
+let proyectoEditandoProcesoId = null;
+
+export function editarProcesoProyectoModal(idProy) {
+  const proyectoObj = (state.proyectosUsuarioGlobal || []).find(p => p.id === idProy);
+  const esGestor = proyectoObj ? (proyectoObj.es_gestor === 1 || proyectoObj.es_gestor === true || state.currentUser.rol === "ADMIN_TI") : false;
+
+  if (!esGestor) {
+    alert("Solo el Gestor del Proyecto puede modificar el proceso relacionado.");
+    return;
+  }
+
+  proyectoEditandoProcesoId = idProy;
+  if (!state.catalogoProcesosGlobal || state.catalogoProcesosGlobal.length === 0) {
+    cargarCatalogoProcesos();
+  }
+
+  const procActual = proyectoObj.proceso_nombre ? `${proyectoObj.proceso_nombre} [${proyectoObj.proceso_codigo}]` : "Ninguno";
+  const modalEl = document.getElementById("modal-editar-proceso-proyecto");
+  if (modalEl) modalEl.remove();
+
+  const modalHtml = `
+    <div id="modal-editar-proceso-proyecto" class="fixed inset-0 bg-black/60 z-[130] flex items-center justify-center p-4 backdrop-blur-[1px]">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 flex flex-col">
+        <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl">⚙️</span>
+            <h3 class="font-black text-sm tracking-wide">Modificar Proceso Relacionado</h3>
+          </div>
+          <button onclick="cerrarModalEditarProcesoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
+        </div>
+        <div class="p-5 space-y-3.5 text-xs">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800">
+            Proceso actual: <strong class="text-[#0f2a4a]">${procActual}</strong>
+          </div>
+          <div class="relative">
+            <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Proceso:</label>
+            <input type="text" id="edit-proc-input-busq" oninput="autocompletarModalEditarProceso(this.value)" placeholder="Código o nombre..." class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a]" autocomplete="off">
+            <input type="hidden" id="edit-proc-codigo">
+            <input type="hidden" id="edit-proc-nombre">
+            <input type="hidden" id="edit-proc-personalizado" value="0">
+            <div id="edit-proc-sugerencias" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[140] text-xs divide-y divide-gray-100"></div>
+          </div>
+          <div id="edit-proc-contenedor-otro" class="hidden p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+            <label class="block text-[10px] font-bold text-amber-800 uppercase mb-1">Especifique el subproceso:</label>
+            <input type="text" id="edit-proc-otro-texto" placeholder="Nombre descriptivo..." class="w-full p-2 bg-white border border-amber-300 rounded text-xs font-semibold text-gray-800 outline-none">
+          </div>
+        </div>
+        <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end space-x-2">
+          <button type="button" onclick="cerrarModalEditarProcesoProyecto()" class="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg cursor-pointer">Cancelar</button>
+          <button type="button" onclick="confirmarCambioProcesoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg shadow cursor-pointer">Actualizar Proceso</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  setTimeout(() => document.getElementById("edit-proc-input-busq")?.focus(), 100);
+}
+
+export function autocompletarModalEditarProceso(term) {
+  const q = (term || "").toLowerCase().trim();
+  const div = document.getElementById("edit-proc-sugerencias");
+  const contOtro = document.getElementById("edit-proc-contenedor-otro");
+  if (!div) return;
+
+  if (!q) {
+    div.classList.add("hidden");
+    return;
+  }
+  div.innerHTML = "";
+
+  const matches = (state.catalogoProcesosGlobal || []).filter(p =>
+    p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
+  );
+
+  matches.slice(0, 6).forEach(p => {
+    const row = document.createElement("div");
+    row.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-medium";
+    row.innerHTML = `<span>${p.nombre}</span> <strong class="text-[#0f2a4a] text-[10px]">[${p.codigo}]</strong>`;
+    row.onclick = () => {
+      document.getElementById("edit-proc-input-busq").value = `${p.nombre} [${p.codigo}]`;
+      document.getElementById("edit-proc-codigo").value = p.codigo;
+      document.getElementById("edit-proc-nombre").value = p.nombre;
+      document.getElementById("edit-proc-personalizado").value = "0";
+      div.classList.add("hidden");
+      if (contOtro) contOtro.classList.add("hidden");
+    };
+    div.appendChild(row);
+  });
+
+  const itemOtro = document.createElement("div");
+  itemOtro.className = "p-2 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold cursor-pointer border-t border-amber-200 flex items-center justify-between";
+  itemOtro.innerHTML = `<span>⚙️ Otro subproceso (Personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
+  itemOtro.onclick = () => {
+    document.getElementById("edit-proc-input-busq").value = "Otro subproceso";
+    document.getElementById("edit-proc-codigo").value = "OTRO";
+    document.getElementById("edit-proc-nombre").value = "";
+    document.getElementById("edit-proc-personalizado").value = "1";
+    div.classList.add("hidden");
+    if (contOtro) {
+      contOtro.classList.remove("hidden");
+      document.getElementById("edit-proc-otro-texto")?.focus();
+    }
+  };
+  div.appendChild(itemOtro);
+  div.classList.remove("hidden");
+}
+
+export function cerrarModalEditarProcesoProyecto() {
+  document.getElementById("modal-editar-proceso-proyecto")?.remove();
+  proyectoEditandoProcesoId = null;
+}
+
+export async function confirmarCambioProcesoProyecto() {
+  const idProy = proyectoEditandoProcesoId;
+  if (!idProy) return;
+
+  const esPers = document.getElementById("edit-proc-personalizado")?.value === "1";
+  const procCod = esPers ? "OTRO" : (document.getElementById("edit-proc-codigo")?.value || "");
+  const procNom = esPers 
+    ? (document.getElementById("edit-proc-otro-texto")?.value.trim() || "Otro subproceso")
+    : (document.getElementById("edit-proc-nombre")?.value || "");
+
+  if (!procNom && !procCod) {
+    alert("Debe seleccionar o especificar un proceso.");
+    return;
+  }
+
+  cerrarModalEditarProcesoProyecto();
+
+  try {
+    const res = await apiFetch(`/proyectos/${idProy}/proceso`, {
+      method: "PUT",
+      body: JSON.stringify({
+        proceso_codigo: procCod,
+        proceso_nombre: procNom,
+        es_proceso_personalizado: esPers ? 1 : 0
+      })
+    });
+
+    if (res.ok) {
+      notificarToast(`Proceso asignado: ${procNom} [${procCod}]`, "success");
+      await cargarHubProyectos();
+    } else {
+      alert("Error al actualizar proceso.");
+    }
+  } catch (e) {
+    alert("Error de conexión al actualizar proceso.");
+  }
+}
+
 export function inicializarFiltrosHub() {
   const selUo = document.getElementById("hub-filtro-uo");
   if (!selUo) return;
@@ -442,7 +741,7 @@ export function autocompletarUOHub(termino) {
     matches.slice(0, 6).forEach(u => {
       const item = document.createElement("div");
       item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
-      item.innerHTML = `<span class="text-gray-800 truncate pr-2">${u.nombre}</span><strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px]">[${u.sigla}]</strong>`;
+      item.innerHTML = `<span class="text-gray-800 truncate pr-2">${u.nombre}</span><strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${u.sigla}]</strong>`;
       item.onclick = () => {
         document.getElementById("hub-filtro-uo-busq").value = `${u.sigla} - ${u.nombre}`;
         document.getElementById("hub-filtro-uo-valor").value = u.sigla;
@@ -539,7 +838,269 @@ export function hubLimpiarTodosFiltros() {
   notificarToast("Filtros del Hub restablecidos correctamente.", "info");
 }
 
-// Exposición pública a window
+// =========================================================================
+// MOTOR ANALÍTICO TIPO POWER BI (ESTADÍSTICAS HUB)
+// =========================================================================
+let tipoGraficoActual = 'bar';
+let chartInstancia = null;
+
+export async function cargarCatalogoProcesos() {
+  try {
+    const res = await apiFetch("/procesos-institucionales");
+    if (res.ok) state.catalogoProcesosGlobal = await res.json();
+  } catch (e) {
+    console.error("Error al cargar procesos:", e);
+  }
+}
+
+export async function abrirModalEstadisticasHub() {
+  if (!state.catalogoProcesosGlobal || state.catalogoProcesosGlobal.length === 0) {
+    await cargarCatalogoProcesos();
+  }
+
+  const selUo = document.getElementById("stat-filtro-uo");
+  if (selUo) {
+    const uosExistentes = [...new Set((state.proyectosUsuarioGlobal || []).map(p => p.unidad_organica).filter(Boolean))];
+    selUo.innerHTML = '<option value="">🏢 Todas las Unidades</option>' + 
+      uosExistentes.map(u => `<option value="${u}">${u}</option>`).join("");
+  }
+
+  document.getElementById("modal-estadisticas-hub")?.classList.remove("hidden");
+  aplicarFiltrosEstadisticas();
+}
+
+export function cerrarModalEstadisticasHub() {
+  document.getElementById("modal-estadisticas-hub")?.classList.add("hidden");
+  if (chartInstancia) {
+    chartInstancia.destroy();
+    chartInstancia = null;
+  }
+}
+
+export function conmutarTipoGrafico(tipo) {
+  tipoGraficoActual = tipo;
+  const btnBarras = document.getElementById("btn-chart-barras");
+  const btnPastel = document.getElementById("btn-chart-pastel");
+
+  if (tipo === 'bar') {
+    if (btnBarras) btnBarras.className = "px-2.5 py-1 rounded-md bg-white shadow-2xs text-[#0f2a4a] transition";
+    if (btnPastel) btnPastel.className = "px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-900 transition";
+  } else {
+    if (btnPastel) btnPastel.className = "px-2.5 py-1 rounded-md bg-white shadow-2xs text-[#0f2a4a] transition";
+    if (btnBarras) btnBarras.className = "px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-900 transition";
+  }
+  aplicarFiltrosEstadisticas();
+}
+
+export function aplicarFiltrosEstadisticas() {
+  const procCod = (document.getElementById("stat-filtro-proceso-val")?.value || "").trim().toUpperCase();
+  const procTexto = (document.getElementById("stat-filtro-proceso")?.value || "").trim().toUpperCase();
+  const uoFiltro = document.getElementById("stat-filtro-uo")?.value || "";
+  const estFiltro = document.getElementById("stat-filtro-estado")?.value || "";
+
+  const proyectosFiltrados = (state.proyectosUsuarioGlobal || []).filter(p => {
+    if (uoFiltro && p.unidad_organica !== uoFiltro) return false;
+    
+    if (estFiltro) {
+      const av = p.avance_global || 0;
+      const estadoCalc = av === 100 ? "Ejecutado" : (av > 0 ? "En proceso" : "No iniciado");
+      if (estadoCalc !== estFiltro) return false;
+    }
+
+    if (procCod || procTexto) {
+      const codP = (p.proceso_codigo || "").toUpperCase();
+      const nomP = (p.proceso_nombre || "").toUpperCase();
+      const matchCod = procCod && (codP === procCod || codP.startsWith(procCod + "."));
+      const matchNom = procTexto && (nomP.includes(procTexto) || codP.includes(procTexto));
+      if (!matchCod && !matchNom) return false;
+    }
+
+    return true;
+  });
+
+  actualizarKPIsEstadisticas(proyectosFiltrados);
+  renderizarGraficoEstadisticas(proyectosFiltrados);
+  renderizarTablaDetalleEstadisticas(proyectosFiltrados);
+}
+
+function actualizarKPIsEstadisticas(lista) {
+  const total = lista.length;
+  let sumaAvance = 0, enProc = 0, ejec = 0;
+
+  lista.forEach(p => {
+    const av = p.avance_global || 0;
+    sumaAvance += av;
+    if (av === 100) ejec++;
+    else if (av > 0) enProc++;
+  });
+
+  const prom = total > 0 ? Math.round(sumaAvance / total) : 0;
+
+  const kTotal = document.getElementById("stat-kpi-total");
+  const kProm = document.getElementById("stat-kpi-promedio");
+  const kProc = document.getElementById("stat-kpi-en-proceso");
+  const kEjec = document.getElementById("stat-kpi-ejecutados");
+
+  if (kTotal) kTotal.innerText = total;
+  if (kProm) kProm.innerText = `${prom}%`;
+  if (kProc) kProc.innerText = enProc;
+  if (kEjec) kEjec.innerText = ejec;
+}
+
+function renderizarGraficoEstadisticas(lista) {
+  const canvas = document.getElementById("canvasEstadisticasHub");
+  if (!canvas || typeof Chart === 'undefined') return;
+  const ctx = canvas.getContext("2d");
+
+  if (chartInstancia) chartInstancia.destroy();
+  if (lista.length === 0) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
+
+  if (tipoGraficoActual === 'bar') {
+    const labels = lista.map(p => p.nombre.length > 25 ? p.nombre.substring(0, 22) + "..." : p.nombre);
+    const data = lista.map(p => p.avance_global || 0);
+
+    chartInstancia = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '% Avance',
+          data: data,
+          backgroundColor: data.map(v => v === 100 ? '#10b981' : (v > 0 ? '#0d9488' : '#cbd5e1')),
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  } else {
+    let noInic = 0, enProc = 0, ejec = 0;
+    lista.forEach(p => {
+      const av = p.avance_global || 0;
+      if (av === 100) ejec++;
+      else if (av > 0) enProc++;
+      else noInic++;
+    });
+
+    chartInstancia = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: ['No iniciado', 'En proceso', 'Ejecutado'],
+        datasets: [{
+          data: [noInic, enProc, ejec],
+          backgroundColor: ['#cbd5e1', '#f59e0b', '#10b981']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+}
+
+function renderizarTablaDetalleEstadisticas(lista) {
+  const cont = document.getElementById("stat-tabla-proyectos");
+  const lblConteo = document.getElementById("stat-conteo-tabla");
+  if (!cont) return;
+
+  if (lblConteo) lblConteo.innerText = `${lista.length} proyecto(s)`;
+  if (lista.length === 0) {
+    cont.innerHTML = '<div class="p-4 text-center text-gray-400 italic">No hay proyectos coincidentes con los filtros seleccionados.</div>';
+    return;
+  }
+
+  cont.innerHTML = lista.map(p => `
+    <div class="p-3 flex items-center justify-between hover:bg-slate-50 transition">
+      <div class="flex-1 pr-4">
+        <h5 class="font-bold text-gray-800 text-xs">${p.nombre}</h5>
+        <p class="text-[11px] text-gray-500 flex items-center gap-2 mt-0.5">
+          <span>🏢 ${p.unidad_organica || 'Sin UO'}</span>
+          <span>•</span>
+          <span class="text-teal-700 font-semibold">⚙️ ${p.proceso_nombre ? `${p.proceso_nombre} [${p.proceso_codigo}]` : 'Sin proceso'}</span>
+        </p>
+      </div>
+      <div class="flex items-center space-x-3">
+        <span class="text-xs font-black px-2 py-0.5 rounded ${p.avance_global === 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-teal-100 text-teal-800'}">
+          ${p.avance_global || 0}%
+        </span>
+        <button onclick="cerrarModalEstadisticasHub(); ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${(p.es_gestor === 1 || p.es_gestor === true)});" class="text-xs font-bold text-[#0f2a4a] hover:underline cursor-pointer">
+          Ver →
+        </button>
+      </div>
+    </div>
+  `).join("");
+}
+
+export function autocompletarSlicerProceso(term) {
+  const q = (term || "").toLowerCase().trim();
+  const div = document.getElementById("stat-sugerencias-proceso");
+  const btnLimpiar = document.getElementById("btn-limpiar-stat-proceso");
+  if (!div) return;
+
+  if (!q) {
+    div.classList.add("hidden");
+    if (btnLimpiar) btnLimpiar.classList.add("hidden");
+    const valInp = document.getElementById("stat-filtro-proceso-val");
+    if (valInp) valInp.value = "";
+    aplicarFiltrosEstadisticas();
+    return;
+  }
+
+  if (btnLimpiar) btnLimpiar.classList.remove("hidden");
+  div.innerHTML = "";
+
+  const matches = (state.catalogoProcesosGlobal || []).filter(p => 
+    p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
+  );
+
+  if (matches.length === 0) {
+    div.innerHTML = `<div class="p-2 text-gray-400 italic">Sin coincidencias</div>`;
+  } else {
+    matches.slice(0, 6).forEach(p => {
+      const item = document.createElement("div");
+      item.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-medium";
+      item.innerHTML = `<span>${p.nombre}</span> <strong class="text-[#0f2a4a] text-[10px]">[${p.codigo}]</strong>`;
+      item.onclick = () => {
+        document.getElementById("stat-filtro-proceso").value = `${p.nombre} [${p.codigo}]`;
+        document.getElementById("stat-filtro-proceso-val").value = p.codigo;
+        div.classList.add("hidden");
+        aplicarFiltrosEstadisticas();
+      };
+      div.appendChild(item);
+    });
+  }
+  div.classList.remove("hidden");
+}
+
+export function limpiarSlicerProceso() {
+  const fTxt = document.getElementById("stat-filtro-proceso");
+  const fVal = document.getElementById("stat-filtro-proceso-val");
+  const bLim = document.getElementById("btn-limpiar-stat-proceso");
+  if (fTxt) fTxt.value = "";
+  if (fVal) fVal.value = "";
+  if (bLim) bLim.classList.add("hidden");
+  aplicarFiltrosEstadisticas();
+}
+
+export function resetearSlicersEstadisticas() {
+  limpiarSlicerProceso();
+  const sUo = document.getElementById("stat-filtro-uo");
+  const sEst = document.getElementById("stat-filtro-estado");
+  if (sUo) sUo.value = "";
+  if (sEst) sEst.value = "";
+  aplicarFiltrosEstadisticas();
+}
+
+// Exposición pública de todas las funciones para eventos onclick del HTML
 window.cargarHubProyectos = cargarHubProyectos;
 window.cambiarVistaHub = cambiarVistaHub;
 window.alternarVerProyectosOcultos = alternarVerProyectosOcultos;
@@ -550,7 +1111,23 @@ window.abrirModalNuevoProyecto = abrirModalNuevoProyecto;
 window.cerrarModalNuevoProyecto = cerrarModalNuevoProyecto;
 window.autocompletarUOProyecto = autocompletarUOProyecto;
 window.guardarNuevoProyecto = guardarNuevoProyecto;
+window.editarDescripcionProyecto = editarDescripcionProyecto;
+window.editarUnidadOrganicaProyecto = editarUnidadOrganicaProyecto;
+window.autocompletarModalUOProyecto = autocompletarModalUOProyecto;
+window.cerrarModalEditarUoProyecto = cerrarModalEditarUoProyecto;
+window.confirmarCambioUoProyecto = confirmarCambioUoProyecto;
+window.editarProcesoProyectoModal = editarProcesoProyectoModal;
+window.autocompletarModalEditarProceso = autocompletarModalEditarProceso;
+window.cerrarModalEditarProcesoProyecto = cerrarModalEditarProcesoProyecto;
+window.confirmarCambioProcesoProyecto = confirmarCambioProcesoProyecto;
 window.autocompletarUOHub = autocompletarUOHub;
 window.limpiarFiltroUnidadHub = limpiarFiltroUnidadHub;
 window.filtrarProyectosHub = filtrarProyectosHub;
 window.hubLimpiarTodosFiltros = hubLimpiarTodosFiltros;
+window.abrirModalEstadisticasHub = abrirModalEstadisticasHub;
+window.cerrarModalEstadisticasHub = cerrarModalEstadisticasHub;
+window.conmutarTipoGrafico = conmutarTipoGrafico;
+window.aplicarFiltrosEstadisticas = aplicarFiltrosEstadisticas;
+window.autocompletarSlicerProceso = autocompletarSlicerProceso;
+window.limpiarSlicerProceso = limpiarSlicerProceso;
+window.resetearSlicersEstadisticas = resetearSlicersEstadisticas;
