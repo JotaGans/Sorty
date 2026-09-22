@@ -1,3 +1,18 @@
+var catalogoUnidadesGlobal = window.catalogoUnidadesGlobal || [];
+
+if (typeof window.configurarCalculadoraModalFin !== 'function') {
+  window.configurarCalculadoraModalFin = function() {};
+}
+var configurarCalculadoraModalFin = window.configurarCalculadoraModalFin;
+
+if (typeof window.cerrarMenuContextual !== 'function') {
+  window.cerrarMenuContextual = function() {
+    const m = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
+    if (m) m.classList.add('hidden');
+  };
+}
+var cerrarMenuContextual = window.cerrarMenuContextual;
+
 let token = localStorage.getItem("token");
 let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
 let proyectoActualId = null;

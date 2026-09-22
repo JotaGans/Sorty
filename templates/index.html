@@ -1683,7 +1683,20 @@
     </div>
   </div>
 
-  <!-- SCRIPT DESACOPLADO -->
-  <script src="/static/js/app.js"></script>
+  <!-- Script de inicialización de funciones y variables globales -->
+    <script>
+      window.catalogoUnidadesGlobal = window.catalogoUnidadesGlobal || [];
+
+      window.configurarCalculadoraModalFin = window.configurarCalculadoraModalFin || function() {
+        // Inicializador seguro para evitar bloqueo al cargar la página
+      };
+
+      window.cerrarMenuContextual = window.cerrarMenuContextual || function() {
+        const menu = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
+        if (menu) menu.classList.add('hidden');
+      };
+    </script>
+
+    <script src="/static/js/app.js"></script>
 </body>
 </html>
