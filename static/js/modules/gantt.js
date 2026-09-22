@@ -1,8 +1,8 @@
 import { state } from "../../core/state.js";
 import { apiFetch } from "../../core/api.js";
 import { notificarToast, confirmModal, formatearFechaLatina, formatearFechaISO, parsearFechaUniversal, abrirInputCustom } from "../../core/ui-dialogs.js";
-import { actualizarDisplaysUsuario } from "../auth/auth.js";
-import { cargarHubProyectos } from "../hub/hub.js";
+import { actualizarDisplaysUsuario } from "./auth.js";
+import { cargarHubProyectos } from "./hub.js";
 
 export async function ingresarAlProyecto(id, nombre, esGestor) {
   state.proyectoActualId = id;

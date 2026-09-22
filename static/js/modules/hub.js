@@ -1,7 +1,7 @@
 import { state } from "../../core/state.js";
 import { apiFetch } from "../../core/api.js";
 import { notificarToast, confirmModal, formatearFechaLatina, formatearFechaISO, abrirInputCustom } from "../../core/ui-dialogs.js";
-import { cargarCatalogoUnidades } from "../admin-ti/admin-ti.js";
+import { cargarCatalogoUnidades } from "./admin-ti.js";
 
 const SVG_OJO_ABIERTO = `
   <svg class="w-4 h-4 text-gray-500 hover:text-[#0f2a4a] transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">

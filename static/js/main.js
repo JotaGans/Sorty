@@ -4,8 +4,8 @@
 
 import { state } from "./core/state.js";
 import { notificarToast } from "./core/ui-dialogs.js";
-import { inicializarFormularioLogin, actualizarDisplaysUsuario, mostrarLogin } from "./modules/auth/auth.js";
-import { cargarHubProyectos } from "./modules/hub/hub.js";
+import { inicializarFormularioLogin, actualizarDisplaysUsuario, mostrarLogin } from "./modules/auth.js";
+import { cargarHubProyectos } from "./modules/hub.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   // 1. Reubicar modales en el body para prevenir solapamientos de z-index
