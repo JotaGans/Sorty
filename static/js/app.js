@@ -1,17 +1,12 @@
 var catalogoUnidadesGlobal = window.catalogoUnidadesGlobal || [];
 
-if (typeof window.configurarCalculadoraModalFin !== 'function') {
-  window.configurarCalculadoraModalFin = function() {};
-}
-var configurarCalculadoraModalFin = window.configurarCalculadoraModalFin;
+var configurarCalculadoraModalFin = window.configurarCalculadoraModalFin || function() {};
+var configurarCalculadoraModalFinWizard = window.configurarCalculadoraModalFinWizard || function() {};
 
-if (typeof window.cerrarMenuContextual !== 'function') {
-  window.cerrarMenuContextual = function() {
-    const m = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
-    if (m) m.classList.add('hidden');
-  };
-}
-var cerrarMenuContextual = window.cerrarMenuContextual;
+var cerrarMenuContextual = window.cerrarMenuContextual || function() {
+  const m = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
+  if (m) m.classList.add('hidden');
+};
 
 let token = localStorage.getItem("token");
 let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
@@ -3613,4 +3608,18 @@ async function eliminarProcesoTI(id, nombre) {
   } catch (err) {
     alert("Error de conexión al eliminar proceso.");
   }
+}
+
+// Exponer las funciones reales al objeto global window para los botones onclick del HTML
+if (typeof ingresarAlProyecto === 'function') {
+  window.ingresarAlProyecto = ingresarAlProyecto;
+}
+if (typeof abrirModalAdminTI === 'function') {
+  window.abrirModalAdminTI = abrirModalAdminTI;
+}
+if (typeof abrirModalNuevoProyecto === 'function') {
+  window.abrirModalNuevoProyecto = abrirModalNuevoProyecto;
+}
+if (typeof cerrarMenuContextual === 'function') {
+  window.cerrarMenuContextual = cerrarMenuContextual;
 }

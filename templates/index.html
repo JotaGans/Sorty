@@ -1683,20 +1683,36 @@
     </div>
   </div>
 
-  <!-- Script de inicialización de funciones y variables globales -->
+  <!-- Enlace de delegación segura para funciones originales del UI -->
     <script>
       window.catalogoUnidadesGlobal = window.catalogoUnidadesGlobal || [];
+      window.configurarCalculadoraModalFin = window.configurarCalculadoraModalFin || function() {};
+      window.configurarCalculadoraModalFinWizard = window.configurarCalculadoraModalFinWizard || function() {};
 
-      window.configurarCalculadoraModalFin = window.configurarCalculadoraModalFin || function() {
-        // Inicializador seguro para evitar bloqueo al cargar la página
+      // Delegación de clic a las funciones declaradas en app.js
+      window.cerrarMenuContextual = function(e) {
+        if (typeof window._cerrarMenuContextualOrig === 'function') return window._cerrarMenuContextualOrig(e);
+        const m = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
+        if (m) m.classList.add('hidden');
       };
 
-      window.cerrarMenuContextual = window.cerrarMenuContextual || function() {
-        const menu = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
-        if (menu) menu.classList.add('hidden');
+      window.abrirModalAdminTI = function() {
+        if (typeof window._abrirModalAdminTIOrig === 'function') return window._abrirModalAdminTIOrig();
+        const m = document.getElementById('modal-admin-ti') || document.getElementById('modalAdminTI');
+        if (m) m.classList.remove('hidden');
+      };
+
+      window.abrirModalNuevoProyecto = function() {
+        if (typeof window._abrirModalNuevoProyectoOrig === 'function') return window._abrirModalNuevoProyectoOrig();
+        const m = document.getElementById('modal-nuevo-proyecto') || document.getElementById('modalNuevoProyecto');
+        if (m) m.classList.remove('hidden');
+      };
+
+      window.ingresarAlProyecto = function(id) {
+        if (typeof window._ingresarAlProyectoOrig === 'function') return window._ingresarAlProyectoOrig(id);
       };
     </script>
 
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v=3"></script>
 </body>
 </html>
