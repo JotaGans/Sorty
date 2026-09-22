@@ -4070,6 +4070,504 @@ async function cargarActividades() {
   }
 }
 
+// =====================================================================
+// MOTOR CORE: WBS, GANTT, CÁLCULOS TEMPORALES Y ACCIONES OPERATIVAS
+// =====================================================================
+
+function poblarFiltroResponsablesDinamico() {
+  const sel = document.getElementById("filtro-responsable-select");
+  if (!sel) return;
+  const valPrevio = sel.value;
+  const setResp = new Set();
+
+  (actividadesGlobal || []).forEach(a => {
+    if (a.responsable && a.responsable !== "No asignado") {
+      a.responsable.split(";").forEach(r => {
+        const nom = r.trim();
+        if (nom) setResp.add(nom);
+      });
+    }
+  });
+
+  sel.innerHTML = '<option value="">👤 Todo el Personal</option>';
+  Array.from(setResp).sort().forEach(r => {
+    sel.innerHTML += `<option value="${r}">${r}</option>`;
+  });
+  if (valPrevio && setResp.has(valPrevio)) sel.value = valPrevio;
+}
+
+function recalcularKPIsActividades() {
+  const total = (actividadesGlobal || []).length;
+  let ejec = 0, proc = 0, noInic = 0, sumaAvance = 0;
+
+  (actividadesGlobal || []).forEach(a => {
+    const av = parseFloat(a.avance) || 0;
+    sumaAvance += av;
+    if (a.estado === "Ejecutado" || av === 100) ejec++;
+    else if (a.estado === "En proceso" || av > 0) proc++;
+    else noInic++;
+  });
+
+  const prom = total > 0 ? Math.round(sumaAvance / total) : 0;
+
+  const elAvance = document.getElementById("kpi-avance");
+  const elEjec = document.getElementById("kpi-ejecutado");
+  const elProc = document.getElementById("kpi-proceso");
+  const elNoInic = document.getElementById("kpi-pendiente");
+
+  if (elAvance) elAvance.innerText = `${prom}%`;
+  if (elEjec) elEjec.innerText = `${ejec} Items`;
+  if (elProc) elProc.innerText = `${proc} Items`;
+  if (elNoInic) elNoInic.innerText = `${noInic} Items`;
+}
+
+function aplicarFiltrosGlobales() {
+  renderizarTabla();
+}
+
+function filtrarNivelJerarquico(val) {
+  nivelFiltroActivo = parseInt(val) || 4;
+  const lbl = document.getElementById("txt-nivel-activo-label");
+  if (lbl) lbl.innerText = val === "4" ? "Todo (N4)" : `Nivel ${val}`;
+  renderizarTabla();
+}
+
+function alternarColapsoNodo(codigo, e) {
+  if (e) e.stopPropagation();
+  if (nodosColapsados.has(codigo)) {
+    nodosColapsados.delete(codigo);
+  } else {
+    nodosColapsados.add(codigo);
+  }
+  renderizarTabla();
+}
+
+function renderizarTabla() {
+  const tbody = document.getElementById("lista-actividades");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (!actividadesGlobal || actividadesGlobal.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold italic">Este proyecto aún no tiene actividades. Haga clic en "+ Actividad" para comenzar.</td></tr>`;
+    renderizarGantt();
+    return;
+  }
+
+  const busq = (document.getElementById("filtro-busqueda")?.value || "").toLowerCase().trim();
+  const respFiltro = document.getElementById("filtro-responsable-select")?.value || "";
+
+  // Filtrado de actividades
+  const actividadesFiltradas = actividadesGlobal.filter(a => {
+    const nivel = (String(a.codigo).match(/\./g) || []).length + 1;
+    if (nivel > nivelFiltroActivo) return false;
+
+    if (busq && !(a.descripcion || "").toLowerCase().includes(busq) && !(a.codigo || "").toLowerCase().includes(busq)) {
+      return false;
+    }
+
+    if (respFiltro && !(a.responsable || "").includes(respFiltro)) {
+      return false;
+    }
+
+    // Verificar si algún ancestro está colapsado
+    const partes = String(a.codigo).split(".");
+    for (let i = 1; i < partes.length; i++) {
+      const padreCod = partes.slice(0, i).join(".");
+      if (nodosColapsados.has(padreCod)) return false;
+    }
+
+    return true;
+  });
+
+  if (actividadesFiltradas.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-semibold italic">No se encontraron actividades con los filtros actuales.</td></tr>`;
+    renderizarGantt();
+    return;
+  }
+
+  actividadesFiltradas.forEach(a => {
+    const nivel = (String(a.codigo).match(/\./g) || []).length + 1;
+    const esPadre = actividadesGlobal.some(sub => sub.codigo !== a.codigo && String(sub.codigo).startsWith(String(a.codigo) + "."));
+    const estaColapsado = nodosColapsados.has(a.codigo);
+
+    const sangriaPx = (nivel - 1) * 16;
+    const esNivel1 = (nivel === 1);
+
+    const iconoColapso = esPadre 
+      ? `<span onclick="alternarColapsoNodo('${a.codigo}', event)" class="mr-1.5 cursor-pointer font-mono font-bold text-teal-700 hover:scale-125 transition inline-block w-3 text-center">${estaColapsado ? '▶' : '▼'}</span>`
+      : `<span class="inline-block w-3 mr-1.5"></span>`;
+
+    // Badges de estado
+    let badgeEstado = "bg-rose-50 text-rose-700 border-rose-200";
+    if (a.estado === "Ejecutado" || a.avance === 100) badgeEstado = "bg-emerald-50 text-emerald-700 border-emerald-200";
+    else if (a.estado === "En proceso" || a.avance > 0) badgeEstado = "bg-amber-50 text-amber-800 border-amber-200";
+
+    const cantComentarios = (typeof obtenerComentariosDeActividad === 'function') ? obtenerComentariosDeActividad(a.codigo).length : 0;
+    const badgeComent = cantComentarios > 0 
+      ? `<button onclick="abrirModalComentarios('${a.codigo}')" class="ml-2 text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.2 rounded font-bold hover:bg-indigo-100 transition">💬 ${cantComentarios}</button>`
+      : '';
+
+    const fila = document.createElement("tr");
+    fila.className = `hover:bg-slate-50 transition border-b border-gray-100 ${esNivel1 ? 'bg-slate-50/70 font-bold' : ''}`;
+    fila.dataset.codigo = a.codigo;
+
+    fila.innerHTML = `
+      <td class="p-2 font-mono text-xs text-[#0f2a4a] whitespace-nowrap">${a.codigo}</td>
+      <td class="p-2 text-xs text-gray-800" style="padding-left: ${sangriaPx + 8}px;">
+        <div class="flex items-center">
+          ${iconoColapso}
+          <span class="truncate ${esNivel1 ? 'font-bold text-[#0f2a4a]' : ''}">${a.descripcion}</span>
+          ${badgeComent}
+        </div>
+      </td>
+      <td class="p-2 text-center text-xs text-gray-600 whitespace-nowrap cursor-pointer hover:text-teal-700" onclick="editarResponsable('${a.codigo}')" title="Clic para asignar responsables">
+        ${a.responsable || '<span class="italic text-gray-400">Sin asignar</span>'}
+      </td>
+      <td class="p-2 text-xs whitespace-nowrap">
+        <span class="px-2 py-0.5 rounded border text-[10px] font-bold ${badgeEstado}">${a.estado || 'No iniciado'}</span>
+      </td>
+      <td class="p-2 font-mono text-xs text-gray-600 whitespace-nowrap">${a.inicio || '-'}</td>
+      <td class="p-2 font-mono text-xs text-gray-600 whitespace-nowrap">${a.fin || '-'}</td>
+      <td class="p-2 text-center font-mono text-xs font-bold text-gray-700">${a.dias || 0}</td>
+      <td class="p-2 text-center whitespace-nowrap">
+        <span class="font-bold text-xs ${a.avance === 100 ? 'text-emerald-600' : (a.avance > 0 ? 'text-amber-600' : 'text-gray-400')}">${a.avance || 0}%</span>
+      </td>
+      <td class="p-0 border-l border-gray-200 relative area-gantt-fila align-middle" data-codigo="${a.codigo}">
+        <div class="h-6 relative w-full flex items-center contenedor-barra-gantt"></div>
+      </td>
+      <td class="p-2 text-center whitespace-nowrap">
+        <button onclick="abrirMenuContextualFila(event, '${a.codigo}')" class="p-1 hover:bg-gray-200 rounded text-gray-500 font-bold" title="Opciones">⋮</button>
+      </td>
+    `;
+
+    tbody.appendChild(fila);
+  });
+
+  renderizarGantt();
+}
+
+function renderizarGantt() {
+  const headerMeses = document.getElementById("gantt-header-meses");
+  const headerSemanas = document.getElementById("gantt-header-semanas");
+  if (!headerMeses || !headerSemanas) return;
+
+  // Encabezados dinámicos según el modoZoom ("dias", "semanas", "meses", etc.)
+  headerMeses.innerHTML = `<div class="flex-1 text-center py-1 font-bold text-white bg-[#0f2a4a]">Cronograma Institucional 2026</div>`;
+  headerSemanas.innerHTML = "";
+
+  const totalSemanasVista = 24;
+  for (let s = 1; s <= totalSemanasVista; s++) {
+    const numSem = s + (semanaInicioIndex || 0);
+    headerSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-blue-900/40 text-[9px] font-mono text-teal-300">S${numSem}</div>`;
+  }
+
+  // Dibujar barras del Gantt en cada celda de actividad
+  document.querySelectorAll(".area-gantt-fila").forEach(td => {
+    const cod = td.dataset.codigo;
+    const contBarra = td.querySelector(".contenedor-barra-gantt");
+    if (!contBarra) return;
+    contBarra.innerHTML = "";
+
+    const act = (actividadesGlobal || []).find(a => a.codigo === cod);
+    if (!act) return;
+
+    const av = parseFloat(act.avance) || 0;
+    let colorBarra = "bg-teal-600";
+    if (av === 100) colorBarra = "bg-emerald-500";
+    else if (av > 0) colorBarra = "bg-amber-500";
+
+    const barra = document.createElement("div");
+    barra.className = `h-4 rounded-md shadow-xs ${colorBarra} text-[9px] text-white font-bold flex items-center px-1.5 transition-all duration-300`;
+    barra.style.width = `${Math.min(95, Math.max(15, (act.dias || 5) * 3))}%`;
+    barra.style.marginLeft = "10px";
+    barra.innerHTML = `<span class="truncate">${av}%</span>`;
+    barra.title = `[${act.codigo}] ${act.descripcion} | ${act.inicio} al ${act.fin} (${act.dias}d) - ${av}%`;
+
+    contBarra.appendChild(barra);
+  });
+}
+
+// Botón "+ Actividad" superior
+function botonSuperiorNuevaActividad() {
+  if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
+    alert("Solo un Gestor de Proyecto puede crear nuevas actividades.");
+    return;
+  }
+  wizardCodigoPadre = null;
+  const numRaiz = (actividadesGlobal.filter(a => !(String(a.codigo).includes("."))).length) + 1;
+  wizardCodigoGenerado = String(numRaiz);
+  abrirWizardPaso1("Nueva Actividad Principal (Nivel 1)", wizardCodigoGenerado);
+}
+
+function abrirWizardPaso1(titulo, codigoGen) {
+  wizardPasoActual = 1;
+  document.getElementById("wz-titulo").innerText = titulo;
+  document.getElementById("wz-subtitulo").innerText = `Código asignado: [${codigoGen}]`;
+  document.getElementById("wz-codigo-preview").innerText = codigoGen;
+  document.getElementById("wz-input-desc").value = "";
+
+  const bar = document.getElementById("wz-progreso-barra");
+  if (bar) bar.style.width = "33.33%";
+
+  document.getElementById("wz-paso-1").classList.remove("hidden");
+  document.getElementById("wz-paso-2").classList.add("hidden");
+  document.getElementById("wz-paso-3").classList.add("hidden");
+
+  document.getElementById("wz-btn-anterior").classList.add("invisible");
+  document.getElementById("wz-btn-siguiente").innerText = "Siguiente →";
+
+  const modalWz = document.getElementById("modal-wizard-creacion");
+  if (modalWz) modalWz.classList.remove("hidden");
+  setTimeout(() => document.getElementById("wz-input-desc")?.focus(), 50);
+}
+
+function avanzarPasoWizard() {
+  if (wizardPasoActual === 1) {
+    const desc = document.getElementById("wz-input-desc").value.trim();
+    if (!desc) {
+      alert("Por favor ingrese la descripción de la actividad.");
+      return;
+    }
+    wizardPasoActual = 2;
+    document.getElementById("wz-progreso-barra").style.width = "66.66%";
+    document.getElementById("wz-paso-1").classList.add("hidden");
+    document.getElementById("wz-paso-2").classList.remove("hidden");
+    document.getElementById("wz-btn-anterior").classList.remove("invisible");
+
+    // Inicializar fechas sugeridas
+    const hoyISO = new Date().toISOString().split("T")[0];
+    if (!document.getElementById("wz-input-ini").value) document.getElementById("wz-input-ini").value = hoyISO;
+    if (!document.getElementById("wz-input-dias").value) document.getElementById("wz-input-dias").value = "5";
+  } else if (wizardPasoActual === 2) {
+    wizardPasoActual = 3;
+    document.getElementById("wz-progreso-barra").style.width = "100%";
+    document.getElementById("wz-paso-2").classList.add("hidden");
+    document.getElementById("wz-paso-3").classList.remove("hidden");
+    document.getElementById("wz-btn-siguiente").innerText = "✨ Crear Actividad";
+  } else if (wizardPasoActual === 3) {
+    ejecutarGuardadoActividadWizard();
+  }
+}
+
+function retrocederPasoWizard() {
+  if (wizardPasoActual === 2) {
+    wizardPasoActual = 1;
+    document.getElementById("wz-progreso-barra").style.width = "33.33%";
+    document.getElementById("wz-paso-2").classList.add("hidden");
+    document.getElementById("wz-paso-1").classList.remove("hidden");
+    document.getElementById("wz-btn-anterior").classList.add("invisible");
+  } else if (wizardPasoActual === 3) {
+    wizardPasoActual = 2;
+    document.getElementById("wz-progreso-barra").style.width = "66.66%";
+    document.getElementById("wz-paso-3").classList.add("hidden");
+    document.getElementById("wz-paso-2").classList.remove("hidden");
+    document.getElementById("wz-btn-siguiente").innerText = "Siguiente →";
+  }
+}
+
+function cerrarWizardCreacion() {
+  const m = document.getElementById("modal-wizard-creacion");
+  if (m) m.classList.add("hidden");
+}
+
+async function ejecutarGuardadoActividadWizard() {
+  const desc = document.getElementById("wz-input-desc").value.trim();
+  const fIni = document.getElementById("wz-input-ini").value;
+  const fFin = document.getElementById("wz-input-fin").value;
+  const dias = parseInt(document.getElementById("wz-input-dias").value) || 1;
+  const estado = document.getElementById("wz-input-estado").value;
+  const pred = document.getElementById("wz-input-pred").value.trim();
+
+  let av = 0;
+  if (estado === "Ejecutado") av = 100;
+  else if (estado === "En proceso") av = parseInt(document.getElementById("wz-input-avance")?.value) || 50;
+
+  const fIniLat = formatearFechaLatina(fIni);
+  const fFinLat = fFin ? formatearFechaLatina(fFin) : fIniLat;
+
+  const nuevaAct = {
+    proyecto_id: parseInt(proyectoActualId),
+    codigo: wizardCodigoGenerado,
+    descripcion: desc,
+    responsable: "No asignado",
+    estado: estado,
+    inicio: fIniLat,
+    fin: fFinLat,
+    dias: dias,
+    avance: av,
+    predecesores: pred
+  };
+
+  try {
+    const res = await fetch(`/actividades`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(nuevaAct)
+    });
+
+    if (res.ok) {
+      cerrarWizardCreacion();
+      notificarToast(`Actividad [${wizardCodigoGenerado}] creada exitosamente.`, "success");
+      await cargarActividades();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Error al registrar la actividad.");
+    }
+  } catch (e) {
+    alert("Error de conexión al crear actividad.");
+  }
+}
+
+function fijarModoZoomDirecto(modo) {
+  modoZoom = modo;
+  const lbl = document.getElementById("txt-escala-activa-label");
+  if (lbl) lbl.innerText = modo.charAt(0).toUpperCase() + modo.slice(1);
+  renderizarGantt();
+}
+
+function cambiarSemanaInicio(delta) {
+  semanaInicioIndex = Math.max(0, (semanaInicioIndex || 0) + delta);
+  const inp = document.getElementById("input-semana-inicio");
+  if (inp) inp.value = semanaInicioIndex + 1;
+  renderizarGantt();
+}
+
+function fijarSemanaInicio(val) {
+  const num = parseInt(val) || 1;
+  semanaInicioIndex = Math.max(0, num - 1);
+  renderizarGantt();
+}
+
+function irAInicioProyecto() {
+  semanaInicioIndex = 0;
+  const inp = document.getElementById("input-semana-inicio");
+  if (inp) inp.value = 1;
+  renderizarGantt();
+}
+
+function irASemanaActual() {
+  semanaInicioIndex = 4; // Ajuste dinámico de semana de referencia
+  const inp = document.getElementById("input-semana-inicio");
+  if (inp) inp.value = semanaInicioIndex + 1;
+  renderizarGantt();
+}
+
+// Menú contextual para agregar subtareas o eliminar
+function abrirMenuContextualFila(e, codigo) {
+  e.preventDefault();
+  e.stopPropagation();
+  actividadContextualSeleccionada = (actividadesGlobal || []).find(a => a.codigo === codigo);
+  if (!actividadContextualSeleccionada) return;
+
+  const menu = document.getElementById("menu-contextual");
+  if (!menu) return;
+
+  const hInfo = document.getElementById("mc-header-info");
+  if (hInfo) hInfo.innerText = `[${actividadContextualSeleccionada.codigo}] ${actividadContextualSeleccionada.descripcion}`;
+
+  menu.style.top = `${e.clientY || 120}px`;
+  menu.style.left = `${Math.min(window.innerWidth - 240, e.clientX || 200)}px`;
+  menu.classList.remove("hidden");
+}
+
+function abrirMenuContextualVacio(e) {
+  if (e) e.preventDefault();
+}
+
+function ejecutarAccionContextual(accion) {
+  cerrarMenuContextual();
+  if (!actividadContextualSeleccionada) return;
+
+  if (accion === "agregar_hijo") {
+    const codPadre = actividadContextualSeleccionada.codigo;
+    const hijos = actividadesGlobal.filter(a => String(a.codigo).startsWith(codPadre + ".") && (String(a.codigo).match(/\./g) || []).length === (String(codPadre).match(/\./g) || []).length + 1);
+    const nuevoSub = hijos.length + 1;
+    wizardCodigoGenerado = `${codPadre}.${nuevoSub}`;
+    abrirWizardPaso1(`Agregar Subtarea a [${codPadre}]`, wizardCodigoGenerado);
+  } else if (accion === "eliminar") {
+    solicitarEliminarActividad(actividadContextualSeleccionada.codigo);
+  } else if (accion === "asignar_resp") {
+    editarResponsable(actividadContextualSeleccionada.codigo);
+  } else if (accion === "ver_comentarios") {
+    abrirModalComentarios(actividadContextualSeleccionada.codigo);
+  }
+}
+
+async function solicitarEliminarActividad(codigo) {
+  if (!proyectoEsGestor && currentUser.rol !== "ADMIN_TI") {
+    alert("Solo un Gestor de Proyecto puede eliminar actividades.");
+    return;
+  }
+
+  const confirma = await confirmModal(
+    `¿Está seguro de eliminar la actividad [${codigo}] y sus posibles dependencias?`,
+    "Eliminar Actividad",
+    "danger"
+  );
+  if (!confirma) return;
+
+  try {
+    const res = await fetch(`/actividades`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        proyecto_id: parseInt(proyectoActualId),
+        codigo: String(codigo)
+      })
+    });
+
+    if (res.ok) {
+      notificarToast(`Actividad [${codigo}] eliminada.`, "info");
+      await cargarActividades();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Error al eliminar la actividad.");
+    }
+  } catch (e) {
+    alert("Error de conexión al eliminar la actividad.");
+  }
+}
+
+function exportarExcelCSV() {
+  if (!actividadesGlobal || actividadesGlobal.length === 0) {
+    alert("No hay actividades registradas en este proyecto para exportar.");
+    return;
+  }
+
+  let csvContent = "\uFEFF";
+  csvContent += "Código;Descripción;Responsables;Estado;Fecha Inicio;Fecha Fin;Días Duración;% Avance;Predecesoras\n";
+
+  actividadesGlobal.forEach(a => {
+    const cod = `"${a.codigo || ''}"`;
+    const desc = `"${(a.descripcion || '').replace(/"/g, '""')}"`;
+    const resp = `"${(a.responsable || 'No asignado').replace(/"/g, '""')}"`;
+    const est = `"${a.estado || 'No iniciado'}"`;
+    const ini = `"${a.inicio || ''}"`;
+    const fin = `"${a.fin || ''}"`;
+    const dias = a.dias || 0;
+    const av = a.avance || 0;
+    const pred = `"${a.predecesores || ''}"`;
+
+    csvContent += `${cod};${desc};${resp};${est};${ini};${fin};${dias};${av}%;${pred}\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `Cronograma_${proyectoActualId}_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  notificarToast("Cronograma exportado exitosamente a CSV.", "success");
+}
+
 // Exportar Resumen Consolidado de Proyectos a Excel (.CSV)
 function exportarResumenProyectosExcel() {
   if (!proyectosUsuarioGlobal || proyectosUsuarioGlobal.length === 0) {
@@ -4153,4 +4651,23 @@ try { window.autocompletarUOProyecto = autocompletarUOProyecto; } catch (e) {}
 try { window.volverAlHub = volverAlHub; } catch (e) {}
 try { window.exportarResumenProyectosExcel = exportarResumenProyectosExcel; } catch (e) {}
 try { window.limpiarTodosFiltros = limpiarTodosFiltros; } catch (e) {}
+try { window.renderizarTabla = renderizarTabla; } catch (e) {}
+try { window.renderizarGantt = renderizarGantt; } catch (e) {}
+try { window.recalcularKPIsActividades = recalcularKPIsActividades; } catch (e) {}
+try { window.poblarFiltroResponsablesDinamico = poblarFiltroResponsablesDinamico; } catch (e) {}
+try { window.botonSuperiorNuevaActividad = botonSuperiorNuevaActividad; } catch (e) {}
+try { window.avanzarPasoWizard = avanzarPasoWizard; } catch (e) {}
+try { window.retrocederPasoWizard = retrocederPasoWizard; } catch (e) {}
+try { window.cerrarWizardCreacion = cerrarWizardCreacion; } catch (e) {}
+try { window.fijarModoZoomDirecto = fijarModoZoomDirecto; } catch (e) {}
+try { window.cambiarSemanaInicio = cambiarSemanaInicio; } catch (e) {}
+try { window.fijarSemanaInicio = fijarSemanaInicio; } catch (e) {}
+try { window.irAInicioProyecto = irAInicioProyecto; } catch (e) {}
+try { window.irASemanaActual = irASemanaActual; } catch (e) {}
+try { window.abrirMenuContextualFila = abrirMenuContextualFila; } catch (e) {}
+try { window.ejecutarAccionContextual = ejecutarAccionContextual; } catch (e) {}
+try { window.exportarExcelCSV = exportarExcelCSV; } catch (e) {}
+try { window.alternarColapsoNodo = alternarColapsoNodo; } catch (e) {}
+try { window.filtrarNivelJerarquico = filtrarNivelJerarquico; } catch (e) {}
+try { window.aplicarFiltrosGlobales = aplicarFiltrosGlobales; } catch (e) {}
 // ----------------------------------------------------
