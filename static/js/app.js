@@ -1,13 +1,17 @@
 var catalogoUnidadesGlobal = window.catalogoUnidadesGlobal || [];
 var catalogoTrabajadoresGlobal = window.catalogoTrabajadoresGlobal || [];
 
-var configurarCalculadoraModalFin = window.configurarCalculadoraModalFin || function() {};
-var configurarCalculadoraModalFinWizard = window.configurarCalculadoraModalFinWizard || function() {};
+window.configurarCalculadoraModalFin = function() {};
+var configurarCalculadoraModalFin = window.configurarCalculadoraModalFin;
 
-var cerrarMenuContextual = window.cerrarMenuContextual || function() {
+window.configurarCalculadoraModalFinWizard = function() {};
+var configurarCalculadoraModalFinWizard = window.configurarCalculadoraModalFinWizard;
+
+window.cerrarMenuContextual = function() {
   const m = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
   if (m) m.classList.add('hidden');
 };
+var cerrarMenuContextual = window.cerrarMenuContextual;
 
 let token = localStorage.getItem("token");
 let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
@@ -3611,25 +3615,10 @@ async function eliminarProcesoTI(id, nombre) {
   }
 }
 
-// Exponer funciones del Modal de Administración TI y navegación al ámbito global
-if (typeof cambiarTabTI === 'function') {
-  window.cambiarTabTI = cambiarTabTI;
-}
-if (typeof cerrarModalAdminTI === 'function') {
-  window.cerrarModalAdminTI = cerrarModalAdminTI;
-}
-if (typeof abrirModalAdminTI === 'function') {
-  window.abrirModalAdminTI = abrirModalAdminTI;
-}
-if (typeof ingresarAlProyecto === 'function') {
-  window.ingresarAlProyecto = ingresarAlProyecto;
-}
-if (typeof abrirModalNuevoProyecto === 'function') {
-  window.abrirModalNuevoProyecto = abrirModalNuevoProyecto;
-}
-if (typeof cerrarMenuContextual === 'function') {
-  window.cerrarMenuContextual = cerrarMenuContextual;
-}
-if (typeof filtrarDirectorioTrabajadores === 'function') {
-  window.filtrarDirectorioTrabajadores = filtrarDirectorioTrabajadores;
-}
+// Exponer funciones al objeto window para eventos onclick del HTML
+if (typeof cambiarTabTI === 'function') window.cambiarTabTI = cambiarTabTI;
+if (typeof cerrarModalAdminTI === 'function') window.cerrarModalAdminTI = cerrarModalAdminTI;
+if (typeof abrirModalAdminTI === 'function') window.abrirModalAdminTI = abrirModalAdminTI;
+if (typeof ingresarAlProyecto === 'function') window.ingresarAlProyecto = ingresarAlProyecto;
+if (typeof abrirModalNuevoProyecto === 'function') window.abrirModalNuevoProyecto = abrirModalNuevoProyecto;
+if (typeof filtrarDirectorioTrabajadores === 'function') window.filtrarDirectorioTrabajadores = filtrarDirectorioTrabajadores;
