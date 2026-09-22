@@ -1,7 +1,6 @@
-// --- INICIALIZACIÓN GLOBAL DE CATALOGOS Y STUBS DE ARRANQUE ---
+// --- INICIALIZACIÓN GLOBAL Y STUBS DE ARRANQUE ---
 var catalogoUnidadesGlobal = window.catalogoUnidadesGlobal || [];
 var catalogoTrabajadoresGlobal = window.catalogoTrabajadoresGlobal || [];
-var catalogoProcesosGlobal = window.catalogoProcesosGlobal || [];
 var feriadosPersonalizadosGlobal = window.feriadosPersonalizadosGlobal || [];
 
 // Funciones invocadas durante DOMContentLoaded o llamadas tempranas
