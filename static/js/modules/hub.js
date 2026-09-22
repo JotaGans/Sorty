@@ -1,6 +1,6 @@
-import { state } from "../../core/state.js";
-import { apiFetch } from "../../core/api.js";
-import { notificarToast, confirmModal, formatearFechaLatina, formatearFechaISO, abrirInputCustom } from "../../core/ui-dialogs.js";
+import { state } from "../core/state.js";
+import { apiFetch } from "../core/api.js";
+import { notificarToast, confirmModal, formatearFechaLatina, formatearFechaISO, abrirInputCustom } from "../core/ui-dialogs.js";
 import { cargarCatalogoUnidades } from "./admin-ti.js";
 
 const SVG_OJO_ABIERTO = `

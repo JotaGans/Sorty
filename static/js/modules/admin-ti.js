@@ -1,6 +1,6 @@
-import { state } from "../../core/state.js";
-import { apiFetch } from "../../core/api.js";
-import { notificarToast, confirmModal } from "../../core/ui-dialogs.js";
+import { state } from "../core/state.js";
+import { apiFetch } from "../core/api.js";
+import { notificarToast, confirmModal } from "../core/ui-dialogs.js";
 
 export async function abrirModalAdminTI() {
   if (!state.token) return;

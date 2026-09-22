@@ -1,5 +1,5 @@
-import { state } from "../../core/state.js";
-import { apiFetch } from "../../core/api.js";
+import { state } from "../core/state.js";
+import { apiFetch } from "../core/api.js";
 import { cargarHubProyectos } from "./hub.js";
 
 export function obtenerPrimerNombre(nombreCompleto, usernameFallback) {
