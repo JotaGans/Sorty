@@ -487,19 +487,39 @@ let modalActivoAct = null;
 export function editarFechaFin(cod) {
   if (!state.proyectoEsGestor || tieneHijos(cod)) return;
   modalActivoAct = state.actividadesGlobal.find(a => a.codigo === cod);
-  document.getElementById("mfi-input-fin").value = formatearFechaISO(modalActivoAct.fecha_fin);
-  document.getElementById("mfi-input-dias").value = modalActivoAct.dias || 5;
+  if (!modalActivoAct) return;
+
+  const fIniISO = formatearFechaISO(modalActivoAct.fecha_inicio);
+  const inputFin = document.getElementById("mfi-input-fin");
+  const inputDias = document.getElementById("mfi-input-dias");
+
+  inputFin.value = formatearFechaISO(modalActivoAct.fecha_fin);
+  inputFin.min = fIniISO; // Bloquea en el calendario cualquier fecha anterior al inicio
+  inputDias.value = modalActivoAct.dias || 1;
 
   document.getElementById("mfi-btn-guardar").onclick = async () => {
-    const valFin = document.getElementById("mfi-input-fin").value;
-    const valDias = parseInt(document.getElementById("mfi-input-dias").value);
-    if (valFin && valDias > 0) {
-      modalActivoAct.fecha_fin = formatearFechaLatina(valFin);
-      modalActivoAct.dias = valDias;
-      document.getElementById("modal-fin-interactiva")?.classList.add("hidden");
-      await guardarCambioDirecto(modalActivoAct);
+    const valFin = inputFin.value;
+    const valDias = parseInt(inputDias.value);
+
+    if (!valFin || isNaN(valDias) || valDias < 1) {
+      alert("Por favor ingrese una fecha y duración válidas.");
+      return;
     }
+
+    const dtIni = parsearFechaUniversal(modalActivoAct.fecha_inicio);
+    const dtFin = parsearFechaUniversal(valFin);
+
+    if (dtFin < dtIni) {
+      alert(`⚠️ Inconsistencia temporal:\nLa fecha de término (${formatearFechaLatina(valFin)}) no puede ser anterior a la fecha de inicio (${formatearFechaLatina(modalActivoAct.fecha_inicio)}).`);
+      return;
+    }
+
+    modalActivoAct.fecha_fin = formatearFechaLatina(valFin);
+    modalActivoAct.dias = valDias;
+    cerrarFinInteractiva();
+    await guardarCambioDirecto(modalActivoAct);
   };
+
   document.getElementById("modal-fin-interactiva")?.classList.remove("hidden");
 }
 

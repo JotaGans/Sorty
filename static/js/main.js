@@ -255,6 +255,48 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // Calculadora interactiva bidireccional para el modal "Definir Término de Actividad"
+  const mfiInputFin = document.getElementById("mfi-input-fin");
+  const mfiInputDias = document.getElementById("mfi-input-dias");
+
+  if (mfiInputFin && mfiInputDias) {
+    let bloqueandoMfi = false;
+
+    // Si cambia los días manuales -> recalcula la fecha fin hábil
+    mfiInputDias.addEventListener("input", () => {
+      if (bloqueandoMfi || !window.modalActivoAct || !mfiInputDias.value) return;
+      const valDias = parseInt(mfiInputDias.value);
+      if (valDias > 0) {
+        const dtIni = parsearFechaUniversal(window.modalActivoAct.fecha_inicio);
+        if (dtIni && window.sumarDiasHabiles) {
+          bloqueandoMfi = true;
+          const nuevaFin = window.sumarDiasHabiles(dtIni, valDias);
+          mfiInputFin.value = nuevaFin.toISOString().split("T")[0];
+          bloqueandoMfi = false;
+        }
+      }
+    });
+
+    // Si cambia la fecha fin en el calendario -> recalcula los días hábiles
+    mfiInputFin.addEventListener("input", () => {
+      if (bloqueandoMfi || !window.modalActivoAct || !mfiInputFin.value) return;
+      const dtIni = parsearFechaUniversal(window.modalActivoAct.fecha_inicio);
+      const dtFin = new Date(mfiInputFin.value + "T00:00:00");
+
+      if (dtFin < dtIni) {
+        mfiInputFin.value = dtIni.toISOString().split("T")[0];
+        mfiInputDias.value = 1;
+        return;
+      }
+
+      if (window.contarDiasHabilesEntre) {
+        bloqueandoMfi = true;
+        mfiInputDias.value = window.contarDiasHabilesEntre(dtIni, dtFin);
+        bloqueandoMfi = false;
+      }
+    });
+  }
+
   // 8. Accesibilidad por teclado global (Enter y Escape)
   document.addEventListener("keydown", (e) => {
     if (e.target && e.target.tagName.toLowerCase() === "textarea") return;
