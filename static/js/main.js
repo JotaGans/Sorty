@@ -214,26 +214,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // 7. Calculadoras dinámicas de fechas en modales
+  // 7. Calculadoras dinámicas de fechas en modales (Días Hábiles y Horas Netas)
   const fIniWz = document.getElementById("wz-input-ini");
   const fFinWz = document.getElementById("wz-input-fin");
   const diasWz = document.getElementById("wz-input-dias");
 
   if (fIniWz && fFinWz && diasWz) {
     let bloqueandoWz = false;
-    diasWz.addEventListener("input", () => {
+
+    const recalcularFinWizard = () => {
       if (bloqueandoWz || !fIniWz.value || !diasWz.value) return;
+      const dtIni = new Date(fIniWz.value + "T00:00:00");
       const val = parseFloat(diasWz.value);
       if (val > 0) {
-        const esHoras = (state.proyectoModoDuracion === "hours");
-        const diasASumar = esHoras ? Math.max(0, Math.ceil(val / 8) - 1) : Math.max(0, Math.ceil(val) - 1);
-        const dt = new Date(fIniWz.value + "T00:00:00");
-        dt.setDate(dt.getDate() + diasASumar);
         bloqueandoWz = true;
-        fFinWz.value = dt.toISOString().split("T")[0];
+        let dtFin;
+        if (state.proyectoModoDuracion === "hours") {
+          const diasEquiv = Math.max(1, Math.ceil(val / 8));
+          dtFin = window.sumarDiasHabiles ? window.sumarDiasHabiles(dtIni, diasEquiv) : new Date(dtIni.getTime() + (diasEquiv - 1) * 86400000);
+        } else {
+          dtFin = window.sumarDiasHabiles ? window.sumarDiasHabiles(dtIni, Math.max(1, Math.round(val))) : new Date(dtIni.getTime() + (val - 1) * 86400000);
+        }
+        fFinWz.value = dtFin.toISOString().split("T")[0];
+        bloqueandoWz = false;
+      }
+    };
+
+    diasWz.addEventListener("input", recalcularFinWizard);
+    fIniWz.addEventListener("input", recalcularFinWizard);
+
+    fFinWz.addEventListener("input", () => {
+      if (bloqueandoWz || !fIniWz.value || !fFinWz.value || state.proyectoModoDuracion === "hours") return;
+      const dt1 = new Date(fIniWz.value + "T00:00:00");
+      const dt2 = new Date(fFinWz.value + "T00:00:00");
+      if (dt2 >= dt1 && window.contarDiasHabilesEntre) {
+        bloqueandoWz = true;
+        diasWz.value = window.contarDiasHabilesEntre(dt1, dt2);
         bloqueandoWz = false;
       }
     });
+  }
 
     fIniWz.addEventListener("input", () => {
       if (bloqueandoWz || !fIniWz.value) return;

@@ -12,6 +12,80 @@ import { actualizarKPIs, sincronizarDatosProyecto, actualizarBotonPlantillaDinam
 import { obtenerAvatarHTML, renderizarGanttFila } from "./project-gantt.js";
 import { obtenerComentariosDeActividad, abrirModalComentarios } from "./project-aux.js";
 
+// =========================================================================
+// MOTOR MATEMÁTICO DE DÍAS HÁBILES Y FERIADOS INSTITUCIONALES
+// =========================================================================
+
+export function esFeriadoOFinde(fecha) {
+  const dSem = fecha.getDay();
+  if (dSem === 0 || dSem === 6) return true; // Excluir Sábado (6) y Domingo (0)
+
+  if (!state.catalogoFeriadosGlobal || state.catalogoFeriadosGlobal.length === 0) {
+    return false;
+  }
+
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, '0');
+  const d = String(fecha.getDate()).padStart(2, '0');
+  const isoFecha = `${y}-${m}-${d}`;
+
+  return state.catalogoFeriadosGlobal.some(f => f.fecha === isoFecha);
+}
+
+export function sumarDiasHabiles(fechaInicio, cantDiasHabiles) {
+  let fecha = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate());
+  let diasContados = 0;
+
+  while (esFeriadoOFinde(fecha)) {
+    fecha.setDate(fecha.getDate() + 1);
+  }
+
+  diasContados = 1;
+
+  while (diasContados < cantDiasHabiles) {
+    fecha.setDate(fecha.getDate() + 1);
+    if (!esFeriadoOFinde(fecha)) {
+      diasContados++;
+    }
+  }
+
+  return fecha;
+}
+
+export function contarDiasHabilesEntre(fechaInicio, fechaFin) {
+  let dIni = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate());
+  let dFin = new Date(fechaFin.getFullYear(), fechaFin.getMonth(), fechaFin.getDate());
+
+  if (dIni > dFin) return 1;
+
+  let habiles = 0;
+  let cur = new Date(dIni);
+
+  while (cur <= dFin) {
+    if (!esFeriadoOFinde(cur)) {
+      habiles++;
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  return Math.max(1, habiles);
+}
+
+export function calcularFechaFinPorModalidad(fechaInicio, duracionValor, modoDuracion) {
+  if (modoDuracion === "hours") {
+    const horas = parseFloat(duracionValor) || 8;
+    const diasEquivalentes = Math.max(1, Math.ceil(horas / 8));
+    return sumarDiasHabiles(fechaInicio, diasEquivalentes);
+  } else {
+    const dias = parseInt(duracionValor) || 1;
+    return sumarDiasHabiles(fechaInicio, dias);
+  }
+}
+
+window.sumarDiasHabiles = sumarDiasHabiles;
+window.contarDiasHabilesEntre = contarDiasHabilesEntre;
+window.calcularFechaFinPorModalidad = calcularFechaFinPorModalidad;
+
 export function tieneHijos(codigo) {
   const codLimpio = String(codigo).replace(/\.+$/, "");
   return state.actividadesGlobal.some(a => {
@@ -64,11 +138,13 @@ export function recalcularJerarquiaWBS() {
             madre.fecha_fin = `${dFin}/${mFin}/${yFin}`;
 
             if (state.proyectoModoDuracion === "hours") {
-              const totalHorasHijas = hijosDirectos.reduce((acc, h) => acc + (parseInt(h.dias) || 0), 0);
+              // Horas de dedicación neta: Suma total de las horas de sus subtareas directas
+              const totalHorasHijas = hijosDirectos.reduce((acc, h) => acc + (parseFloat(h.dias) || 0), 0);
               madre.dias = Math.max(1, totalHorasHijas);
             } else {
-              const diffDias = Math.floor((maxFin - minIni) / (1000 * 60 * 60 * 24)) + 1;
-              madre.dias = Math.max(1, diffDias);
+              // Días Hábiles: Conteo de días laborables netos (excluye fines de semana y feriados)
+              const diasHabilesNetos = contarDiasHabilesEntre(minIni, maxFin);
+              madre.dias = diasHabilesNetos;
             }
           }
         }
@@ -394,11 +470,11 @@ export function editarFechaInicio(cod) {
   document.getElementById("mfc-btn-guardar").onclick = async () => {
     const valISO = document.getElementById("mfc-input-date").value;
     if (valISO) {
-      const dt = parsearFechaUniversal(valISO);
-      if (dt) {
+      const dtIni = parsearFechaUniversal(valISO);
+      if (dtIni) {
         act.fecha_inicio = formatearFechaLatina(valISO);
-        dt.setDate(dt.getDate() + ((parseInt(act.dias) || 1) - 1));
-        act.fecha_fin = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+        const dtFin = calcularFechaFinPorModalidad(dtIni, act.dias, state.proyectoModoDuracion);
+        act.fecha_fin = `${String(dtFin.getDate()).padStart(2, '0')}/${String(dtFin.getMonth() + 1).padStart(2, '0')}/${dtFin.getFullYear()}`;
         document.getElementById("modal-fecha-custom")?.classList.add("hidden");
         await guardarCambioDirecto(act);
       }
@@ -433,18 +509,19 @@ export function editarDias(cod) {
   const esHoras = (state.proyectoModoDuracion === "hours");
 
   abrirInputCustom({
-    titulo: esHoras ? "Modificar Horas de Dedicación" : "Modificar Duración",
-    mensaje: esHoras ? "Ingrese las horas netas de trabajo estimadas:" : "Consigne los Días de duración estimada:",
+    titulo: esHoras ? "Modificar Horas de Dedicación Neta" : "Modificar Duración (Días Hábiles)",
+    mensaje: esHoras 
+      ? "Ingrese las horas netas de dedicación (8h equivalen a 1 día hábil):" 
+      : "Consigne los Días Hábiles estimados (se excluyen automáticamente fines de semana y feriados):",
     tipo: "number",
     valorActual: act.dias,
     onAceptar: async (diasStr) => {
-      const d = parseInt(diasStr);
-      if (!isNaN(d) && d > 0) {
-        act.dias = d;
+      const valor = parseFloat(diasStr);
+      if (!isNaN(valor) && valor > 0) {
+        act.dias = valor;
         const dtIni = parsearFechaUniversal(act.fecha_inicio) || new Date();
-        const dtFin = new Date(dtIni);
-        const diasASumar = esHoras ? Math.max(0, Math.ceil(d / 8) - 1) : Math.max(0, d - 1);
-        dtFin.setDate(dtFin.getDate() + diasASumar);
+        const dtFin = calcularFechaFinPorModalidad(dtIni, valor, state.proyectoModoDuracion);
+        
         act.fecha_fin = `${String(dtFin.getDate()).padStart(2, '0')}/${String(dtFin.getMonth() + 1).padStart(2, '0')}/${dtFin.getFullYear()}`;
         await guardarCambioDirecto(act);
       }
