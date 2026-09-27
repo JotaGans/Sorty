@@ -43,6 +43,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Deseleccionar fila si se hace clic en el área vacía del dashboard o fuera de las filas
+  const viewDashboard = document.getElementById("view-dashboard");
+  if (viewDashboard) {
+    viewDashboard.addEventListener("click", (e) => {
+      // Si el clic no fue dentro de una fila de actividad, ni en menús o modales
+      if (!e.target.closest("#lista-actividades tr") && 
+          !e.target.closest("#bloque-superior-gantt") && 
+          !e.target.closest("#menu-contextual") &&
+          !e.target.closest(".fixed")) {
+        if (typeof window.deseleccionarFila === "function") {
+          window.deseleccionarFila();
+        }
+      }
+    });
+  }
+
   // 3. Inicializar autenticación y evaluar sesión activa
   inicializarFormularioLogin();
 

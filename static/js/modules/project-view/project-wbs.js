@@ -282,6 +282,15 @@ export function seleccionarFila(cod) {
   document.getElementById(`fila-act-${cod.replace(/\./g, '_')}`)?.classList.add("row-selected");
 }
 
+export function deseleccionarFila() {
+  state.codigoFilaSeleccionada = null;
+  document.querySelectorAll("#lista-actividades tr").forEach(tr => {
+    tr.classList.remove("row-selected");
+  });
+}
+
+window.deseleccionarFila = deseleccionarFila;
+
 export function esResponsableDeActividad(act) {
   if (!act || !act.responsable || !state.currentUser) return false;
   const respStr = String(act.responsable).toLowerCase();
