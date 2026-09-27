@@ -484,19 +484,58 @@ export function editarFechaInicio(cod) {
 }
 
 let modalActivoAct = null;
+
 export function editarFechaFin(cod) {
   if (!state.proyectoEsGestor || tieneHijos(cod)) return;
   modalActivoAct = state.actividadesGlobal.find(a => a.codigo === cod);
   if (!modalActivoAct) return;
 
-  const fIniISO = formatearFechaISO(modalActivoAct.fecha_inicio);
+  // Exponer al ámbito global para los listeners de main.js
+  window.modalActivoAct = modalActivoAct;
+
   const inputFin = document.getElementById("mfi-input-fin");
   const inputDias = document.getElementById("mfi-input-dias");
+  if (!inputFin || !inputDias) return;
+
+  const fIniISO = formatearFechaISO(modalActivoAct.fecha_inicio);
+  const dtIni = parsearFechaUniversal(modalActivoAct.fecha_inicio);
 
   inputFin.value = formatearFechaISO(modalActivoAct.fecha_fin);
-  inputFin.min = fIniISO; // Bloquea en el calendario cualquier fecha anterior al inicio
+  inputFin.min = fIniISO; // Bloquea seleccionar fechas anteriores a la de inicio
   inputDias.value = modalActivoAct.dias || 1;
 
+  let bloqueandoRecalculo = false;
+
+  // 1. Si el usuario modifica los DÍAS -> Recalcular FECHA FIN en tiempo real
+  inputDias.oninput = () => {
+    if (bloqueandoRecalculo || !inputDias.value) return;
+    const diasVal = parseInt(inputDias.value);
+    if (!isNaN(diasVal) && diasVal >= 1 && dtIni) {
+      bloqueandoRecalculo = true;
+      const nuevaFechaFin = sumarDiasHabiles(dtIni, diasVal);
+      inputFin.value = nuevaFechaFin.toISOString().split("T")[0];
+      bloqueandoRecalculo = false;
+    }
+  };
+
+  // 2. Si el usuario modifica la FECHA FIN -> Recalcular DÍAS HÁBILES en tiempo real
+  inputFin.oninput = () => {
+    if (bloqueandoRecalculo || !inputFin.value || !dtIni) return;
+    const dtFin = new Date(inputFin.value + "T00:00:00");
+
+    if (dtFin < dtIni) {
+      alert("⚠️ La fecha de fin no puede ser anterior a la fecha de inicio.");
+      inputFin.value = fIniISO;
+      inputDias.value = 1;
+      return;
+    }
+
+    bloqueandoRecalculo = true;
+    inputDias.value = contarDiasHabilesEntre(dtIni, dtFin);
+    bloqueandoRecalculo = false;
+  };
+
+  // 3. Confirmar y guardar ambos valores amarrados a la base de datos
   document.getElementById("mfi-btn-guardar").onclick = async () => {
     const valFin = inputFin.value;
     const valDias = parseInt(inputDias.value);
@@ -506,18 +545,18 @@ export function editarFechaFin(cod) {
       return;
     }
 
-    const dtIni = parsearFechaUniversal(modalActivoAct.fecha_inicio);
-    const dtFin = parsearFechaUniversal(valFin);
-
+    const dtFin = new Date(valFin + "T00:00:00");
     if (dtFin < dtIni) {
-      alert(`⚠️ Inconsistencia temporal:\nLa fecha de término (${formatearFechaLatina(valFin)}) no puede ser anterior a la fecha de inicio (${formatearFechaLatina(modalActivoAct.fecha_inicio)}).`);
+      alert("⚠️ La fecha de fin no puede ser anterior a la fecha de inicio.");
       return;
     }
 
     modalActivoAct.fecha_fin = formatearFechaLatina(valFin);
     modalActivoAct.dias = valDias;
+
     cerrarFinInteractiva();
     await guardarCambioDirecto(modalActivoAct);
+    notificarToast(`Plazo actualizado: ${valDias}d (Fin: ${formatearFechaLatina(valFin)})`, "success");
   };
 
   document.getElementById("modal-fin-interactiva")?.classList.remove("hidden");
