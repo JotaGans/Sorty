@@ -1,5 +1,5 @@
 // =========================================================================
-// PUNTO DE ENTRADA PRINCIPAL Y ORQUESTADOR ES6 (MAIN.JS)
+// PUNTO DE ENTRADA PRINCIPAL Y ORQUESTADOR ES6
 // =========================================================================
 
 import { state } from "./core/state.js";
@@ -250,30 +250,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (dt2 >= dt1 && window.contarDiasHabilesEntre) {
         bloqueandoWz = true;
         diasWz.value = window.contarDiasHabilesEntre(dt1, dt2);
-        bloqueandoWz = false;
-      }
-    });
-
-    fIniWz.addEventListener("input", () => {
-      if (bloqueandoWz || !fIniWz.value) return;
-      const val = parseFloat(diasWz.value) || 1;
-      const esHoras = (state.proyectoModoDuracion === "hours");
-      const diasASumar = esHoras ? Math.max(0, Math.ceil(val / 8) - 1) : Math.max(0, Math.ceil(val) - 1);
-      const dt = new Date(fIniWz.value + "T00:00:00");
-      dt.setDate(dt.getDate() + diasASumar);
-      bloqueandoWz = true;
-      fFinWz.value = dt.toISOString().split("T")[0];
-      bloqueandoWz = false;
-    });
-
-    fFinWz.addEventListener("input", () => {
-      if (bloqueandoWz || !fIniWz.value || !fFinWz.value || state.proyectoModoDuracion === "hours") return;
-      const dt1 = new Date(fIniWz.value + "T00:00:00");
-      const dt2 = new Date(fFinWz.value + "T00:00:00");
-      const diff = Math.floor((dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
-      if (diff > 0) {
-        bloqueandoWz = true;
-        diasWz.value = diff;
         bloqueandoWz = false;
       }
     });
