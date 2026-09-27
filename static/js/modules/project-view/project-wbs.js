@@ -74,8 +74,10 @@ export function contarDiasHabilesEntre(fechaInicio, fechaFin) {
 export function calcularFechaFinPorModalidad(fechaInicio, duracionValor, modoDuracion) {
   if (modoDuracion === "hours") {
     const horas = parseFloat(duracionValor) || 8;
-    const diasEquivalentes = Math.max(1, Math.ceil(horas / 8));
-    return sumarDiasHabiles(fechaInicio, diasEquivalentes);
+    const diasASumar = Math.max(0, Math.ceil(horas / 8) - 1);
+    const dt = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate());
+    dt.setDate(dt.getDate() + diasASumar);
+    return dt;
   } else {
     const dias = parseInt(duracionValor) || 1;
     return sumarDiasHabiles(fechaInicio, dias);
