@@ -9,7 +9,7 @@ import {
   abrirInputCustom
 } from "../../core/ui-dialogs.js";
 import { actualizarKPIs, sincronizarDatosProyecto, actualizarBotonPlantillaDinamico, obtenerClaveStorageAnchoCol, aplicarAnchoColumnaDescripcion } from "./project-core.js";
-import { obtenerAvatarHTML, obtenerMiniAvataresGanttHTML, renderizarGanttFila } from "./project-gantt.js";
+import { obtenerAvatarHTML, renderizarGanttFila } from "./project-gantt.js";
 import { obtenerComentariosDeActividad, abrirModalComentarios } from "./project-aux.js";
 
 export function tieneHijos(codigo) {
@@ -158,11 +158,11 @@ export function renderizarTabla() {
     let tdEst = '';
     if (state.visibilidadColumnas.estado) {
       if (esMadre) {
-        tdEst = `<td class="p-2.5 border-r border-b border-gray-200 ${claseBloqueada} whitespace-nowrap" title="Estado consolidado automáticamente">
+        tdEst = `<td class="p-2.5 border-r border-b border-gray-200 ${claseBloqueada} whitespace-nowrap">
           <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' : (act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700')}">${act.estado} ${lockIcon}</span>
         </td>`;
       } else {
-        tdEst = `<td class="p-2.5 border-r border-b border-gray-200 ${puedeEditarAvance ? claseEditable : ''} whitespace-nowrap" ondblclick="${puedeEditarAvance ? `editarEstado('${cod}')` : ''}" title="${puedeEditarAvance ? 'Doble clic para cambiar estado' : ''}">
+        tdEst = `<td class="p-2.5 border-r border-b border-gray-200 ${puedeEditarAvance ? claseEditable : ''} whitespace-nowrap" ondblclick="${puedeEditarAvance ? `editarEstado('${cod}')` : ''}">
           <span class="px-2 py-0.5 rounded text-[11px] font-bold ${act.estado === 'Ejecutado' ? 'bg-green-100 text-green-800' : (act.estado === 'En proceso' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700')}">${act.estado}</span>
         </td>`;
       }
@@ -298,7 +298,7 @@ export function poblarFiltroResponsablesDinamico() {
 
   (state.actividadesGlobal || []).forEach(act => {
     const respCampo = (act.responsable || "").trim();
-    if (respCampo && respCampo !== "No asignado" && respCampo !== "-") {
+    if (respCampo && respCampo !== "No asignado") {
       respCampo.split(/[;\n]+/).map(r => r.trim()).filter(Boolean).forEach(r => setResponsables.add(r));
     }
   });
@@ -328,7 +328,7 @@ export function editarDescripcion(cod) {
   abrirInputCustom({
     titulo: "Modificar Descripción",
     mensaje: "Ingrese la nueva descripción:",
-    type: "text",
+    tipo: "text",
     valorActual: act.descripcion,
     onAceptar: async (nueva) => {
       if (nueva && nueva.trim() !== "") {
@@ -344,7 +344,7 @@ export function editarEstado(cod) {
   const act = state.actividadesGlobal.find(a => a.codigo === cod);
   abrirInputCustom({
     titulo: "Modificar Estado",
-    mensaje: "Seleccione el estado:",
+    mensaje: "Seleccione el estado de la actividad:",
     tipo: "select",
     valorActual: act.estado,
     opciones: ["No iniciado", "En proceso", "Ejecutado"],
@@ -425,7 +425,7 @@ export function editarDias(cod) {
 
   abrirInputCustom({
     titulo: esHoras ? "Modificar Horas de Dedicación" : "Modificar Duración",
-    mensaje: esHoras ? "Ingrese horas netas:" : "Consigne días de duración estimada:",
+    mensaje: esHoras ? "Ingrese las horas netas de trabajo estimadas:" : "Consigne los Días de duración estimada:",
     tipo: "number",
     valorActual: act.dias,
     onAceptar: async (diasStr) => {
@@ -448,7 +448,7 @@ export function editarAvance(cod) {
   const act = state.actividadesGlobal.find(a => a.codigo === cod);
   abrirInputCustom({
     titulo: "Porcentaje Requerido",
-    mensaje: "Porcentaje de avance (0 a 100):",
+    mensaje: "Porcentaje de avance real (0 a 100):",
     tipo: "number",
     valorActual: act.avance,
     onAceptar: async (avStr) => {
@@ -633,35 +633,193 @@ export async function soltarFilaArrastre(e, codigoDestino, trElement) {
 }
 
 // --- WIZARD CREACIÓN DE ACTIVIDADES ---
+let opcionesModoWizard = [];
+
 export function botonSuperiorNuevaActividad() {
-  if (!state.proyectoEsGestor) return;
-  abrirWizardCreacion(state.codigoFilaSeleccionada, "raiz");
+  if (!state.proyectoEsGestor) {
+    alert("Solo el Gestor del Proyecto puede crear actividades.");
+    return;
+  }
+  if (!state.codigoFilaSeleccionada) {
+    abrirWizardCreacion(null, "raiz");
+  } else {
+    const codLimpio = String(state.codigoFilaSeleccionada).replace(/\.+$/, "");
+    const nivel = codLimpio.split(".").length;
+    if (nivel < 4) abrirWizardCreacion(codLimpio, "hijo");
+    else abrirWizardCreacion(codLimpio, "hermano");
+  }
 }
 
-export function abrirWizardCreacion(codigoBase = null, modo = "raiz") {
+export function abrirWizardCreacion(codigoBase = null, modoForzado = "hijo") {
   state.wizardCodigoPadre = codigoBase;
-  let nuevoCod = "1";
+  opcionesModoWizard = [];
 
-  if (modo === "hijo" && codigoBase) {
-    const hijos = state.actividadesGlobal.filter(a => a.codigo.startsWith(codigoBase + ".") && a.codigo.split(".").length === codigoBase.split(".").length + 1);
-    nuevoCod = `${codigoBase}.${hijos.length + 1}`;
+  const contToggle = document.getElementById("wz-contenedor-selector-tipo");
+  const selToggle = document.getElementById("wz-select-tipo-creacion");
+
+  if (!codigoBase || modoForzado === "raiz") {
+    const raices = state.actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
+    let maxNum = 0;
+    raices.forEach(r => {
+      const n = parseInt(r.codigo.replace(/\.$/, ""));
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    });
+    const codRaiz = `${maxNum + 1}`;
+
+    opcionesModoWizard.push({
+      modo: "raiz",
+      codigo: codRaiz,
+      label: "✨ Nueva actividad principal (Nivel 1)",
+      titulo: "Nueva actividad principal (Nivel 1)",
+      subtitulo: "Creando actividad principal independiente"
+    });
   } else {
-    const raices = state.actividadesGlobal.filter(a => !a.codigo.includes("."));
-    nuevoCod = String(raices.length + 1);
+    const codLimpio = String(codigoBase).replace(/\.+$/, "");
+    const nivel = codLimpio.split(".").length;
+    const madre = state.actividadesGlobal.find(a => a.codigo.replace(/\.+$/, "") === codLimpio);
+    const descBase = madre ? madre.descripcion : codLimpio;
+    const nombresSub = ["", "Tarea (Nivel 2)", "Subtarea (Nivel 3)", "Paso (Nivel 4)"];
+    const nombresMismo = ["", "actividad principal (Nivel 1)", "tarea (Nivel 2)", "subtarea (Nivel 3)", "paso (Nivel 4)"];
+
+    if (nivel < 4) {
+      const hijos = state.actividadesGlobal.filter(a => {
+        const c = a.codigo.replace(/\.$/, "");
+        return c.startsWith(codLimpio + ".") && c.split(".").length === nivel + 1;
+      });
+      let maxH = 0;
+      hijos.forEach(h => {
+        const ult = parseInt(h.codigo.replace(/\.$/, "").split(".").pop());
+        if (!isNaN(ult) && ult > maxH) maxH = ult;
+      });
+      const codHijo = `${codLimpio}.${maxH + 1}`;
+
+      opcionesModoWizard.push({
+        modo: "hijo",
+        codigo: codHijo,
+        label: `➕ ${nombresSub[nivel]} (dependiente de [${codLimpio}])`,
+        titulo: `Nueva ${nombresSub[nivel]} para [${codLimpio}]`,
+        subtitulo: `Depende de: ${descBase}`
+      });
+
+      let codHermano = "1";
+      const partes = codLimpio.split(".");
+      if (partes.length === 1) {
+        const raices = state.actividadesGlobal.filter(a => !a.codigo.replace(/\.$/, "").includes("."));
+        let maxR = 0;
+        raices.forEach(r => {
+          const n = parseInt(r.codigo.replace(/\.$/, ""));
+          if (!isNaN(n) && n > maxR) maxR = n;
+        });
+        codHermano = `${maxR + 1}`;
+      } else {
+        const padre = partes.slice(0, -1).join(".");
+        const hermanos = state.actividadesGlobal.filter(a => a.codigo.startsWith(padre + ".") && a.codigo.split(".").length === partes.length);
+        let maxHer = 0;
+        hermanos.forEach(h => {
+          const ult = parseInt(h.codigo.split(".").pop());
+          if (!isNaN(ult) && ult > maxHer) maxHer = ult;
+        });
+        codHermano = `${padre}.${maxHer + 1}`;
+      }
+
+      opcionesModoWizard.push({
+        modo: "hermano",
+        codigo: codHermano,
+        label: `📋 Agregar actividad hermana (${nombresMismo[nivel]})`,
+        titulo: `Nueva actividad hermana (${nombresMismo[nivel]})`,
+        subtitulo: `Al mismo nivel que [${codLimpio}]`
+      });
+    }
   }
 
-  state.wizardCodigoGenerado = nuevoCod;
-  document.getElementById("wz-codigo-preview").innerText = nuevoCod;
-  document.getElementById("wz-input-desc").value = "";
-  document.getElementById("wz-input-ini").value = new Date().toISOString().split("T")[0];
-  document.getElementById("wz-input-dias").value = "5";
+  if (selToggle) {
+    selToggle.innerHTML = "";
+    opcionesModoWizard.forEach(op => {
+      selToggle.innerHTML += `<option value="${op.modo}">${op.label}</option>`;
+    });
+    selToggle.value = modoForzado;
+  }
 
-  const dtFin = new Date();
-  dtFin.setDate(dtFin.getDate() + 4);
-  document.getElementById("wz-input-fin").value = dtFin.toISOString().split("T")[0];
+  if (contToggle) {
+    if (opcionesModoWizard.length > 1) contToggle.classList.remove("hidden");
+    else contToggle.classList.add("hidden");
+  }
+
+  cambiarModoSeleccionadoWizard(modoForzado);
+
+  const hoy = new Date();
+  document.getElementById("wz-input-desc").value = "";
+  document.getElementById("wz-input-ini").value = formatearFechaISO(hoy.toISOString().split("T")[0]);
+
+  const esHoras = (state.proyectoModoDuracion === "hours");
+  const lblUnidad = document.getElementById("wz-lbl-duracion");
+  const sufijoUnidad = document.getElementById("wz-sufijo-duracion");
+  const inpDias = document.getElementById("wz-input-dias");
+  const inpFin = document.getElementById("wz-input-fin");
+
+  if (esHoras) {
+    if (lblUnidad) lblUnidad.innerText = "Horas Duración:";
+    if (sufijoUnidad) sufijoUnidad.innerText = "h";
+    if (inpDias) inpDias.value = 8;
+    if (inpFin) {
+      inpFin.readOnly = true;
+      inpFin.className = "w-full p-2 bg-slate-100 border border-gray-300 rounded-lg text-xs font-bold text-slate-500 cursor-not-allowed outline-none select-none";
+      inpFin.value = formatearFechaISO(hoy.toISOString().split("T")[0]);
+    }
+  } else {
+    if (lblUnidad) lblUnidad.innerText = "Días Duración:";
+    if (sufijoUnidad) sufijoUnidad.innerText = "";
+    if (inpDias) inpDias.value = 5;
+    if (inpFin) {
+      inpFin.readOnly = false;
+      inpFin.className = "w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-[#0f2a4a]";
+      const dtFinDef = new Date(hoy);
+      dtFinDef.setDate(dtFinDef.getDate() + 4);
+      inpFin.value = formatearFechaISO(dtFinDef.toISOString().split("T")[0]);
+    }
+  }
+
+  const selEst = document.getElementById("wz-input-estado");
+  if (selEst) selEst.value = "No iniciado";
+  evaluarEstadoWizard("No iniciado");
 
   irAPasoWizard(1);
   document.getElementById("modal-wizard-creacion")?.classList.remove("hidden");
+  setTimeout(() => document.getElementById("wz-input-desc")?.focus(), 100);
+}
+
+export function cambiarTipoCreacionDesdeNivel1(modo) {
+  cambiarModoSeleccionadoWizard(modo);
+}
+
+export function cambiarModoSeleccionadoWizard(modo) {
+  const op = opcionesModoWizard.find(o => o.modo === modo) || opcionesModoWizard[0];
+  if (!op) return;
+
+  state.wizardCodigoGenerado = op.codigo;
+  const prevCod = document.getElementById("wz-codigo-preview");
+  if (prevCod) prevCod.innerText = op.codigo;
+  const tit = document.getElementById("wz-titulo");
+  if (tit) tit.innerText = op.titulo;
+  const sub = document.getElementById("wz-subtitulo");
+  if (sub) sub.innerText = op.subtitulo;
+}
+
+export function evaluarEstadoWizard(estado) {
+  const boxAvance = document.getElementById("wz-box-avance");
+  const boxPred = document.getElementById("wz-box-pred");
+  const inpAvance = document.getElementById("wz-input-avance");
+
+  if (estado === "En proceso") {
+    if (boxAvance) boxAvance.classList.remove("hidden");
+    if (boxPred) boxPred.className = "sm:col-span-1";
+    if (inpAvance && (!inpAvance.value || parseInt(inpAvance.value) <= 0 || parseInt(inpAvance.value) >= 100)) {
+      inpAvance.value = 50;
+    }
+  } else {
+    if (boxAvance) boxAvance.classList.add("hidden");
+    if (boxPred) boxPred.className = "sm:col-span-2";
+  }
 }
 
 export function irAPasoWizard(paso) {
@@ -692,11 +850,19 @@ export function irAPasoWizard(paso) {
 export function avanzarPasoWizard() {
   if (state.wizardPasoActual === 1) {
     if (!document.getElementById("wz-input-desc").value.trim()) {
-      alert("Por favor ingrese una descripción.");
+      alert("Por favor consigna una descripción para continuar.");
       return;
     }
     irAPasoWizard(2);
   } else if (state.wizardPasoActual === 2) {
+    const fIniVal = document.getElementById("wz-input-ini").value;
+    const fFinVal = document.getElementById("wz-input-fin").value;
+    const diasVal = parseInt(document.getElementById("wz-input-dias").value);
+
+    if (!fIniVal || !fFinVal || isNaN(diasVal) || diasVal < 1) {
+      alert("Verifique las fechas de inicio, término y la cantidad de días.");
+      return;
+    }
     irAPasoWizard(3);
   } else if (state.wizardPasoActual === 3) {
     guardarActividadDesdeWizard();
@@ -716,7 +882,10 @@ export async function guardarActividadDesdeWizard() {
   const fFinRaw = document.getElementById("wz-input-fin").value;
   const dias = parseInt(document.getElementById("wz-input-dias").value) || 1;
   const estado = document.getElementById("wz-input-estado").value;
-  let avance = estado === "Ejecutado" ? 100 : (estado === "En proceso" ? 50 : 0);
+  let avance = 0;
+
+  if (estado === "Ejecutado") avance = 100;
+  else if (estado === "En proceso") avance = parseInt(document.getElementById("wz-input-avance")?.value) || 50;
 
   const payload = {
     proyecto_id: parseInt(state.proyectoActualId),
@@ -748,12 +917,24 @@ export async function guardarActividadDesdeWizard() {
 
 export async function eliminarActividad(cod) {
   if (!state.proyectoEsGestor) return;
-  const confirma = await confirmModal(`¿Está seguro de eliminar la actividad [${cod}]?`, "Eliminar Registro", "danger");
+  const codLimpio = cod.replace(/\.+$/, "");
+  const hijas = state.actividadesGlobal.filter(a => {
+    const c = a.codigo.replace(/\.+$/, "");
+    return c.startsWith(codLimpio + ".") && c !== codLimpio;
+  });
+
+  let mensaje = `¿Está seguro de eliminar la actividad [${cod}]?`;
+  if (hijas.length > 0) {
+    mensaje = `⚠️ ATENCIÓN: La actividad [${cod}] contiene ${hijas.length} actividad(es) subordinada(s).\n\nSi continúa, se eliminarán todas en cascada. ¿Desea proceder?`;
+  }
+
+  const confirma = await confirmModal(mensaje, "Eliminar Registro", "danger");
   if (!confirma) return;
 
   try {
     const res = await apiFetch(`/proyectos/${state.proyectoActualId}/actividades/${cod}`, { method: "DELETE" });
     if (res.ok) {
+      state.codigoFilaSeleccionada = null;
       notificarToast(`Actividad [${cod}] eliminada.`, "info");
       await sincronizarDatosProyecto(state.proyectoActualId);
     }
@@ -762,7 +943,7 @@ export async function eliminarActividad(cod) {
   }
 }
 
-// --- MENÚ CONTEXTUAL ---
+// --- MENÚ CONTEXTUAL EN CASCADA ---
 export function abrirMenuContextual(event, cod) {
   event.preventDefault();
   event.stopPropagation();
@@ -770,12 +951,102 @@ export function abrirMenuContextual(event, cod) {
   state.actividadContextualSeleccionada = state.actividadesGlobal.find(a => a.codigo === cod);
   if (!state.actividadContextualSeleccionada) return;
 
+  const partes = cod.replace(/\.+$/, "").split(".");
+  const nivel = partes.length;
+  const nombresSubnivel = ["", "subtarea (Nivel 2)", "subtarea (Nivel 3)", "paso (Nivel 4)"];
+  const nombresMismoNivel = ["", "actividad principal (Nivel 1)", "tarea (Nivel 2)", "subtarea (Nivel 3)", "paso (Nivel 4)"];
+
   const menu = document.getElementById("menu-contextual");
   const headerInfo = document.getElementById("mc-header-info");
-  if (headerInfo) headerInfo.innerText = `[${cod}] ${state.actividadContextualSeleccionada.descripcion}`;
+  if (headerInfo) {
+    headerInfo.classList.remove("hidden");
+    headerInfo.innerText = `[${cod}] ${state.actividadContextualSeleccionada.descripcion}`;
+  }
 
-  let posX = Math.min(window.innerWidth - 240, event.clientX);
-  let posY = Math.min(window.innerHeight - 200, event.clientY);
+  const grupoAgregar = document.getElementById("mc-grupo-agregar");
+  const btnRaizDirecto = document.getElementById("mc-btn-raiz-directo");
+  const btnHijo = document.getElementById("mc-btn-hijo");
+  const btnHermano = document.getElementById("mc-btn-hermano");
+  const btnRaiz = document.getElementById("mc-btn-raiz");
+  const btnResp = document.getElementById("mc-btn-resp");
+  const btnElim = document.getElementById("mc-btn-eliminar");
+  const btnCom = document.getElementById("mc-btn-comentarios");
+
+  const esMiActividad = state.actividadContextualSeleccionada.responsable && state.actividadContextualSeleccionada.responsable.includes(state.currentUser.username);
+  const puedeCrear = state.proyectoEsGestor || esMiActividad;
+
+  if (grupoAgregar) grupoAgregar.classList.toggle("hidden", !puedeCrear);
+  if (btnRaizDirecto) btnRaizDirecto.classList.add("hidden");
+
+  if (btnHijo) {
+    if (nivel >= 4 || !puedeCrear) btnHijo.classList.add("hidden");
+    else {
+      btnHijo.classList.remove("hidden");
+      const txtHijo = document.getElementById("mc-txt-hijo");
+      if (txtHijo) txtHijo.innerText = `Agregar ${nombresSubnivel[nivel]}`;
+    }
+  }
+
+  if (btnHermano) {
+    if (!puedeCrear) btnHermano.classList.add("hidden");
+    else {
+      btnHermano.classList.remove("hidden");
+      const txtHermano = document.getElementById("mc-txt-hermano");
+      if (txtHermano) txtHermano.innerText = `Agregar actividad hermana (${nombresMismoNivel[nivel]})`;
+    }
+  }
+
+  if (btnRaiz) btnRaiz.classList.toggle("hidden", !state.proyectoEsGestor || nivel <= 1);
+  if (btnResp) btnResp.classList.toggle("hidden", !state.proyectoEsGestor);
+  if (btnElim) btnElim.classList.toggle("hidden", !state.proyectoEsGestor);
+
+  if (btnCom) {
+    const coms = obtenerComentariosDeActividad(cod);
+    btnCom.classList.remove("hidden");
+    const txtCom = document.getElementById("mc-txt-comentarios");
+    if (txtCom) txtCom.innerText = coms.length > 0 ? `Ver Comentarios (${coms.length})` : "Agregar Comentario";
+  }
+
+  let posX = event.clientX, posY = event.clientY;
+  if (posX + 480 > window.innerWidth) posX = window.innerWidth - 490;
+  if (posY + 230 > window.innerHeight) posY = window.innerHeight - 235;
+
+  if (menu) {
+    menu.style.left = `${posX}px`;
+    menu.style.top = `${posY}px`;
+    menu.classList.remove("hidden");
+  }
+}
+
+export function abrirMenuContextualVacio(event) {
+  if (!state.proyectoEsGestor) return;
+  event.preventDefault();
+  event.stopPropagation();
+
+  state.codigoFilaSeleccionada = null;
+  document.querySelectorAll("#lista-actividades tr").forEach(tr => tr.classList.remove("row-selected"));
+  state.actividadContextualSeleccionada = null;
+
+  const menu = document.getElementById("menu-contextual");
+  const headerInfo = document.getElementById("mc-header-info");
+  if (headerInfo) headerInfo.classList.add("hidden");
+
+  const grupoAgregar = document.getElementById("mc-grupo-agregar");
+  const btnRaizDirecto = document.getElementById("mc-btn-raiz-directo");
+  const btnResp = document.getElementById("mc-btn-resp");
+  const btnElim = document.getElementById("mc-btn-eliminar");
+  const btnCom = document.getElementById("mc-btn-comentarios");
+
+  if (grupoAgregar) grupoAgregar.classList.add("hidden");
+  if (btnRaizDirecto) btnRaizDirecto.classList.remove("hidden");
+  if (btnResp) btnResp.classList.add("hidden");
+  if (btnElim) btnElim.classList.add("hidden");
+  if (btnCom) btnCom.classList.add("hidden");
+
+  let posX = event.clientX, posY = event.clientY;
+  if (posX + 480 > window.innerWidth) posX = window.innerWidth - 490;
+  if (posY + 230 > window.innerHeight) posY = window.innerHeight - 235;
+
   if (menu) {
     menu.style.left = `${posX}px`;
     menu.style.top = `${posY}px`;
@@ -792,29 +1063,297 @@ export function ejecutarAccionContextual(accion) {
   const cod = act ? act.codigo : null;
   cerrarMenuContextual();
 
-  if (accion === 'agregar_hijo' && cod) abrirWizardCreacion(cod, "hijo");
+  if (accion === 'agregar_raiz') abrirWizardCreacion(null, "raiz");
+  else if (accion === 'agregar_hijo' && cod) abrirWizardCreacion(cod, "hijo");
   else if (accion === 'agregar_hermano' && cod) abrirWizardCreacion(cod, "hermano");
-  else if (accion === 'agregar_raiz') abrirWizardCreacion(null, "raiz");
   else if (accion === 'asignar_resp' && cod) editarResponsable(cod);
   else if (accion === 'eliminar' && cod) eliminarActividad(cod);
   else if (accion === 'ver_comentarios' && cod) abrirModalComentarios(cod);
 }
 
-export function editarResponsable(cod) {
-  if (!state.proyectoEsGestor) return;
-  const act = state.actividadesGlobal.find(a => a.codigo === cod);
-  if (!act) return;
+// --- MODAL REAL INTERACTIVO DE ASIGNAR RESPONSABLES ---
+export async function editarResponsable(cod) {
+  if (!state.proyectoEsGestor && state.currentUser.rol !== "ADMIN_TI") {
+    alert("Solo un Gestor del Proyecto puede asignar o modificar responsables.");
+    return;
+  }
 
-  const respActual = act.responsable || "";
-  abrirInputCustom({
-    titulo: `Asignar Responsable a [${cod}]`,
-    mensaje: "Ingrese nombres y apellidos:",
-    tipo: "text",
-    valorActual: respActual === "No asignado" ? "" : respActual,
-    onAceptar: async (nuevoResp) => {
-      act.responsable = nuevoResp.trim() || "No asignado";
-      await guardarCambioDirecto(act);
-      notificarToast("Responsable actualizado.", "success");
-    }
+  const codLimpio = String(cod).trim().replace(/\.+$/, "");
+  state.actividadMultiRespActual = state.actividadesGlobal.find(a => String(a.codigo).trim().replace(/\.+$/, "") === codLimpio);
+  if (!state.actividadMultiRespActual) return;
+
+  if (!state.catalogoTrabajadoresGlobal || state.catalogoTrabajadoresGlobal.length === 0) {
+    try {
+      const resT = await apiFetch("/trabajadores");
+      if (resT.ok) state.catalogoTrabajadoresGlobal = await resT.json();
+    } catch(e) {}
+  }
+
+  const respStr = String(state.actividadMultiRespActual.responsable || "").trim();
+  state.responsablesInicialesEdicion = (respStr && respStr !== "No asignado")
+    ? (respStr.includes(";") ? respStr.split(";").map(s => s.trim()).filter(Boolean) : [respStr])
+    : [];
+
+  state.listaAsignadosModal = [];
+  state.responsablesInicialesEdicion.forEach(nom => {
+    const tObj = (state.catalogoTrabajadoresGlobal || []).find(t => t.nombre_completo && t.nombre_completo.trim().toLowerCase() === nom.trim().toLowerCase());
+    state.listaAsignadosModal.push({
+      nombre_completo: nom,
+      unidad_organica: tObj ? tObj.unidad_organica : "Personal"
+    });
   });
+
+  renderizarListaAsignadosModal();
+
+  const inpBusqResp = document.getElementById("inp-buscar-resp-actividad");
+  if (inpBusqResp) inpBusqResp.value = "";
+  const sugResp = document.getElementById("sug-responsables-actividad");
+  if (sugResp) sugResp.classList.add("hidden");
+
+  const btnGuardarMulti = document.getElementById("btn-guardar-multi-resp");
+  if (btnGuardarMulti) {
+    btnGuardarMulti.onclick = async () => {
+      const seleccionados = state.listaAsignadosModal.map(r => r.nombre_completo.trim()).filter(Boolean);
+      const respFinal = seleccionados.length > 0 ? seleccionados.join("; ") : "No asignado";
+      const actRef = state.actividadMultiRespActual;
+      const codAct = actRef ? actRef.codigo : null;
+
+      cerrarAsignarResponsables();
+      if (!actRef) return;
+
+      actRef.responsable = respFinal;
+      poblarFiltroResponsablesDinamico();
+      renderizarTabla();
+
+      try {
+        const res = await apiFetch("/actividades/responsable", {
+          method: "PUT",
+          body: JSON.stringify({
+            proyecto_id: parseInt(state.proyectoActualId),
+            codigo: String(codAct).trim(),
+            responsable: respFinal
+          })
+        });
+
+        if (res.ok) {
+          notificarToast("Responsable(s) asignado(s) y guardado(s) correctamente.", "success");
+        }
+      } catch (e) {
+        alert("Error al guardar responsable.");
+      }
+
+      // Evaluación de nuevos responsables para notificar por correo
+      const inicialesSet = new Set((state.responsablesInicialesEdicion || []).map(n => n.trim().toLowerCase()));
+      const nuevos = seleccionados.filter(nom => !inicialesSet.has(nom.toLowerCase()));
+
+      if (nuevos.length > 0) {
+        const mensajeNotif = nuevos.length === 1
+          ? `¿Desea enviar una notificación por correo electrónico al nuevo responsable asignado (${nuevos[0]})?`
+          : `¿Desea enviar una notificación por correo electrónico a los ${nuevos.length} nuevos responsables asignados (${nuevos.join(", ")})?`;
+
+        const deseaNotificar = await confirmModal(mensajeNotif, "Notificación Institucional", "question");
+        if (deseaNotificar) {
+          abrirModalNotificacionCorreo(actRef, nuevos);
+        }
+      }
+    };
+  }
+
+  document.getElementById("modal-asignar-responsables")?.classList.remove("hidden");
+}
+
+export function renderizarListaAsignadosModal() {
+  const contenedor = document.getElementById("lista-checkbox-responsables");
+  if (!contenedor) return;
+  contenedor.innerHTML = "";
+
+  if (state.listaAsignadosModal.length === 0) {
+    contenedor.innerHTML = `<p class="text-xs text-gray-400 italic text-center p-3">No hay responsables asignados. Use el buscador superior para agregar trabajadores.</p>`;
+    return;
+  }
+
+  state.listaAsignadosModal.forEach((r, idx) => {
+    contenedor.innerHTML += `
+      <div class="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100/80 transition">
+        <label class="flex items-center space-x-2.5 cursor-pointer flex-1">
+          <input type="checkbox" checked onchange="solicitarDesmarcarResponsable(${idx})" class="rounded text-[#0f2a4a] focus:ring-0">
+          <span class="text-xs font-bold text-gray-800">${r.nombre_completo}</span>
+        </label>
+        <span class="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 whitespace-nowrap ml-2">${r.unidad_organica}</span>
+      </div>
+    `;
+  });
+}
+
+export async function solicitarDesmarcarResponsable(idx) {
+  const r = state.listaAsignadosModal[idx];
+  const seguro = await confirmModal(`¿Está seguro de retirar a '${r.nombre_completo}' de esta actividad?`, "Confirmar Retiro", "warning");
+  if (seguro) {
+    state.listaAsignadosModal.splice(idx, 1);
+    notificarToast(`Se retiró a ${r.nombre_completo}.`, "info");
+  }
+  renderizarListaAsignadosModal();
+}
+
+export function autocompletarResponsableActividad(termino) {
+  const term = termino.toLowerCase().trim();
+  const divSug = document.getElementById("sug-responsables-actividad");
+  if (!divSug) return;
+
+  if (!term) {
+    divSug.classList.add("hidden");
+    return;
+  }
+
+  const matches = (state.catalogoTrabajadoresGlobal || []).filter(t => 
+    (t.estado === "ACTIVO" || !t.estado) &&
+    (t.nombre_completo.toLowerCase().includes(term) || t.unidad_organica.toLowerCase().includes(term))
+  );
+
+  divSug.innerHTML = "";
+  if (matches.length === 0) {
+    divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">No se encontraron coincidencias para '${termino}'</div>`;
+  } else {
+    matches.slice(0, 6).forEach(t => {
+      const item = document.createElement("div");
+      item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition";
+      item.innerHTML = `
+        <span class="font-bold text-[#0f2a4a]">${t.nombre_completo}</span>
+        <span class="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">${t.unidad_organica}</span>
+      `;
+      item.onclick = () => {
+        const yaExiste = state.listaAsignadosModal.some(a => a.nombre_completo.trim().toLowerCase() === t.nombre_completo.trim().toLowerCase());
+        if (!yaExiste) {
+          state.listaAsignadosModal.push({
+            nombre_completo: t.nombre_completo,
+            unidad_organica: t.unidad_organica
+          });
+          renderizarListaAsignadosModal();
+          notificarToast(`Agregado: ${t.nombre_completo}`, "success");
+        } else {
+          alert(`El trabajador ${t.nombre_completo} ya se encuentra asignado.`);
+        }
+        document.getElementById("inp-buscar-resp-actividad").value = "";
+        divSug.classList.add("hidden");
+      };
+      divSug.appendChild(item);
+    });
+  }
+  divSug.classList.remove("hidden");
+}
+
+export function cerrarAsignarResponsables() {
+  document.getElementById("modal-asignar-responsables")?.classList.add("hidden");
+  state.actividadMultiRespActual = null;
+}
+
+// =========================================================================
+// MÓDULO DE NOTIFICACIONES Y ALERTAS PREVENTIVAS DE CIERRE
+// =========================================================================
+export function abrirModalNotificacionCorreo(act, destinatariosNuevos = []) {
+  const modDialog = document.getElementById("modal-dialog-imarpe");
+  if (modDialog) modDialog.classList.add("hidden");
+
+  state.actividadNotificacionActual = act;
+  state.destinatariosNuevosNotificacion = Array.isArray(destinatariosNuevos) ? destinatariosNuevos : [];
+  const duracion = parseInt(act.dias) || 1;
+
+  const textoDestinatarios = state.destinatariosNuevosNotificacion.length > 0 
+    ? state.destinatariosNuevosNotificacion.join("; ") 
+    : (act.responsable || "Personal");
+
+  const txtAct = document.getElementById("notif-txt-actividad");
+  if (txtAct) {
+    txtAct.innerHTML = `
+      <span class="block text-xs font-bold text-[#0f2a4a]">[${act.codigo}] ${act.descripcion}</span>
+      <span class="block text-[11px] font-semibold text-emerald-800 mt-0.5">Destinatario(s) nuevo(s): ${textoDestinatarios}</span>
+    `;
+  }
+  
+  const txtDur = document.getElementById("notif-txt-duracion");
+  if (txtDur) txtDur.innerText = duracion;
+  
+  const txtFin = document.getElementById("notif-txt-fin");
+  if (txtFin) txtFin.innerText = formatearFechaLatina(act.fecha_fin);
+  
+  const inpCustom = document.getElementById("notif-input-dias-custom");
+  if (inpCustom) inpCustom.value = "";
+
+  const contenedor = document.getElementById("notif-contenedor-opciones-dias");
+  if (contenedor) {
+    contenedor.innerHTML = "";
+    const opcionesPredefinidas = [1, 3, 5, 7];
+    let opcionesDisponibles = 0;
+
+    opcionesPredefinidas.forEach(diasAntes => {
+      if (diasAntes < duracion) {
+        opcionesDisponibles++;
+        contenedor.innerHTML += `
+          <label class="flex items-center space-x-2 p-1.5 rounded hover:bg-teal-50 cursor-pointer font-bold text-gray-700">
+            <input type="checkbox" value="${diasAntes}" class="notif-chk-dia rounded text-teal-600 focus:ring-0 cursor-pointer">
+            <span>${diasAntes} ${diasAntes === 1 ? 'día' : 'días'} antes</span>
+          </label>
+        `;
+      }
+    });
+
+    if (opcionesDisponibles === 0) {
+      contenedor.innerHTML = `<p class="col-span-2 text-gray-400 italic text-[11px] text-center">La actividad dura ${duracion} día(s). Solo se registrará la notificación inicial.</p>`;
+    }
+  }
+
+  document.getElementById("modal-notificacion-correo")?.classList.remove("hidden");
+}
+
+export function cerrarModalNotificacionCorreo() {
+  document.getElementById("modal-notificacion-correo")?.classList.add("hidden");
+  state.actividadNotificacionActual = null;
+  state.destinatariosNuevosNotificacion = [];
+}
+
+export async function confirmarEnvioNotificaciones() {
+  if (!state.actividadNotificacionActual) {
+    cerrarModalNotificacionCorreo();
+    return;
+  }
+  
+  const duracion = parseInt(state.actividadNotificacionActual.dias) || 1;
+  const seleccionados = Array.from(document.querySelectorAll(".notif-chk-dia:checked")).map(cb => parseInt(cb.value));
+  const customInput = document.getElementById("notif-input-dias-custom");
+  const customVal = customInput ? parseInt(customInput.value) : NaN;
+
+  if (!isNaN(customVal)) {
+    if (customVal >= duracion || customVal <= 0) {
+      alert(`⚠️ Plazo personalizado inválido:\nEl valor ingresado (${customVal} días) debe ser estrictamente menor a la duración total de la actividad (${duracion} días).`);
+      return;
+    }
+    if (!seleccionados.includes(customVal)) {
+      seleccionados.push(customVal);
+    }
+  }
+
+  const actRef = state.actividadNotificacionActual;
+  const nuevosRef = state.destinatariosNuevosNotificacion;
+
+  cerrarModalNotificacionCorreo();
+
+  try {
+    const payload = {
+      proyecto_id: parseInt(state.proyectoActualId) || 1,
+      codigo_actividad: String(actRef.codigo).trim(),
+      destinatarios_nuevos: nuevosRef || [],
+      dias_recordatorio: seleccionados.sort((a, b) => b - a)
+    };
+
+    const res = await apiFetch("/notificaciones/asignacion", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      notificarToast("Notificación procesada y alertas programadas exitosamente.", "success", 4500);
+    }
+  } catch (e) {
+    alert("Error de comunicación con el servidor al programar notificaciones.");
+  }
 }

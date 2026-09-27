@@ -5,7 +5,7 @@ import { actualizarDisplaysUsuario } from "../auth.js";
 import { cargarHubProyectos } from "../hub.js";
 import { construirCalendarioAnual, autoAjustarSemanaInicio, renderizarCabeceraGantt } from "./project-gantt.js";
 import { renderizarTabla, recalcularJerarquiaWBS, poblarFiltroResponsablesDinamico } from "./project-wbs.js";
-import { cargarComentariosProyecto } from "./project-aux.js";
+import { cargarComentariosProyecto, abrirModalGuardarPlantilla, abrirModalImportarPlantillaProyecto } from "./project-aux.js";
 
 export async function ingresarAlProyecto(id, nombre, esGestor) {
   state.proyectoActualId = id;
@@ -61,6 +61,7 @@ export async function ingresarAlProyecto(id, nombre, esGestor) {
   document.getElementById("view-dashboard")?.classList.remove("hidden");
   document.getElementById("bloque-superior-gantt")?.classList.remove("hidden");
 
+  aplicarVisibilidadColumnas();
   inicializarRedimensionDescripcion();
   await sincronizarDatosProyecto(id);
   await cargarComentariosProyecto();
@@ -297,4 +298,71 @@ export function actualizarBotonPlantillaDinamico() {
     ico.innerText = "📂";
     if (txt) txt.innerText = "Importar Plantilla";
   }
+}
+
+export function gestionarAccionPlantillaDinamica() {
+  const tieneActividades = state.actividadesGlobal && state.actividadesGlobal.length > 0;
+  if (tieneActividades) {
+    abrirModalGuardarPlantilla();
+  } else {
+    abrirModalImportarPlantillaProyecto();
+  }
+}
+
+// --- GESTIÓN DE COLUMNAS VISIBLES ---
+export function abrirModalColumnas() {
+  sincronizarCheckboxesColumnas();
+  document.getElementById("modal-columnas")?.classList.remove("hidden");
+}
+
+export function cerrarModalColumnas() {
+  document.getElementById("modal-columnas")?.classList.add("hidden");
+}
+
+export function sincronizarCheckboxesColumnas() {
+  document.getElementById("col-chk-responsable").checked = state.visibilidadColumnas.responsable;
+  document.getElementById("col-chk-estado").checked = state.visibilidadColumnas.estado;
+  document.getElementById("col-chk-inicio").checked = state.visibilidadColumnas.inicio;
+  document.getElementById("col-chk-fin").checked = state.visibilidadColumnas.fin;
+  document.getElementById("col-chk-dias").checked = state.visibilidadColumnas.dias;
+  document.getElementById("col-chk-avance").checked = state.visibilidadColumnas.avance;
+  document.getElementById("col-chk-gantt").checked = state.visibilidadColumnas.gantt;
+
+  const chkAv = document.getElementById("col-chk-avatares-gantt");
+  if (chkAv) chkAv.checked = state.visibilidadColumnas.avatares_gantt !== false;
+
+  const chkPct = document.getElementById("col-chk-porcentajes-gantt");
+  if (chkPct) chkPct.checked = state.visibilidadColumnas.porcentajes_gantt !== false;
+}
+
+export function alternarColumna(colKey, estado) {
+  state.visibilidadColumnas[colKey] = estado;
+  localStorage.setItem("visibilidad_columnas", JSON.stringify(state.visibilidadColumnas));
+  aplicarVisibilidadColumnas();
+  renderizarTabla();
+}
+
+export function restablecerColumnas() {
+  state.visibilidadColumnas = { responsable: true, estado: true, inicio: true, fin: true, dias: true, avance: true, gantt: true, avatares_gantt: true, porcentajes_gantt: true };
+  localStorage.setItem("visibilidad_columnas", JSON.stringify(state.visibilidadColumnas));
+  sincronizarCheckboxesColumnas();
+  aplicarVisibilidadColumnas();
+  renderizarTabla();
+}
+
+export function aplicarVisibilidadColumnas() {
+  const setCol = (id, visible) => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (visible) el.classList.remove("hidden");
+      else el.classList.add("hidden");
+    }
+  };
+  setCol("th-responsable", state.visibilidadColumnas.responsable);
+  setCol("th-estado", state.visibilidadColumnas.estado);
+  setCol("th-inicio", state.visibilidadColumnas.inicio);
+  setCol("th-fin", state.visibilidadColumnas.fin);
+  setCol("th-dias", state.visibilidadColumnas.dias);
+  setCol("th-avance", state.visibilidadColumnas.avance);
+  setCol("th-gantt", state.visibilidadColumnas.gantt);
 }

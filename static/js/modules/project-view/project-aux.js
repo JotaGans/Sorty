@@ -1,6 +1,6 @@
 import { state } from "../../core/state.js";
 import { apiFetch } from "../../core/api.js";
-import { notificarToast, confirmModal, formatearFechaLatina } from "../../core/ui-dialogs.js";
+import { notificarToast, confirmModal } from "../../core/ui-dialogs.js";
 import { renderizarTabla } from "./project-wbs.js";
 
 // --- HISTORIAL DE AUDITORÍA ---
@@ -141,7 +141,7 @@ export function autocompletarBusquedaUsuarios(termino) {
         if (inp) inp.value = `${u.nombre_completo || u.username} (@${u.username})`;
         divSugerencias.classList.add("hidden");
       };
-      divSugerencias.appendChild(item);
+      divSug.appendChild(item);
     });
   }
   divSugerencias.classList.remove("hidden");
@@ -239,7 +239,13 @@ function renderizarTarjetasComentarios() {
 
   const lista = obtenerComentariosDeActividad(state.actividadComentarioActual.codigo);
   if (lista.length === 0) {
-    contenedor.innerHTML = `<div class="p-8 text-center text-gray-400 space-y-2"><span class="text-3xl block">💬</span><p class="text-xs font-semibold">No hay comentarios en esta actividad.</p></div>`;
+    contenedor.innerHTML = `
+      <div class="p-8 text-center text-gray-400 space-y-2">
+        <span class="text-3xl block">💬</span>
+        <p class="text-xs font-semibold">No hay comentarios en esta actividad.</p>
+        <p class="text-[11px] text-gray-400">Sea el primero en dejar una nota técnica o de seguimiento.</p>
+      </div>
+    `;
     return;
   }
 
@@ -263,13 +269,16 @@ function renderizarTarjetasComentarios() {
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-2">
           <div class="avatar-circle font-black" style="background-color: ${colorBg}; width: 22px; height: 22px; font-size: 8px;">${iniciales}</div>
-          <div><span class="text-xs font-bold text-[#0f2a4a]">${c.autor_nombre}</span></div>
+          <div>
+            <span class="text-xs font-bold text-[#0f2a4a]">${c.autor_nombre}</span>
+            ${c.autor_unidad ? `<span class="text-[10px] font-semibold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200 ml-1">${c.autor_unidad}</span>` : ''}
+          </div>
         </div>
         <div class="flex items-center space-x-1.5 text-gray-400">
           <span class="text-[10px] font-medium text-gray-400">${c.fecha_creacion}</span>
           ${editadoTag}
-          ${puedeEditar ? `<button onclick="iniciarEdicionComentario(${c.id}, '${c.texto.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" class="text-blue-600 hover:text-blue-800 p-1 text-xs font-bold cursor-pointer">✏️</button>` : ''}
-          ${puedeEliminar ? `<button onclick="eliminarComentario(${c.id})" class="text-rose-500 hover:text-rose-700 p-1 text-xs font-bold cursor-pointer">🗑️</button>` : ''}
+          ${puedeEditar ? `<button onclick="iniciarEdicionComentario(${c.id}, '${c.texto.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" class="text-blue-600 hover:text-blue-800 p-1 text-xs font-bold ml-1 cursor-pointer" title="Editar">✏️</button>` : ''}
+          ${puedeEliminar ? `<button onclick="eliminarComentario(${c.id})" class="text-rose-500 hover:text-rose-700 p-1 text-xs font-bold cursor-pointer" title="Eliminar">🗑️</button>` : ''}
         </div>
       </div>
       <p class="text-xs text-gray-700 leading-relaxed whitespace-pre-line pl-7">${c.texto}</p>
@@ -391,3 +400,155 @@ export function exportarExcelCSV() {
   link.click();
   notificarToast("Archivo Excel descargado con bitácora de comentarios.", "success");
 }
+
+// =========================================================================
+// PLANTILLAS MAESTRAS EN PROYECTO ACTIVO (GUARDAR / IMPORTAR)
+// =========================================================================
+export function abrirModalGuardarPlantilla() {
+  if (!state.proyectoActualId) return;
+  const inpNom = document.getElementById("input-plantilla-nombre");
+  if (inpNom) inpNom.value = document.getElementById("txt-nombre-proyecto")?.value || "";
+  const inpCat = document.getElementById("input-plantilla-categoria");
+  if (inpCat) inpCat.value = "";
+  const inpDesc = document.getElementById("input-plantilla-desc");
+  if (inpDesc) inpDesc.value = "";
+  document.getElementById("modal-guardar-plantilla")?.classList.remove("hidden");
+}
+
+export function cerrarModalGuardarPlantilla() {
+  document.getElementById("modal-guardar-plantilla")?.classList.add("hidden");
+}
+
+export async function guardarProyectoComoPlantilla(e) {
+  e.preventDefault();
+  const nombre = document.getElementById("input-plantilla-nombre")?.value.trim();
+  const cat = document.getElementById("input-plantilla-categoria")?.value.trim() || "General";
+  const desc = document.getElementById("input-plantilla-desc")?.value.trim();
+
+  if (!nombre) {
+    alert("Consigne un nombre para la plantilla.");
+    return;
+  }
+
+  try {
+    const res = await apiFetch("/plantillas/desde-proyecto", {
+      method: "POST",
+      body: JSON.stringify({
+        proyecto_id: state.proyectoActualId,
+        nombre: nombre,
+        categoria: cat,
+        descripcion: desc
+      })
+    });
+
+    if (res.ok) {
+      cerrarModalGuardarPlantilla();
+      notificarToast("Plantilla registrada en la biblioteca institucional.", "success");
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Error al guardar plantilla.");
+    }
+  } catch (e) {
+    alert("Error de conexión con el servidor.");
+  }
+}
+
+export async function abrirModalImportarPlantillaProyecto() {
+  state.plantillaParaImportarId = null;
+  document.getElementById("bloque-fechaini-importar")?.classList.add("hidden");
+  document.getElementById("btn-confirmar-importar-plantilla")?.classList.add("hidden");
+  document.getElementById("modal-importar-plantilla-proyecto")?.classList.remove("hidden");
+
+  const cont = document.getElementById("lista-plantillas-importar-contenedor");
+  if (!cont) return;
+  cont.innerHTML = `<div class="col-span-2 p-4 text-center text-gray-400 font-bold animate-pulse">Cargando plantillas...</div>`;
+
+  try {
+    const res = await apiFetch("/plantillas");
+    const plantillas = await res.json();
+    cont.innerHTML = "";
+
+    if (!plantillas || plantillas.length === 0) {
+      cont.innerHTML = `<div class="col-span-2 p-4 text-center text-gray-400 font-semibold italic">No hay plantillas registradas en la biblioteca.</div>`;
+      return;
+    }
+
+    plantillas.forEach(p => {
+      const item = document.createElement("div");
+      item.className = "bg-white p-3 rounded-xl border border-gray-200 hover:border-teal-600 hover:shadow cursor-pointer transition flex flex-col justify-between";
+      item.onclick = () => {
+        state.plantillaParaImportarId = p.id;
+        document.querySelectorAll("#lista-plantillas-importar-contenedor > div").forEach(d => d.classList.remove("border-teal-600", "bg-teal-50/50"));
+        item.classList.add("border-teal-600", "bg-teal-50/50");
+
+        const hoyISO = new Date().toISOString().split("T")[0];
+        const inpFecha = document.getElementById("input-importar-fechaini");
+        if (inpFecha) inpFecha.value = hoyISO;
+        document.getElementById("bloque-fechaini-importar")?.classList.remove("hidden");
+        document.getElementById("btn-confirmar-importar-plantilla")?.classList.remove("hidden");
+      };
+      item.innerHTML = `
+        <div>
+          <span class="text-[9px] font-black uppercase text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">${p.categoria || 'General'}</span>
+          <h5 class="font-bold text-xs text-[#0f2a4a] mt-1">${p.nombre}</h5>
+          <p class="text-[10px] text-gray-500 line-clamp-2 mt-0.5">${p.descripcion || ''}</p>
+        </div>
+        <span class="text-[10px] font-bold text-teal-700 mt-2 block">Seleccionar →</span>
+      `;
+      cont.appendChild(item);
+    });
+  } catch (e) {
+    cont.innerHTML = `<div class="col-span-2 p-4 text-center text-red-500 font-semibold">Error al cargar plantillas.</div>`;
+  }
+}
+
+export function cerrarModalImportarPlantillaProyecto() {
+  document.getElementById("modal-importar-plantilla-proyecto")?.classList.add("hidden");
+  state.plantillaParaImportarId = null;
+}
+
+export async function ejecutarImportacionEnProyectoActivo() {
+  if (!state.plantillaParaImportarId || !state.proyectoActualId) return;
+
+  const fIniISO = document.getElementById("input-importar-fechaini")?.value || new Date().toISOString().split("T")[0];
+  const fIniLatina = formatearFechaLatina(fIniISO);
+
+  try {
+    const res = await apiFetch(`/proyectos/${state.proyectoActualId}/aplicar-plantilla`, {
+      method: "POST",
+      body: JSON.stringify({
+        plantilla_id: state.plantillaParaImportarId,
+        nombre_proyecto: "",
+        fecha_inicio: fIniLatina
+      })
+    });
+
+    if (res.ok) {
+      cerrarModalImportarPlantillaProyecto();
+      notificarToast("Estructura importada exitosamente en el proyecto.", "success");
+      const { sincronizarDatosProyecto } = await import("./project-core.js");
+      await sincronizarDatosProyecto(state.proyectoActualId);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Error al importar plantilla.");
+    }
+  } catch (e) {
+    alert("Error de conexión al importar plantilla.");
+  }
+}
+
+// Vincular funciones a window
+window.abrirHistorial = abrirHistorial;
+window.cerrarHistorial = cerrarHistorial;
+window.abrirResponsables = abrirResponsables;
+window.cerrarResponsables = cerrarResponsables;
+window.autocompletarBusquedaUsuarios = autocompletarBusquedaUsuarios;
+window.confirmarAsignacionRolUsuario = confirmarAsignacionRolUsuario;
+window.removerRolProyecto = removerRolProyecto;
+window.abrirModalComentarios = abrirModalComentarios;
+window.cerrarModalComentarios = cerrarModalComentarios;
+window.publicarComentario = publicarComentario;
+window.iniciarEdicionComentario = iniciarEdicionComentario;
+window.cancelarEdicionComentario = cancelarEdicionComentario;
+window.eliminarComentario = eliminarComentario;
+window.exportarExcelCSV = exportarExcelCSV;

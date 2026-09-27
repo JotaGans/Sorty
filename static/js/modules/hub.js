@@ -95,10 +95,23 @@ export function actualizarBotonOcultosHubUI() {
     btnOcultos.classList.remove("hidden");
     if (state.mostrandoOcultosHub) {
       btnOcultos.className = "h-[30px] px-2.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition flex items-center space-x-1 cursor-pointer whitespace-nowrap flex-shrink-0";
-      btnOcultos.innerHTML = `<svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg><span>Ver activos (${cant})</span>`;
+      btnOcultos.innerHTML = `
+        <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+        <span>Ver activos (${cant})</span>
+      `;
+      btnOcultos.title = "Volver al panel principal de proyectos";
     } else {
       btnOcultos.className = "w-[30px] h-[30px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0";
-      btnOcultos.innerHTML = `<svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
+      btnOcultos.innerHTML = `
+        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      `;
+      btnOcultos.title = `Ver proyectos ocultos (${cant})`;
     }
   } else {
     btnOcultos.classList.add("hidden");
@@ -117,7 +130,9 @@ export function alternarOcultarProyecto(id, event) {
   if (state.idsProyectosOcultos.has(id)) {
     state.idsProyectosOcultos.delete(id);
     notificarToast("Proyecto restaurado al panel principal.", "success");
-    if (state.idsProyectosOcultos.size === 0) state.mostrandoOcultosHub = false;
+    if (state.idsProyectosOcultos.size === 0) {
+      state.mostrandoOcultosHub = false;
+    }
   } else {
     state.idsProyectosOcultos.add(id);
     notificarToast("Proyecto ocultado de la vista principal.", "info");
@@ -128,15 +143,21 @@ export function alternarOcultarProyecto(id, event) {
 
 export async function solicitarEliminarProyecto(id, nombre, event) {
   if (event) event.stopPropagation();
+
   const pObj = state.proyectosUsuarioGlobal.find(p => p.id === id);
   const totalActs = pObj ? (pObj.total_actividades || 0) : 0;
 
   if (totalActs > 0) {
-    alert(`⚠️ No se puede eliminar el proyecto '${nombre}'. Contiene ${totalActs} actividad(es).`);
+    alert(`⚠️ No se puede eliminar el proyecto '${nombre}'.\n\nEl proyecto contiene ${totalActs} actividad(es). Debe ingresar al proyecto y eliminar todas sus actividades para poder borrarlo.`);
     return;
   }
 
-  const confirma = await confirmModal(`¿Está seguro de eliminar permanentemente '${nombre}'?`, "Eliminar Proyecto Vacío", "danger");
+  const confirma = await confirmModal(
+    `¿Está seguro de eliminar permanentemente el proyecto '${nombre}'?\n\nEsta acción no se puede deshacer.`,
+    "Eliminar Proyecto Vacío",
+    "danger"
+  );
+
   if (!confirma) return;
 
   try {
@@ -159,6 +180,7 @@ export function renderizarTarjetasHub(lista) {
   const grid = document.getElementById("grid-proyectos-hub");
   if (!grid) return;
   grid.innerHTML = "";
+
   actualizarBotonOcultosHubUI();
 
   const listaFinal = lista.filter(p => state.mostrandoOcultosHub ? state.idsProyectosOcultos.has(p.id) : !state.idsProyectosOcultos.has(p.id));
@@ -167,36 +189,72 @@ export function renderizarTarjetasHub(lista) {
     const rolEfectivo = p.rol_efectivo || (p.es_gestor ? 'GESTOR' : 'RESPONSABLE');
     const esGestor = (p.es_gestor === 1 || p.es_gestor === true || state.currentUser.rol === "ADMIN_TI") && rolEfectivo !== "AUTORIDAD";
     const totalActs = p.total_actividades || 0;
-    const puedeEliminar = esGestor && (totalActs === 0);
+    const esProyectoVacio = totalActs === 0;
+    const puedeEliminar = esGestor && esProyectoVacio;
     const esPublico = (p.visibilidad === "PUBLICO");
 
     let badgeRolClases = "bg-blue-50 text-blue-800 border-blue-200/80";
     let badgeRolTexto = "👤 Responsable";
+
     if (rolEfectivo === "GESTOR" || esGestor) {
       badgeRolClases = "bg-amber-50 text-amber-800 border-amber-200/80";
       badgeRolTexto = "👑 Gestor";
+    } else if (rolEfectivo === "AUTORIDAD") {
+      badgeRolClases = "bg-purple-50 text-purple-800 border-purple-200/80";
+      badgeRolTexto = "🏛️ Autoridad";
+    } else if (rolEfectivo === "VISUALIZADOR") {
+      badgeRolClases = "bg-slate-100 text-slate-700 border-slate-300";
+      badgeRolTexto = "👁️ Visualizador";
     }
 
     const badgeAlcanceHTML = esPublico
-      ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-teal-50 text-teal-700 border border-teal-200 text-xs shadow-2xs cursor-help" title="Visible institucional">🌐</span>`
-      : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-xs shadow-2xs cursor-help" title="Privado">🔒</span>`;
+      ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-teal-50 text-teal-700 border border-teal-200 text-xs shadow-2xs cursor-help" title="Proyecto visible a nivel institucional">🌐</span>`
+      : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-xs shadow-2xs cursor-help" title="Proyecto privado">🔒</span>`;
 
+    const tooltipEdit = esGestor ? 'title="Doble clic para editar descripción"' : '';
+    const estiloCursor = esGestor ? 'cursor-pointer hover:text-teal-700 hover:bg-teal-50/70 p-1 -m-1 rounded transition' : '';
     const textoDesc = (p.descripcion && p.descripcion.trim() !== "") ? p.descripcion.trim() : "Sin descripción adicional registrada.";
     const descEscapada = (p.descripcion || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const avanceVal = parseInt(p.avance_global) || 0;
     const estaOculto = state.idsProyectosOcultos.has(p.id);
 
+    let badgeAvanceClases = "bg-rose-50 text-rose-700 border border-rose-200";
+    let barraColorClase = "bg-rose-500";
+
+    if (avanceVal === 100) {
+      badgeAvanceClases = "bg-emerald-50 text-emerald-800 border border-emerald-200";
+      barraColorClase = "bg-emerald-500";
+    } else if (avanceVal > 0) {
+      badgeAvanceClases = "bg-amber-50 text-amber-800 border border-amber-200";
+      barraColorClase = "bg-amber-500";
+    }
+
     let siglaUnidad = "";
     let nombreCompletoUnidad = "";
     if (p.unidad_organica && p.unidad_organica.trim() !== "") {
       const uRaw = p.unidad_organica.trim().toUpperCase();
-      const uObj = (state.catalogoUnidadesGlobal || []).find(u => u.sigla.toUpperCase() === uRaw || u.nombre.trim().toUpperCase() === uRaw);
+      const uObj = (state.catalogoUnidadesGlobal || []).find(u => 
+        u.sigla.toUpperCase() === uRaw || 
+        u.nombre.trim().toUpperCase() === uRaw
+      );
       siglaUnidad = uObj ? uObj.sigla : p.unidad_organica.trim();
       nombreCompletoUnidad = uObj ? uObj.nombre : p.unidad_organica.trim();
     }
 
+    const tooltipUo = nombreCompletoUnidad ? `title="${nombreCompletoUnidad}"` : '';
+    const estiloCursorUo = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
+
     const tieneProceso = Boolean(p.proceso_nombre || p.proceso_codigo);
-    const nombreLimpioProceso = tieneProceso ? (p.proceso_nombre || "Proceso sin denominación") : "Sin proceso asignado";
+    const nombreLimpioProceso = tieneProceso 
+      ? (p.proceso_nombre || "Proceso sin denominación") 
+      : "Sin proceso asignado";
+    
+    const detalleCompletoProceso = tieneProceso
+      ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`)
+      : "Sin proceso asignado";
+
+    const tooltipProceso = `title="${detalleCompletoProceso}"`;
+    const estiloCursorProceso = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
     const card = document.createElement("div");
     card.className = "bg-white rounded-2xl p-6 border border-gray-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:border-teal-500/50 relative";
@@ -204,37 +262,73 @@ export function renderizarTarjetasHub(lista) {
       <div>
         <div class="flex items-center justify-between mb-3.5 gap-1">
           <div class="flex items-center space-x-1.5 flex-wrap">
-            <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider border ${badgeRolClases}">${badgeRolTexto}</span>
+            <span class="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider whitespace-nowrap border ${badgeRolClases}">
+              ${badgeRolTexto}
+            </span>
             ${badgeAlcanceHTML}
           </div>
           <div class="flex items-center space-x-1">
-            <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-100 transition cursor-pointer">${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}</button>
-            ${puedeEliminar ? `<button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-400 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer">🗑️</button>` : ''}
-            <span class="text-xs font-black px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">${avanceVal}% Avance</span>
+            <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-100 transition cursor-pointer" title="${estaOculto ? 'Restaurar al panel principal' : 'Ocultar proyecto de la vista'}">
+              ${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}
+            </button>
+            ${puedeEliminar ? `
+              <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-400 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer" title="Eliminar proyecto vacío">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            ` : ''}
+            <span class="text-xs font-black px-2 py-0.5 rounded whitespace-nowrap ${badgeAvanceClases}">${avanceVal}% Avance</span>
           </div>
         </div>
-        <h3 class="font-bold text-base text-[#0f2a4a] leading-snug">${p.nombre}</h3>
+        
+        <h3 class="font-bold text-base text-[#0f2a4a] leading-snug flex items-center">${p.nombre}</h3>
+        
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
-          <p ondblclick="${esGestor ? `editarUnidadOrganicaProyecto(${p.id}, '${siglaUnidad}')` : ''}" class="text-[11px] font-bold text-teal-800 inline-flex items-center space-x-1 ${esGestor ? 'cursor-pointer hover:underline' : ''}">
-            <span>🏢</span><span>${siglaUnidad || 'Sin UO'}</span>
+          <p ${tooltipUo} 
+             ondblclick="${esGestor ? `editarUnidadOrganicaProyecto(${p.id}, '${siglaUnidad}')` : ''}"
+             class="text-[11px] font-bold text-teal-800 inline-flex items-center space-x-1 ${estiloCursorUo}">
+            <span>🏢</span>
+            <span>${siglaUnidad || 'Sin UO'}</span>
           </p>
           <span class="text-gray-300 text-xs">•</span>
-          <p ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}" class="text-[11px] font-semibold text-slate-600 inline-flex items-center space-x-1 max-w-[220px] truncate ${esGestor ? 'cursor-pointer hover:underline' : ''}">
-            <span>⚙️</span><span class="truncate">${nombreLimpioProceso}</span>
+          <p ${tooltipProceso} 
+             ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}"
+             class="text-[11px] font-semibold text-slate-600 inline-flex items-center space-x-1 max-w-[220px] truncate ${estiloCursorProceso}">
+            <span>⚙️</span>
+            <span class="truncate ${tieneProceso ? 'text-[#0f2a4a] font-bold' : 'italic text-gray-400'}">${nombreLimpioProceso}</span>
           </p>
         </div>
-        <p ondblclick="${esGestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" class="text-xs text-gray-500 mt-2 line-clamp-2 min-h-[32px] ${esGestor ? 'cursor-pointer hover:text-teal-700' : ''}">${textoDesc}</p>
+
+        <p ${tooltipEdit} 
+           ondblclick="${esGestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" 
+           class="text-xs text-gray-500 mt-2 line-clamp-2 min-h-[32px] leading-relaxed ${estiloCursor}">
+          ${textoDesc}
+        </p>
+        
         <div class="w-full bg-gray-100 rounded-full h-2 mt-4 overflow-hidden shadow-inner">
-          <div class="bg-teal-600 h-2 rounded-full transition-all duration-500" style="width: ${avanceVal}%"></div>
+          <div class="${barraColorClase} h-2 rounded-full transition-all duration-500" style="width: ${avanceVal}%"></div>
         </div>
+
         <div class="grid grid-cols-3 gap-2 mt-4 text-center">
-          <div class="bg-emerald-50/80 p-2 rounded-xl border border-emerald-100"><span class="block text-[9px] font-black text-emerald-700 uppercase">Ejecutado</span><span class="text-xs font-black text-emerald-900">${p.ejecutadas || 0}</span></div>
-          <div class="bg-amber-50/80 p-2 rounded-xl border border-amber-100"><span class="block text-[9px] font-black text-amber-700 uppercase">En proceso</span><span class="text-xs font-black text-amber-900">${p.en_proceso || 0}</span></div>
-          <div class="bg-rose-50/80 p-2 rounded-xl border border-rose-100"><span class="block text-[9px] font-black text-rose-700 uppercase">No iniciado</span><span class="text-xs font-black text-rose-900">${p.pendientes || 0}</span></div>
+          <div class="bg-emerald-50/80 p-2 rounded-xl border border-emerald-100">
+            <span class="block text-[9px] font-black text-emerald-700 uppercase">Ejecutado</span>
+            <span class="text-xs font-black text-emerald-900">${p.ejecutadas || 0}</span>
+          </div>
+          <div class="bg-amber-50/80 p-2 rounded-xl border border-amber-100">
+            <span class="block text-[9px] font-black text-amber-700 uppercase">En proceso</span>
+            <span class="text-xs font-black text-amber-900">${p.en_proceso || 0}</span>
+          </div>
+          <div class="bg-rose-50/80 p-2 rounded-xl border border-rose-100">
+            <span class="block text-[9px] font-black text-rose-700 uppercase">No iniciado</span>
+            <span class="text-xs font-black text-rose-900">${p.pendientes || 0}</span>
+          </div>
         </div>
       </div>
+
       <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="w-full mt-6 py-2.5 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2 cursor-pointer">
-        <span>Ingresar al Proyecto</span><span class="text-sm">→</span>
+        <span>Ingresar al Proyecto</span>
+        <span class="text-sm">→</span>
       </button>
     `;
     grid.appendChild(card);
@@ -245,7 +339,9 @@ export function renderizarTarjetasHub(lista) {
     cardNuevo.onclick = abrirModalNuevoProyecto;
     cardNuevo.className = "bg-slate-50/60 hover:bg-white rounded-2xl p-6 border-2 border-dashed border-slate-300 hover:border-teal-500 transition-all cursor-pointer flex flex-col items-center justify-center text-center group min-h-[290px] shadow-sm hover:shadow-md";
     cardNuevo.innerHTML = `
-      <div class="w-12 h-12 rounded-full bg-teal-50 group-hover:bg-teal-600 text-teal-600 group-hover:text-white flex items-center justify-center text-xl font-black mb-3 transition shadow-sm">+</div>
+      <div class="w-12 h-12 rounded-full bg-teal-50 group-hover:bg-teal-600 text-teal-600 group-hover:text-white flex items-center justify-center text-xl font-black mb-3 transition shadow-sm">
+        +
+      </div>
       <h4 class="text-sm font-black text-gray-700 group-hover:text-[#0f2a4a] transition">Nuevo Proyecto / Programa</h4>
       <p class="text-[11px] text-gray-400 mt-1 max-w-[200px]">Cree un proyecto en blanco o seleccione una plantilla.</p>
       <span class="mt-4 text-[11px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-lg border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition">Comenzar</span>
@@ -258,9 +354,11 @@ export function renderizarTablaHub(lista) {
   const tbody = document.getElementById("hub-proyectos-tabla-body");
   if (!tbody) return;
   tbody.innerHTML = "";
+
   actualizarBotonOcultosHubUI();
 
   const listaFinal = lista.filter(p => state.mostrandoOcultosHub ? state.idsProyectosOcultos.has(p.id) : !state.idsProyectosOcultos.has(p.id));
+
   if (listaFinal.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 font-semibold italic">No se encontraron proyectos.</td></tr>`;
     return;
@@ -270,26 +368,94 @@ export function renderizarTablaHub(lista) {
     const rolEfectivo = p.rol_efectivo || (p.es_gestor ? 'GESTOR' : 'RESPONSABLE');
     const esGestor = (p.es_gestor === 1 || p.es_gestor === true || state.currentUser.rol === "ADMIN_TI") && rolEfectivo !== "AUTORIDAD";
     const totalActs = p.total_actividades || 0;
-    const puedeEliminar = esGestor && (totalActs === 0);
+    const esProyectoVacio = totalActs === 0;
+    const puedeEliminar = esGestor && esProyectoVacio;
     const esPublico = (p.visibilidad === "PUBLICO");
+
+    let badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-blue-100 text-blue-900 border border-blue-300">👤 RESPONSABLE</span>`;
+    if (rolEfectivo === "GESTOR" || esGestor) {
+      badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-amber-100 text-amber-900 border border-amber-300">👑 GESTOR</span>`;
+    } else if (rolEfectivo === "AUTORIDAD") {
+      badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-purple-100 text-purple-900 border border-purple-300">🏛️ AUTORIDAD</span>`;
+    } else if (rolEfectivo === "VISUALIZADOR") {
+      badgeRolHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase whitespace-nowrap bg-slate-100 text-slate-700 border border-slate-300">👁️ VISUALIZADOR</span>`;
+    }
+
+    const badgeAlcanceHTML = esPublico
+      ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-teal-50 text-teal-700 border border-teal-200 text-xs shadow-2xs cursor-help flex-shrink-0" title="Proyecto visible a nivel institucional">🌐</span>`
+      : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-xs shadow-2xs cursor-help flex-shrink-0" title="Proyecto privado">🔒</span>`;
+
     const pct = p.avance_global || 0;
     const estaOculto = state.idsProyectosOcultos.has(p.id);
+
     const descEscapada = (p.descripcion || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const tooltipDesc = esGestor ? 'title="Doble clic para editar descripción"' : '';
+    const cursorDesc = esGestor ? 'cursor-pointer hover:text-teal-700 transition' : '';
 
     tbody.innerHTML += `
       <tr class="hover:bg-gray-50 transition border-b border-gray-100">
         <td class="p-3 text-center text-gray-400 font-mono text-xs">${idx + 1}</td>
         <td class="p-3">
-          <div class="flex items-center gap-1.5"><span class="font-bold text-gray-800 text-xs">${p.nombre}</span></div>
-          <div ondblclick="${esGestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" class="text-[11px] text-gray-500 line-clamp-1 ${esGestor ? 'cursor-pointer hover:text-teal-700' : ''}">${p.descripcion || '<span class="italic text-gray-400">Sin descripción</span>'}</div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-gray-800 text-xs">${p.nombre}</span>${badgeAlcanceHTML}
+          </div>
+          <div ${tooltipDesc} 
+               ondblclick="${esGestor ? `editarDescripcionProyecto(${p.id}, '${descEscapada}')` : ''}" 
+               class="text-[11px] text-gray-500 line-clamp-1 ${cursorDesc}">
+            ${p.descripcion && p.descripcion.trim() !== '' ? p.descripcion : '<span class="italic text-gray-400">Sin descripción</span>'}
+          </div>
+          <div class="text-[10px] text-teal-800 font-semibold mt-0.5 flex items-center gap-1">
+            <span>⚙️</span>
+            <span class="${esGestor ? 'cursor-pointer hover:underline' : ''}" 
+                  title="${(p.proceso_nombre || p.proceso_codigo) ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`) : 'Sin proceso asignado'}" 
+                  ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}">
+              ${p.proceso_nombre ? p.proceso_nombre : (p.proceso_codigo ? `[${p.proceso_codigo}]` : '<span class="text-gray-400 italic">Sin proceso asignado</span>')}
+            </span>
+          </div>
         </td>
-        <td class="p-3 text-center whitespace-nowrap"><span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-100 text-blue-900">${rolEfectivo}</span></td>
-        <td class="p-3 text-center"><span class="font-black text-gray-800 text-xs">${pct}%</span></td>
-        <td class="p-3 text-center text-[10px] font-bold">${p.ejecutadas || 0} Ejec. | ${p.en_proceso || 0} Proc. | ${p.pendientes || 0} No inic.</td>
+        <td class="p-3 text-center whitespace-nowrap">
+          ${badgeRolHTML}
+        </td>
+        <td class="p-3 text-center">
+          <div class="flex items-center space-x-2 justify-center">
+            <div class="w-16 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-teal-600 h-1.5 rounded-full" style="width: ${pct}%;"></div>
+            </div>
+            <span class="font-black text-gray-800 text-xs">${pct}%</span>
+          </div>
+        </td>
+        <td class="p-3 text-center">
+          <div class="inline-flex items-center space-x-1.5 text-[10px] font-bold whitespace-nowrap">
+            <span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center space-x-1" title="Ejecutadas">
+              <span>${p.ejecutadas || 0}</span><span>Ejec.</span>
+            </span>
+            <span class="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center space-x-1" title="En proceso">
+              <span>${p.en_proceso || 0}</span><span>En proc.</span>
+            </span>
+            <span class="bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center space-x-1" title="No iniciadas">
+              <span>${p.pendientes || 0}</span><span>No inic.</span>
+            </span>
+          </div>
+        </td>
         <td class="p-3 text-right whitespace-nowrap">
-          <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-200 cursor-pointer mr-1">${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}</button>
-          ${puedeEliminar ? `<button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-500 hover:text-rose-700 cursor-pointer mr-2">🗑️</button>` : ''}
-          <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition shadow cursor-pointer">Ingresar →</button>
+          <div class="inline-flex items-center justify-end space-x-1.5 w-full">
+            <div class="inline-flex items-center justify-end space-x-1 min-w-[52px]">
+              <button onclick="alternarOcultarProyecto(${p.id}, event)" class="p-1 rounded hover:bg-gray-200 transition cursor-pointer inline-flex items-center justify-center" title="${estaOculto ? 'Restaurar al panel' : 'Ocultar vista'}">
+                ${estaOculto ? SVG_OJO_ABIERTO : SVG_OJO_CERRADO}
+              </button>
+              ${puedeEliminar ? `
+                <button onclick="solicitarEliminarProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', event)" class="p-1 rounded text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer inline-flex items-center justify-center" title="Eliminar proyecto vacío">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              ` : ''}
+            </div>
+            
+            <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition shadow cursor-pointer whitespace-nowrap">
+              Ingresar →
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -303,6 +469,7 @@ export function exportarResumenProyectosExcel() {
   }
 
   let csv = "ID;Proyecto / Programa;Unidad Responsable;Descripcion;Rol Asignado;% Avance;Total Actividades;Ejecutadas;En Proceso;No Iniciadas;Fecha de Creacion\n";
+  
   state.proyectosUsuarioGlobal.forEach(p => {
     const rol = (p.es_gestor === 1 || p.es_gestor === true || state.currentUser.rol === "ADMIN_TI") ? "GESTOR" : "RESPONSABLE";
     const desc = (p.descripcion || "").replace(/(\r\n|\n|\r|")/gm, " ");
@@ -317,17 +484,42 @@ export function exportarResumenProyectosExcel() {
   notificarToast("Resumen consolidado descargado en Excel.", "success");
 }
 
-export function abrirModalNuevoProyecto() {
+export function abrirModalNuevoProyecto() { 
   if (state.catalogoUnidadesGlobal.length === 0) cargarCatalogoUnidades();
+  if (state.catalogoProcesosGlobal.length === 0) cargarCatalogoProcesos();
+
   document.getElementById("input-nuevo-proy-nombre").value = "";
   document.getElementById("input-nuevo-proy-desc").value = "";
   document.getElementById("input-nuevo-proy-uo-busq").value = "";
   document.getElementById("input-nuevo-proy-uo-valor").value = "";
-  document.getElementById("modal-nuevo-proyecto")?.classList.remove("hidden");
+  document.getElementById("sugerencias-uo-proyecto")?.classList.add("hidden");
+
+  const inpProcBusq = document.getElementById("input-nuevo-proy-proceso-busq");
+  if (inpProcBusq) inpProcBusq.value = "";
+  const inpProcCod = document.getElementById("input-nuevo-proy-proceso-codigo");
+  if (inpProcCod) inpProcCod.value = "";
+  const inpProcNom = document.getElementById("input-nuevo-proy-proceso-nombre");
+  if (inpProcNom) inpProcNom.value = "";
+  const inpProcPers = document.getElementById("input-nuevo-proy-proceso-personalizado");
+  if (inpProcPers) inpProcPers.value = "0";
+  const contOtro = document.getElementById("contenedor-otro-subproceso");
+  if (contOtro) contOtro.classList.add("hidden");
+  const inpOtroTexto = document.getElementById("input-otro-subproceso-texto");
+  if (inpOtroTexto) inpOtroTexto.value = "";
+  const divSugProc = document.getElementById("nuevo-proy-proceso-sugerencias");
+  if (divSugProc) divSugProc.classList.add("hidden");
+
+  const selModo = document.getElementById("input-nuevo-proy-duration-mode");
+  if (selModo) selModo.value = "business_days";
+  const selVis = document.getElementById("input-nuevo-proy-visibilidad");
+  if (selVis) selVis.value = "PRIVADO";
+
+  cancelarSeleccionPlantilla();
+  document.getElementById("modal-nuevo-proyecto")?.classList.remove("hidden"); 
 }
 
-export function cerrarModalNuevoProyecto() {
-  document.getElementById("modal-nuevo-proyecto")?.classList.add("hidden");
+export function cerrarModalNuevoProyecto() { 
+  document.getElementById("modal-nuevo-proyecto")?.classList.add("hidden"); 
 }
 
 export function autocompletarUOProyecto(termino) {
@@ -339,7 +531,7 @@ export function autocompletarUOProyecto(termino) {
     divSug.classList.add("hidden");
     return;
   }
-  const matches = (state.catalogoUnidadesGlobal || []).filter(u =>
+  const matches = (state.catalogoUnidadesGlobal || []).filter(u => 
     u.sigla.toLowerCase().includes(term) || u.nombre.toLowerCase().includes(term)
   );
   divSug.innerHTML = "";
@@ -367,15 +559,22 @@ export async function guardarNuevoProyecto(e) {
   const descripcion = document.getElementById("input-nuevo-proy-desc").value.trim();
   const uoBusq = document.getElementById("input-nuevo-proy-uo-busq").value.trim();
   const uoValor = document.getElementById("input-nuevo-proy-uo-valor").value.trim();
+
   const durationMode = document.getElementById("input-nuevo-proy-duration-mode")?.value || "business_days";
   const visibilidad = document.getElementById("input-nuevo-proy-visibilidad")?.value || "PRIVADO";
+
+  const esPers = document.getElementById("input-nuevo-proy-proceso-personalizado")?.value === "1";
+  const procCod = esPers ? "OTRO" : (document.getElementById("input-nuevo-proy-proceso-codigo")?.value || "");
+  const procNom = esPers 
+    ? (document.getElementById("input-otro-subproceso-texto")?.value.trim() || "Otro subproceso")
+    : (document.getElementById("input-nuevo-proy-proceso-nombre")?.value || "");
 
   if (!nombre) {
     alert("Por favor ingresa un nombre para el proyecto.");
     return;
   }
 
-  const unidadValida = (state.catalogoUnidadesGlobal || []).find(u =>
+  const unidadValida = (state.catalogoUnidadesGlobal || []).find(u => 
     u.sigla.toUpperCase() === uoValor.toUpperCase() ||
     u.sigla.toUpperCase() === uoBusq.toUpperCase() ||
     `${u.sigla} - ${u.nombre}`.toUpperCase() === uoBusq.toUpperCase() ||
@@ -383,26 +582,38 @@ export async function guardarNuevoProyecto(e) {
   );
 
   if (!unidadValida) {
-    alert("Debe seleccionar una Unidad de Organización válida.");
+    alert("⚠️ La Unidad de Organización no existe:\nDebe buscar y seleccionar una unidad que exista oficialmente.");
+    document.getElementById("input-nuevo-proy-uo-busq").focus();
     return;
   }
+
+  const uoFinal = unidadValida.sigla;
 
   try {
     const res = await apiFetch("/proyectos", {
       method: "POST",
-      body: JSON.stringify({ nombre, descripcion, unidad_organica: unidadValida.sigla, duration_mode: durationMode, visibilidad })
+      body: JSON.stringify({ 
+        nombre: nombre, 
+        descripcion: descripcion, 
+        unidad_organica: uoFinal,
+        duration_mode: durationMode,
+        visibilidad: visibilidad,
+        proceso_codigo: procCod,
+        proceso_nombre: procNom,
+        es_proceso_personalizado: esPers ? 1 : 0
+      })
     });
-
-    if (res.ok) {
-      cerrarModalNuevoProyecto();
-      await cargarHubProyectos();
-      notificarToast("Proyecto creado exitosamente.", "success");
-    } else {
+    
+    if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      alert(errData.detail || "No se pudo crear el proyecto.");
+      throw new Error(errData.detail || "No se pudo crear el proyecto en el servidor.");
     }
+
+    cerrarModalNuevoProyecto();
+    await cargarHubProyectos();
+    notificarToast("Proyecto creado exitosamente.", "success");
   } catch (err) {
-    alert("Error de comunicación con el servidor.");
+    alert(err.message);
   }
 }
 
@@ -419,6 +630,7 @@ export function editarDescripcionProyecto(id, descActual) {
           method: "PUT",
           body: JSON.stringify({ descripcion: descFinal })
         });
+
         if (res.ok) {
           await cargarHubProyectos();
         } else {
@@ -430,20 +642,27 @@ export function editarDescripcionProyecto(id, descActual) {
       }
     }
   });
+  
+  const txtInput = document.getElementById("mic-input-text");
+  if (txtInput) {
+    txtInput.setAttribute("maxlength", "120");
+    txtInput.placeholder = "Ej: Proyecto institucional orientado a...";
+  }
 }
 
 let proyectoEditandoUoId = null;
 
 export function editarUnidadOrganicaProyecto(idProy, siglaActual) {
   const proyectoObj = (state.proyectosUsuarioGlobal || []).find(p => p.id === idProy);
-  const esGestor = proyectoObj ? (proyectoObj.es_gestor === 1 || proyectoObj.es_gestor === true || state.currentUser.rol === "ADMIN_TI") : false;
+  const esGestorDeEsteProyecto = proyectoObj ? (proyectoObj.es_gestor === 1 || proyectoObj.es_gestor === true) : false;
 
-  if (!esGestor) {
+  if (!esGestorDeEsteProyecto && state.currentUser.rol !== "ADMIN_TI") {
     alert("Solo el Gestor del Proyecto puede modificar la unidad de organización.");
     return;
   }
 
   proyectoEditandoUoId = idProy;
+
   if (!state.catalogoUnidadesGlobal || state.catalogoUnidadesGlobal.length === 0) {
     cargarCatalogoUnidades();
   }
@@ -461,24 +680,28 @@ export function editarUnidadOrganicaProyecto(idProy, siglaActual) {
           </div>
           <button onclick="cerrarModalEditarUoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
         </div>
+        
         <div class="p-6 space-y-4 text-xs">
           <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-950 font-medium">
-            Unidad actual: <strong class="text-[#0f2a4a]">[${siglaActual}]</strong>
+            Unidad actual asignada: <strong class="text-[#0f2a4a]">[${siglaActual}]</strong>
           </div>
+
           <div class="relative">
-            <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Unidad:</label>
-            <input type="text" id="edit-uo-input-busq" oninput="autocompletarModalUOProyecto(this.value)" placeholder="Sigla o nombre..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg font-semibold outline-none focus:bg-white focus:border-[#0f2a4a]" autocomplete="off">
+            <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Unidad (por Sigla o Nombre):</label>
+            <input type="text" id="edit-uo-input-busq" oninput="autocompletarModalUOProyecto(this.value)" placeholder="Escriba sigla o nombre completo de unidad..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
             <input type="hidden" id="edit-uo-input-valor">
             <div id="edit-uo-sugerencias" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[130] text-xs divide-y divide-gray-100"></div>
           </div>
         </div>
+
         <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end space-x-2">
-          <button type="button" onclick="cerrarModalEditarUoProyecto()" class="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg cursor-pointer">Cancelar</button>
-          <button type="button" onclick="confirmarCambioUoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg shadow cursor-pointer">Actualizar Unidad</button>
+          <button type="button" onclick="cerrarModalEditarUoProyecto()" class="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition cursor-pointer">Cancelar</button>
+          <button type="button" onclick="confirmarCambioUoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow cursor-pointer">Actualizar Unidad</button>
         </div>
       </div>
     </div>
   `;
+
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   setTimeout(() => document.getElementById("edit-uo-input-busq")?.focus(), 100);
 }
@@ -495,18 +718,25 @@ export function autocompletarModalUOProyecto(termino) {
     return;
   }
 
-  const matches = (state.catalogoUnidadesGlobal || []).filter(u =>
-    (u.estado === 'ACTIVO' || !u.estado) && (u.sigla.toLowerCase().includes(term) || u.nombre.toLowerCase().includes(term))
+  const matches = (state.catalogoUnidadesGlobal || []).filter(u => 
+    (u.estado === 'ACTIVO' || !u.estado) && (
+      u.sigla.toLowerCase().includes(term) || 
+      u.nombre.toLowerCase().includes(term)
+    )
   );
 
   divSug.innerHTML = "";
   if (matches.length === 0) {
-    divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">No se encontraron unidades</div>`;
+    divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic">No se encontraron unidades con '${termino}'</div>`;
   } else {
     matches.slice(0, 6).forEach(u => {
       const item = document.createElement("div");
       item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
-      item.innerHTML = `<span class="text-gray-800 truncate pr-2">${u.nombre}</span><strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${u.sigla}]</strong>`;
+      item.title = `${u.nombre} [${u.sigla}]`;
+      item.innerHTML = `
+        <span class="text-gray-800 truncate pr-2">${u.nombre}</span>
+        <strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${u.sigla}]</strong>
+      `;
       item.onclick = () => {
         document.getElementById("edit-uo-input-busq").value = `${u.sigla} - ${u.nombre}`;
         document.getElementById("edit-uo-input-valor").value = u.sigla;
@@ -526,17 +756,23 @@ export function cerrarModalEditarUoProyecto() {
 export async function confirmarCambioUoProyecto() {
   const uoBusq = document.getElementById("edit-uo-input-busq")?.value.trim() || "";
   const uoVal = document.getElementById("edit-uo-input-valor")?.value.trim() || "";
-  const unidadValida = (state.catalogoUnidadesGlobal || []).find(u =>
-    u.sigla.toUpperCase() === uoVal.toUpperCase() || u.sigla.toUpperCase() === uoBusq.toUpperCase() || `${u.sigla} - ${u.nombre}`.toUpperCase() === uoBusq.toUpperCase()
+
+  const unidadValida = (state.catalogoUnidadesGlobal || []).find(u => 
+    u.sigla.toUpperCase() === uoVal.toUpperCase() ||
+    u.sigla.toUpperCase() === uoBusq.toUpperCase() ||
+    `${u.sigla} - ${u.nombre}`.toUpperCase() === uoBusq.toUpperCase() ||
+    u.nombre.toUpperCase() === uoBusq.toUpperCase()
   );
 
   if (!unidadValida) {
-    alert("Debe seleccionar una unidad válida.");
+    alert("⚠️ La Unidad de Organización no existe:\nDebe buscar y seleccionar una unidad que exista oficialmente.");
+    document.getElementById("edit-uo-input-busq").focus();
     return;
   }
 
   const siglaFinal = unidadValida.sigla;
   const idProy = proyectoEditandoUoId;
+
   cerrarModalEditarUoProyecto();
 
   try {
@@ -544,14 +780,16 @@ export async function confirmarCambioUoProyecto() {
       method: "PUT",
       body: JSON.stringify({ unidad_organica: siglaFinal })
     });
+
     if (res.ok) {
-      notificarToast(`Unidad actualizada a [${siglaFinal}].`, "success");
+      notificarToast(`Unidad del proyecto actualizada a [${siglaFinal}] con éxito.`, "success");
       await cargarHubProyectos();
     } else {
-      alert("No se pudo actualizar la unidad.");
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "No se pudo actualizar la unidad de organización en el servidor.");
     }
   } catch (e) {
-    alert("Error de conexión al actualizar unidad.");
+    alert("Error de conexión al intentar actualizar la unidad de organización.");
   }
 }
 
@@ -567,11 +805,15 @@ export function editarProcesoProyectoModal(idProy) {
   }
 
   proyectoEditandoProcesoId = idProy;
+
   if (!state.catalogoProcesosGlobal || state.catalogoProcesosGlobal.length === 0) {
     cargarCatalogoProcesos();
   }
 
-  const procActual = proyectoObj.proceso_nombre ? `${proyectoObj.proceso_nombre} [${proyectoObj.proceso_codigo}]` : "Ninguno";
+  const procActual = proyectoObj.proceso_nombre 
+    ? `${proyectoObj.proceso_nombre} [${proyectoObj.proceso_codigo}]` 
+    : "Ninguno";
+
   const modalEl = document.getElementById("modal-editar-proceso-proyecto");
   if (modalEl) modalEl.remove();
 
@@ -585,30 +827,35 @@ export function editarProcesoProyectoModal(idProy) {
           </div>
           <button onclick="cerrarModalEditarProcesoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
         </div>
+        
         <div class="p-5 space-y-3.5 text-xs">
           <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800">
             Proceso actual: <strong class="text-[#0f2a4a]">${procActual}</strong>
           </div>
+
           <div class="relative">
-            <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Proceso:</label>
-            <input type="text" id="edit-proc-input-busq" oninput="autocompletarModalEditarProceso(this.value)" placeholder="Código o nombre..." class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a]" autocomplete="off">
+            <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Proceso o Subproceso:</label>
+            <input type="text" id="edit-proc-input-busq" oninput="autocompletarModalEditarProceso(this.value)" placeholder="Escriba código (ej. E4.3) o nombre..." class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
             <input type="hidden" id="edit-proc-codigo">
             <input type="hidden" id="edit-proc-nombre">
             <input type="hidden" id="edit-proc-personalizado" value="0">
             <div id="edit-proc-sugerencias" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[140] text-xs divide-y divide-gray-100"></div>
           </div>
+
           <div id="edit-proc-contenedor-otro" class="hidden p-2.5 bg-amber-50 rounded-lg border border-amber-200">
-            <label class="block text-[10px] font-bold text-amber-800 uppercase mb-1">Especifique el subproceso:</label>
-            <input type="text" id="edit-proc-otro-texto" placeholder="Nombre descriptivo..." class="w-full p-2 bg-white border border-amber-300 rounded text-xs font-semibold text-gray-800 outline-none">
+            <label class="block text-[10px] font-bold text-amber-800 uppercase mb-1">Especifique el subproceso personalizado:</label>
+            <input type="text" id="edit-proc-otro-texto" placeholder="Nombre descriptivo..." class="w-full p-2 bg-white border border-amber-300 rounded text-xs font-semibold text-gray-800 outline-none focus:border-amber-600">
           </div>
         </div>
+
         <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end space-x-2">
-          <button type="button" onclick="cerrarModalEditarProcesoProyecto()" class="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg cursor-pointer">Cancelar</button>
-          <button type="button" onclick="confirmarCambioProcesoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg shadow cursor-pointer">Actualizar Proceso</button>
+          <button type="button" onclick="cerrarModalEditarProcesoProyecto()" class="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition cursor-pointer">Cancelar</button>
+          <button type="button" onclick="confirmarCambioProcesoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow cursor-pointer">Actualizar Proceso</button>
         </div>
       </div>
     </div>
   `;
+
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   setTimeout(() => document.getElementById("edit-proc-input-busq")?.focus(), 100);
 }
@@ -625,7 +872,7 @@ export function autocompletarModalEditarProceso(term) {
   }
   div.innerHTML = "";
 
-  const matches = (state.catalogoProcesosGlobal || []).filter(p =>
+  const matches = (state.catalogoProcesosGlobal || []).filter(p => 
     p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
   );
 
@@ -698,7 +945,7 @@ export async function confirmarCambioProcesoProyecto() {
       notificarToast(`Proceso asignado: ${procNom} [${procCod}]`, "success");
       await cargarHubProyectos();
     } else {
-      alert("Error al actualizar proceso.");
+      alert("Error al actualizar el proceso del proyecto.");
     }
   } catch (e) {
     alert("Error de conexión al actualizar proceso.");
@@ -730,8 +977,11 @@ export function autocompletarUOHub(termino) {
     return;
   }
 
-  const matches = (state.catalogoUnidadesGlobal || []).filter(u =>
-    (u.estado === 'ACTIVO' || !u.estado) && (u.sigla.toLowerCase().includes(term) || u.nombre.toLowerCase().includes(term))
+  const matches = (state.catalogoUnidadesGlobal || []).filter(u => 
+    (u.estado === 'ACTIVO' || !u.estado) && (
+      u.sigla.toLowerCase().includes(term) || 
+      u.nombre.toLowerCase().includes(term)
+    )
   );
 
   divSug.innerHTML = "";
@@ -741,7 +991,10 @@ export function autocompletarUOHub(termino) {
     matches.slice(0, 6).forEach(u => {
       const item = document.createElement("div");
       item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 font-semibold";
-      item.innerHTML = `<span class="text-gray-800 truncate pr-2">${u.nombre}</span><strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${u.sigla}]</strong>`;
+      item.innerHTML = `
+        <span class="text-gray-800 truncate pr-2">${u.nombre}</span>
+        <strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${u.sigla}]</strong>
+      `;
       item.onclick = () => {
         document.getElementById("hub-filtro-uo-busq").value = `${u.sigla} - ${u.nombre}`;
         document.getElementById("hub-filtro-uo-valor").value = u.sigla;
@@ -764,6 +1017,7 @@ export function limpiarFiltroUnidadHub() {
   if (inpVal) inpVal.value = "";
   if (divSug) divSug.classList.add("hidden");
   if (btnLimpiar) btnLimpiar.classList.add("hidden");
+
   filtrarProyectosHub();
 }
 
@@ -773,7 +1027,7 @@ export function obtenerProyectosFiltradosHub() {
   const filtroUo = filtroUoVal.includes(" - ") ? filtroUoVal.split(" - ")[0].trim() : filtroUoVal.trim();
   const filtroEstado = document.getElementById("hub-filtro-estado")?.value || "";
 
-  return state.proyectosUsuarioGlobal.filter(p => {
+  return (state.proyectosUsuarioGlobal || []).filter(p => {
     const matchTexto = !query || (p.nombre && p.nombre.toLowerCase().includes(query)) || (p.descripcion && p.descripcion.toLowerCase().includes(query));
     let matchUo = true;
     if (filtroUo !== "") {
@@ -836,6 +1090,262 @@ export function hubLimpiarTodosFiltros() {
 
   filtrarProyectosHub();
   notificarToast("Filtros del Hub restablecidos correctamente.", "info");
+}
+
+// =========================================================================
+// BIBLIOTECA DE PLANTILLAS MAESTRAS (ENTERPRISE TEMPLATES)
+// =========================================================================
+
+export function cambiarTabNuevoProyecto(tab) {
+  const btnBlanco = document.getElementById("np-tab-btn-blanco");
+  const btnPlantilla = document.getElementById("np-tab-btn-plantilla");
+  const contentBlanco = document.getElementById("np-tab-content-blanco");
+  const contentPlantilla = document.getElementById("np-tab-content-plantilla");
+
+  if (tab === "plantilla") {
+    if (btnPlantilla) btnPlantilla.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs flex items-center space-x-1.5 font-bold";
+    if (btnBlanco) btnBlanco.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold";
+    if (contentBlanco) contentBlanco.classList.add("hidden");
+    if (contentPlantilla) contentPlantilla.classList.remove("hidden");
+    cancelarSeleccionPlantilla();
+    cargarGaleriaPlantillas();
+  } else {
+    if (btnBlanco) btnBlanco.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs flex items-center space-x-1.5 font-bold";
+    if (btnPlantilla) btnPlantilla.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold";
+    if (contentPlantilla) contentPlantilla.classList.add("hidden");
+    if (contentBlanco) contentBlanco.classList.remove("hidden");
+  }
+}
+
+export async function cargarGaleriaPlantillas() {
+  const cont = document.getElementById("galeria-plantillas-contenedor");
+  if (!cont) return;
+  cont.innerHTML = `<div class="col-span-2 p-6 text-center text-gray-400 font-bold animate-pulse">Cargando biblioteca de plantillas...</div>`;
+
+  try {
+    const res = await apiFetch("/plantillas");
+    if (!res.ok) throw new Error("Error al cargar plantillas");
+    state.catalogoPlantillasGlobal = await res.json();
+    renderizarTarjetasPlantillas(state.catalogoPlantillasGlobal);
+  } catch (e) {
+    cont.innerHTML = `<div class="col-span-2 p-6 text-center text-red-500 font-semibold">No se pudo cargar la galería de plantillas.</div>`;
+  }
+}
+
+export function renderizarTarjetasPlantillas(lista) {
+  const cont = document.getElementById("galeria-plantillas-contenedor");
+  if (!cont) return;
+  cont.innerHTML = "";
+
+  if (lista.length === 0) {
+    cont.innerHTML = `<div class="col-span-2 p-6 text-gray-400 italic font-semibold text-center">No se encontraron plantillas.</div>`;
+    return;
+  }
+
+  lista.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "bg-white p-3.5 rounded-xl border border-gray-200 hover:border-teal-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group";
+    card.onclick = () => seleccionarPlantillaParaClonar(p);
+    card.innerHTML = `
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[9px] font-black uppercase text-teal-800 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">${p.categoria || 'General'}</span>
+          <span class="text-[10px] font-bold text-gray-400 font-mono">${p.total_actividades || 0} tareas</span>
+        </div>
+        <h4 class="font-bold text-xs text-[#0f2a4a] group-hover:text-teal-700 transition leading-snug">${p.nombre}</h4>
+        <p class="text-[11px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">${p.descripcion || 'Sin descripción adicional.'}</p>
+      </div>
+      <div class="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+        <span class="text-[10px] font-bold text-gray-400">⏱️ ~${p.duracion_estimada_dias || 0}d estim.</span>
+        <span class="text-[11px] font-black text-teal-700 group-hover:underline">Seleccionar →</span>
+      </div>
+    `;
+    cont.appendChild(card);
+  });
+}
+
+export function filtrarGaleriaPlantillas() {
+  const q = (document.getElementById("filtro-plantillas-input")?.value || "").toLowerCase().trim();
+  const filtradas = (state.catalogoPlantillasGlobal || []).filter(p => 
+    (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+    (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
+    (p.categoria && p.categoria.toLowerCase().includes(q))
+  );
+  renderizarTarjetasPlantillas(filtradas);
+}
+
+export function seleccionarPlantillaParaClonar(plantilla) {
+  state.plantillaSeleccionadaId = plantilla.id;
+  document.getElementById("txt-plantilla-elegida-tit").innerText = `📋 ${plantilla.nombre}`;
+  document.getElementById("txt-plantilla-elegida-cat").innerText = plantilla.categoria || "General";
+  document.getElementById("np-input-clon-nombre").value = plantilla.nombre;
+  document.getElementById("np-input-clon-desc").value = plantilla.descripcion || "";
+  document.getElementById("np-input-clon-uo-busq").value = "";
+  document.getElementById("np-input-clon-uo-valor").value = "";
+  document.getElementById("np-input-clon-proceso-busq").value = "";
+  document.getElementById("np-input-clon-proceso-codigo").value = "";
+  document.getElementById("np-input-clon-proceso-nombre").value = "";
+  document.getElementById("np-input-clon-proceso-personalizado").value = "0";
+
+  const contOtro = document.getElementById("contenedor-otro-subproceso-clon");
+  if (contOtro) contOtro.classList.add("hidden");
+  const inpOtroTexto = document.getElementById("input-otro-subproceso-clon-texto");
+  if (inpOtroTexto) inpOtroTexto.value = "";
+
+  const selModo = document.getElementById("np-input-clon-duration-mode");
+  if (selModo) selModo.value = "business_days";
+  const selVis = document.getElementById("np-input-clon-visibilidad");
+  if (selVis) selVis.value = "PRIVADO";
+
+  const hoyISO = new Date().toISOString().split("T")[0];
+  document.getElementById("np-input-clon-fechaini").value = hoyISO;
+
+  const bloque = document.getElementById("bloque-config-clonacion");
+  bloque?.classList.remove("hidden");
+  bloque?.scrollIntoView({ behavior: 'smooth' });
+}
+
+export function cancelarSeleccionPlantilla() {
+  state.plantillaSeleccionadaId = null;
+  const bloque = document.getElementById("bloque-config-clonacion");
+  if (bloque) bloque.classList.add("hidden");
+}
+
+export function autocompletarProcesoClonacion(term) {
+  const q = (term || "").toLowerCase().trim();
+  const div = document.getElementById("sugerencias-proceso-clonacion");
+  const contOtro = document.getElementById("contenedor-otro-subproceso-clon");
+  if (!div) return;
+
+  if (!q) {
+    div.classList.add("hidden");
+    return;
+  }
+  div.innerHTML = "";
+
+  const matches = (state.catalogoProcesosGlobal || []).filter(p => 
+    p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
+  );
+
+  matches.slice(0, 6).forEach(p => {
+    const row = document.createElement("div");
+    row.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-semibold text-gray-800";
+    row.innerHTML = `<span>${p.nombre}</span> <strong class="text-[#0f2a4a] bg-gray-100 px-1.5 py-0.5 rounded text-[10px]">[${p.codigo}]</strong>`;
+    row.onclick = () => {
+      document.getElementById("np-input-clon-proceso-busq").value = `${p.nombre} [${p.codigo}]`;
+      document.getElementById("np-input-clon-proceso-codigo").value = p.codigo;
+      document.getElementById("np-input-clon-proceso-nombre").value = p.nombre;
+      document.getElementById("np-input-clon-proceso-personalizado").value = "0";
+      div.classList.add("hidden");
+      if (contOtro) contOtro.classList.add("hidden");
+    };
+    div.appendChild(row);
+  });
+
+  const itemOtro = document.createElement("div");
+  itemOtro.className = "p-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold cursor-pointer border-t border-amber-200 flex items-center justify-between";
+  itemOtro.innerHTML = `<span>⚙️ Otro subproceso (Personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
+  itemOtro.onclick = () => {
+    document.getElementById("np-input-clon-proceso-busq").value = "Otro subproceso";
+    document.getElementById("np-input-clon-proceso-codigo").value = "OTRO";
+    document.getElementById("np-input-clon-proceso-nombre").value = "";
+    document.getElementById("np-input-clon-proceso-personalizado").value = "1";
+    div.classList.add("hidden");
+    if (contOtro) {
+      contOtro.classList.remove("hidden");
+      document.getElementById("input-otro-subproceso-clon-texto")?.focus();
+    }
+  };
+  div.appendChild(itemOtro);
+  div.classList.remove("hidden");
+}
+
+export function autocompletarUOClonacion(termino) {
+  const term = (termino || "").toLowerCase().trim();
+  const divSug = document.getElementById("sugerencias-uo-clonacion");
+  if (!divSug) return;
+
+  if (!term) {
+    divSug.classList.add("hidden");
+    return;
+  }
+  const matches = (state.catalogoUnidadesGlobal || []).filter(u => 
+    u.sigla.toLowerCase().includes(term) || u.nombre.toLowerCase().includes(term)
+  );
+  divSug.innerHTML = "";
+  if (matches.length === 0) {
+    divSug.innerHTML = `<div class="p-2 text-gray-400">Sin coincidencias</div>`;
+  } else {
+    matches.slice(0, 5).forEach(u => {
+      const item = document.createElement("div");
+      item.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between font-semibold";
+      item.innerHTML = `<span>${u.nombre}</span><strong class="text-[#0f2a4a] ml-2">[${u.sigla}]</strong>`;
+      item.onclick = () => {
+        document.getElementById("np-input-clon-uo-busq").value = `${u.sigla} - ${u.nombre}`;
+        document.getElementById("np-input-clon-uo-valor").value = u.sigla;
+        divSug.classList.add("hidden");
+      };
+      divSug.appendChild(item);
+    });
+  }
+  divSug.classList.remove("hidden");
+}
+
+export async function ejecutarCreacionDesdePlantilla() {
+  if (!state.plantillaSeleccionadaId) return;
+
+  const nombre = document.getElementById("np-input-clon-nombre").value.trim();
+  const uo = document.getElementById("np-input-clon-uo-valor").value || document.getElementById("np-input-clon-uo-busq").value.trim();
+  const fIniISO = document.getElementById("np-input-clon-fechaini").value;
+  const desc = document.getElementById("np-input-clon-desc")?.value.trim() || "";
+  const durMode = document.getElementById("np-input-clon-duration-mode")?.value || "business_days";
+  const visib = document.getElementById("np-input-clon-visibilidad")?.value || "PRIVADO";
+
+  const esPers = document.getElementById("np-input-clon-proceso-personalizado")?.value === "1";
+  const procCod = esPers ? "OTRO" : (document.getElementById("np-input-clon-proceso-codigo")?.value || "");
+  const procNom = esPers 
+    ? (document.getElementById("input-otro-subproceso-clon-texto")?.value.trim() || "Otro subproceso")
+    : (document.getElementById("np-input-clon-proceso-nombre")?.value || "");
+
+  if (!nombre) {
+    alert("Por favor ingrese un nombre para el proyecto.");
+    return;
+  }
+
+  const fIniLatina = formatearFechaLatina(fIniISO);
+
+  try {
+    const res = await apiFetch("/proyectos/desde-plantilla", {
+      method: "POST",
+      body: JSON.stringify({
+        plantilla_id: state.plantillaSeleccionadaId,
+        nombre_proyecto: nombre,
+        descripcion: desc,
+        unidad_organica: uo,
+        fecha_inicio: fIniLatina,
+        proceso_codigo: procCod,
+        proceso_nombre: procNom,
+        es_proceso_personalizado: esPers ? 1 : 0,
+        duration_mode: durMode,
+        visibilidad: visib
+      })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      cerrarModalNuevoProyecto();
+      notificarToast("Proyecto generado desde plantilla exitosamente.", "success");
+      await cargarHubProyectos();
+      if (data.proyecto_id) {
+        window.ingresarAlProyecto(data.proyecto_id, nombre, true);
+      }
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Error al crear proyecto desde plantilla.");
+    }
+  } catch (e) {
+    alert("Error de conexión al crear el proyecto.");
+  }
 }
 
 // =========================================================================
@@ -1100,7 +1610,7 @@ export function resetearSlicersEstadisticas() {
   aplicarFiltrosEstadisticas();
 }
 
-// Exposición pública de todas las funciones para eventos onclick del HTML
+// Exposición pública al objeto window
 window.cargarHubProyectos = cargarHubProyectos;
 window.cambiarVistaHub = cambiarVistaHub;
 window.alternarVerProyectosOcultos = alternarVerProyectosOcultos;
@@ -1124,6 +1634,14 @@ window.autocompletarUOHub = autocompletarUOHub;
 window.limpiarFiltroUnidadHub = limpiarFiltroUnidadHub;
 window.filtrarProyectosHub = filtrarProyectosHub;
 window.hubLimpiarTodosFiltros = hubLimpiarTodosFiltros;
+window.cambiarTabNuevoProyecto = cambiarTabNuevoProyecto;
+window.cargarGaleriaPlantillas = cargarGaleriaPlantillas;
+window.filtrarGaleriaPlantillas = filtrarGaleriaPlantillas;
+window.seleccionarPlantillaParaClonar = seleccionarPlantillaParaClonar;
+window.cancelarSeleccionPlantilla = cancelarSeleccionPlantilla;
+window.autocompletarProcesoClonacion = autocompletarProcesoClonacion;
+window.autocompletarUOClonacion = autocompletarUOClonacion;
+window.ejecutarCreacionDesdePlantilla = ejecutarCreacionDesdePlantilla;
 window.abrirModalEstadisticasHub = abrirModalEstadisticasHub;
 window.cerrarModalEstadisticasHub = cerrarModalEstadisticasHub;
 window.conmutarTipoGrafico = conmutarTipoGrafico;
