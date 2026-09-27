@@ -76,6 +76,14 @@ export function volverAlHub() {
 
 export async function sincronizarDatosProyecto(id) {
   try {
+    // 1. Asegurar catálogo de feriados institucionales para los cálculos laborales
+    if (!state.catalogoFeriadosGlobal || state.catalogoFeriadosGlobal.length === 0) {
+      try {
+        const resFer = await apiFetch(`/feriados`);
+        if (resFer.ok) state.catalogoFeriadosGlobal = await resFer.json();
+      } catch (e) {}
+    }
+
     if (!state.responsablesGlobal || state.responsablesGlobal.length === 0) {
       try {
         const resResp = await apiFetch(`/responsables`);

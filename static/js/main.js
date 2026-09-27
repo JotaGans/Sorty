@@ -214,7 +214,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // 7. Calculadoras dinámicas de fechas en modales (Días Hábiles y Horas Netas)
+  // 7. Calculadoras dinámicas de fechas en modales (Días Hábiles y Horas Netas con feriados)
   const fIniWz = document.getElementById("wz-input-ini");
   const fFinWz = document.getElementById("wz-input-fin");
   const diasWz = document.getElementById("wz-input-dias");
@@ -226,15 +226,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (bloqueandoWz || !fIniWz.value || !diasWz.value) return;
       const dtIni = new Date(fIniWz.value + "T00:00:00");
       const val = parseFloat(diasWz.value);
-      if (val > 0) {
+      if (val > 0 && window.calcularFechaFinPorModalidad) {
         bloqueandoWz = true;
-        let dtFin;
-        if (state.proyectoModoDuracion === "hours") {
-          const diasEquiv = Math.max(1, Math.ceil(val / 8));
-          dtFin = window.sumarDiasHabiles ? window.sumarDiasHabiles(dtIni, diasEquiv) : new Date(dtIni.getTime() + (diasEquiv - 1) * 86400000);
-        } else {
-          dtFin = window.sumarDiasHabiles ? window.sumarDiasHabiles(dtIni, Math.max(1, Math.round(val))) : new Date(dtIni.getTime() + (val - 1) * 86400000);
-        }
+        const dtFin = window.calcularFechaFinPorModalidad(dtIni, val, state.proyectoModoDuracion);
         fFinWz.value = dtFin.toISOString().split("T")[0];
         bloqueandoWz = false;
       }
@@ -244,12 +238,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     fIniWz.addEventListener("input", recalcularFinWizard);
 
     fFinWz.addEventListener("input", () => {
-      if (bloqueandoWz || !fIniWz.value || !fFinWz.value || state.proyectoModoDuracion === "hours") return;
+      if (bloqueandoWz || !fIniWz.value || !fFinWz.value) return;
       const dt1 = new Date(fIniWz.value + "T00:00:00");
       const dt2 = new Date(fFinWz.value + "T00:00:00");
       if (dt2 >= dt1 && window.contarDiasHabilesEntre) {
         bloqueandoWz = true;
-        diasWz.value = window.contarDiasHabilesEntre(dt1, dt2);
+        const dHabiles = window.contarDiasHabilesEntre(dt1, dt2);
+        diasWz.value = (state.proyectoModoDuracion === "hours") ? (dHabiles * 8) : dHabiles;
         bloqueandoWz = false;
       }
     });
