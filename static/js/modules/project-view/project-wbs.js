@@ -503,6 +503,17 @@ export function editarFechaFin(cod) {
   document.getElementById("modal-fin-interactiva")?.classList.remove("hidden");
 }
 
+export function cerrarFechaCustom() {
+  document.getElementById("modal-fecha-custom")?.classList.add("hidden");
+}
+
+export function cerrarFinInteractiva() {
+  document.getElementById("modal-fin-interactiva")?.classList.add("hidden");
+}
+
+window.cerrarFechaCustom = cerrarFechaCustom;
+window.cerrarFinInteractiva = cerrarFinInteractiva;
+
 export function editarDias(cod) {
   if (!state.proyectoEsGestor || tieneHijos(cod)) return;
   const act = state.actividadesGlobal.find(a => a.codigo === cod);

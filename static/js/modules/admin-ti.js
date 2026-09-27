@@ -795,3 +795,10 @@ window.proyectarFeriadosSiguienteAno = proyectarFeriadosSiguienteAno;
 window.cargarListaFeriados = cargarListaFeriados;
 window.guardarProcesoTI = guardarProcesoTI;
 window.eliminarProcesoTI = eliminarProcesoTI;
+
+// --- FUNCIONES DE CIERRE DE MODALES AUXILIARES TI ---
+export function cerrarModalCrearTrabajadorTI() {
+  document.getElementById("modal-editar-trabajador-ti")?.classList.add("hidden");
+}
+
+window.cerrarModalCrearTrabajadorTI = cerrarModalCrearTrabajadorTI;
