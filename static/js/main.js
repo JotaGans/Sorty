@@ -253,7 +253,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         bloqueandoWz = false;
       }
     });
-  }
 
     fIniWz.addEventListener("input", () => {
       if (bloqueandoWz || !fIniWz.value) return;
