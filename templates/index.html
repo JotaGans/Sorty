@@ -268,13 +268,13 @@
     <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5 bg-slate-100/90 border-b border-gray-200">
       <div class="relative flex items-center justify-between min-h-[34px]">
         
-        <!-- Botón Volver al Hub: Azul Marino (#0f2a4a) con Casita Vectorial Blanca Nítida -->
-        <div class="flex-shrink-0 z-10" style="margin-left: 6px;">
-          <button onclick="volverAlHub()" class="h-8 px-3 bg-[#0f2a4a] hover:bg-[#1b4573] text-white border border-blue-900/60 rounded-lg text-xs font-black transition-colors shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Volver al panel general de proyectos">
+        <!-- Botón Volver al Hub: Solo casita en reposo, expande al hover (+3px: total 9px) -->
+        <div class="relative flex-shrink-0 z-20 w-[34px] h-8" style="margin-left: 9px;">
+          <button onclick="volverAlHub()" class="group absolute left-0 top-0 h-8 w-[34px] hover:w-[165px] px-2 bg-[#0f2a4a] hover:bg-[#1b4573] text-white border border-blue-900/60 rounded-lg text-xs font-bold transition-all duration-300 ease-in-out shadow-2xs flex items-center cursor-pointer whitespace-nowrap overflow-hidden" title="Volver a proyectos">
             <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
             </svg>
-            <span class="leading-none text-white tracking-tight">Volver a proyectos</span>
+            <span class="max-w-0 opacity-0 group-hover:max-w-[130px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 ease-in-out font-bold overflow-hidden leading-none text-white tracking-tight">Volver a proyectos</span>
           </button>
         </div>
 
@@ -412,7 +412,7 @@
           </div>
 
           <!-- Marco Azul Unificado SEM / Navegación Temporal -->
-          <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg pl-1 pr-1 space-x-1 shadow-2xs border border-blue-900/60 transition-all duration-200 ease-in-out">
+          <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg pl-[1px] pr-[2px] space-x-1 shadow-2xs border border-blue-900/60 transition-all duration-200 ease-in-out">
             
             <!-- Subsección SEM: colapsa rápido y sutil hacia la izquierda -->
             <div id="box-input-semana" class="flex items-center space-x-1 overflow-hidden max-w-[120px] opacity-100 flex-shrink-0">

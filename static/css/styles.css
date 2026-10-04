@@ -335,20 +335,10 @@ button#btn-accion-plantilla-dinamico #txt-accion-plantilla {
   pointer-events: none !important;
 }
 
-/* Compensación de 1px a la izquierda del marco azul cuando SEM está oculto */
-#contenedor-spinbutton:has(#box-input-semana.sem-oculto) {
-  padding-left: 3px !important;
-  padding-right: 3px !important;
-}
-
 /* Eliminar parpadeo y destellos durante el desplazamiento / renderizado rápido */
-#tabla-actividades-cuerpo tr:hover td,
-#tabla-actividades-cuerpo td.cell-editable:hover {
+#tabla-actividades-cuerpo tr:hover td:last-child,
+#tabla-actividades-cuerpo td:last-child:hover,
+#tabla-actividades-cuerpo td.col-gantt-lienzo:hover {
+  background-color: transparent !important;
   transition: none !important;
-}
-
-/* Evitar parpadeos de redraw en las barras del Gantt */
-#tabla-actividades-cuerpo .relative.w-full.h-7 {
-  will-change: transform;
-  contain: layout paint;
 }
