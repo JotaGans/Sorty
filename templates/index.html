@@ -268,10 +268,10 @@
     <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5 bg-slate-100/90 border-b border-gray-200">
       <div class="relative flex items-center justify-between min-h-[34px]">
         
-        <!-- Botón Volver al Hub: Morado (#7c3aed), sin flecha, movido 3px a la derecha y sin empujar a los KPIs -->
-        <div class="flex-shrink-0 z-10" style="margin-left: 3px;">
+        <!-- Botón Volver al Hub: Morado oscuro (#4c1d95) -->
+        <div class="flex-shrink-0 z-10" style="margin-left: 6px;">
           <div class="relative flex items-center">
-            <button onclick="volverAlHub()" class="group h-8 px-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg text-xs font-bold transition-all duration-300 ease-in-out shadow-2xs flex items-center cursor-pointer whitespace-nowrap overflow-hidden" title="Volver a proyectos">
+            <button onclick="volverAlHub()" class="group h-8 px-2.5 bg-[#4c1d95] hover:bg-[#3b0764] text-white rounded-lg text-xs font-bold transition-all duration-300 ease-in-out shadow-2xs flex items-center cursor-pointer whitespace-nowrap overflow-hidden" title="Volver a proyectos">
               <span class="text-sm leading-none">🏠</span>
               <span class="max-w-0 opacity-0 group-hover:max-w-[130px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 ease-in-out font-bold overflow-hidden leading-none">Volver a proyectos</span>
             </button>
@@ -405,20 +405,20 @@
             </select>
           </div>
 
-          <!-- Sección de semana (SEM) con margen derecho extendido para separar 'Hoy' del borde -->
-          <div id="contenedor-spinbutton" class="flex items-center bg-[#0f2a4a] text-white rounded-lg p-0.5 pr-1.5 space-x-1 shadow-2xs">
-            <div id="box-input-semana" class="flex items-center space-x-1 pl-1">
-              <span class="text-[9px] font-bold uppercase">Sem</span>
-              <div class="flex items-center bg-white rounded border border-gray-300 overflow-hidden">
-                <div class="flex flex-col border-r border-gray-300">
-                  <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[7px] px-1 text-gray-800 font-black leading-none border-b border-gray-300">▲</button>
-                  <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[7px] px-1 text-gray-800 font-black leading-none">▼</button>
+          <!-- Sección SEM: h-[30px] para igualar exactamente la altura de ESCALA -->
+          <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg px-1 space-x-1 shadow-2xs border border-blue-900/60">
+            <div id="box-input-semana" class="flex items-center space-x-1">
+              <span class="text-[9.5px] font-bold uppercase leading-none">SEM</span>
+              <div class="flex items-center h-[24px] bg-white rounded border border-gray-300 overflow-hidden">
+                <div class="flex flex-col h-full justify-between border-r border-gray-300">
+                  <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[6.5px] px-1 text-gray-800 font-black leading-none border-b border-gray-300 h-1/2 flex items-center justify-center">▲</button>
+                  <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[6.5px] px-1 text-gray-800 font-black leading-none h-1/2 flex items-center justify-center">▼</button>
                 </div>
-                <input type="number" id="input-semana-inicio" min="1" max="999" value="1" onchange="fijarSemanaInicio(this.value)" class="w-9 text-center text-xs font-black text-[#0f2a4a] outline-none">
+                <input type="number" id="input-semana-inicio" min="1" max="999" value="1" onchange="fijarSemanaInicio(this.value)" class="w-8 text-center text-xs font-black text-[#0f2a4a] outline-none leading-none">
               </div>
             </div>
-            <button onclick="irAInicioProyecto()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-1.5 py-1 rounded transition whitespace-nowrap">Inicio</button>
-            <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-1.5 py-1 rounded transition whitespace-nowrap">Hoy</button>
+            <button onclick="irAInicioProyecto()" class="h-[24px] bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center">Inicio</button>
+            <button onclick="irASemanaActual()" class="h-[24px] bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center">Hoy</button>
           </div>
 
           <!-- Botón Plantilla: en su lugar permutado (a la derecha), morado y con conmutación dinámica -->
