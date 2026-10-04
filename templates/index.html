@@ -101,21 +101,22 @@
   <!-- VISTA: HUB DE PROYECTOS -->
   <div id="view-hub" class="hidden fixed inset-0 bg-[#f4f7f6] z-40 flex flex-col overflow-y-auto">
     <header class="bg-[#0f2a4a] text-white shadow-md flex-shrink-0 sticky top-0 z-[100]">
-      <div class="max-w-6xl mx-auto px-6 h-[65px] flex items-center justify-between">
-        <div class="flex items-center space-x-4">
-          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-[60px] sm:h-[65px] flex items-center justify-between">
+        <div class="flex items-center space-x-2 sm:space-x-4">
+          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-8 sm:h-10 object-contain" onerror="this.outerHTML='<span class=\'text-xl sm:text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
-        <div class="flex items-center space-x-2.5">
-          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center space-x-1.5 border border-teal-500">
+        <div class="flex items-center space-x-1.5 sm:space-x-2.5">
+          <button id="btn-admin-ti-hub" onclick="abrirModalAdminTI()" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-[11px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded transition shadow flex items-center space-x-1 border border-teal-500">
             <span>🛡️</span>
-            <span>Gestión TI: Base de datos</span>
+            <span class="hidden md:inline">Gestión TI: Base de datos</span>
+            <span class="md:hidden">TI</span>
           </button>
 
-          <div class="text-right border-l border-blue-900/60 pl-3">
-            <p id="user-display-hub" class="text-xs font-bold text-gray-100">admin</p>
-            <p id="role-display-hub" class="text-[10px] text-teal-300 uppercase font-semibold">ADMINISTRADOR TI</p>
+          <div class="text-right border-l border-blue-900/60 pl-2 sm:pl-3">
+            <p id="user-display-hub" class="text-[11px] sm:text-xs font-bold text-gray-100 truncate max-w-[100px] sm:max-w-none">admin</p>
+            <p id="role-display-hub" class="text-[9px] sm:text-[10px] text-teal-300 uppercase font-semibold truncate max-w-[100px] sm:max-w-none">ADMINISTRADOR TI</p>
           </div>
-          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow">Salir</button>
+          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded transition shadow">Salir</button>
         </div>
       </div>
     </header>
@@ -140,28 +141,29 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl p-2.5 mb-4 border border-gray-200 shadow-xs flex items-center justify-between gap-2 relative z-50">
-        <div class="flex flex-nowrap items-center gap-2 flex-shrink-0">
-          <div class="relative w-40 flex-shrink-0">
+      <div class="bg-white rounded-xl p-2.5 mb-4 border border-gray-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 relative z-50">
+        <!-- Filtros superiores / apilables en móvil -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 md:flex md:flex-nowrap items-center gap-2 w-full md:w-auto">
+          <div class="relative w-full sm:w-auto md:w-40">
             <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400 text-xs">🔍</span>
-            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar proyecto..." class="w-full pl-7 pr-2 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" title="Buscar por nombre o descripción">
+            <input type="text" id="hub-filtro-busqueda" oninput="filtrarProyectosHub()" placeholder="Buscar..." class="w-full pl-7 pr-2 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" title="Buscar por nombre o descripción">
           </div>
 
-          <div class="relative w-44 flex-shrink-0 z-[60]">
+          <div class="relative w-full sm:w-auto md:w-44 z-[60]">
             <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400 text-xs">🏢</span>
-            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Buscar por UUOO" class="w-full pl-7 pr-5 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" autocomplete="off" title="Filtrar por Unidad de Organización">
+            <input type="text" id="hub-filtro-uo-busq" oninput="autocompletarUOHub(this.value)" placeholder="Filtrar por UUOO" class="w-full pl-7 pr-5 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition truncate" autocomplete="off" title="Filtrar por Unidad de Organización">
             <input type="hidden" id="hub-filtro-uo-valor" onchange="filtrarProyectosHub()">
             
             <button type="button" id="btn-limpiar-filtro-uo" onclick="limpiarFiltroUnidadHub()" class="hidden absolute inset-y-0 right-0 pr-1.5 flex items-center text-gray-400 hover:text-rose-600 transition cursor-pointer" title="Limpiar filtro de unidad">
               <span class="text-[10px] font-black bg-gray-200 hover:bg-rose-100 rounded-full w-3 h-3 flex items-center justify-center">×</span>
             </button>
 
-            <div id="hub-sugerencias-uo" class="hidden absolute top-full left-0 w-64 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1.5 max-h-56 overflow-y-auto z-[70] text-xs divide-y divide-gray-100"></div>
+            <div id="hub-sugerencias-uo" class="hidden absolute top-full left-0 right-0 md:w-64 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1.5 max-h-56 overflow-y-auto z-[70] text-xs divide-y divide-gray-100"></div>
           </div>
 
-          <div class="relative w-44 flex-shrink-0">
-            <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 py-1.5 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer truncate" title="Filtrar por estado del proyecto">
-              <option value="">📊 Todos los estados</option>
+          <div class="relative w-full sm:w-auto md:w-40">
+            <select id="hub-filtro-estado" onchange="filtrarProyectosHub()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 py-1.5 font-semibold text-gray-700 outline-none focus:border-[#0f2a4a] cursor-pointer truncate">
+              <option value="">📊 Estados</option>
               <option value="Ejecutado">Ejecutado</option>
               <option value="En proceso">En proceso</option>
               <option value="No iniciado">No iniciado</option>
@@ -169,30 +171,31 @@
           </div>
         </div>
 
-        <div class="flex items-center space-x-2.5 self-end md:self-auto">
-          <button onclick="abrirModalEstadisticasHub()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Ver análisis gráfico y estadístico">
+        <!-- Botones de acción inferiores / adaptables -->
+        <div class="flex items-center justify-between sm:justify-end gap-2 overflow-x-auto pb-1 sm:pb-0">
+          <button onclick="abrirModalEstadisticasHub()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-lg transition shadow flex items-center space-x-1 cursor-pointer whitespace-nowrap">
             <span>📈</span>
             <span>Estadísticas</span>
           </button>
 
-          <button id="btn-toggle-proyectos-ocultos" onclick="alternarVerProyectosOcultos()" class="hidden w-[34px] h-[34px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0" title="Ver proyectos ocultos">
+          <button id="btn-toggle-proyectos-ocultos" onclick="alternarVerProyectosOcultos()" class="hidden w-[30px] h-[30px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center cursor-pointer flex-shrink-0" title="Ver proyectos ocultos">
             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
             </svg>
           </button>
 
-          <div class="flex items-center bg-slate-100 border border-slate-200 p-1 rounded-xl shadow-inner">
-            <button id="btn-vista-grid" onclick="cambiarVistaHub('cards')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer">
+          <div class="flex items-center bg-slate-100 border border-slate-200 p-0.5 sm:p-1 rounded-xl shadow-inner">
+            <button id="btn-vista-grid" onclick="cambiarVistaHub('cards')" class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all flex items-center space-x-1 cursor-pointer">
               <span>Tarjetas</span>
             </button>
-            <button id="btn-vista-table" onclick="cambiarVistaHub('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-teal-700 transition-all flex items-center space-x-1.5 cursor-pointer">
+            <button id="btn-vista-table" onclick="cambiarVistaHub('table')" class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-slate-500 hover:text-teal-700 transition-all flex items-center space-x-1 cursor-pointer">
               <span>Tabla</span>
             </button>
           </div>
 
-          <button onclick="exportarResumenProyectosExcel()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow flex items-center space-x-1.5 cursor-pointer" title="Descargar reporte consolidado en Excel">
+          <button onclick="exportarResumenProyectosExcel()" class="bg-[#27ae60] hover:bg-[#219150] text-white text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-lg transition shadow flex items-center space-x-1 cursor-pointer" title="Descargar reporte en Excel">
             <span>📊</span>
-            <span>Excel</span>
+            <span class="hidden sm:inline">Excel</span>
           </button>
         </div>
       </div>
@@ -228,183 +231,193 @@
 
   <!-- VISTA: GANTT Y CONTROL DE PROYECTO -->
   <div id="bloque-superior-gantt" class="flex-shrink-0 z-30 bg-[#f5f6fa] shadow-sm">
-    <header class="bg-[#0f2a4a] text-white shadow-md">
-      <div class="max-w-[1920px] mx-auto px-4 md:px-8 h-[65px] flex items-center justify-between">
-        <div class="flex items-center space-x-3 min-w-[160px]">
-          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-10 object-contain" onerror="this.outerHTML='<span class=\'text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
+    <!-- PISO 1: HEADER INSTITUCIONAL CON TÍTULO AMPLIO, ROL Y USUARIO -->
+    <header class="bg-[#093753] text-white shadow-md">
+      <div class="max-w-[1920px] mx-auto px-4 md:px-6 h-[58px] flex items-center justify-between gap-3">
+        <div class="flex items-center space-x-2.5 flex-shrink-0">
+          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-9 object-contain" onerror="this.outerHTML='<span class=\'text-xl font-black tracking-widest text-white\'>IMARPE</span>'">
         </div>
         
-        <div class="flex-1 max-w-2xl px-4 text-center mx-auto">
+        <!-- Input de Título Amplio (Conserva su id, autoguardado y reactividad) -->
+        <div class="flex-1 max-w-4xl px-2 text-center mx-auto min-w-0">
           <input type="text" id="txt-nombre-proyecto" 
                  placeholder="NOMBRE DEL PROYECTO"
-                 class="w-full bg-transparent text-white font-bold text-base md:text-xl text-center border-b border-transparent focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide truncate" 
+                 class="w-full bg-transparent text-white font-black text-sm md:text-lg text-center border-b border-transparent hover:border-teal-400/40 focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide truncate" 
                  value="">
         </div>
         
-        <div id="user-info" class="flex items-center space-x-3 border-l border-blue-900/60 pl-4 min-w-[160px] justify-end">
-          <div class="text-right hidden sm:block">
-            <p id="user-display" class="text-xs font-bold text-gray-100">admin</p>
-            <p id="role-display" class="text-[10px] text-teal-300 uppercase font-semibold">ADMINISTRADOR TI</p>
+        <!-- Contexto de Usuario y Rol Institucional -->
+        <div id="user-info" class="flex items-center space-x-2.5 flex-shrink-0">
+          <div id="badge-rol-gantt" class="h-7 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black uppercase px-2.5 rounded-lg shadow-2xs flex items-center space-x-1 whitespace-nowrap">
+            <span>👑</span>
+            <span>GESTOR DE PROYECTO</span>
           </div>
-          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-2.5 py-1 rounded font-bold transition shadow">Salir</button>
+
+          <div class="text-right hidden sm:block border-l border-blue-900/60 pl-2.5">
+            <p id="user-display" class="text-xs font-bold text-gray-100 leading-tight">admin</p>
+            <p id="role-display" class="text-[9px] text-teal-300 uppercase font-semibold leading-tight">ADMINISTRADOR TI</p>
+          </div>
+          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-[11px] px-2.5 py-1 rounded-lg font-bold transition shadow-xs cursor-pointer">Salir</button>
         </div>
       </div>
     </header>
 
-    <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 pt-3 pb-2 space-y-2.5">
-      <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5">
+    <!-- PISO 2: NAVEGACIÓN + KPIS SEMÁFORO EN VIVO + ACCIONES ADMINISTRATIVAS -->
+    <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-2 bg-slate-100/90 border-b border-gray-200">
+      <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">
         
+        <!-- Botón Salir al Hub -->
         <div class="flex-shrink-0">
-          <button onclick="volverAlHub()" class="h-10 group bg-teal-600 hover:bg-teal-700 text-white text-xs font-black px-3.5 rounded-xl transition-all duration-150 shadow-sm hover:shadow flex items-center space-x-2 border border-teal-500 active:scale-95 whitespace-nowrap cursor-pointer" title="Volver al panel principal de proyectos">
-            <svg class="w-4 h-4 text-teal-100 group-hover:text-white transition-transform duration-150 group-hover:-translate-x-0.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-            </svg>
-            <span class="tracking-wide">Mis Proyectos</span>
-            <svg class="w-3.5 h-3.5 text-teal-100 group-hover:text-white opacity-90" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-            </svg>
+          <button onclick="volverAlHub()" class="h-8 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black px-3 rounded-lg transition shadow-xs flex items-center space-x-1.5 border border-teal-500 cursor-pointer" title="Volver a la lista de proyectos">
+            <span>🏠</span>
+            <span>Mis Proyectos</span>
           </button>
         </div>
 
-        <div class="flex-1 flex items-center justify-center min-w-0 flex-wrap py-0.5">
-          <div class="h-10 bg-[#1abc9c] text-white px-4 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[135px] flex-shrink-0 mr-8 lg:mr-14">
-            <span class="text-[12px] font-black uppercase tracking-wider whitespace-nowrap pr-2.5 leading-none">AVANCE</span>
-            <p id="kpi-avance" class="text-base font-black whitespace-nowrap leading-none">0%</p>
+        <!-- KPIs Semáforo en Tiempo Real (Conservan sus IDs de cálculo y alto contraste) -->
+        <div class="flex-1 flex items-center justify-center gap-2 flex-wrap min-w-0">
+          <div class="h-8 bg-[#1abc9c] text-white px-3 py-1 rounded-lg shadow-2xs flex items-center space-x-2">
+            <span class="text-[11px] font-black uppercase tracking-wider leading-none">AVANCE</span>
+            <p id="kpi-avance" class="text-sm font-black leading-none">0%</p>
           </div>
 
-          <div class="flex items-center space-x-2 flex-shrink-0">
-            <div class="h-10 bg-[#2ecc71] text-white px-3 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[155px] space-x-2">
-              <span class="text-[12px] font-black uppercase tracking-tight whitespace-nowrap leading-none">EJECUTADO</span>
-              <p id="kpi-ejecutado" class="text-[13.5px] font-black whitespace-nowrap leading-none">0 Items</p>
-            </div>
-
-            <div class="h-10 bg-[#f1c40f] text-[#2c3e50] px-3 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[172px] space-x-2">
-              <span class="text-[12px] font-black uppercase tracking-tight whitespace-nowrap leading-none">EN PROCESO</span>
-              <p id="kpi-proceso" class="text-[13.5px] font-black whitespace-nowrap leading-none">0 Items</p>
-            </div>
-
-            <div class="h-10 bg-[#e74c3c] text-white px-3 py-1 rounded-xl shadow-xs flex items-center justify-between min-w-[172px] space-x-2">
-              <span class="text-[12px] font-black uppercase tracking-tight whitespace-nowrap leading-none">NO INICIADO</span>
-              <p id="kpi-pendiente" class="text-[13.5px] font-black whitespace-nowrap leading-none">0 Items</p>
-            </div>
+          <div class="h-8 bg-[#2ecc71] text-white px-3 py-1 rounded-lg shadow-2xs flex items-center space-x-2">
+            <span class="text-[11px] font-black uppercase tracking-tight leading-none">EJECUTADO</span>
+            <p id="kpi-ejecutado" class="text-xs font-black leading-none">0 Items</p>
           </div>
 
-          <div id="badge-filtro-activo" class="hidden items-center bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-xs space-x-1.5 animate-pulse ml-3 flex-shrink-0">
+          <div class="h-8 bg-[#f1c40f] text-[#2c3e50] px-3 py-1 rounded-lg shadow-2xs flex items-center space-x-2">
+            <span class="text-[11px] font-black uppercase tracking-tight leading-none">EN PROCESO</span>
+            <p id="kpi-proceso" class="text-xs font-black leading-none">0 Items</p>
+          </div>
+
+          <div class="h-8 bg-[#e74c3c] text-white px-3 py-1 rounded-lg shadow-2xs flex items-center space-x-2">
+            <span class="text-[11px] font-black uppercase tracking-tight leading-none">NO INICIADO</span>
+            <p id="kpi-pendiente" class="text-xs font-black leading-none">0 Items</p>
+          </div>
+
+          <div id="badge-filtro-activo" class="hidden items-center bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold px-2 py-1 rounded-lg shadow-2xs space-x-1 animate-pulse">
             <span>🔍</span>
-            <span id="badge-filtro-texto" class="truncate max-w-[190px]">Filtrado</span>
-            <button onclick="limpiarTodosFiltros()" class="text-amber-800 hover:text-amber-950 font-black ml-1 text-xs hover:scale-110 transition cursor-pointer" title="Quitar filtro y ver todo">✕</button>
+            <span id="badge-filtro-texto" class="truncate max-w-[160px]">Filtrado</span>
+            <button onclick="limpiarTodosFiltros()" class="text-amber-800 hover:text-amber-950 font-black ml-1 text-xs cursor-pointer" title="Quitar filtro">✕</button>
           </div>
         </div>
 
-        <div class="flex-shrink-0">
-          <div id="badge-rol-gantt" class="h-10 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-extrabold uppercase px-3.5 rounded-xl shadow-xs flex items-center space-x-1.5 whitespace-nowrap">
-            <span>👑</span>
-            <span>GESTOR DE PROYECTO</span>
-          </div>
+        <!-- Acciones Administrativas de Uso Ocasional -->
+        <div class="flex items-center space-x-1.5 flex-shrink-0">
+          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="h-8 px-2.5 bg-slate-200 hover:bg-slate-300 text-[#093753] border border-slate-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer" title="Asignación de Personal y Roles">
+            <span>👥</span>
+            <span>Personal</span>
+          </button>
+
+          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="h-8 px-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer" title="Historial de Auditoría">
+            <span>📜</span>
+            <span>Historial</span>
+          </button>
         </div>
       </div>
+    </div>
 
-      <div class="flex flex-nowrap items-center justify-between gap-1.5 bg-white p-2 rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-        <div class="flex flex-nowrap items-center gap-1.5 flex-shrink-0">
-          <button id="btn-nueva-act-gantt" onclick="botonSuperiorNuevaActividad()" class="bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold px-2.5 py-1.5 rounded transition shadow flex items-center space-x-1 whitespace-nowrap">
-            <span class="text-sm leading-none">+</span>
+    <!-- PISO 3: TOOLBAR OPERATIVO UNIFICADO (TODO A 1 SOLO CLIC, SIN ACORDEÓN) -->
+    <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5">
+      <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 bg-white p-2 rounded-xl shadow-xs border border-gray-200 overflow-x-auto">
+        
+        <!-- Bloque 1: Creación Directa y Filtros de Tareas -->
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <button id="btn-nueva-act-gantt" onclick="botonSuperiorNuevaActividad()" class="h-[30px] bg-[#6FB34A] hover:bg-[#5da03b] text-white text-xs font-black px-3 rounded-lg transition shadow-xs flex items-center space-x-1 cursor-pointer whitespace-nowrap">
+            <span class="text-base leading-none">+</span>
             <span>Actividad</span>
           </button>
           
-          <div class="relative flex items-center h-[29px] bg-[#0f2a4a] hover:bg-[#1b4f8a] border border-blue-900/60 rounded-lg px-2.5 py-1 shadow-xs transition-colors cursor-pointer group">
+          <div class="relative flex items-center h-[30px] bg-[#093753] hover:bg-[#0f4b70] border border-blue-900/60 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
               <span class="text-xs">👁️</span>
-              <span id="txt-nivel-activo-label" class="text-xs font-black text-white leading-none">Todo (N4)</span>
-              <svg class="w-3.5 h-3.5 text-teal-300 ml-0.5 transform group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+              <span id="txt-nivel-activo-label" class="text-xs font-bold text-white leading-none">Todo (N4)</span>
+              <svg class="w-3.5 h-3.5 text-teal-300 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
             <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold">
-              <option value="4" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold" selected>&nbsp;&nbsp;👁️ Todo (N4)</option>
-              <option value="1" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Nivel 1</option>
-              <option value="2" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Nivel 2</option>
-              <option value="3" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Nivel 3</option>
+              <option value="4" class="bg-[#093753] text-white py-1.5" selected>Todo (N4)</option>
+              <option value="1" class="bg-[#093753] text-white py-1.5">Nivel 1</option>
+              <option value="2" class="bg-[#093753] text-white py-1.5">Nivel 2</option>
+              <option value="3" class="bg-[#093753] text-white py-1.5">Nivel 3</option>
             </select>
           </div>
 
-          <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-24 md:w-32 text-xs bg-gray-100 border border-gray-300 rounded-lg px-2.5 py-1 h-[29px] outline-none focus:border-[#0f2a4a] font-semibold">
+          <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-28 md:w-36 text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 h-[30px] outline-none focus:border-[#093753] focus:bg-white font-semibold">
 
-          <div class="relative flex items-center w-[170px] max-w-[170px] flex-shrink-0">
-            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-100 border border-gray-300 rounded-lg pl-2.5 pr-6 py-1 h-[29px] outline-none font-semibold text-gray-700 select-clean-arrow cursor-pointer whitespace-nowrap" title="Filtrar por personal asignado">
-              <option value="">👤 Todo el Personal</option>
+          <div class="relative flex items-center w-[160px] flex-shrink-0">
+            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 h-[30px] outline-none font-semibold text-gray-700 cursor-pointer truncate" title="Filtrar por responsable">
+              <option value="">👤 Personal (Todos)</option>
             </select>
           </div>
+        </div>
 
-          <div class="relative flex items-center h-[29px] bg-[#0f2a4a] hover:bg-[#1b4f8a] border border-blue-900/60 rounded-lg px-3 py-1 shadow-xs transition-colors cursor-pointer group">
-            <div class="flex items-center space-x-1.5 pointer-events-none select-none">
-              <span class="text-[10px] uppercase tracking-wider text-teal-300 font-black leading-none">ESCALA:</span>
-              <span id="txt-escala-activa-label" class="text-xs font-black text-white leading-none">Días</span>
-              <svg class="w-3.5 h-3.5 text-teal-300 ml-1 transform group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+        <!-- Bloque 2: Herramientas Operativas Directas (Visibles con ícono y texto a 1 solo clic) -->
+        <div class="flex items-center gap-1.5 flex-shrink-0 border-l border-r border-gray-200 px-2">
+          <button onclick="exportarExcelCSV()" class="h-[30px] px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Exportar Cronograma a Excel">
+            <span>📊</span>
+            <span>Excel</span>
+          </button>
+
+          <button id="btn-toggle-cpm" onclick="alternarCapaRutaCritica()" class="relative h-[30px] px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Activar / Desactivar Ruta Crítica">
+            <span>🔥</span>
+            <span>Ruta Crítica</span>
+            <span id="badge-duracion-cpm" class="hidden absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[8px] font-black px-1 rounded-full border border-white">0d</span>
+          </button>
+
+          <button id="btn-config-dependencias" onclick="abrirModalDependencias()" class="h-[30px] px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Configurar Predecesoras (CPM)">
+            <span>🔗</span>
+            <span>Dependencias</span>
+          </button>
+
+          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] px-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Importar o Guardar Plantilla">
+            <span id="ico-accion-plantilla">📂</span>
+            <span id="txt-accion-plantilla">Plantilla</span>
+          </button>
+        </div>
+
+        <!-- Bloque 3: Control y Escala Temporal del Gantt -->
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <div class="relative flex items-center h-[30px] bg-[#093753] hover:bg-[#0f4b70] border border-blue-900/60 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
+            <div class="flex items-center space-x-1 pointer-events-none select-none">
+              <span class="text-[10px] text-teal-300 font-black uppercase">ESCALA:</span>
+              <span id="txt-escala-activa-label" class="text-xs font-bold text-white leading-none">Días</span>
+              <svg class="w-3.5 h-3.5 text-teal-300 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
             <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold">
-              <option value="dias" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold" selected>&nbsp;&nbsp;Días</option>
-              <option value="semanas" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Semanas</option>
-              <option value="meses" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Meses</option>
-              <option value="trimestres" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Trimestres</option>
-              <option value="semestres" class="bg-[#0f2a4a] text-white py-2 pl-4 text-xs font-semibold">&nbsp;&nbsp;Semestres</option>
+              <option value="dias" class="bg-[#093753] text-white" selected>Días</option>
+              <option value="semanas" class="bg-[#093753] text-white">Semanas</option>
+              <option value="meses" class="bg-[#093753] text-white">Meses</option>
+              <option value="trimestres" class="bg-[#093753] text-white">Trimestres</option>
+              <option value="semestres" class="bg-[#093753] text-white">Semestres</option>
             </select>
           </div>
 
-          <div id="contenedor-spinbutton" class="flex items-center bg-[#0f2a4a] text-white rounded-lg p-0.5 space-x-1 shadow-sm transition-all duration-200">
-            <div id="box-input-semana" class="flex items-center space-x-1 overflow-hidden transition-all duration-200">
-              <span class="text-[10px] font-bold uppercase tracking-tight pl-1">Sem</span>
+          <div id="contenedor-spinbutton" class="flex items-center bg-[#093753] text-white rounded-lg p-0.5 space-x-1 shadow-2xs">
+            <div id="box-input-semana" class="flex items-center space-x-1 pl-1">
+              <span class="text-[9px] font-bold uppercase">Sem</span>
               <div class="flex items-center bg-white rounded border border-gray-300 overflow-hidden">
                 <div class="flex flex-col border-r border-gray-300">
-                  <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[7px] px-1 py-0.5 text-gray-800 font-black leading-none border-b border-gray-300">▲</button>
-                  <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[7px] px-1 py-0.5 text-gray-800 font-black leading-none">▼</button>
+                  <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[7px] px-1 text-gray-800 font-black leading-none border-b border-gray-300">▲</button>
+                  <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[7px] px-1 text-gray-800 font-black leading-none">▼</button>
                 </div>
-                <input type="number" id="input-semana-inicio" min="1" max="999" value="1" onchange="fijarSemanaInicio(this.value)" class="w-10 text-center text-xs font-extrabold text-[#0f2a4a] outline-none px-0.5">
+                <input type="number" id="input-semana-inicio" min="1" max="999" value="1" onchange="fijarSemanaInicio(this.value)" class="w-9 text-center text-xs font-black text-[#093753] outline-none">
               </div>
             </div>
-            <button onclick="irAInicioProyecto()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 py-1 rounded transition shadow-xs whitespace-nowrap" title="Ir a inicio">Inicio</button>
-            <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2 py-1 rounded transition shadow-xs whitespace-nowrap" title="Ir a hoy">Hoy</button>
+            <button onclick="irAInicioProyecto()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-1.5 py-1 rounded transition whitespace-nowrap">Inicio</button>
+            <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-1.5 py-1 rounded transition whitespace-nowrap">Hoy</button>
           </div>
 
-          <button onclick="abrirModalColumnas()" class="bg-[#34495e] hover:bg-[#2c3e50] text-white text-xs font-bold px-2 py-1.5 rounded transition shadow flex items-center space-x-1 whitespace-nowrap">
+          <button onclick="abrirModalColumnas()" class="h-[30px] px-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Configurar columnas visibles">
             <span>👁️</span>
             <span>Columnas</span>
           </button>
         </div>
 
-        <div class="flex flex-nowrap items-center gap-1.5 flex-shrink-0">
-          <button onclick="exportarExcelCSV()" class="group h-[29px] px-2 bg-[#27ae60] hover:bg-[#219150] text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap" title="Exportar Cronograma a Excel (CSV)">
-            <span class="text-sm">📊</span>
-            <span class="max-w-0 opacity-0 group-hover:max-w-[110px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] text-xs font-bold overflow-hidden">Excel</span>
-          </button>
-
-          <button id="btn-toggle-cpm" onclick="alternarCapaRutaCritica()" class="group relative h-[29px] px-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center border border-gray-300 flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap" title="Activar / Desactivar Ruta Crítica (CPM)">
-            <span class="text-sm">🔥</span>
-            <span class="max-w-0 opacity-0 group-hover:max-w-[110px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] text-xs font-bold overflow-hidden">Ruta Crítica</span>
-            <span id="badge-duracion-cpm" class="hidden absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[8px] font-black px-1 py-0.2 rounded-full border border-white shadow-xs">0d</span>
-          </button>
-
-          <button id="btn-config-dependencias" onclick="abrirModalDependencias()" class="group h-[29px] px-2 bg-[#34495e] hover:bg-[#2c3e50] text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap" title="Configurar Dependencias y Predecesoras (CPM)">
-            <span class="text-sm">🔗</span>
-            <span class="max-w-0 opacity-0 group-hover:max-w-[110px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] text-xs font-bold overflow-hidden">Dependencias</span>
-          </button>
-
-          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="group h-[29px] px-2 bg-[#718093] hover:bg-[#576574] text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap" title="Historial de cambios">
-            <span class="text-sm">📜</span>
-            <span class="max-w-0 opacity-0 group-hover:max-w-[110px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] text-xs font-bold overflow-hidden">Historial</span>
-          </button>
-
-          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="group h-[29px] px-2 bg-[#2980b9] hover:bg-[#1f618d] text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap" title="Administración de Personal y Roles del Proyecto">
-            <span class="text-sm">⚙️</span>
-            <span class="max-w-0 opacity-0 group-hover:max-w-[110px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] text-xs font-bold overflow-hidden">Personal</span>
-          </button>
-
-          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="group h-[29px] px-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap" title="Importar Plantilla">
-            <span id="ico-accion-plantilla" class="text-sm">📂</span>
-            <span id="txt-accion-plantilla" class="max-w-0 opacity-0 group-hover:max-w-[120px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] text-xs font-bold overflow-hidden">Plantilla</span>
-          </button>
-        </div>
       </div>
     </div>
   </div>
