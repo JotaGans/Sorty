@@ -268,9 +268,9 @@
     <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5 bg-slate-100/90 border-b border-gray-200">
       <div class="relative flex items-center justify-between min-h-[34px]">
         
-        <!-- Botón Volver al Hub: Morado vibrante (#7f22fe) expandido permanentemente -->
+        <!-- Botón Volver al Hub: Azul Marino (#0f2a4a) con Casita Vectorial Blanca Nítida -->
         <div class="flex-shrink-0 z-10" style="margin-left: 6px;">
-          <button onclick="volverAlHub()" class="h-8 px-3 bg-[#7f22fe] hover:bg-[#6c1ce0] text-white border border-[#6f18e8] rounded-lg text-xs font-black transition-colors shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Volver a proyectos">
+          <button onclick="volverAlHub()" class="h-8 px-3 bg-[#0f2a4a] hover:bg-[#1b4573] text-white border border-blue-900/60 rounded-lg text-xs font-black transition-colors shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Volver al panel general de proyectos">
             <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
             </svg>
@@ -278,9 +278,8 @@
           </button>
         </div>
 
-        <!-- KPIs Semáforo: Con anchos protegidos (flex-shrink-0 y whitespace-nowrap) para que NUNCA se descuadren ni rompan en 2 líneas -->
+        <!-- KPIs Semáforo: Centrados en el renglón y desplazados exactamente 5px a la derecha -->
         <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center gap-2 pointer-events-none z-0" style="transform: translate(calc(-50% + 5px), -50%);">
-          
           <div class="h-8 bg-[#1abc9c] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto flex-shrink-0 whitespace-nowrap">
             <span class="text-[11px] font-black uppercase tracking-wider leading-none whitespace-nowrap">AVANCE</span>
             <p id="kpi-avance" class="text-sm font-black leading-none whitespace-nowrap">0%</p>
@@ -301,7 +300,6 @@
             <p id="kpi-pendiente" class="text-xs font-black leading-none whitespace-nowrap">0 Items</p>
           </div>
 
-          <!-- Badge de Filtro Activo: Protegido sin comprimir a los hermanos -->
           <div id="badge-filtro-activo" class="hidden items-center bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-bold px-2.5 h-8 rounded-lg shadow-2xs space-x-1 animate-pulse pointer-events-auto flex-shrink-0 whitespace-nowrap">
             <span>🔍</span>
             <span id="badge-filtro-texto" class="truncate max-w-[140px] leading-none">Filtrado</span>
@@ -328,20 +326,22 @@
     <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5">
       <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 bg-white p-2 rounded-xl shadow-xs border border-gray-200 overflow-x-auto">
         
-        <!-- Bloque 1: Creación + Línea divisoria + Filtros de Tareas -->
+        <!-- Bloque 1: Creación + Divisor + Filtros con Ojito SVG y Ancho Reducido (-5px = 175px) -->
         <div class="flex items-center gap-1.5 flex-shrink-0">
           <button id="btn-nueva-act-gantt" onclick="botonSuperiorNuevaActividad()" class="h-[30px] bg-[#6FB34A] hover:bg-[#5da03b] text-white text-xs font-black px-3 rounded-lg transition shadow-xs flex items-center space-x-1 cursor-pointer whitespace-nowrap">
             <span class="text-base leading-none">+</span>
             <span>Actividad</span>
           </button>
           
-          <!-- Línea Divisoria solicitada a la derecha de + Actividad -->
           <div class="h-5 w-px bg-gray-300 mx-0.5 flex-shrink-0"></div>
           
-          <!-- Dropdown Nivel Jerárquico -->
+          <!-- Dropdown Nivel Jerárquico con Ojito SVG Minimalista -->
           <div class="relative flex items-center h-[30px] bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
-              <span class="text-xs">👁️</span>
+              <svg class="w-3.5 h-3.5 text-slate-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
               <span id="txt-nivel-activo-label" class="text-xs font-semibold text-gray-700 leading-none">Todo (N4)</span>
               <svg class="w-3.5 h-3.5 text-gray-500 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -357,15 +357,15 @@
 
           <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-28 md:w-36 text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 h-[30px] outline-none focus:border-[#0f2a4a] focus:bg-white font-semibold text-gray-700">
 
-          <!-- Filtro de Personal con texto completo -->
-          <div class="relative flex items-center w-[180px] flex-shrink-0">
+          <!-- Filtro de Personal: Reducido 5px exactos (w-[175px]) -->
+          <div class="relative flex items-center w-[175px] flex-shrink-0">
             <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 h-[30px] outline-none font-semibold text-gray-700 cursor-pointer" title="Filtrar por personal">
               <option value="">👤 Todo el Personal</option>
             </select>
           </div>
         </div>
 
-        <!-- Bloque 2: Herramientas Operativas (con Columnas y líneas divisorias) -->
+        <!-- Bloque 2: Herramientas Operativas con Ojito SVG en Columnas -->
         <div class="flex items-center gap-1.5 flex-shrink-0 border-l border-r border-gray-200 px-2">
           <button onclick="exportarExcelCSV()" class="h-[30px] px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Exportar Cronograma a Excel (CSV)">
             <span>📊</span>
@@ -382,13 +382,17 @@
             <span>Dependencias</span>
           </button>
 
+          <!-- Botón Columnas con Ojito SVG Minimalista -->
           <button onclick="abrirModalColumnas()" class="h-[30px] px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Configurar columnas visibles">
-            <span>👁️</span>
+            <svg class="w-3.5 h-3.5 text-slate-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
             <span>Columnas</span>
           </button>
         </div>
 
-        <!-- Bloque 3: Escala y Controles Gantt + Plantilla Arrinconada a la Derecha -->
+        <!-- Bloque 3: Escala + Controles SEM Dinámicos Suaves + Plantilla -->
         <div class="flex items-center gap-1.5 flex-shrink-0">
           <div class="relative flex items-center h-[30px] bg-[#0f2a4a] hover:bg-[#1a3d66] border border-blue-900/60 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
@@ -398,7 +402,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-            <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold text-xs">
+            <select id="sel-escala-temporal" onchange="cambiarEscalaTemporalConAnimacion(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold text-xs">
               <option value="dias" class="bg-[#0f2a4a] text-white text-xs py-1.5" selected>Días</option>
               <option value="semanas" class="bg-[#0f2a4a] text-white text-xs py-1.5">Semanas</option>
               <option value="meses" class="bg-[#0f2a4a] text-white text-xs py-1.5">Meses</option>
@@ -407,11 +411,13 @@
             </select>
           </div>
 
-          <!-- Sección SEM: h-[30px] para igualar exactamente la altura de ESCALA -->
-          <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg px-1 space-x-1 shadow-2xs border border-blue-900/60">
-            <div id="box-input-semana" class="flex items-center space-x-1">
-              <span class="text-[9.5px] font-bold uppercase leading-none">SEM</span>
-              <div class="flex items-center h-[24px] bg-white rounded border border-gray-300 overflow-hidden">
+          <!-- Marco Azul Unificado SEM / Navegación Temporal (con animación suave) -->
+          <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg px-1 space-x-1 shadow-2xs border border-blue-900/60 transition-all duration-300 ease-in-out">
+            
+            <!-- Subsección SEM: colapsa suavemente sin saltos bruscos -->
+            <div id="box-input-semana" class="flex items-center space-x-1 transition-all duration-300 ease-in-out overflow-hidden max-w-[120px] opacity-100">
+              <span class="text-[9.5px] font-bold uppercase leading-none pl-0.5">SEM</span>
+              <div class="flex items-center h-[24px] bg-white rounded border border-gray-300 overflow-hidden flex-shrink-0">
                 <div class="flex flex-col h-full justify-between border-r border-gray-300">
                   <button onclick="cambiarSemanaInicio(1)" class="spin-btn text-[6.5px] px-1 text-gray-800 font-black leading-none border-b border-gray-300 h-1/2 flex items-center justify-center">▲</button>
                   <button onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[6.5px] px-1 text-gray-800 font-black leading-none h-1/2 flex items-center justify-center">▼</button>
@@ -419,12 +425,13 @@
                 <input type="number" id="input-semana-inicio" min="1" max="999" value="1" onchange="fijarSemanaInicio(this.value)" class="w-8 text-center text-xs font-black text-[#0f2a4a] outline-none leading-none">
               </div>
             </div>
-            <button onclick="irAInicioProyecto()" class="h-[24px] bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center">Inicio</button>
-            <button onclick="irASemanaActual()" class="h-[24px] bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center">Hoy</button>
+            
+            <button onclick="irAInicioProyecto()" class="h-[24px] bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0">Inicio</button>
+            <button onclick="irASemanaActual()" class="h-[24px] bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0">Hoy</button>
           </div>
 
-          <!-- Botón Plantilla: en su lugar permutado (a la derecha), morado y con conmutación dinámica -->
-          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[34px] min-w-[34px] bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg text-sm font-bold transition shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap flex-shrink-0" title="Guardar como plantilla de proyecto">
+          <!-- Botón Plantilla: se desliza suavemente junto al marco azul -->
+          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[34px] min-w-[34px] bg-[#4f46e5] hover:bg-[#4338ca] text-white rounded-lg text-sm font-bold transition-all duration-300 shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap flex-shrink-0" title="Guardar como plantilla de proyecto">
             <span id="ico-accion-plantilla" class="leading-none">📥</span>
             <span id="txt-accion-plantilla" class="hidden"></span>
           </button>

@@ -318,3 +318,12 @@ button#btn-accion-plantilla-dinamico #txt-accion-plantilla {
   display: inline-block !important;
   line-height: 1 !important;
 }
+
+/* Transición suave para ocultar/mostrar la sección numérica SEM */
+#box-input-semana.sem-oculto {
+  max-width: 0 !important;
+  opacity: 0 !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}

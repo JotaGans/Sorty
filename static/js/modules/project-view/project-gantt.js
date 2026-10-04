@@ -399,6 +399,17 @@ export function fijarModoZoomDirecto(modo) {
   state.modoZoom = modo;
   const labelEscala = document.getElementById("txt-escala-activa-label");
   if (labelEscala) labelEscala.innerText = modo.charAt(0).toUpperCase() + modo.slice(1);
+
+  // Ocultar suavemente el control SEM en escalas macro (meses, trimestres, semestres)
+  const boxSem = document.getElementById("box-input-semana");
+  if (boxSem) {
+    if (modo === "dias" || modo === "semanas") {
+      boxSem.classList.remove("sem-oculto");
+    } else {
+      boxSem.classList.add("sem-oculto");
+    }
+  }
+
   renderizarCabeceraGantt();
   renderizarTabla();
 }
