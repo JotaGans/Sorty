@@ -268,53 +268,53 @@
     <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5 bg-slate-100/90 border-b border-gray-200">
       <div class="relative flex items-center justify-between min-h-[34px]">
         
-        <!-- Botón Volver al Hub: Morado oscuro (#4c1d95) -->
+        <!-- Botón Volver al Hub: Morado pastel suave (#c4b5fd) con texto contrastado y expansible -->
         <div class="flex-shrink-0 z-10" style="margin-left: 6px;">
-          <div class="relative flex items-center">
-            <button onclick="volverAlHub()" class="group h-8 px-2.5 bg-[#4c1d95] hover:bg-[#3b0764] text-white rounded-lg text-xs font-bold transition-all duration-300 ease-in-out shadow-2xs flex items-center cursor-pointer whitespace-nowrap overflow-hidden" title="Volver a proyectos">
-              <span class="text-sm leading-none">🏠</span>
-              <span class="max-w-0 opacity-0 group-hover:max-w-[130px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 ease-in-out font-bold overflow-hidden leading-none">Volver a proyectos</span>
-            </button>
-          </div>
+          <button onclick="volverAlHub()" class="group h-8 px-2.5 bg-[#ddd6fe] hover:bg-[#c4b5fd] text-[#4c1d95] border border-[#a78bfa] rounded-lg text-xs font-black transition-all duration-300 ease-in-out shadow-2xs flex items-center cursor-pointer whitespace-nowrap overflow-hidden" title="Volver a proyectos">
+            <span class="text-sm leading-none">🏠</span>
+            <span class="max-w-0 opacity-0 group-hover:max-w-[130px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 ease-in-out font-bold overflow-hidden leading-none text-[#3b0764]">Volver a proyectos</span>
+          </button>
         </div>
 
-        <!-- KPIs Semáforo: Centrados en el renglón y desplazados exactamente 5px a la derecha (inmunes a la expansión del botón) -->
+        <!-- KPIs Semáforo: Con anchos protegidos (flex-shrink-0 y whitespace-nowrap) para que NUNCA se descuadren ni rompan en 2 líneas -->
         <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center gap-2 pointer-events-none z-0" style="transform: translate(calc(-50% + 5px), -50%);">
-          <div class="h-8 bg-[#1abc9c] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto">
-            <span class="text-[11px] font-black uppercase tracking-wider leading-none">AVANCE</span>
-            <p id="kpi-avance" class="text-sm font-black leading-none">0%</p>
+          
+          <div class="h-8 bg-[#1abc9c] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto flex-shrink-0 whitespace-nowrap">
+            <span class="text-[11px] font-black uppercase tracking-wider leading-none whitespace-nowrap">AVANCE</span>
+            <p id="kpi-avance" class="text-sm font-black leading-none whitespace-nowrap">0%</p>
           </div>
 
-          <div class="h-8 bg-[#2ecc71] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto">
-            <span class="text-[11px] font-black uppercase tracking-tight leading-none">EJECUTADO</span>
-            <p id="kpi-ejecutado" class="text-xs font-black leading-none">0 Items</p>
+          <div class="h-8 bg-[#2ecc71] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto flex-shrink-0 whitespace-nowrap">
+            <span class="text-[11px] font-black uppercase tracking-tight leading-none whitespace-nowrap">EJECUTADO</span>
+            <p id="kpi-ejecutado" class="text-xs font-black leading-none whitespace-nowrap">0 Items</p>
           </div>
 
-          <div class="h-8 bg-[#f1c40f] text-[#2c3e50] px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto">
-            <span class="text-[11px] font-black uppercase tracking-tight leading-none">EN PROCESO</span>
-            <p id="kpi-proceso" class="text-xs font-black leading-none">0 Items</p>
+          <div class="h-8 bg-[#f1c40f] text-[#2c3e50] px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto flex-shrink-0 whitespace-nowrap">
+            <span class="text-[11px] font-black uppercase tracking-tight leading-none whitespace-nowrap">EN PROCESO</span>
+            <p id="kpi-proceso" class="text-xs font-black leading-none whitespace-nowrap">0 Items</p>
           </div>
 
-          <div class="h-8 bg-[#e74c3c] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto">
-            <span class="text-[11px] font-black uppercase tracking-tight leading-none">NO INICIADO</span>
-            <p id="kpi-pendiente" class="text-xs font-black leading-none">0 Items</p>
+          <div class="h-8 bg-[#e74c3c] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto flex-shrink-0 whitespace-nowrap">
+            <span class="text-[11px] font-black uppercase tracking-tight leading-none whitespace-nowrap">NO INICIADO</span>
+            <p id="kpi-pendiente" class="text-xs font-black leading-none whitespace-nowrap">0 Items</p>
           </div>
 
-          <div id="badge-filtro-activo" class="hidden items-center bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold px-2 h-8 rounded-lg shadow-2xs space-x-1 animate-pulse pointer-events-auto">
+          <!-- Badge de Filtro Activo: Protegido sin comprimir a los hermanos -->
+          <div id="badge-filtro-activo" class="hidden items-center bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-bold px-2.5 h-8 rounded-lg shadow-2xs space-x-1 animate-pulse pointer-events-auto flex-shrink-0 whitespace-nowrap">
             <span>🔍</span>
-            <span id="badge-filtro-texto" class="truncate max-w-[160px]">Filtrado</span>
-            <button onclick="limpiarTodosFiltros()" class="text-amber-800 hover:text-amber-950 font-black ml-1 text-xs cursor-pointer" title="Quitar filtro">✕</button>
+            <span id="badge-filtro-texto" class="truncate max-w-[140px] leading-none">Filtrado</span>
+            <button onclick="limpiarTodosFiltros()" class="text-amber-800 hover:text-amber-950 font-black ml-1 text-xs cursor-pointer leading-none" title="Quitar filtro">✕</button>
           </div>
         </div>
 
         <!-- Herramientas Administrativas (Derecha) -->
         <div class="flex items-center space-x-1.5 flex-shrink-0 z-10">
-          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="h-8 px-2.5 bg-white hover:bg-slate-200 text-[#0f2a4a] border border-gray-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer" title="Asignación de Personal y Roles">
+          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="h-8 px-2.5 bg-white hover:bg-slate-200 text-[#0f2a4a] border border-gray-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Asignación de Personal y Roles">
             <span>👥</span>
             <span>Personal</span>
           </button>
 
-          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="h-8 px-2.5 bg-white hover:bg-slate-200 text-slate-700 border border-gray-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer" title="Historial de Auditoría">
+          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="h-8 px-2.5 bg-white hover:bg-slate-200 text-slate-700 border border-gray-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Historial de Auditoría">
             <span>📜</span>
             <span>Historial</span>
           </button>

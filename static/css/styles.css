@@ -311,3 +311,10 @@ button#btn-accion-plantilla-dinamico {
 button#btn-accion-plantilla-dinamico #txt-accion-plantilla {
   display: none !important;
 }
+
+/* Blindaje de KPIs semáforo para evitar salto de línea al filtrar */
+#kpi-avance, #kpi-ejecutado, #kpi-proceso, #kpi-pendiente {
+  white-space: nowrap !important;
+  display: inline-block !important;
+  line-height: 1 !important;
+}
