@@ -233,8 +233,9 @@ thead th {
   background-color: #5eead4 !important;
 }
 
-/* Homologación de barra superior y herramientas */
-#badge-rol-gantt {
+/* Homologación estricta de barra superior y herramientas */
+#badge-rol-gantt,
+div#badge-rol-gantt {
   height: 22px !important;
   min-height: 22px !important;
   max-height: 22px !important;
@@ -249,12 +250,14 @@ thead th {
   gap: 4px !important;
 }
 
-#btn-accion-plantilla-dinamico {
+#btn-accion-plantilla-dinamico,
+button#btn-accion-plantilla-dinamico {
   height: 30px !important;
   min-height: 30px !important;
   max-height: 30px !important;
   padding: 0 10px !important;
   background-color: #f0fdfa !important;
+  background: #f0fdfa !important;
   color: #115e59 !important;
   border: 1px solid #5eead4 !important;
   border-radius: 8px !important;
@@ -262,7 +265,7 @@ thead th {
   font-weight: 700 !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 5px !important;
+  gap: 6px !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
   transition: all 0.15s ease !important;
 }
@@ -271,32 +274,38 @@ thead th {
   background-color: #ccfbf1 !important;
 }
 
-#btn-accion-plantilla-dinamico #txt-accion-plantilla {
+#btn-accion-plantilla-dinamico #txt-accion-plantilla,
+button#btn-accion-plantilla-dinamico span {
   max-width: none !important;
   opacity: 1 !important;
   margin-left: 0 !important;
   font-size: 12px !important;
   font-weight: 700 !important;
   color: inherit !important;
-  display: inline !important;
+  display: inline-block !important;
 }
 
-#btn-toggle-cpm {
+#btn-toggle-cpm,
+button#btn-toggle-cpm {
   height: 30px !important;
   min-height: 30px !important;
   max-height: 30px !important;
   padding: 0 10px !important;
+  background-color: #fff1f2 !important;
+  color: #9f1239 !important;
+  border: 1px solid #fecdd3 !important;
+  border-radius: 8px !important;
   font-size: 12px !important;
   font-weight: 700 !important;
-  border-radius: 8px !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 5px !important;
+  gap: 6px !important;
 }
 
-#btn-toggle-cpm span {
+#btn-toggle-cpm span,
+button#btn-toggle-cpm span {
   max-width: none !important;
   opacity: 1 !important;
   margin-left: 0 !important;
-  display: inline !important;
+  display: inline-block !important;
 }
