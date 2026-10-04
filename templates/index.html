@@ -231,33 +231,35 @@
 
   <!-- VISTA: GANTT Y CONTROL DE PROYECTO -->
   <div id="bloque-superior-gantt" class="flex-shrink-0 z-30 bg-[#f5f6fa] shadow-sm">
-    <!-- PISO 1: HEADER INSTITUCIONAL (Color idéntico al Hub: #0f2a4a) -->
-    <header class="bg-[#0f2a4a] text-white shadow-md">
-      <div class="max-w-[1920px] mx-auto px-4 md:px-6 h-[58px] flex items-center justify-between gap-3">
-        <div class="flex items-center space-x-2.5 flex-shrink-0">
-          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-9 object-contain" onerror="this.outerHTML='<span class=\'text-xl font-black tracking-widest text-white\'>IMARPE</span>'">
+    <!-- PISO 1: HEADER INSTITUCIONAL (#0f2a4a) CON TÍTULO MATEMÁTICAMENTE CENTRADO -->
+    <header class="bg-[#0f2a4a] text-white shadow-md relative">
+      <div class="max-w-[1920px] mx-auto px-4 md:px-6 h-[54px] flex items-center justify-between">
+        
+        <!-- Extremo Izquierdo: Logotipo IMARPE -->
+        <div class="flex items-center space-x-2.5 flex-shrink-0 z-10">
+          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-8 md:h-9 object-contain" onerror="this.outerHTML='<span class=\'text-xl font-black tracking-widest text-white\'>IMARPE</span>'">
         </div>
         
-        <!-- Título Editable Centrado -->
-        <div class="flex-1 max-w-4xl px-2 text-center mx-auto min-w-0">
+        <!-- Centro Exacto: Título Editable del Proyecto (Centrado Absoluto en Pantalla) -->
+        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[50%] max-w-2xl text-center z-0 pointer-events-none">
           <input type="text" id="txt-nombre-proyecto" 
                  placeholder="NOMBRE DEL PROYECTO"
-                 class="w-full bg-transparent text-white font-black text-sm md:text-lg text-center border-b border-transparent hover:border-teal-400/40 focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide truncate" 
+                 class="w-full bg-transparent text-white font-black text-sm md:text-base text-center border-b border-transparent hover:border-teal-400/40 focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide truncate pointer-events-auto cursor-text" 
                  value="">
         </div>
         
-        <!-- Contexto de Usuario y Micro-Badge de Rol Proporcionado -->
-        <div id="user-info" class="flex items-center space-x-2.5 flex-shrink-0">
-          <div id="badge-rol-gantt" class="h-6 bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-extrabold uppercase px-2 rounded-md shadow-2xs flex items-center space-x-1 whitespace-nowrap">
-            <span class="text-xs leading-none">👑</span>
-            <span class="leading-none">GESTOR DE PROYECTO</span>
+        <!-- Extremo Derecho: Micro-Badge de Rol Proporcionado y Perfil de Usuario -->
+        <div id="user-info" class="flex items-center space-x-2 flex-shrink-0 z-10">
+          <div id="badge-rol-gantt" class="h-[22px] bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-extrabold uppercase px-2 rounded flex items-center space-x-1 whitespace-nowrap shadow-2xs">
+            <span class="text-[11px] leading-none">👑</span>
+            <span class="leading-none tracking-tight">GESTOR DE PROYECTO</span>
           </div>
 
-          <div class="text-right hidden sm:block border-l border-blue-900/60 pl-2.5">
+          <div class="text-right hidden sm:block border-l border-blue-900/60 pl-2">
             <p id="user-display" class="text-xs font-bold text-gray-100 leading-tight">admin</p>
             <p id="role-display" class="text-[9px] text-teal-300 uppercase font-semibold leading-tight">ADMINISTRADOR TI</p>
           </div>
-          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-[11px] px-2.5 py-1 rounded-lg font-bold transition shadow-xs cursor-pointer">Salir</button>
+          <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-[11px] px-2.5 py-1 rounded-md font-bold transition shadow-xs cursor-pointer">Salir</button>
         </div>
       </div>
     </header>
@@ -274,24 +276,24 @@
           </button>
         </div>
 
-        <!-- KPIs Semáforo Compactos (Misma reactividad e impacto sin exceso de altura) -->
+        <!-- KPIs Semáforo Compactos (Conservan IDs de cálculo y alto contraste) -->
         <div class="flex-1 flex items-center justify-center gap-2 flex-wrap min-w-0">
-          <div class="h-8 bg-[#1abc9c] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5">
+          <div class="h-8 bg-[#1abc9c] text-white px-3 py-1 rounded-lg shadow-2xs flex items-center space-x-1.5">
             <span class="text-[11px] font-black uppercase tracking-wider leading-none">AVANCE</span>
             <p id="kpi-avance" class="text-sm font-black leading-none">0%</p>
           </div>
 
-          <div class="h-8 bg-[#2ecc71] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5">
+          <div class="h-8 bg-[#2ecc71] text-white px-3 py-1 rounded-lg shadow-2xs flex items-center space-x-1.5">
             <span class="text-[11px] font-black uppercase tracking-tight leading-none">EJECUTADO</span>
             <p id="kpi-ejecutado" class="text-xs font-black leading-none">0 Items</p>
           </div>
 
-          <div class="h-8 bg-[#f1c40f] text-[#2c3e50] px-3 rounded-lg shadow-2xs flex items-center space-x-1.5">
+          <div class="h-8 bg-[#f1c40f] text-[#2c3e50] px-3 py-1 rounded-lg shadow-2xs flex items-center space-x-1.5">
             <span class="text-[11px] font-black uppercase tracking-tight leading-none">EN PROCESO</span>
             <p id="kpi-proceso" class="text-xs font-black leading-none">0 Items</p>
           </div>
 
-          <div class="h-8 bg-[#e74c3c] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5">
+          <div class="h-8 bg-[#e74c3c] text-white px-3 py-1 rounded-lg shadow-2xs flex items-center space-x-1.5">
             <span class="text-[11px] font-black uppercase tracking-tight leading-none">NO INICIADO</span>
             <p id="kpi-pendiente" class="text-xs font-black leading-none">0 Items</p>
           </div>
@@ -354,7 +356,7 @@
           </div>
         </div>
 
-        <!-- Bloque 2: Herramientas con diseño uniforme (Mismo alto, bordes sutiles y estilos equilibrados) -->
+        <!-- Bloque 2: Herramientas con diseño 100% homogéneo en bordes, tipografía y estilo -->
         <div class="flex items-center gap-1.5 flex-shrink-0 border-l border-r border-gray-200 px-2">
           <button onclick="exportarExcelCSV()" class="h-[30px] px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Exportar Cronograma a Excel">
             <span>📊</span>
