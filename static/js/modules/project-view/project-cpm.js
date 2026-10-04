@@ -3,6 +3,26 @@ import { apiFetch } from "../../core/api.js";
 import { notificarToast, confirmModal } from "../../core/ui-dialogs.js";
 import { renderizarTabla, tieneHijos, guardarCambioDirecto } from "./project-wbs.js";
 
+// --- GESTIÓN DEL MENÚ DESPLEGABLE CPM ---
+export function toggleMenuCpm(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById("dropdown-menu-cpm");
+  if (menu) menu.classList.toggle("hidden");
+}
+
+export function cerrarMenuCpm() {
+  const menu = document.getElementById("dropdown-menu-cpm");
+  if (menu) menu.classList.add("hidden");
+}
+
+// Cerrar el menú flotante si el usuario hace clic fuera de él
+if (typeof window !== "undefined") {
+  window.addEventListener("click", () => {
+    cerrarMenuCpm();
+  });
+}
+
+// --- MODAL DE DEPENDENCIAS (PREDECESORAS) ---
 export async function abrirModalDependencias() {
   const modal = document.getElementById("modal-dependencias");
   const tbody = document.getElementById("tabla-config-dependencias-body");
@@ -90,6 +110,7 @@ export async function guardarTodasDependencias() {
   }
 }
 
+// --- CÁLCULO Y ALTERNANCIA DE RUTA CRÍTICA ---
 export async function alternarCapaRutaCritica() {
   if (!state.proyectoActualId) return;
 
@@ -141,23 +162,29 @@ export async function alternarCapaRutaCritica() {
   }
 }
 
+// --- ACTUALIZACIÓN DE ESTADO VISUAL EN EL BOTÓN Y MENÚ ---
 function actualizarBotonCpmUI(activo, duracion = 0) {
-  const btn = document.getElementById("btn-toggle-cpm");
-  const badge = document.getElementById("badge-duracion-cpm");
-  if (!btn) return;
-
+  const btn = document.getElementById("btn-menu-cpm");
+  const txtToggle = document.getElementById("txt-menu-cpm-toggle");
   const sufijo = (state.proyectoModoDuracion === "hours") ? "h" : "d";
-  const unidadNombre = (state.proyectoModoDuracion === "hours") ? "horas" : "días";
-
-  if (badge) badge.classList.add("hidden");
 
   if (activo) {
-    btn.className = "group h-[29px] px-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 shadow-xs flex items-center justify-center border border-red-700 flex-shrink-0 cursor-pointer whitespace-nowrap";
-    btn.title = `Ruta Crítica activa (Duración: ${duracion} ${unidadNombre})`;
-    btn.innerHTML = `<span class="text-sm">🔥</span><span class="ml-1 text-xs font-bold">Ruta Crítica: ${duracion}${sufijo}</span>`;
+    if (btn) {
+      btn.className = "h-[30px] w-[34px] bg-red-600 hover:bg-red-700 text-white border border-red-700 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer animate-pulse";
+      btn.title = `Ruta Crítica activa (${duracion}${sufijo})`;
+      btn.innerHTML = `<span class="text-xs leading-none">🔥</span>`;
+    }
+    if (txtToggle) {
+      txtToggle.textContent = `Desactivar Ruta Crítica (${duracion}${sufijo})`;
+    }
   } else {
-    btn.className = "group h-[29px] px-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-300 shadow-xs flex items-center justify-center border border-gray-300 flex-shrink-0 cursor-pointer whitespace-nowrap overflow-hidden";
-    btn.title = "Activar / Desactivar Ruta Crítica (CPM)";
-    btn.innerHTML = `<span class="text-sm">🔥</span><span class="max-w-0 opacity-0 group-hover:max-w-[110px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 text-xs font-bold overflow-hidden">Ruta Crítica</span>`;
+    if (btn) {
+      btn.className = "h-[30px] w-[34px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer";
+      btn.title = "Gestión de Ruta Crítica y Dependencias";
+      btn.innerHTML = `<span class="text-xs leading-none">⚡</span>`;
+    }
+    if (txtToggle) {
+      txtToggle.textContent = "Activar Ruta Crítica";
+    }
   }
 }

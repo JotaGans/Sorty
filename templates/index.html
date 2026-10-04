@@ -322,11 +322,11 @@
       </div>
     </div>
 
-    <!-- PISO 3: TOOLBAR OPERATIVO UNIFICADO -->
+    <!-- PISO 3: TOOLBAR OPERATIVO UNIFICADO Y OPTIMIZADO -->
     <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5">
       <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 bg-white p-2 rounded-xl shadow-xs border border-gray-200 overflow-x-auto">
         
-        <!-- Bloque 1: Creación + Divisor + Filtros con Ojito SVG y Ancho Reducido (-5px = 175px) -->
+        <!-- SECCIÓN IZQUIERDA: CREACIÓN Y FILTROS DIRECTOS -->
         <div class="flex items-center gap-1.5 flex-shrink-0">
           <button id="btn-nueva-act-gantt" onclick="botonSuperiorNuevaActividad()" class="h-[30px] bg-[#6FB34A] hover:bg-[#5da03b] text-white text-xs font-black px-3 rounded-lg transition shadow-xs flex items-center space-x-1 cursor-pointer whitespace-nowrap">
             <span class="text-base leading-none">+</span>
@@ -335,7 +335,7 @@
           
           <div class="h-5 w-px bg-gray-300 mx-0.5 flex-shrink-0"></div>
           
-          <!-- Dropdown Nivel Jerárquico con Ojito SVG Minimalista -->
+          <!-- Dropdown Nivel Jerárquico con Ojito SVG -->
           <div class="relative flex items-center h-[30px] bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
               <svg class="w-3.5 h-3.5 text-slate-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -357,7 +357,7 @@
 
           <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-28 md:w-36 text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 h-[30px] outline-none focus:border-[#0f2a4a] focus:bg-white font-semibold text-gray-700">
 
-          <!-- Filtro de Personal: Reducido 5px exactos (w-[175px]) -->
+          <!-- Filtro de Personal (175px) -->
           <div class="relative flex items-center w-[175px] flex-shrink-0">
             <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 h-[30px] outline-none font-semibold text-gray-700 cursor-pointer" title="Filtrar por personal">
               <option value="">👤 Todo el Personal</option>
@@ -365,35 +365,10 @@
           </div>
         </div>
 
-        <!-- Bloque 2: Herramientas Operativas con Ojito SVG en Columnas -->
-        <div class="flex items-center gap-1.5 flex-shrink-0 border-l border-r border-gray-200 px-2">
-          <button onclick="exportarExcelCSV()" class="h-[30px] px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Exportar Cronograma a Excel (CSV)">
-            <span>📊</span>
-            <span>Excel</span>
-          </button>
-
-          <button id="btn-toggle-cpm" onclick="alternarCapaRutaCritica()" class="h-[30px] px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Activar / Desactivar Ruta Crítica">
-            <span>🔥</span>
-            <span class="inline-block text-xs font-bold">Ruta Crítica</span>
-          </button>
-
-          <button id="btn-config-dependencias" onclick="abrirModalDependencias()" class="h-[30px] px-2.5 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Configurar Predecesoras (CPM)">
-            <span>🔗</span>
-            <span>Dependencias</span>
-          </button>
-
-          <!-- Botón Columnas con Ojito SVG Minimalista -->
-          <button onclick="abrirModalColumnas()" class="h-[30px] px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Configurar columnas visibles">
-            <svg class="w-3.5 h-3.5 text-slate-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            <span>Columnas</span>
-          </button>
-        </div>
-
-        <!-- Bloque 3: Escala + Controles SEM Dinámicos Suaves + Plantilla -->
+        <!-- SECCIÓN DERECHA: ESCALA + SEM + BOTONES CUADRADOS + PLANTILLA -->
         <div class="flex items-center gap-1.5 flex-shrink-0">
+          
+          <!-- Escala Temporal -->
           <div class="relative flex items-center h-[30px] bg-[#0f2a4a] hover:bg-[#1a3d66] border border-blue-900/60 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
               <span class="text-[10px] text-teal-300 font-black uppercase">ESCALA:</span>
@@ -411,10 +386,8 @@
             </select>
           </div>
 
-          <!-- Marco Azul Unificado SEM / Navegación Temporal -->
+          <!-- Marco Azul Unificado SEM / Navegación Temporal (pl-[1px] pr-[2px]) -->
           <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg pl-[1px] pr-[2px] space-x-1 shadow-2xs border border-blue-900/60 transition-all duration-200 ease-in-out">
-            
-            <!-- Subsección SEM: colapsa rápido y sutil hacia la izquierda -->
             <div id="box-input-semana" class="flex items-center space-x-1 overflow-hidden max-w-[120px] opacity-100 flex-shrink-0">
               <span class="text-[9.5px] font-bold uppercase leading-none pl-0.5">SEM</span>
               <div class="flex items-center h-[24px] bg-white rounded border border-gray-300 overflow-hidden flex-shrink-0">
@@ -425,13 +398,46 @@
                 <input type="number" id="input-semana-inicio" min="1" max="999" value="1" onchange="fijarSemanaInicio(this.value)" class="w-8 text-center text-xs font-black text-[#0f2a4a] outline-none leading-none">
               </div>
             </div>
-            
             <button onclick="irAInicioProyecto()" class="h-[24px] bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0">Inicio</button>
             <button onclick="irASemanaActual()" class="h-[24px] bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0">Hoy</button>
           </div>
 
-          <!-- Botón Plantilla: se desliza suavemente junto al marco azul -->
-          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[34px] min-w-[34px] bg-[#4f46e5] hover:bg-[#4338ca] text-white rounded-lg text-sm font-bold transition-all duration-300 shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap flex-shrink-0" title="Guardar como plantilla de proyecto">
+          <div class="h-5 w-px bg-gray-300 mx-0.5 flex-shrink-0"></div>
+
+          <!-- Botón Cuadrado: Columnas (Solo SVG Ojito Minimalista) -->
+          <button onclick="abrirModalColumnas()" class="h-[30px] w-[34px] bg-slate-100 hover:bg-slate-200 text-[#0f2a4a] border border-slate-300 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Configurar columnas visibles">
+            <svg class="w-4 h-4 text-[#0f2a4a] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
+
+          <!-- Botón Cuadrado: Excel Verde Institucional Clásico (#107c41) -->
+          <button onclick="exportarExcelCSV()" class="h-[30px] w-[34px] bg-[#107c41] hover:bg-[#0c5c30] text-white border border-[#0d6535] rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Exportar Cronograma a Excel">
+            <span class="text-sm leading-none">📊</span>
+          </button>
+
+          <!-- Menú Desplegable Agrupado: Gestión CPM / Dependencias -->
+          <div class="relative flex items-center flex-shrink-0">
+            <button id="btn-menu-cpm" onclick="toggleMenuCpm(event)" class="h-[30px] w-[34px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer" title="Gestión de Ruta Crítica y Dependencias">
+              <span class="text-xs leading-none">⚡</span>
+            </button>
+
+            <!-- Lista desplegable flotante de opciones CPM -->
+            <div id="dropdown-menu-cpm" class="hidden absolute right-0 top-full mt-1.5 w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
+              <button onclick="alternarCapaRutaCritica(); cerrarMenuCpm();" class="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-rose-50 hover:text-rose-700 flex items-center space-x-2 transition cursor-pointer">
+                <span>🔥</span>
+                <span id="txt-menu-cpm-toggle">Activar Ruta Crítica</span>
+              </button>
+              <button onclick="abrirModalDependencias(); cerrarMenuCpm();" class="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-slate-50 hover:text-[#0f2a4a] flex items-center space-x-2 transition cursor-pointer border-t border-gray-100">
+                <span>🔗</span>
+                <span>Configurar Predecesoras</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Botón Cuadrado: Guardar Plantilla (Extremo Derecho) -->
+          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[34px] bg-[#4f46e5] hover:bg-[#4338ca] text-white rounded-lg text-sm font-bold transition-all duration-300 shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap flex-shrink-0" title="Guardar como plantilla de proyecto">
             <span id="ico-accion-plantilla" class="leading-none">📥</span>
             <span id="txt-accion-plantilla" class="hidden"></span>
           </button>
@@ -1416,13 +1422,14 @@
 
   <!-- MODAL HISTORIAL -->
   <div id="modal-historial" class="hidden fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4">
-    <div class="bg-[#f8f9fa] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
-      <div class="bg-[#718093] text-white p-4 flex justify-between items-center flex-shrink-0 shadow-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-300 max-h-[85vh] flex flex-col">
+      <!-- Encabezado con Azul Marino Institucional #0f2a4a -->
+      <div class="bg-[#0f2a4a] text-white px-6 py-4 flex justify-between items-center flex-shrink-0 shadow-sm">
         <div class="flex items-center space-x-2">
           <span class="text-xl">📜</span>
-          <h3 class="font-bold text-base tracking-wide">Historial de Cambios - Auditoría</h3>
+          <h3 class="font-bold text-base tracking-wide text-white">Historial de Cambios - Auditoría</h3>
         </div>
-        <button onclick="cerrarHistorial()" class="text-white text-2xl font-bold hover:text-gray-200 transition leading-none">&times;</button>
+        <button onclick="cerrarHistorial()" class="text-gray-300 hover:text-white text-xl font-bold transition cursor-pointer leading-none" title="Cerrar">&times;</button>
       </div>
       
       <div class="p-5 flex-1 overflow-hidden flex flex-col min-h-0 bg-[#f8f9fa]">
@@ -1441,8 +1448,9 @@
         </div>
       </div>
       
-      <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end flex-shrink-0">
-        <button onclick="cerrarHistorial()" class="px-5 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-lg transition">Cerrar</button>
+      <!-- Pie del Modal con botón azul marino #0f2a4a -->
+      <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex justify-end rounded-b-2xl flex-shrink-0">
+        <button onclick="cerrarHistorial()" class="h-8 px-5 bg-[#0f2a4a] hover:bg-[#1b4573] text-white text-xs font-bold rounded-lg transition shadow-2xs cursor-pointer">Listo</button>
       </div>
     </div>
   </div>
