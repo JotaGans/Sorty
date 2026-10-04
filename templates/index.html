@@ -231,9 +231,9 @@
 
   <!-- VISTA: GANTT Y CONTROL DE PROYECTO -->
   <div id="bloque-superior-gantt" class="flex-shrink-0 z-30 bg-[#f5f6fa] shadow-sm">
-    <!-- PISO 1: HEADER INSTITUCIONAL (#0f2a4a) CON TÍTULO CENTRADO Y BADGE COMPACTO -->
+    <!-- PISO 1: HEADER INSTITUCIONAL (#0f2a4a) CON TÍTULO CENTRADO Y BADGE AJUSTADO (26px) -->
     <header class="bg-[#0f2a4a] text-white shadow-md relative">
-      <div class="max-w-[1920px] mx-auto px-4 md:px-6 h-[54px] flex items-center justify-between">
+      <div class="max-w-[1920px] mx-auto px-4 md:px-6 h-[56px] flex items-center justify-between">
         
         <!-- Extremo Izquierdo: Logotipo IMARPE -->
         <div class="flex items-center space-x-2.5 flex-shrink-0 z-10">
@@ -248,9 +248,9 @@
                  value="">
         </div>
         
-        <!-- Extremo Derecho: Badge Proporcionado y Perfil de Usuario -->
-        <div id="user-info" class="flex items-center space-x-2 flex-shrink-0 z-10">
-          <div id="badge-rol-gantt" class="bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-black uppercase px-2.5 rounded shadow-2xs flex items-center space-x-1 whitespace-nowrap" style="height: 24px !important; min-height: 24px !important; max-height: 24px !important;">
+        <!-- Extremo Derecho: Badge de Rol (+2px: 26px) y Perfil de Usuario -->
+        <div id="user-info" class="flex items-center space-x-2.5 flex-shrink-0 z-10">
+          <div id="badge-rol-gantt" class="bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-black uppercase px-2.5 rounded shadow-2xs flex items-center space-x-1 whitespace-nowrap" style="height: 26px !important; min-height: 26px !important; max-height: 26px !important;">
             <span class="text-xs leading-none">👑</span>
             <span class="leading-none tracking-tight">GESTOR DE PROYECTO</span>
           </div>
@@ -264,14 +264,17 @@
       </div>
     </header>
 
-    <!-- PISO 2: NAVEGACIÓN + KPIS SEMÁFORO EN VIVO + GESTIÓN -->
+    <!-- PISO 2: NAVEGACIÓN INTUITIVA AL HUB + KPIS SEMÁFORO EN VIVO + GESTIÓN -->
     <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5 bg-slate-100/90 border-b border-gray-200">
       <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">
         
+        <!-- Retorno Intuitivo al Hub -->
         <div class="flex-shrink-0">
-          <button onclick="volverAlHub()" class="h-8 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black px-3 rounded-lg transition shadow-xs flex items-center space-x-1.5 border border-teal-500 cursor-pointer" title="Volver a mis proyectos">
-            <span>🏠</span>
-            <span>Mis Proyectos</span>
+          <button onclick="volverAlHub()" class="h-8 bg-white hover:bg-slate-50 text-[#0f2a4a] text-xs font-black px-3 rounded-lg transition shadow-2xs flex items-center space-x-1.5 border border-slate-300 hover:border-slate-400 cursor-pointer" title="Regresar al panel general de proyectos (Hub)">
+            <svg class="w-3.5 h-3.5 text-[#0f2a4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span>Hub de Proyectos</span>
           </button>
         </div>
 
@@ -318,7 +321,7 @@
       </div>
     </div>
 
-    <!-- PISO 3: TOOLBAR OPERATIVO UNIFICADO Y HOMOGÉNEO -->
+    <!-- PISO 3: TOOLBAR OPERATIVO UNIFICADO -->
     <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5">
       <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 bg-white p-2 rounded-xl shadow-xs border border-gray-200 overflow-x-auto">
         
@@ -329,44 +332,43 @@
             <span>Actividad</span>
           </button>
           
-          <!-- Dropdown Nivel Jerárquico (Texto de opciones reducido en 2px: text-xs / 12px) -->
-          <div class="relative flex items-center h-[30px] bg-[#0f2a4a] hover:bg-[#1a3d66] border border-blue-900/60 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
+          <!-- Dropdown Nivel Jerárquico: Tonalidad neutra tipo "Todo el Personal" (sin azul) -->
+          <div class="relative flex items-center h-[30px] bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
               <span class="text-xs">👁️</span>
-              <span id="txt-nivel-activo-label" class="text-xs font-bold text-white leading-none">Todo (N4)</span>
-              <svg class="w-3.5 h-3.5 text-teal-300 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span id="txt-nivel-activo-label" class="text-xs font-semibold text-gray-700 leading-none">Todo (N4)</span>
+              <svg class="w-3.5 h-3.5 text-gray-500 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
             <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold text-xs">
-              <option value="4" class="bg-[#0f2a4a] text-white text-xs py-1.5" selected>Todo (N4)</option>
-              <option value="1" class="bg-[#0f2a4a] text-white text-xs py-1.5">Nivel 1</option>
-              <option value="2" class="bg-[#0f2a4a] text-white text-xs py-1.5">Nivel 2</option>
-              <option value="3" class="bg-[#0f2a4a] text-white text-xs py-1.5">Nivel 3</option>
+              <option value="4" class="bg-white text-gray-800 text-xs py-1.5" selected>Todo (N4)</option>
+              <option value="1" class="bg-white text-gray-800 text-xs py-1.5">Nivel 1</option>
+              <option value="2" class="bg-white text-gray-800 text-xs py-1.5">Nivel 2</option>
+              <option value="3" class="bg-white text-gray-800 text-xs py-1.5">Nivel 3</option>
             </select>
           </div>
 
-          <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-28 md:w-36 text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 h-[30px] outline-none focus:border-[#0f2a4a] focus:bg-white font-semibold">
+          <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-28 md:w-36 text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 h-[30px] outline-none focus:border-[#0f2a4a] focus:bg-white font-semibold text-gray-700">
 
-          <!-- Filtro de Personal: Ancho suficiente para mostrar "Todo el personal" completo sin cortes -->
+          <!-- Filtro de Personal: Ancho suficiente para mostrar "Todo el Personal" completo -->
           <div class="relative flex items-center w-[180px] flex-shrink-0">
             <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 h-[30px] outline-none font-semibold text-gray-700 cursor-pointer" title="Filtrar por personal">
-              <option value="">👤 Todo el personal</option>
+              <option value="">👤 Todo el Personal</option>
             </select>
           </div>
         </div>
 
-        <!-- Bloque 2: Herramientas Operativas -->
+        <!-- Bloque 2: Herramientas Operativas (Permuta: Columnas entra aquí) -->
         <div class="flex items-center gap-1.5 flex-shrink-0 border-l border-r border-gray-200 px-2">
           <button onclick="exportarExcelCSV()" class="h-[30px] px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Exportar Cronograma a Excel (CSV)">
             <span>📊</span>
             <span>Excel</span>
           </button>
 
-          <button id="btn-toggle-cpm" onclick="alternarCapaRutaCritica()" class="relative h-[30px] px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Activar / Desactivar Ruta Crítica">
+          <button id="btn-toggle-cpm" onclick="alternarCapaRutaCritica()" class="h-[30px] px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Activar / Desactivar Ruta Crítica">
             <span>🔥</span>
             <span class="inline-block text-xs font-bold">Ruta Crítica</span>
-            <span id="badge-duracion-cpm" class="hidden absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[8px] font-black px-1 rounded-full border border-white">0d</span>
           </button>
 
           <button id="btn-config-dependencias" onclick="abrirModalDependencias()" class="h-[30px] px-2.5 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Configurar Predecesoras (CPM)">
@@ -374,16 +376,14 @@
             <span>Dependencias</span>
           </button>
 
-          <!-- Botón Plantilla: Únicamente ícono visible y Tooltip al pasar el mouse -->
-          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[34px] bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 rounded-lg text-sm font-bold transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Guardar plantilla de proyecto">
-            <span id="ico-accion-plantilla" class="leading-none">📂</span>
-            <span id="txt-accion-plantilla" class="hidden"></span>
+          <button onclick="abrirModalColumnas()" class="h-[30px] px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Configurar columnas visibles">
+            <span>👁️</span>
+            <span>Columnas</span>
           </button>
         </div>
 
-        <!-- Bloque 3: Escala y Controles Gantt -->
+        <!-- Bloque 3: Escala y Controles Gantt + Plantilla Arrinconada a la Derecha (Morada Dinámica) -->
         <div class="flex items-center gap-1.5 flex-shrink-0">
-          <!-- Dropdown Escala Temporal (Opciones reducidas en 2px: text-xs / 12px) -->
           <div class="relative flex items-center h-[30px] bg-[#0f2a4a] hover:bg-[#1a3d66] border border-blue-900/60 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
               <span class="text-[10px] text-teal-300 font-black uppercase">ESCALA:</span>
@@ -416,9 +416,9 @@
             <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-1.5 py-1 rounded transition whitespace-nowrap">Hoy</button>
           </div>
 
-          <button onclick="abrirModalColumnas()" class="h-[30px] px-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Configurar columnas visibles">
-            <span>👁️</span>
-            <span>Columnas</span>
+          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] px-2.5 bg-[#4f46e5] hover:bg-[#4338ca] text-white rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Guardar plantilla de proyecto">
+            <span id="ico-accion-plantilla">📥</span>
+            <span id="txt-accion-plantilla">Guardar Plantilla</span>
           </button>
         </div>
 
