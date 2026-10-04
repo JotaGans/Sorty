@@ -199,11 +199,14 @@ thead th {
   transition: none !important;
 }
 
+/* Opciones de desplegables reducidas en 2px (-2px) */
+#sel-filtro-nivel option,
 #sel-escala-temporal option {
-  padding: 8px 16px !important;
-  font-weight: 600;
-  background-color: #0f2a4a;
-  color: #ffffff;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  background-color: #0f2a4a !important;
+  color: #ffffff !important;
 }
 
 /* Redimensionador de columnas */
@@ -233,39 +236,41 @@ thead th {
   background-color: #5eead4 !important;
 }
 
-/* Homologación estricta de barra superior y herramientas */
+/* Etiqueta de Rol institucional con +2px de altura (24px exactos) */
 #badge-rol-gantt,
 div#badge-rol-gantt {
-  height: 22px !important;
-  min-height: 22px !important;
-  max-height: 22px !important;
-  padding: 0 8px !important;
-  font-size: 10px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  padding: 0 10px !important;
+  font-size: 10.5px !important;
   font-weight: 800 !important;
   line-height: 1 !important;
-  border-radius: 4px !important;
+  border-radius: 5px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 4px !important;
 }
 
+/* Botón Plantilla: solo icono cuadrado con tooltip nativo */
 #btn-accion-plantilla-dinamico,
 button#btn-accion-plantilla-dinamico {
   height: 30px !important;
   min-height: 30px !important;
   max-height: 30px !important;
-  padding: 0 10px !important;
+  width: 34px !important;
+  min-width: 34px !important;
+  padding: 0 !important;
   background-color: #f0fdfa !important;
   background: #f0fdfa !important;
   color: #115e59 !important;
   border: 1px solid #5eead4 !important;
   border-radius: 8px !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
+  font-size: 14px !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  justify-content: center !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
   transition: all 0.15s ease !important;
 }
@@ -275,16 +280,11 @@ button#btn-accion-plantilla-dinamico {
 }
 
 #btn-accion-plantilla-dinamico #txt-accion-plantilla,
-button#btn-accion-plantilla-dinamico span {
-  max-width: none !important;
-  opacity: 1 !important;
-  margin-left: 0 !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  color: inherit !important;
-  display: inline-block !important;
+button#btn-accion-plantilla-dinamico #txt-accion-plantilla {
+  display: none !important;
 }
 
+/* Botón Ruta Crítica con texto completo permanente */
 #btn-toggle-cpm,
 button#btn-toggle-cpm {
   height: 30px !important;

@@ -249,8 +249,8 @@
         </div>
         
         <!-- Extremo Derecho: Badge Proporcionado y Perfil de Usuario -->
-        <div id="user-info" class="flex items-center space-x-2.5 flex-shrink-0 z-10">
-          <div id="badge-rol-gantt" class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded shadow-2xs flex items-center space-x-1 whitespace-nowrap leading-none" style="height: 22px !important; min-height: 22px !important; max-height: 22px !important;">
+        <div id="user-info" class="flex items-center space-x-2 flex-shrink-0 z-10">
+          <div id="badge-rol-gantt" class="bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-black uppercase px-2.5 rounded shadow-2xs flex items-center space-x-1 whitespace-nowrap" style="height: 24px !important; min-height: 24px !important; max-height: 24px !important;">
             <span class="text-xs leading-none">👑</span>
             <span class="leading-none tracking-tight">GESTOR DE PROYECTO</span>
           </div>
@@ -329,6 +329,7 @@
             <span>Actividad</span>
           </button>
           
+          <!-- Dropdown Nivel Jerárquico (Texto de opciones reducido en 2px: text-xs / 12px) -->
           <div class="relative flex items-center h-[30px] bg-[#0f2a4a] hover:bg-[#1a3d66] border border-blue-900/60 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
               <span class="text-xs">👁️</span>
@@ -337,26 +338,27 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-            <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold">
-              <option value="4" class="bg-[#0f2a4a] text-white py-1.5" selected>Todo (N4)</option>
-              <option value="1" class="bg-[#0f2a4a] text-white py-1.5">Nivel 1</option>
-              <option value="2" class="bg-[#0f2a4a] text-white py-1.5">Nivel 2</option>
-              <option value="3" class="bg-[#0f2a4a] text-white py-1.5">Nivel 3</option>
+            <select id="sel-filtro-nivel" onchange="filtrarNivelJerarquico(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold text-xs">
+              <option value="4" class="bg-[#0f2a4a] text-white text-xs py-1.5" selected>Todo (N4)</option>
+              <option value="1" class="bg-[#0f2a4a] text-white text-xs py-1.5">Nivel 1</option>
+              <option value="2" class="bg-[#0f2a4a] text-white text-xs py-1.5">Nivel 2</option>
+              <option value="3" class="bg-[#0f2a4a] text-white text-xs py-1.5">Nivel 3</option>
             </select>
           </div>
 
           <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-28 md:w-36 text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 h-[30px] outline-none focus:border-[#0f2a4a] focus:bg-white font-semibold">
 
-          <div class="relative flex items-center w-[160px] flex-shrink-0">
-            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 h-[30px] outline-none font-semibold text-gray-700 cursor-pointer truncate" title="Filtrar por responsable">
-              <option value="">👤 Personal (Todos)</option>
+          <!-- Filtro de Personal: Ancho suficiente para mostrar "Todo el personal" completo sin cortes -->
+          <div class="relative flex items-center w-[180px] flex-shrink-0">
+            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 h-[30px] outline-none font-semibold text-gray-700 cursor-pointer" title="Filtrar por personal">
+              <option value="">👤 Todo el personal</option>
             </select>
           </div>
         </div>
 
-        <!-- Bloque 2: Herramientas Homogéneas (Mismo alto, tipografía y estilo) -->
+        <!-- Bloque 2: Herramientas Operativas -->
         <div class="flex items-center gap-1.5 flex-shrink-0 border-l border-r border-gray-200 px-2">
-          <button onclick="exportarExcelCSV()" class="h-[30px] px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Exportar Cronograma a Excel">
+          <button onclick="exportarExcelCSV()" class="h-[30px] px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Exportar Cronograma a Excel (CSV)">
             <span>📊</span>
             <span>Excel</span>
           </button>
@@ -372,14 +374,16 @@
             <span>Dependencias</span>
           </button>
 
-          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] px-2.5 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Importar o Guardar Plantilla">
-            <span id="ico-accion-plantilla">📂</span>
-            <span id="txt-accion-plantilla" class="inline-block text-xs font-bold">Plantilla</span>
+          <!-- Botón Plantilla: Únicamente ícono visible y Tooltip al pasar el mouse -->
+          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[34px] bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 rounded-lg text-sm font-bold transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Guardar plantilla de proyecto">
+            <span id="ico-accion-plantilla" class="leading-none">📂</span>
+            <span id="txt-accion-plantilla" class="hidden"></span>
           </button>
         </div>
 
-        <!-- Bloque 3: Navegación y Escalas del Gantt -->
+        <!-- Bloque 3: Escala y Controles Gantt -->
         <div class="flex items-center gap-1.5 flex-shrink-0">
+          <!-- Dropdown Escala Temporal (Opciones reducidas en 2px: text-xs / 12px) -->
           <div class="relative flex items-center h-[30px] bg-[#0f2a4a] hover:bg-[#1a3d66] border border-blue-900/60 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
               <span class="text-[10px] text-teal-300 font-black uppercase">ESCALA:</span>
@@ -388,12 +392,12 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-            <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold">
-              <option value="dias" class="bg-[#0f2a4a] text-white" selected>Días</option>
-              <option value="semanas" class="bg-[#0f2a4a] text-white">Semanas</option>
-              <option value="meses" class="bg-[#0f2a4a] text-white">Meses</option>
-              <option value="trimestres" class="bg-[#0f2a4a] text-white">Trimestres</option>
-              <option value="semestres" class="bg-[#0f2a4a] text-white">Semestres</option>
+            <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold text-xs">
+              <option value="dias" class="bg-[#0f2a4a] text-white text-xs py-1.5" selected>Días</option>
+              <option value="semanas" class="bg-[#0f2a4a] text-white text-xs py-1.5">Semanas</option>
+              <option value="meses" class="bg-[#0f2a4a] text-white text-xs py-1.5">Meses</option>
+              <option value="trimestres" class="bg-[#0f2a4a] text-white text-xs py-1.5">Trimestres</option>
+              <option value="semestres" class="bg-[#0f2a4a] text-white text-xs py-1.5">Semestres</option>
             </select>
           </div>
 
