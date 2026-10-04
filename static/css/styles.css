@@ -343,13 +343,11 @@ button#btn-accion-plantilla-dinamico #txt-accion-plantilla {
   transition: none !important;
 }
 
-/* Sellar divisiones de cabecera sticky para evitar filtraciones blancas al scrollear */
+/* Sellar filtraciones blancas entre cabeceras sticky */
+#tabla-actividades thead th,
 thead th {
   background-color: #0f2a4a !important;
-  border-color: #1a3a60 !important;
-}
-
-thead th.border-r,
-#tabla-actividades thead th {
   border-right: 1px solid #1a3a60 !important;
+  box-shadow: inset -1px 0 0 #1a3a60, inset 0 -1px 0 #1a3a60 !important;
+  background-clip: padding-box !important;
 }
