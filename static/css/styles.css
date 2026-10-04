@@ -340,3 +340,15 @@ button#btn-accion-plantilla-dinamico #txt-accion-plantilla {
   padding-left: 3px !important;
   padding-right: 3px !important;
 }
+
+/* Eliminar parpadeo y destellos durante el desplazamiento / renderizado rápido */
+#tabla-actividades-cuerpo tr:hover td,
+#tabla-actividades-cuerpo td.cell-editable:hover {
+  transition: none !important;
+}
+
+/* Evitar parpadeos de redraw en las barras del Gantt */
+#tabla-actividades-cuerpo .relative.w-full.h-7 {
+  will-change: transform;
+  contain: layout paint;
+}
