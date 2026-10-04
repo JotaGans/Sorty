@@ -159,6 +159,7 @@ export function renderizarCabeceraGantt() {
   divMeses.innerHTML = "";
   divSemanas.innerHTML = "";
 
+  // 1. MODO DÍAS
   if (state.modoZoom === "dias") {
     const ventanaDias = 28;
     const offset = Math.max(0, Math.min(state.diasTotalesAnio.length - ventanaDias, state.semanaInicioIndex * 7));
@@ -192,34 +193,79 @@ export function renderizarCabeceraGantt() {
     return;
   }
 
-  const ventanaSemanas = 16;
-  const offsetSem = Math.max(0, Math.min(state.semanasTotales.length - ventanaSemanas, state.semanaInicioIndex));
-  const semanasVisibles = state.semanasTotales.slice(offsetSem, offsetSem + ventanaSemanas);
+  // 2. MODO SEMANAS
+  if (state.modoZoom === "semanas") {
+    const ventanaSemanas = 16;
+    const offsetSem = Math.max(0, Math.min(state.semanasTotales.length - ventanaSemanas, state.semanaInicioIndex));
+    const semanasVisibles = state.semanasTotales.slice(offsetSem, offsetSem + ventanaSemanas);
 
-  const gruposMes = [];
-  let mesActual = null, mesSolo = null, anioSolo = null, contador = 0;
+    const gruposMes = [];
+    let mesActual = null, mesSolo = null, anioSolo = null, contador = 0;
 
-  semanasVisibles.forEach(s => {
-    const label = `${s.mesNombre} ${s.anio}`;
-    if (mesActual === null || mesActual !== label) {
-      if (mesActual !== null) gruposMes.push({ nombreCompleto: mesActual, mes: mesSolo, anio: anioSolo, count: contador });
-      mesActual = label;
-      mesSolo = s.mesNombre;
-      anioSolo = s.anio;
-      contador = 1;
-    } else contador++;
-  });
-  if (mesActual !== null) gruposMes.push({ nombreCompleto: mesActual, mes: mesSolo, anio: anioSolo, count: contador });
+    semanasVisibles.forEach(s => {
+      const label = `${s.mesNombre} ${s.anio}`;
+      if (mesActual === null || mesActual !== label) {
+        if (mesActual !== null) gruposMes.push({ nombreCompleto: mesActual, mes: mesSolo, anio: anioSolo, count: contador });
+        mesActual = label;
+        mesSolo = s.mesNombre;
+        anioSolo = s.anio;
+        contador = 1;
+      } else contador++;
+    });
+    if (mesActual !== null) gruposMes.push({ nombreCompleto: mesActual, mes: mesSolo, anio: anioSolo, count: contador });
 
-  gruposMes.forEach(g => {
-    const pct = (g.count / semanasVisibles.length) * 100;
-    divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-[#1c335a] text-[10px] overflow-hidden whitespace-nowrap truncate px-0.5">${g.nombreCompleto}</div>`;
-  });
+    gruposMes.forEach(g => {
+      const pct = (g.count / semanasVisibles.length) * 100;
+      divMeses.innerHTML += `<div style="width: ${pct}%;" class="text-center font-bold border-r border-[#1c335a] text-[10px] overflow-hidden whitespace-nowrap truncate px-0.5">${g.nombreCompleto}</div>`;
+    });
 
-  semanasVisibles.forEach(s => {
-    const claseHoy = s.esHoy ? "header-semana-actual rounded-sm shadow" : "opacity-90";
-    divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1c335a] text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}">${s.dia}</div>`;
-  });
+    semanasVisibles.forEach(s => {
+      const claseHoy = s.esHoy ? "header-semana-actual rounded-sm shadow" : "opacity-90";
+      divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1c335a] text-[9px] font-mono overflow-hidden whitespace-nowrap ${claseHoy}">${s.dia}</div>`;
+    });
+    return;
+  }
+
+  // 3. MODO MESES (Muestra los 12 meses del año actual)
+  if (state.modoZoom === "meses") {
+    const anioBase = new Date().getFullYear();
+    const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"];
+    divMeses.innerHTML = `<div class="w-full text-center font-black text-teal-200 text-[10px] tracking-widest">${anioBase}</div>`;
+    meses.forEach((m, idx) => {
+      const esMesHoy = (new Date().getMonth() === idx);
+      const claseHoy = esMesHoy ? "bg-teal-500 text-white font-black" : "text-teal-200";
+      divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1c335a] text-[9.5px] font-bold overflow-hidden ${claseHoy}">${m}</div>`;
+    });
+    return;
+  }
+
+  // 4. MODO TRIMESTRES (Muestra 8 Trimestres correspondientes a 2 años)
+  if (state.modoZoom === "trimestres") {
+    const yActual = new Date().getFullYear();
+    divMeses.innerHTML = `
+      <div style="width: 50%;" class="text-center font-black border-r border-[#1c335a] text-[10px] text-teal-200">${yActual}</div>
+      <div style="width: 50%;" class="text-center font-black text-[10px] text-teal-200">${yActual + 1}</div>
+    `;
+    const trimestres = ["T1", "T2", "T3", "T4", "T1", "T2", "T3", "T4"];
+    trimestres.forEach(t => {
+      divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1c335a] text-[9.5px] font-bold text-teal-200">${t}</div>`;
+    });
+    return;
+  }
+
+  // 5. MODO SEMESTRES (Muestra 6 Semestres correspondientes a 3 años)
+  if (state.modoZoom === "semestres") {
+    const yActual = new Date().getFullYear();
+    divMeses.innerHTML = `
+      <div style="width: 33.33%;" class="text-center font-black border-r border-[#1c335a] text-[10px] text-teal-200">${yActual}</div>
+      <div style="width: 33.33%;" class="text-center font-black border-r border-[#1c335a] text-[10px] text-teal-200">${yActual + 1}</div>
+      <div style="width: 33.34%;" class="text-center font-black text-[10px] text-teal-200">${yActual + 2}</div>
+    `;
+    const semestres = ["S1", "S2", "S1", "S2", "S1", "S2"];
+    semestres.forEach(s => {
+      divSemanas.innerHTML += `<div class="flex-1 text-center py-0.5 border-r border-[#1c335a] text-[9.5px] font-bold text-teal-200">${s}</div>`;
+    });
+  }
 }
 
 export function renderizarGanttFila(act, esMadre, codLimpio) {
@@ -237,7 +283,30 @@ export function renderizarGanttFila(act, esMadre, codLimpio) {
     tFinVisible = new Date(ultDia.getFullYear(), ultDia.getMonth(), ultDia.getDate(), 23, 59, 59).getTime();
     duracionVisibleMs = tFinVisible - tInicioVisible;
     divisionesHTML = diasVisibles.map(d => `<div class="flex-1 border-r border-slate-200/40 ${d.esHoy ? 'bg-teal-500/10' : ''}"></div>`).join("");
+
+  } else if (state.modoZoom === "meses") {
+    const yActual = new Date().getFullYear();
+    tInicioVisible = new Date(yActual, 0, 1).getTime();
+    tFinVisible = new Date(yActual, 11, 31, 23, 59, 59).getTime();
+    duracionVisibleMs = tFinVisible - tInicioVisible;
+    divisionesHTML = Array.from({ length: 12 }).map(() => `<div class="flex-1 border-r border-slate-200/50"></div>`).join("");
+
+  } else if (state.modoZoom === "trimestres") {
+    const yActual = new Date().getFullYear();
+    tInicioVisible = new Date(yActual, 0, 1).getTime();
+    tFinVisible = new Date(yActual + 1, 11, 31, 23, 59, 59).getTime();
+    duracionVisibleMs = tFinVisible - tInicioVisible;
+    divisionesHTML = Array.from({ length: 8 }).map(() => `<div class="flex-1 border-r border-slate-200/50"></div>`).join("");
+
+  } else if (state.modoZoom === "semestres") {
+    const yActual = new Date().getFullYear();
+    tInicioVisible = new Date(yActual, 0, 1).getTime();
+    tFinVisible = new Date(yActual + 2, 11, 31, 23, 59, 59).getTime();
+    duracionVisibleMs = tFinVisible - tInicioVisible;
+    divisionesHTML = Array.from({ length: 6 }).map(() => `<div class="flex-1 border-r border-slate-200/50"></div>`).join("");
+
   } else {
+    // Modo Semanas (por defecto)
     const ventanaSemanas = 16;
     const offsetSem = Math.max(0, Math.min(state.semanasTotales.length - ventanaSemanas, state.semanaInicioIndex));
     const semanasVisibles = state.semanasTotales.slice(offsetSem, offsetSem + ventanaSemanas);
