@@ -268,13 +268,12 @@
     <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5 bg-slate-100/90 border-b border-gray-200">
       <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">
         
-        <!-- Retorno Intuitivo al Hub -->
+        <!-- Botón Volver al Hub: Expansible al hover con tono morado -->
         <div class="flex-shrink-0">
-          <button onclick="volverAlHub()" class="h-8 bg-white hover:bg-slate-50 text-[#0f2a4a] text-xs font-black px-3 rounded-lg transition shadow-2xs flex items-center space-x-1.5 border border-slate-300 hover:border-slate-400 cursor-pointer" title="Regresar al panel general de proyectos (Hub)">
-            <svg class="w-3.5 h-3.5 text-[#0f2a4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span>Hub de Proyectos</span>
+          <button onclick="volverAlHub()" class="group h-8 px-2.5 bg-[#4f46e5] hover:bg-[#4338ca] text-white rounded-lg text-xs font-bold transition-all duration-300 ease-in-out shadow-2xs flex items-center cursor-pointer whitespace-nowrap overflow-hidden" title="Volver a proyectos">
+            <span class="text-sm font-black mr-1 leading-none">←</span>
+            <span class="text-sm leading-none">🏠</span>
+            <span class="max-w-0 opacity-0 group-hover:max-w-[140px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 ease-in-out font-bold overflow-hidden leading-none">Volver a proyectos</span>
           </button>
         </div>
 
@@ -416,9 +415,10 @@
             <button onclick="irASemanaActual()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-1.5 py-1 rounded transition whitespace-nowrap">Hoy</button>
           </div>
 
-          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] px-2.5 bg-[#4f46e5] hover:bg-[#4338ca] text-white rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Guardar plantilla de proyecto">
-            <span id="ico-accion-plantilla">📥</span>
-            <span id="txt-accion-plantilla">Guardar Plantilla</span>
+          <!-- Botón Plantilla: ícono morado con tooltip -->
+          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[34px] min-w-[34px] bg-[#4f46e5] hover:bg-[#4338ca] text-white rounded-lg text-sm font-bold transition shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap flex-shrink-0" title="Guardar como plantilla de proyecto">
+            <span id="ico-accion-plantilla" class="leading-none">📥</span>
+            <span id="txt-accion-plantilla" class="hidden"></span>
           </button>
         </div>
 
