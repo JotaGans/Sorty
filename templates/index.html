@@ -355,16 +355,15 @@
             </select>
           </div>
 
-          <!-- Filtro de Búsqueda: Reducido 5px -->
-          <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-[105px] md:w-[139px] text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 h-[30px] outline-none focus:border-[#0f2a4a] focus:bg-white font-semibold text-gray-700">
+          <!-- Filtro de Búsqueda -->
+          <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="🔍 Buscar..." class="w-[100px] md:w-[130px] text-xs bg-gray-50 border border-gray-300 rounded-lg px-2.5 h-[30px] outline-none focus:border-[#0f2a4a] focus:bg-white font-semibold text-gray-700">
 
           <!-- Filtro de Personal: Reducido 5px exactos a w-[165px] -->
-          <div class="relative flex items-center w-[165px] flex-shrink-0">
+          <div class="relative flex items-center w-[160px] flex-shrink-0">
             <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-2 pr-6 h-[30px] outline-none font-semibold text-gray-700 cursor-pointer" title="Filtrar por personal">
               <option value="">👤 Todo el Personal</option>
             </select>
           </div>
-
           <!-- Línea divisoria derecha de Todo el Personal -->
           <div class="h-5 w-px bg-gray-300 mx-0.5 flex-shrink-0"></div>
         </div>
