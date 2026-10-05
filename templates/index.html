@@ -362,17 +362,21 @@
             <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="Descripción" class="w-[95px] md:w-[115px] text-xs bg-gray-50 border border-gray-300 rounded-lg pl-7 pr-2 h-[30px] outline-none focus:border-[#0f2a4a] focus:bg-white font-semibold text-gray-700" title="Filtrar por descripción de actividad">
           </div>
 
-          <!-- 3. Filtro Colaboradores (Espacio muerto minimizado y texto completo) -->
-          <div class="relative flex items-center w-[142px] flex-shrink-0">
-            <svg class="w-3.5 h-3.5 text-slate-500 absolute left-1.5 pointer-events-none z-10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <!-- 3. Filtro Colaboradores con la misma flechita SVG exacta que Niveles y sin línea divisoria -->
+          <div class="relative flex items-center w-[140px] flex-shrink-0">
+            <!-- Embudo SVG -->
+            <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2 pointer-events-none z-10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
             </svg>
-            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full text-xs bg-gray-50 border border-gray-300 rounded-lg pl-[23px] pr-[18px] h-[30px] outline-none font-semibold text-gray-700 cursor-pointer" title="Filtrar por colaborador">
+            <!-- Select con appearance-none para ocultar flecha nativa rígida -->
+            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full appearance-none text-xs bg-gray-50 border border-gray-300 rounded-lg pl-7 pr-6 h-[30px] outline-none font-semibold text-gray-700 cursor-pointer shadow-2xs hover:bg-gray-100 transition" title="Filtrar por colaborador">
               <option value="">Colaboradores</option>
             </select>
+            <!-- Misma flechita SVG exacta que la de Niveles -->
+            <svg class="w-3 h-3 text-gray-500 absolute right-2 pointer-events-none z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
-          <!-- Línea divisoria derecha de Todo el Personal -->
-          <div class="h-5 w-px bg-gray-300 mx-0.5 flex-shrink-0"></div>
         </div>
 
         <!-- SECCIÓN DERECHA: ESCALA + SEM + BOTONES CUADRADOS ORDENADOS -->
