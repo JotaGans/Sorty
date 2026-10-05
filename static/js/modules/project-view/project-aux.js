@@ -1,6 +1,6 @@
 import { state } from "../../core/state.js";
 import { apiFetch } from "../../core/api.js";
-import { notificarToast, confirmModal } from "../../core/ui-dialogs.js";
+import { notificarToast, confirmModal, formatearFechaLatina } from "../../core/ui-dialogs.js";
 import { renderizarTabla } from "./project-wbs.js";
 
 // --- HISTORIAL DE AUDITORÍA ---
