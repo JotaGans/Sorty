@@ -360,3 +360,15 @@ thead th {
   background-color: transparent !important;
   box-shadow: none !important;
 }
+
+/* Ocultar flechas nativas (spin buttons) del input number para evitar duplicación */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: none !important;
+}
