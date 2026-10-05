@@ -188,3 +188,25 @@ function actualizarBotonCpmUI(activo, duracion = 0) {
     }
   }
 }
+
+// Control de tolerancia para menú desplegable CPM
+let timerCierreCpm = null;
+
+export function iniciarCierreMenuCpm() {
+  clearTimeout(timerCierreCpm);
+  timerCierreCpm = setTimeout(() => {
+    document.getElementById("menu-desplegable-cpm")?.classList.add("hidden");
+  }, 250);
+}
+
+export function cancelarCierreMenuCpm() {
+  if (timerCierreCpm) {
+    clearTimeout(timerCierreCpm);
+    timerCierreCpm = null;
+  }
+}
+
+export function cerrarMenuCpmInmediato() {
+  cancelarCierreMenuCpm();
+  document.getElementById("menu-desplegable-cpm")?.classList.add("hidden");
+}
