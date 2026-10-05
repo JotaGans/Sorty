@@ -372,3 +372,22 @@ input[type="number"] {
   -moz-appearance: textfield !important;
   appearance: none !important;
 }
+
+/* Forzar al menú flotante CPM a estar en el plano superior absoluto */
+#menu-desplegable-cpm {
+  position: absolute !important;
+  z-index: 99999 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Evitar que el contenedor de la tabla bloquee elementos flotantes superiores */
+#view-dashboard {
+  position: relative;
+  z-index: 10;
+}
+
+#tabla-actividades thead {
+  position: sticky;
+  top: 0;
+  z-index: 20 !important; /* Mantenemos el sticky pero por debajo de z-40 del toolbar */
+}
