@@ -412,7 +412,7 @@ export function poblarFiltroResponsablesDinamico() {
     }
   });
 
-  select.innerHTML = '<option value="">Colaboradores</option>';
+  select.innerHTML = '<option value="">Colaborador</option>';
   Array.from(setResponsables).sort().forEach(nombre => {
     select.innerHTML += `<option value="${nombre}">${nombre}</option>`;
   });
@@ -422,7 +422,7 @@ export function poblarFiltroResponsablesDinamico() {
 export function filtrarNivelJerarquico(val) {
   state.nivelFiltroActivo = parseInt(val) || 4;
   const labelNivel = document.getElementById("txt-nivel-activo-label");
-  if (labelNivel) labelNivel.innerText = (String(val) === "4" || !val) ? "Niveles" : `Nivel ${val}`;
+  if (labelNivel) labelNivel.innerText = (String(val) === "4" || !val) ? "Nivel" : `Nivel ${val}`;
   renderizarTabla();
 }
 
