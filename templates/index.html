@@ -407,24 +407,24 @@
 
           <div class="h-5 w-px bg-gray-300 mx-0.5 flex-shrink-0"></div>
 
-          <!-- 1. Botón Cuadrado: Columnas (Ojito Minimalista) -->
-          <button onclick="abrirModalColumnas()" class="h-[30px] w-[34px] bg-slate-100 hover:bg-slate-200 text-[#0f2a4a] border border-slate-300 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Configurar columnas visibles">
-            <svg class="w-4 h-4 text-[#0f2a4a] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <!-- 1. Botón Cuadrado: Columnas (Azul Real Sólido con SVG blanco) -->
+          <button onclick="abrirModalColumnas()" class="h-[30px] w-[34px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white border border-blue-700 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Configurar columnas visibles">
+            <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
           </button>
 
-          <!-- 2. Botón Cuadrado: Menú Desplegable CPM (Gris slate similar a Columnas + Rayo SVG minimalista) -->
+          <!-- 2. Botón Cuadrado: Menú Desplegable CPM (Naranja Intenso Sólido con Rayito SVG blanco) -->
           <div class="relative flex items-center flex-shrink-0">
-            <button type="button" onclick="document.getElementById('menu-desplegable-cpm').classList.toggle('hidden')" class="h-[30px] w-[34px] bg-slate-100 hover:bg-slate-200 text-[#0f2a4a] border border-slate-300 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer" title="Gestión de Ruta Crítica y Dependencias">
-              <svg class="w-3.5 h-3.5 text-[#0f2a4a] flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+            <button type="button" onclick="document.getElementById('menu-desplegable-cpm').classList.toggle('hidden')" class="h-[30px] w-[34px] bg-[#ea580c] hover:bg-[#c2410c] text-white border border-orange-700 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer" title="Gestión de Ruta Crítica y Dependencias">
+              <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M13 2L3 14h7v8l10-12h-7z" />
               </svg>
             </button>
 
-            <!-- Menú flotante: se despliega hacia abajo con sombra z-[90] y fondo sólido -->
-            <div id="menu-desplegable-cpm" class="hidden absolute right-0 top-full mt-1.5 w-48 bg-white border border-gray-200 rounded-xl shadow-xl py-1 z-[90]">
+            <!-- Menú flotante: visible por encima con z-50 -->
+            <div id="menu-desplegable-cpm" class="hidden absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-2xl py-1 z-50">
               <button type="button" onclick="alternarCapaRutaCritica(); document.getElementById('menu-desplegable-cpm').classList.add('hidden')" class="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-rose-50 hover:text-rose-700 flex items-center space-x-2 transition cursor-pointer">
                 <span>🔥</span>
                 <span>Ruta Crítica</span>
@@ -436,13 +436,13 @@
             </div>
           </div>
 
-          <!-- 3. Botón Cuadrado: Excel (Verde Institucional #107c41 permutado a la derecha de CPM) -->
+          <!-- 3. Botón Cuadrado: Excel (Verde Institucional Clásico #107c41) -->
           <button onclick="exportarExcelCSV()" class="h-[30px] w-[34px] bg-[#107c41] hover:bg-[#0c5c30] text-white border border-[#0d6535] rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Exportar Cronograma a Excel">
             <span class="text-sm leading-none">📊</span>
           </button>
 
-          <!-- 4. Botón Cuadrado: Guardar Plantilla (Extremo Derecho) -->
-          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[34px] bg-[#4f46e5] hover:bg-[#4338ca] text-white rounded-lg text-sm font-bold transition-all duration-300 shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap flex-shrink-0" title="Guardar como plantilla de proyecto">
+          <!-- 4. Botón Cuadrado: Guardar Plantilla (Púrpura Índigo #4f46e5) -->
+          <button id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[34px] bg-[#4f46e5] hover:bg-[#4338ca] text-white border border-indigo-700 rounded-lg text-sm font-bold transition-all duration-300 shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap flex-shrink-0" title="Guardar como plantilla de proyecto">
             <span id="ico-accion-plantilla" class="leading-none">📥</span>
             <span id="txt-accion-plantilla" class="hidden"></span>
           </button>

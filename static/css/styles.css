@@ -351,3 +351,12 @@ thead th {
   box-shadow: inset -1px 0 0 #1a3a60, inset 0 -1px 0 #1a3a60 !important;
   background-clip: padding-box !important;
 }
+
+/* Eliminar sombreado retenido por foco al retirar el cursor */
+#tabla-actividades td:focus,
+#tabla-actividades td:focus-visible,
+#tabla-actividades td.cell-editable:focus {
+  outline: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
