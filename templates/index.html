@@ -217,9 +217,11 @@
         </button>
       </div>
 
-      <div id="grid-proyectos-hub" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
-        <!-- TARJETA PERMANENTE: MIS PENDIENTES PRIVADOS -->
-        <div class="bg-white border-2 border-dashed border-teal-300/80 rounded-2xl p-5 shadow-2xs hover:shadow-md transition flex flex-col justify-between min-h-[220px]">
+      <!-- CONTENEDOR PRINCIPAL DE TARJETAS DEL HUB -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10 items-start">
+        
+        <!-- 1. TARJETA FIJA Y PERMANENTE: MIS PENDIENTES PRIVADOS (Nunca se sobrescribe) -->
+        <div id="tarjeta-fija-pendientes-hub" class="bg-white border-2 border-dashed border-teal-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between min-h-[260px]">
           <div>
             <div class="flex items-center justify-between pb-2.5 border-b border-gray-100">
               <div class="flex items-center space-x-2">
@@ -232,9 +234,9 @@
             </div>
 
             <!-- Lista de pendientes activos -->
-            <div id="hub-tarjeta-pendientes-lista" class="mt-3 space-y-1.5">
+            <div id="hub-tarjeta-pendientes-lista" class="mt-3 space-y-1.5 max-h-[140px] overflow-y-auto pr-0.5">
               <div class="p-4 text-center text-gray-400 text-xs italic">
-                🎉 Todo al día. No tienes pendientes privados activos.
+                🎉 Todo al día. No tienes pendientes privados registrados.
               </div>
             </div>
           </div>
@@ -244,6 +246,10 @@
             <span>Anotar un nuevo pendiente</span>
           </button>
         </div>
+
+        <!-- 2. CONTENEDOR DINÁMICO EXCLUSIVO PARA PROYECTOS -->
+        <div id="grid-proyectos-hub" class="contents"></div>
+
       </div>
       <div id="hub-proyectos-tabla-contenedor" class="hidden border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white mt-2 relative z-10">
         <table class="w-full text-xs text-left">
