@@ -107,14 +107,20 @@
         </div>
         <div class="flex items-center space-x-1.5 sm:space-x-2.5">
           <!-- Botón rápido: Crear Nuevo Proyecto -->
-          <button type="button" onclick="abrirModalNuevoProyecto()" class="h-[30px] bg-amber-600/85 hover:bg-amber-600 border border-amber-500/40 text-white text-xs font-bold px-2.5 rounded-lg transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Crear nuevo proyecto o programa">
-            <span class="text-sm leading-none">🚀</span>
+          <button type="button" onclick="abrirModalNuevoProyecto()" class="h-[30px] bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 rounded-lg transition shadow-xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Crear nuevo proyecto o programa">
+            <!-- Icono SVG Cohete / Proyecto -->
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.63 8.41m5.96 5.96a14.926 14.926 0 01-5.84 2.58m-.12-8.54a6 6 0 00-7.38 5.84h4.8m2.58-5.84a14.927 14.927 0 00-2.58 5.84m2.69-4.2a1.5 1.5 0 11-2.12-2.12 1.5 1.5 0 012.12 2.12z" />
+            </svg>
             <span class="hidden sm:inline leading-none">Nuevo Proyecto</span>
           </button>
 
           <!-- Botón rápido: Crear Pendiente Privado -->
-          <button type="button" onclick="abrirModalCrearPendiente()" class="h-[30px] bg-amber-600/85 hover:bg-amber-600 border border-amber-500/40 text-white text-xs font-bold px-2.5 rounded-lg transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Anotar pendiente privado">
-            <span class="text-sm leading-none">📝</span>
+          <button type="button" onclick="abrirModalCrearPendiente()" class="h-[30px] bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 rounded-lg transition shadow-xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Anotar pendiente privado">
+            <!-- Icono SVG Libreta / Check -->
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
             <span class="hidden sm:inline leading-none">+ Pendiente</span>
           </button>
 
@@ -226,8 +232,8 @@
       <!-- CONTENEDOR PRINCIPAL DE TARJETAS DEL HUB (VISTA CARDS) -->
       <div id="hub-vista-cards-wrapper" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10 items-stretch">
         
-        <!-- 1. TARJETA FIJA: MIS PENDIENTES -->
-        <div id="tarjeta-fija-pendientes-hub" class="bg-white border border-gray-200/90 rounded-2xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between h-[345px]">
+        <!-- 1. TARJETA FIJA: MIS PENDIENTES (Con sombra permanente destacada) -->
+        <div id="tarjeta-fija-pendientes-hub" class="bg-white border border-gray-200 rounded-2xl p-5 shadow-md hover:shadow-lg transition-shadow flex flex-col justify-between h-[345px]">
           <div class="flex flex-col h-full overflow-hidden">
             <!-- Header Tarjeta -->
             <div class="flex items-center justify-between pb-3 border-b border-gray-100 flex-shrink-0">
