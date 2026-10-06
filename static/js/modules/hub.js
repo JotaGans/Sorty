@@ -528,6 +528,68 @@ export function cerrarModalNuevoProyecto() {
   document.getElementById("modal-nuevo-proyecto")?.classList.add("hidden"); 
 }
 
+export async function autocompletarProcesoNuevoProy(termino) {
+  const term = (termino || "").toLowerCase().trim();
+  const divSug = document.getElementById("nuevo-proy-proceso-sugerencias");
+  const contOtro = document.getElementById("contenedor-otro-subproceso");
+  if (!divSug) return;
+
+  if (!term) {
+    divSug.innerHTML = "";
+    divSug.classList.add("hidden");
+    return;
+  }
+
+  if (!state.catalogoProcesosGlobal || state.catalogoProcesosGlobal.length === 0) {
+    await cargarCatalogoProcesos();
+  }
+
+  const matches = (state.catalogoProcesosGlobal || []).filter(p => 
+    (p.codigo && p.codigo.toLowerCase().includes(term)) ||
+    (p.nombre && p.nombre.toLowerCase().includes(term))
+  );
+
+  divSug.innerHTML = "";
+  if (matches.length === 0) {
+    divSug.innerHTML = `<div class="p-2.5 text-gray-400 italic bg-white text-center">No se encontraron procesos que coincidan con '${termino}'</div>`;
+  } else {
+    matches.slice(0, 8).forEach(p => {
+      const item = document.createElement("div");
+      item.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-gray-100 last:border-0 bg-white font-semibold text-gray-800";
+      item.innerHTML = `
+        <span class="truncate pr-2">${p.nombre}</span>
+        <strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${p.codigo}]</strong>
+      `;
+      item.onclick = () => {
+        document.getElementById("input-nuevo-proy-proceso-busq").value = `${p.nombre} [${p.codigo}]`;
+        document.getElementById("input-nuevo-proy-proceso-codigo").value = p.codigo;
+        document.getElementById("input-nuevo-proy-proceso-nombre").value = p.nombre;
+        document.getElementById("input-nuevo-proy-proceso-personalizado").value = "0";
+        divSug.classList.add("hidden");
+        if (contOtro) contOtro.classList.add("hidden");
+      };
+      divSug.appendChild(item);
+    });
+  }
+
+  const itemOtro = document.createElement("div");
+  itemOtro.className = "p-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold cursor-pointer border-t border-amber-200 flex items-center justify-between";
+  itemOtro.innerHTML = `<span>⚙️ Otro subproceso (Personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
+  itemOtro.onclick = () => {
+    document.getElementById("input-nuevo-proy-proceso-busq").value = "Otro subproceso";
+    document.getElementById("input-nuevo-proy-proceso-codigo").value = "OTRO";
+    document.getElementById("input-nuevo-proy-proceso-nombre").value = "";
+    document.getElementById("input-nuevo-proy-proceso-personalizado").value = "1";
+    divSug.classList.add("hidden");
+    if (contOtro) {
+      contOtro.classList.remove("hidden");
+      document.getElementById("input-otro-subproceso-texto")?.focus();
+    }
+  };
+  divSug.appendChild(itemOtro);
+  divSug.classList.remove("hidden");
+}
+
 export function autocompletarUOProyecto(termino) {
   const term = termino.toLowerCase().trim();
   const divSug = document.getElementById("sugerencias-uo-proyecto");
@@ -1655,3 +1717,4 @@ window.aplicarFiltrosEstadisticas = aplicarFiltrosEstadisticas;
 window.autocompletarSlicerProceso = autocompletarSlicerProceso;
 window.limpiarSlicerProceso = limpiarSlicerProceso;
 window.resetearSlicersEstadisticas = resetearSlicersEstadisticas;
+window.autocompletarProcesoNuevoProy = autocompletarProcesoNuevoProy;
