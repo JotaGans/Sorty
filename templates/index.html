@@ -106,8 +106,14 @@
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-8 sm:h-10 object-contain" onerror="this.outerHTML='<span class=\'text-xl sm:text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
         <div class="flex items-center space-x-1.5 sm:space-x-2.5">
-          <!-- Botón rápido Navbar: Crear Pendiente Privado -->
-          <button type="button" onclick="abrirModalCrearPendiente()" class="h-[30px] bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-2.5 rounded-lg transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Anotar pendiente privado">
+          <!-- Botón rápido: Crear Nuevo Proyecto -->
+          <button type="button" onclick="abrirModalNuevoProyecto()" class="h-[30px] bg-[#ea580c] hover:bg-[#c2410c] border border-orange-700/60 text-white text-xs font-bold px-2.5 rounded-lg transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Crear nuevo proyecto o programa">
+            <span class="text-sm leading-none">🚀</span>
+            <span class="hidden sm:inline leading-none">Nuevo Proyecto</span>
+          </button>
+
+          <!-- Botón rápido: Crear Pendiente Privado -->
+          <button type="button" onclick="abrirModalCrearPendiente()" class="h-[30px] bg-[#ea580c] hover:bg-[#c2410c] border border-orange-700/60 text-white text-xs font-bold px-2.5 rounded-lg transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Anotar pendiente privado">
             <span class="text-sm leading-none">📝</span>
             <span class="hidden sm:inline leading-none">+ Pendiente</span>
           </button>
@@ -220,8 +226,8 @@
       <!-- CONTENEDOR PRINCIPAL DE TARJETAS DEL HUB (VISTA CARDS) -->
       <div id="hub-vista-cards-wrapper" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10 items-stretch">
         
-        <!-- 1. TARJETA FIJA: MIS PENDIENTES (Mismo estilo formal de tarjeta de proyecto) -->
-        <div id="tarjeta-fija-pendientes-hub" class="bg-white border border-gray-200/90 rounded-2xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between h-[345px]">
+        <!-- 1. TARJETA FIJA: MIS PENDIENTES (Marco permanente turquesa sutil) -->
+        <div id="tarjeta-fija-pendientes-hub" class="bg-gradient-to-b from-teal-50/20 to-white border-2 border-teal-500/35 rounded-2xl p-5 shadow-xs hover:border-teal-500/60 hover:shadow-md transition flex flex-col justify-between h-[345px]">
           <div class="flex flex-col h-full overflow-hidden">
             <!-- Header Tarjeta -->
             <div class="flex items-center justify-between pb-3 border-b border-gray-100 flex-shrink-0">
