@@ -55,6 +55,12 @@ export function actualizarKPIsHub(lista) {
 export function cambiarVistaHub(modo) {
   state.vistaHubActual = modo;
   localStorage.setItem("vista_hub_proyectos", modo);
+  
+  // Sincronizar vista con el módulo de agenda de pendientes
+  if (typeof window.adaptarVistaHubPendientes === "function") {
+    window.adaptarVistaHubPendientes(modo);
+  }
+
   aplicarConmutadorVistaHub();
   filtrarProyectosHub();
 }
@@ -62,7 +68,7 @@ export function cambiarVistaHub(modo) {
 export function aplicarConmutadorVistaHub() {
   const btnGrid = document.getElementById("btn-vista-grid");
   const btnTable = document.getElementById("btn-vista-table");
-  const gridCont = document.getElementById("grid-proyectos-hub");
+  const cardsWrapper = document.getElementById("hub-vista-cards-wrapper") || document.getElementById("grid-proyectos-hub");
   const tableCont = document.getElementById("hub-proyectos-tabla-contenedor");
 
   const estiloActivo = "px-3 py-1.5 rounded-lg text-xs font-black bg-teal-600 hover:bg-teal-700 text-white shadow-sm flex items-center space-x-1.5 transition-all duration-150 cursor-pointer";
@@ -71,12 +77,12 @@ export function aplicarConmutadorVistaHub() {
   if (state.vistaHubActual === "table") {
     if (btnTable) btnTable.className = estiloActivo;
     if (btnGrid) btnGrid.className = estiloInactivo;
-    if (gridCont) gridCont.classList.add("hidden");
+    if (cardsWrapper) cardsWrapper.classList.add("hidden");
     if (tableCont) tableCont.classList.remove("hidden");
   } else {
     if (btnGrid) btnGrid.className = estiloActivo;
     if (btnTable) btnTable.className = estiloInactivo;
-    if (gridCont) gridCont.classList.remove("hidden");
+    if (cardsWrapper) cardsWrapper.classList.remove("hidden");
     if (tableCont) tableCont.classList.add("hidden");
   }
 }

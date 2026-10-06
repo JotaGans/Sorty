@@ -200,8 +200,13 @@ class CrearProyectoDesdePlantillaModel(BaseModel):
 # 12. Modelos de Agenda y Pendientes Privados
 class PendienteCrearModel(BaseModel):
     titulo: str
+    descripcion_detallada: Optional[str] = ""
     fecha_limite: str
     dias_recordatorio: Optional[List[int]] = []
+
+class PendienteDetalleUpdate(BaseModel):
+    titulo: Optional[str] = None
+    descripcion_detallada: str
 
 class PendienteEstadoUpdate(BaseModel):
     estado: str  # 'Pendiente' | 'En proceso' | 'Completado'

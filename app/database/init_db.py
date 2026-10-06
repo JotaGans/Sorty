@@ -306,6 +306,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             usuario_id INTEGER NOT NULL,
             titulo TEXT NOT NULL,
+            descripcion_detallada TEXT DEFAULT '',
             fecha_limite TEXT NOT NULL,
             dias_recordatorio TEXT DEFAULT '[]',
             estado TEXT NOT NULL DEFAULT 'Pendiente',
@@ -313,6 +314,10 @@ def init_db():
             FOREIGN KEY(usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
         )
     """)
+    try:
+        c.execute("ALTER TABLE pendientes_personales ADD COLUMN descripcion_detallada TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
 
     # Índices de aceleración de consultas
     for idx_sql in [
