@@ -220,22 +220,22 @@
       <!-- CONTENEDOR PRINCIPAL DE TARJETAS DEL HUB (VISTA CARDS) -->
       <div id="hub-vista-cards-wrapper" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10 items-stretch">
         
-        <!-- 1. TARJETA FIJA: MIS PENDIENTES (Misma altura h-[345px] de las tarjetas de proyecto) -->
-        <div id="tarjeta-fija-pendientes-hub" class="bg-white border-2 border-dashed border-teal-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between h-[345px]">
+        <!-- 1. TARJETA FIJA: MIS PENDIENTES (Mismo estilo formal de tarjeta de proyecto) -->
+        <div id="tarjeta-fija-pendientes-hub" class="bg-white border border-gray-200/90 rounded-2xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between h-[345px]">
           <div class="flex flex-col h-full overflow-hidden">
             <!-- Header Tarjeta -->
-            <div class="flex items-center justify-between pb-2.5 border-b border-gray-100 flex-shrink-0">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100 flex-shrink-0">
               <div class="flex items-center space-x-2">
                 <span class="text-base leading-none">📝</span>
-                <h3 class="font-bold text-sm text-[#0f2a4a]">Mis Pendientes</h3>
+                <h3 class="font-bold text-sm text-[#0f2a4a]">Mis pendientes</h3>
               </div>
               <span id="hub-tarjeta-pendientes-badge" class="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
                 0 activos
               </span>
             </div>
 
-            <!-- Lista de pendientes activos con doble clic -->
-            <div id="hub-tarjeta-pendientes-lista" class="mt-3 space-y-1.5 flex-1 overflow-y-auto pr-1">
+            <!-- Lista de pendientes activos -->
+            <div id="hub-tarjeta-pendientes-lista" class="mt-3 space-y-2 flex-1 overflow-y-auto pr-1">
               <div class="p-4 text-center text-gray-400 text-xs italic">
                 🎉 Todo al día. No tienes pendientes registrados.
               </div>
@@ -250,11 +250,12 @@
                 </span>
                 <span id="hub-icono-flecha-finalizados" class="text-[10px] transition-transform">▼</span>
               </button>
-              <div id="hub-lista-finalizados-items" class="hidden max-h-24 overflow-y-auto mt-1 space-y-1 pr-1"></div>
+              <div id="hub-lista-finalizados-items" class="hidden max-h-20 overflow-y-auto mt-1 space-y-1 pr-1"></div>
             </div>
           </div>
 
-          <button type="button" onclick="abrirModalCrearPendiente()" class="mt-2.5 w-full py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl transition border border-teal-200 flex items-center justify-center space-x-1 cursor-pointer flex-shrink-0">
+          <!-- Botón unificado con el estilo de "Ingresar al Proyecto" -->
+          <button type="button" onclick="abrirModalCrearPendiente()" class="mt-3 w-full bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center space-x-1 cursor-pointer flex-shrink-0">
             <span class="text-sm leading-none">+</span>
             <span>Anotar un nuevo pendiente</span>
           </button>
@@ -266,49 +267,45 @@
       </div>
 
       <!-- SECCIÓN VISTA TABLA DEL HUB -->
-      <div id="hub-proyectos-tabla-contenedor" class="hidden space-y-4 mt-2 relative z-10">
+      <div id="hub-proyectos-tabla-contenedor" class="hidden space-y-5 mt-2 relative z-10">
         
-        <!-- Bloque Tabular de Mis Pendientes -->
-        <div class="border border-teal-200 rounded-2xl overflow-hidden shadow-xs bg-white">
-          <div class="bg-teal-50/80 px-4 py-2.5 border-b border-teal-200 flex items-center justify-between">
+        <!-- Bloque Tabular: Mis pendientes -->
+        <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-xs bg-white">
+          <div class="bg-slate-50 px-4 py-2.5 border-b border-gray-200 flex items-center justify-between">
             <div class="flex items-center space-x-2">
               <span class="text-sm">📝</span>
-              <h4 class="font-bold text-xs text-teal-950 uppercase tracking-wide">Mis Pendientes Privados</h4>
-              <span id="hub-tabla-pendientes-badge" class="text-[10px] font-bold text-teal-800 bg-white px-2 py-0.5 rounded-full border border-teal-300">0 activos</span>
+              <h4 class="font-bold text-xs text-[#0f2a4a]">Mis pendientes</h4>
+              <span id="hub-tabla-pendientes-badge" class="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">0 activos</span>
             </div>
             <button type="button" onclick="abrirModalCrearPendiente()" class="h-6 px-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-[11px] rounded-lg transition shadow-2xs flex items-center space-x-1 cursor-pointer">
-              <span>+ Nuevo Pendiente</span>
+              <span>+ Nuevo pendiente</span>
             </button>
           </div>
           <table class="w-full text-xs text-left">
             <thead class="bg-[#0f2a4a] text-white">
               <tr>
-                <th class="p-2.5 w-10 text-center">Estado</th>
-                <th class="p-2.5 min-w-[240px]">Pendiente / Tarea</th>
-                <th class="p-2.5 w-36 text-center">Plazo Límite</th>
-                <th class="p-2.5 min-w-[180px]">Descripción Detallada</th>
-                <th class="p-2.5 w-24 text-center">Acciones</th>
+                <th class="p-2.5 font-bold text-white border-b border-blue-900 w-12 text-center">Estado</th>
+                <th class="p-2.5 font-bold text-white border-b border-blue-900 min-w-[220px]">Pendiente / Tarea</th>
+                <th class="p-2.5 font-bold text-white border-b border-blue-900 w-32 text-center whitespace-nowrap">Plazo límite</th>
+                <th class="p-2.5 font-bold text-white border-b border-blue-900 min-w-[200px]">Descripción detallada</th>
+                <th class="p-2.5 font-bold text-white border-b border-blue-900 w-24 text-center whitespace-nowrap">Acción</th>
               </tr>
             </thead>
             <tbody id="hub-tabla-pendientes-body" class="divide-y divide-gray-100 font-medium"></tbody>
           </table>
         </div>
 
-        <!-- Tabla Institucional de Proyectos -->
+        <!-- Tabla Institucional: Mis proyectos (Encabezado azul original) -->
         <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white">
-          <div class="bg-[#0f2a4a] px-4 py-2.5 text-white flex items-center space-x-2">
-            <span class="text-sm">📁</span>
-            <h4 class="font-bold text-xs tracking-wide uppercase">Proyectos y Programas</h4>
-          </div>
           <table class="w-full text-xs text-left">
-            <thead class="bg-slate-100 text-slate-700 font-bold border-b border-gray-200">
+            <thead class="bg-[#0f2a4a] text-white">
               <tr>
-                <th class="p-2.5 w-12 text-center">#</th>
-                <th class="p-2.5 min-w-[200px]">Proyecto / Programa</th>
-                <th class="p-2.5 w-36 text-center whitespace-nowrap">Rol</th>
-                <th class="p-2.5 w-32 text-center">% Avance</th>
-                <th class="p-2.5 min-w-[280px] text-center whitespace-nowrap">Estado de tareas</th>
-                <th class="p-2.5 w-44 text-center whitespace-nowrap">Acción</th>
+                <th class="p-3 font-bold text-white border-b border-blue-900 w-12 text-center">#</th>
+                <th class="p-3 font-bold text-white border-b border-blue-900 min-w-[200px]">Mis proyectos</th>
+                <th class="p-3 font-bold text-white border-b border-blue-900 w-36 text-center whitespace-nowrap">Rol</th>
+                <th class="p-3 font-bold text-white border-b border-blue-900 w-32 text-center">% Avance</th>
+                <th class="p-3 font-bold text-white border-b border-blue-900 min-w-[280px] text-center whitespace-nowrap">Estado de tareas</th>
+                <th class="p-3 font-bold text-white border-b border-blue-900 w-44 text-center whitespace-nowrap">Acción</th>
               </tr>
             </thead>
             <tbody id="hub-proyectos-tabla-body" class="divide-y divide-gray-100 font-medium"></tbody>
@@ -1978,6 +1975,6 @@
     </button>
 
     <!-- Carga del Módulo Orquestador Principal ES6 -->
-    <script type="module" src="/static/js/main.js?v=100015"></script>
+    <script type="module" src="/static/js/main.js?v=100017"></script>
 </body>
 </html>
