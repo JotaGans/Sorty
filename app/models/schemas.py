@@ -196,3 +196,12 @@ class CrearProyectoDesdePlantillaModel(BaseModel):
     es_proceso_personalizado: Optional[int] = 0
     duration_mode: Optional[str] = "business_days"
     visibilidad: Optional[str] = "PRIVADO"
+
+# 12. Modelos de Agenda y Pendientes Privados
+class PendienteCrearModel(BaseModel):
+    titulo: str
+    fecha_limite: str
+    dias_recordatorio: Optional[List[int]] = []
+
+class PendienteEstadoUpdate(BaseModel):
+    estado: str  # 'Pendiente' | 'En proceso' | 'Completado'

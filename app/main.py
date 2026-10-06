@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.database.init_db import init_db
-from app.routers import auth, proyectos, actividades, ti, cpm, notificaciones, plantillas
+from app.routers import auth, proyectos, actividades, ti, cpm, notificaciones, plantillas, pendientes
 
 # 1. Inicialización y migración automática de base de datos
 init_db()
@@ -32,6 +32,7 @@ app.include_router(ti.router)
 app.include_router(cpm.router)
 app.include_router(notificaciones.router)
 app.include_router(plantillas.router)
+app.include_router(pendientes.router)
 
 # 5. Montaje de archivos estáticos y plantillas frontend
 if os.path.exists("static"):

@@ -300,6 +300,20 @@ def init_db():
         )
     """)
 
+    # 14. Pendientes Privados (Agenda Personal)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS pendientes_personales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER NOT NULL,
+            titulo TEXT NOT NULL,
+            fecha_limite TEXT NOT NULL,
+            dias_recordatorio TEXT DEFAULT '[]',
+            estado TEXT NOT NULL DEFAULT 'Pendiente',
+            fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+        )
+    """)
+
     # Índices de aceleración de consultas
     for idx_sql in [
         "CREATE INDEX IF NOT EXISTS idx_historial_proy ON historial(proyecto_id, timestamp DESC)",
@@ -310,7 +324,8 @@ def init_db():
         "CREATE INDEX IF NOT EXISTS idx_unidades_sigla ON unidades_organicas(sigla)",
         "CREATE INDEX IF NOT EXISTS idx_feriados_fecha ON feriados_institucionales(fecha)",
         "CREATE INDEX IF NOT EXISTS idx_procesos_cod ON procesos_institucionales(codigo)",
-        "CREATE INDEX IF NOT EXISTS idx_comentarios_proy_act ON comentarios_actividad(proyecto_id, codigo_actividad)"
+        "CREATE INDEX IF NOT EXISTS idx_comentarios_proy_act ON comentarios_actividad(proyecto_id, codigo_actividad)",
+        "CREATE INDEX IF NOT EXISTS idx_pendientes_usuario ON pendientes_personales(usuario_id, estado)"
     ]:
         try:
             c.execute(idx_sql)
