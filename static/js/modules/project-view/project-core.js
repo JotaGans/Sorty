@@ -30,11 +30,13 @@ export async function ingresarAlProyecto(id, nombre, esGestor) {
   const badge = document.getElementById("badge-rol-gantt");
   if (badge) {
     if (state.proyectoEsGestor) {
-      badge.className = "h-10 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-extrabold uppercase px-3.5 rounded-xl shadow-xs flex items-center space-x-1.5 whitespace-nowrap";
-      badge.innerHTML = `<span>👑</span><span>GESTOR DE PROYECTO</span>`;
+      badge.className = "bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-black uppercase px-2 sm:px-2.5 rounded shadow-2xs flex items-center justify-center whitespace-nowrap cursor-help";
+      badge.innerHTML = `<span class="text-xs leading-none">👑</span><span class="hidden md:inline leading-none tracking-tight ml-1">GESTOR DE PROYECTO</span>`;
+      badge.title = "Rol: Gestor de Proyecto";
     } else {
-      badge.className = "h-10 bg-blue-100 text-blue-900 border border-blue-300 text-[11px] font-extrabold uppercase px-3.5 rounded-xl shadow-xs flex items-center space-x-1.5 whitespace-nowrap";
-      badge.innerHTML = `<span>👤</span><span>RESPONSABLE ASIGNADO</span>`;
+      badge.className = "bg-blue-100 text-blue-900 border border-blue-300 text-[10.5px] font-black uppercase px-2 sm:px-2.5 rounded shadow-2xs flex items-center justify-center whitespace-nowrap cursor-help";
+      badge.innerHTML = `<span class="text-xs leading-none">👤</span><span class="hidden md:inline leading-none tracking-tight ml-1">RESPONSABLE ASIGNADO</span>`;
+      badge.title = "Rol: Responsable Asignado";
     }
   }
 
@@ -126,9 +128,9 @@ export async function sincronizarDatosProyecto(id) {
 export function actualizarKPIs() {
   if (!state.actividadesGlobal || state.actividadesGlobal.length === 0) {
     document.getElementById("kpi-avance").innerText = "0%";
-    document.getElementById("kpi-ejecutado").innerText = "0 Items";
-    document.getElementById("kpi-proceso").innerText = "0 Items";
-    document.getElementById("kpi-pendiente").innerText = "0 Items";
+    document.getElementById("kpi-ejecutado").innerText = "0";
+    document.getElementById("kpi-proceso").innerText = "0";
+    document.getElementById("kpi-pendiente").innerText = "0";
     return;
   }
 
@@ -197,12 +199,10 @@ export function actualizarKPIs() {
   const enProceso = muestraActividades.filter(a => a.estado === 'En proceso').length;
   const noIniciadas = muestraActividades.filter(a => a.estado === 'No iniciado' || a.estado === 'Pendiente').length;
 
-  const formatearItemsTexto = (cant) => `${cant} ${cant === 1 ? 'Item' : 'Items'}`;
-
   document.getElementById("kpi-avance").innerText = `${promAvance}%`;
-  document.getElementById("kpi-ejecutado").innerText = formatearItemsTexto(ejecutadas);
-  document.getElementById("kpi-proceso").innerText = formatearItemsTexto(enProceso);
-  document.getElementById("kpi-pendiente").innerText = formatearItemsTexto(noIniciadas);
+  document.getElementById("kpi-ejecutado").innerText = String(ejecutadas);
+  document.getElementById("kpi-proceso").innerText = String(enProceso);
+  document.getElementById("kpi-pendiente").innerText = String(noIniciadas);
 }
 
 export function limpiarTodosFiltros() {

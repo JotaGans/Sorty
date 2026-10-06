@@ -102,8 +102,8 @@
   <div id="view-hub" class="hidden fixed inset-0 bg-[#f4f7f6] z-40 flex flex-col overflow-y-auto">
     <header class="bg-[#0f2a4a] text-white shadow-md flex-shrink-0 sticky top-0 z-[100]">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 h-[60px] sm:h-[65px] flex items-center justify-between">
-        <div class="flex items-center space-x-2 sm:space-x-4">
-          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-8 sm:h-10 object-contain" onerror="this.outerHTML='<span class=\'text-xl sm:text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
+        <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+          <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-8 sm:h-10 w-auto object-contain flex-shrink-0" onerror="this.outerHTML='<span class=\'text-lg sm:text-2xl font-bold tracking-widest text-white\'>IMARPE</span>'">
         </div>
         <div class="flex items-center space-x-1.5 sm:space-x-2.5">
           <!-- Botón rápido: Crear Nuevo Proyecto -->
@@ -124,11 +124,11 @@
             <span class="hidden sm:inline leading-none">+ Pendiente</span>
           </button>
 
-          <button id="btn-admin-ti" onclick="abrirModalAdminTI()" class="h-[30px] bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 rounded-lg transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap">
+          <button id="btn-admin-ti" onclick="abrirModalAdminTI()" class="h-[30px] bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-2 sm:px-3 rounded-lg transition shadow-2xs flex items-center space-x-1.5 cursor-pointer whitespace-nowrap" title="Gestión TI">
             <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            <span>Gestión TI</span>
+            <span class="hidden md:inline leading-none">Gestión TI</span>
           </button>
 
           <div class="text-right border-l border-blue-900/60 pl-2 sm:pl-3">
@@ -339,19 +339,19 @@
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-8 md:h-9 object-contain" onerror="this.outerHTML='<span class=\'text-xl font-black tracking-widest text-white\'>IMARPE</span>'">
         </div>
         
-        <!-- Centro Exacto: Título del Proyecto (Centrado Absoluto en Pantalla) -->
-        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[55%] max-w-2xl text-center z-0 pointer-events-none">
+        <!-- Centro: Título del Proyecto con ancho responsivo seguro -->
+        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[48%] sm:w-[55%] max-w-2xl text-center z-0 pointer-events-none">
           <input type="text" id="txt-nombre-proyecto" 
                  placeholder="NOMBRE DEL PROYECTO"
-                 class="w-full bg-transparent text-white font-black text-sm md:text-base text-center border-b border-transparent hover:border-teal-400/40 focus:border-teal-400 outline-none px-2 py-0.5 transition tracking-wide truncate pointer-events-auto cursor-text" 
+                 class="w-full bg-transparent text-white font-black text-xs sm:text-base text-center border-b border-transparent hover:border-teal-400/40 focus:border-teal-400 outline-none px-1 sm:px-2 py-0.5 transition tracking-wide truncate pointer-events-auto cursor-text" 
                  value="">
         </div>
         
-        <!-- Extremo Derecho: Badge de Rol (+2px: 26px) y Perfil de Usuario -->
-        <div id="user-info" class="flex items-center space-x-2.5 flex-shrink-0 z-10">
-          <div id="badge-rol-gantt" class="bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-black uppercase px-2.5 rounded shadow-2xs flex items-center space-x-1 whitespace-nowrap" style="height: 26px !important; min-height: 26px !important; max-height: 26px !important;">
-            <span class="text-xs leading-none">👑</span>
-            <span class="leading-none tracking-tight">GESTOR DE PROYECTO</span>
+        <!-- Extremo Derecho: Badge de Rol (sólo icono en móvil) y Perfil -->
+        <div id="user-info" class="flex items-center space-x-1.5 sm:space-x-2.5 flex-shrink-0 z-10">
+          <div id="badge-rol-gantt" class="bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-black uppercase px-2 sm:px-2.5 rounded shadow-2xs flex items-center justify-center whitespace-nowrap cursor-help" style="height: 26px !important; min-height: 26px !important; max-height: 26px !important;" title="Rol en este proyecto">
+            <span id="badge-rol-gantt-ico" class="text-xs leading-none">👑</span>
+            <span id="badge-rol-gantt-txt" class="hidden md:inline leading-none tracking-tight ml-1">GESTOR DE PROYECTO</span>
           </div>
 
           <div class="text-right hidden sm:block border-l border-blue-900/60 pl-2.5">
@@ -364,84 +364,91 @@
     </header>
 
     <!-- PISO 2: NAVEGACIÓN INTUITIVA AL HUB + KPIS SEMÁFORO EN VIVO + GESTIÓN -->
-    <div class="max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5 bg-slate-100/90 border-b border-gray-200">
-      <div class="relative flex items-center justify-between min-h-[34px]">
+    <div class="max-w-[1920px] w-full mx-auto px-2 sm:px-6 py-1.5 bg-slate-100/90 border-b border-gray-200 overflow-x-auto">
+      <div class="flex items-center justify-between min-h-[34px] gap-2 w-full">
         
-        <!-- Botón Volver al Hub: Casita perfectamente centrada en reposo y ancho exacto al expandir -->
-        <div class="relative flex-shrink-0 z-20 w-8 h-8" style="margin-left: 9px;">
-          <button onclick="volverAlHub()" class="group absolute left-0 top-0 h-8 w-8 hover:w-[144px] px-[7px] hover:px-2.5 bg-[#0f2a4a] hover:bg-[#1b4573] text-white border border-blue-900/60 rounded-lg text-xs font-bold transition-all duration-200 ease-out shadow-2xs flex items-center justify-start cursor-pointer whitespace-nowrap overflow-hidden" title="Volver a proyectos">
+        <!-- Botón Volver al Hub -->
+        <div class="relative flex-shrink-0 z-20 w-8 h-8">
+          <button onclick="volverAlHub()" class="group h-8 w-8 md:hover:w-[144px] px-[7px] md:hover:px-2.5 bg-[#0f2a4a] hover:bg-[#1b4573] text-white border border-blue-900/60 rounded-lg text-xs font-bold transition-all duration-200 ease-out shadow-2xs flex items-center justify-center md:justify-start cursor-pointer whitespace-nowrap overflow-hidden" title="Volver a proyectos">
             <svg class="w-4 h-4 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
             </svg>
-            <span class="max-w-0 opacity-0 group-hover:max-w-[110px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-200 ease-out font-bold overflow-hidden leading-none text-white tracking-tight">Volver a proyectos</span>
+            <span class="max-w-0 opacity-0 md:group-hover:max-w-[110px] md:group-hover:opacity-100 md:group-hover:ml-1.5 transition-all duration-200 ease-out font-bold overflow-hidden leading-none text-white tracking-tight">Volver a proyectos</span>
           </button>
         </div>
 
-        <!-- KPIs Semáforo: Centrados en el renglón y desplazados exactamente 5px a la derecha -->
-        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center gap-2 pointer-events-none z-0" style="transform: translate(calc(-50% + 5px), -50%);">
-          <div class="h-8 bg-[#1abc9c] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto flex-shrink-0 whitespace-nowrap">
-            <span class="text-[11px] font-black uppercase tracking-wider leading-none whitespace-nowrap">AVANCE</span>
-            <p id="kpi-avance" class="text-sm font-black leading-none whitespace-nowrap">0%</p>
+        <!-- KPIs Semáforo en Vivo (Diseño ultra-compacto en móvil) -->
+        <div class="flex items-center justify-center gap-1 sm:gap-2 flex-nowrap flex-1 sm:flex-initial">
+          <!-- Avance -->
+          <div class="h-8 bg-[#1abc9c] text-white px-2 sm:px-3 rounded-lg shadow-2xs flex items-center space-x-1 sm:space-x-1.5 whitespace-nowrap">
+            <span class="text-[10px] sm:text-[11px] font-black uppercase tracking-wider leading-none"><span class="sm:hidden">%</span><span class="hidden sm:inline">AVANCE</span></span>
+            <p id="kpi-avance" class="text-xs sm:text-sm font-black leading-none">0%</p>
           </div>
 
-          <div class="h-8 bg-[#2ecc71] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto flex-shrink-0 whitespace-nowrap">
-            <span class="text-[11px] font-black uppercase tracking-tight leading-none whitespace-nowrap">EJECUTADO</span>
-            <p id="kpi-ejecutado" class="text-xs font-black leading-none whitespace-nowrap">0 Items</p>
+          <!-- Ejecutado -->
+          <div class="h-8 bg-[#2ecc71] text-white px-2 sm:px-3 rounded-lg shadow-2xs flex items-center space-x-1 sm:space-x-1.5 whitespace-nowrap">
+            <span class="text-[10px] sm:text-[11px] font-black uppercase tracking-tight leading-none"><span class="sm:hidden">E</span><span class="hidden sm:inline">EJECUTADO</span></span>
+            <p id="kpi-ejecutado" class="text-xs font-black leading-none">0</p>
           </div>
 
-          <div class="h-8 bg-[#f1c40f] text-[#2c3e50] px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto flex-shrink-0 whitespace-nowrap">
-            <span class="text-[11px] font-black uppercase tracking-tight leading-none whitespace-nowrap">EN PROCESO</span>
-            <p id="kpi-proceso" class="text-xs font-black leading-none whitespace-nowrap">0 Items</p>
+          <!-- En Proceso -->
+          <div class="h-8 bg-[#f1c40f] text-[#2c3e50] px-2 sm:px-3 rounded-lg shadow-2xs flex items-center space-x-1 sm:space-x-1.5 whitespace-nowrap">
+            <span class="text-[10px] sm:text-[11px] font-black uppercase tracking-tight leading-none"><span class="sm:hidden">P</span><span class="hidden sm:inline">EN PROCESO</span></span>
+            <p id="kpi-proceso" class="text-xs font-black leading-none">0</p>
           </div>
 
-          <div class="h-8 bg-[#e74c3c] text-white px-3 rounded-lg shadow-2xs flex items-center space-x-1.5 pointer-events-auto flex-shrink-0 whitespace-nowrap">
-            <span class="text-[11px] font-black uppercase tracking-tight leading-none whitespace-nowrap">NO INICIADO</span>
-            <p id="kpi-pendiente" class="text-xs font-black leading-none whitespace-nowrap">0 Items</p>
+          <!-- No Iniciado -->
+          <div class="h-8 bg-[#e74c3c] text-white px-2 sm:px-3 rounded-lg shadow-2xs flex items-center space-x-1 sm:space-x-1.5 whitespace-nowrap">
+            <span class="text-[10px] sm:text-[11px] font-black uppercase tracking-tight leading-none"><span class="sm:hidden">N</span><span class="hidden sm:inline">NO INICIADO</span></span>
+            <p id="kpi-pendiente" class="text-xs font-black leading-none">0</p>
           </div>
 
-          <div id="badge-filtro-activo" class="hidden items-center bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-bold px-2.5 h-8 rounded-lg shadow-2xs space-x-1 animate-pulse pointer-events-auto flex-shrink-0 whitespace-nowrap">
+          <!-- Badge Filtro Activo -->
+          <div id="badge-filtro-activo" class="hidden items-center bg-amber-100 text-amber-900 border border-amber-300 text-[10px] sm:text-[10.5px] font-bold px-2 sm:px-2.5 h-8 rounded-lg shadow-2xs space-x-1 whitespace-nowrap">
             <span>🔍</span>
-            <span id="badge-filtro-texto" class="truncate max-w-[140px] leading-none">Filtrado</span>
-            <button onclick="limpiarTodosFiltros()" class="text-amber-800 hover:text-amber-950 font-black ml-1 text-xs cursor-pointer leading-none" title="Quitar filtro">✕</button>
+            <span id="badge-filtro-texto" class="truncate max-w-[80px] sm:max-w-[140px] leading-none">Filtro</span>
+            <button onclick="limpiarTodosFiltros()" class="text-amber-800 hover:text-amber-950 font-black ml-1 text-xs cursor-pointer leading-none">✕</button>
           </div>
         </div>
 
-        <!-- Herramientas Administrativas (Derecha) -->
-        <div class="flex items-center space-x-1.5 flex-shrink-0 z-10">
-          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="h-8 px-2.5 bg-white hover:bg-slate-200 text-[#0f2a4a] border border-gray-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Asignación de Personal y Roles">
+        <!-- Botones Personal e Historial: Sólo icono en móvil -->
+        <div class="flex items-center space-x-1 sm:space-x-1.5 flex-shrink-0">
+          <button id="btn-personal-gantt" onclick="abrirResponsables()" class="h-8 w-8 sm:w-auto px-1.5 sm:px-2.5 bg-white hover:bg-slate-200 text-[#0f2a4a] border border-gray-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center justify-center space-x-1 cursor-pointer whitespace-nowrap" title="Asignación de Personal y Roles">
             <span>👥</span>
-            <span>Personal</span>
+            <span class="hidden sm:inline">Personal</span>
           </button>
 
-          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="h-8 px-2.5 bg-white hover:bg-slate-200 text-slate-700 border border-gray-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Historial de Auditoría">
+          <button id="btn-historial-gantt" onclick="abrirHistorial()" class="h-8 w-8 sm:w-auto px-1.5 sm:px-2.5 bg-white hover:bg-slate-200 text-slate-700 border border-gray-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center justify-center space-x-1 cursor-pointer whitespace-nowrap" title="Historial de Auditoría">
             <span>📜</span>
-            <span>Historial</span>
+            <span class="hidden sm:inline">Historial</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- PISO 3: TOOLBAR OPERATIVO CON CONTEXTO ELEVADO -->
-    <div class="relative z-40 max-w-[1920px] w-full mx-auto px-3 md:px-6 py-1.5">
-      <div class="relative z-40 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 bg-white p-2 rounded-xl shadow-xs border border-gray-200">
+    <!-- PISO 3: TOOLBAR OPERATIVO RESPONSIVO -->
+    <div class="relative z-40 max-w-[1920px] w-full mx-auto px-2 sm:px-6 py-1.5">
+      <div class="relative z-40 flex flex-wrap md:flex-nowrap items-center justify-between gap-1.5 sm:gap-2 bg-white p-1.5 sm:p-2 rounded-xl shadow-xs border border-gray-200 overflow-x-auto">
         
-        <!-- SECCIÓN IZQUIERDA: CREACIÓN Y FILTROS ORDENADOS (Nivel -> Colaborador -> Descripción) -->
-        <div class="flex items-center gap-1.5 flex-shrink-0">
-          <button id="btn-nueva-act-gantt" onclick="botonSuperiorNuevaActividad()" class="h-[30px] bg-[#6FB34A] hover:bg-[#5da03b] text-white text-xs font-black px-3 rounded-lg transition shadow-xs flex items-center space-x-1 cursor-pointer whitespace-nowrap">
+        <!-- SECCIÓN IZQUIERDA: CREACIÓN Y FILTROS COMPACTOS -->
+        <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+          <!-- + Actividad: Sólo icono + en móvil -->
+          <button id="btn-nueva-act-gantt" onclick="botonSuperiorNuevaActividad()" class="h-[30px] bg-[#6FB34A] hover:bg-[#5da03b] text-white text-xs font-black px-2 sm:px-3 rounded-lg transition shadow-xs flex items-center space-x-1 cursor-pointer whitespace-nowrap" title="Crear nueva actividad">
             <span class="text-base leading-none">+</span>
-            <span>Actividad</span>
+            <span class="hidden sm:inline">Actividad</span>
           </button>
           
           <div class="h-5 w-px bg-gray-300 mx-0.5 flex-shrink-0"></div>
           
-          <!-- 1. Filtro Nivel -->
+          <!-- 1. Filtro Nivel: Icono SVG de Jerarquía / Niveles -->
           <div class="relative flex items-center h-[30px] bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg px-2 shadow-2xs cursor-pointer group" title="Filtrar por nivel de actividades">
-            <div class="flex items-center space-x-1.5 pointer-events-none select-none">
-              <svg class="w-3.5 h-3.5 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+            <div class="flex items-center space-x-1 pointer-events-none select-none">
+              <!-- SVG Niveles / Pirámide de capas -->
+              <svg class="w-3.5 h-3.5 text-slate-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M6.75 12h10.5m-7.5 5.25h4.5" />
               </svg>
-              <span id="txt-nivel-activo-label" class="text-xs font-semibold text-gray-700 leading-none">Nivel</span>
-              <svg class="w-3 h-3 text-gray-500 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span id="txt-nivel-activo-label" class="hidden sm:inline text-xs font-semibold text-gray-700 leading-none">Nivel</span>
+              <svg class="w-3 h-3 text-gray-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
@@ -453,35 +460,34 @@
             </select>
           </div>
 
-          <!-- 2. Filtro Colaborador (Permutado al centro, ajustado a w-[130px]) -->
-          <div class="relative flex items-center w-[130px] flex-shrink-0">
-            <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2 pointer-events-none z-10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+          <!-- 2. Filtro Colaborador: Icono SVG Persona -->
+          <div class="relative flex items-center w-[40px] sm:w-[130px] flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-slate-600 absolute left-2 pointer-events-none z-10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
             </svg>
-            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full appearance-none text-xs bg-gray-50 border border-gray-300 rounded-lg pl-7 pr-6 h-[30px] outline-none font-semibold text-gray-700 cursor-pointer shadow-2xs hover:bg-gray-100 transition" title="Filtrar por colaborador">
+            <select id="filtro-responsable-select" onchange="aplicarFiltrosGlobales()" class="w-full appearance-none text-xs bg-gray-50 border border-gray-300 rounded-lg pl-7 pr-2 sm:pr-6 h-[30px] outline-none font-semibold text-gray-700 cursor-pointer shadow-2xs hover:bg-gray-100 transition truncate" title="Filtrar por colaborador">
               <option value="">Colaborador</option>
             </select>
-            <svg class="w-3 h-3 text-gray-500 absolute right-2 pointer-events-none z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="hidden sm:block w-3 h-3 text-gray-400 absolute right-2 pointer-events-none z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </div>
 
-          <!-- 3. Filtro Descripción (Permutado a la derecha, con nuevo tooltip) -->
+          <!-- 3. Filtro Descripción -->
           <div class="relative flex items-center">
             <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
             </svg>
-            <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="Descripción" class="w-[95px] md:w-[115px] text-xs bg-gray-50 border border-gray-300 rounded-lg pl-7 pr-2 h-[30px] outline-none focus:border-[#0f2a4a] focus:bg-white font-semibold text-gray-700" title="Filtrar por descripción o nivel de actividad">
+            <input type="text" id="filtro-busqueda" oninput="aplicarFiltrosGlobales()" placeholder="Descripción" class="w-[85px] sm:w-[115px] text-xs bg-gray-50 border border-gray-300 rounded-lg pl-7 pr-2 h-[30px] outline-none focus:border-[#0f2a4a] focus:bg-white font-semibold text-gray-700" title="Filtrar por descripción o nivel de actividad">
           </div>
         </div>
 
-        <!-- SECCIÓN DERECHA: ESCALA + SEM + BOTONES CUADRADOS ORDENADOS -->
-        <div class="flex items-center gap-1.5 flex-shrink-0">
+        <!-- SECCIÓN DERECHA: ESCALA + SEM + HERRAMIENTAS -->
+        <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
           
-          <!-- Escala Temporal -->
-          <div class="relative flex items-center h-[30px] bg-[#0f2a4a] hover:bg-[#1a3d66] border border-blue-900/60 rounded-lg px-2.5 shadow-2xs cursor-pointer group">
+          <!-- Escala Temporal: Sin el texto fijo ESCALA: para ahorrar espacio -->
+          <div class="relative flex items-center h-[30px] bg-[#0f2a4a] hover:bg-[#1a3d66] border border-blue-900/60 rounded-lg px-2 sm:px-2.5 shadow-2xs cursor-pointer group" title="Cambiar escala temporal">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
-              <span class="text-[10px] text-teal-300 font-black uppercase">ESCALA:</span>
               <span id="txt-escala-activa-label" class="text-xs font-bold text-white leading-none">Días</span>
               <svg class="w-3.5 h-3.5 text-teal-300 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -496,50 +502,40 @@
             </select>
           </div>
 
-          <!-- Marco Azul Unificado SEM / Navegación Temporal -->
-          <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg pl-[1px] pr-[2px] space-x-1 shadow-2xs border border-blue-900/60 transition-all duration-200 ease-in-out">
+          <!-- Navegación Temporal (SEM) -->
+          <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg pl-[1px] pr-[2px] space-x-0.5 sm:space-x-1 shadow-2xs border border-blue-900/60 transition-all duration-200">
             <div id="box-input-semana" class="flex items-center space-x-1 overflow-hidden max-w-[120px] opacity-100 flex-shrink-0">
-              <span class="text-[9.5px] font-bold uppercase leading-none pl-0.5">SEM</span>
+              <span class="text-[9px] font-bold uppercase leading-none pl-0.5 hidden sm:inline">SEM</span>
               <div class="flex items-center h-[24px] bg-white rounded border border-gray-300 overflow-hidden flex-shrink-0">
                 <div class="flex flex-col h-full justify-between border-r border-gray-300">
-                  <button type="button" onclick="cambiarSemanaInicio(1)" class="spin-btn text-[6.5px] px-1 text-gray-800 font-black leading-none border-b border-gray-300 h-1/2 flex items-center justify-center">▲</button>
-                  <button type="button" onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[6.5px] px-1 text-gray-800 font-black leading-none h-1/2 flex items-center justify-center">▼</button>
+                  <button type="button" onclick="cambiarSemanaInicio(1)" class="spin-btn text-[6.5px] px-0.5 text-gray-800 font-black leading-none border-b border-gray-300 h-1/2 flex items-center justify-center">▲</button>
+                  <button type="button" onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[6.5px] px-0.5 text-gray-800 font-black leading-none h-1/2 flex items-center justify-center">▼</button>
                 </div>
-                <input type="number" id="input-semana-inicio" min="1" max="999" value="1" onchange="fijarSemanaInicio(this.value)" class="w-7 text-center text-xs font-black text-[#0f2a4a] outline-none leading-none">
+                <input type="number" id="input-semana-inicio" min="1" max="999" value="1" onchange="fijarSemanaInicio(this.value)" class="w-6 sm:w-7 text-center text-xs font-black text-[#0f2a4a] outline-none leading-none">
               </div>
             </div>
-            <button type="button" onclick="irAInicioProyecto()" class="h-[24px] bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0">Inicio</button>
-            <button type="button" onclick="irASemanaActual()" class="h-[24px] bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0">Hoy</button>
+            <button type="button" onclick="irAInicioProyecto()" class="h-[24px] bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-1.5 sm:px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0">Ini</button>
+            <button type="button" onclick="irASemanaActual()" class="h-[24px] bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-1.5 sm:px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0">Hoy</button>
           </div>
 
           <div class="h-5 w-px bg-gray-300 mx-0.5 flex-shrink-0"></div>
 
-          <!-- 1. Botón Cuadrado: Columnas -->
-          <button type="button" onclick="abrirModalColumnas()" class="h-[30px] w-[34px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white border border-blue-700 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Configurar columnas visibles">
-            <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <!-- Botones Cuadrados: Columnas, CPM, Excel y Plantillas -->
+          <button type="button" onclick="abrirModalColumnas()" class="h-[30px] w-[30px] sm:w-[34px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white border border-blue-700 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Configurar columnas">
+            <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
           </button>
 
-          <!-- 2. Botón Cuadrado: Menú Desplegable CPM (Con puente invisible y tolerancia de cursor) -->
-          <div class="relative z-[100] flex items-center flex-shrink-0"
-               onmouseenter="cancelarCierreMenuCpm()"
-               onmouseleave="iniciarCierreMenuCpm()">
-            <button type="button" 
-                    onclick="document.getElementById('menu-desplegable-cpm').classList.toggle('hidden')" 
-                    class="h-[30px] w-[34px] bg-[#ea580c] hover:bg-[#c2410c] text-white border border-orange-700 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer" 
-                    title="Gestión de ruta crítica y dependencias">
+          <div class="relative z-[100] flex items-center flex-shrink-0" onmouseenter="cancelarCierreMenuCpm()" onmouseleave="iniciarCierreMenuCpm()">
+            <button type="button" onclick="document.getElementById('menu-desplegable-cpm').classList.toggle('hidden')" class="h-[30px] w-[30px] sm:w-[34px] bg-[#ea580c] hover:bg-[#c2410c] text-white border border-orange-700 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer" title="Ruta crítica y dependencias">
               <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M13 2L3 14h7v8l10-12h-7z" />
               </svg>
             </button>
 
-            <!-- Menú desplegable: Con contenedor puente sin separación para evitar que se cierre -->
-            <div id="menu-desplegable-cpm" 
-                 class="hidden absolute right-0 top-full pt-1.5 w-48 z-[110]"
-                 onmouseenter="cancelarCierreMenuCpm()"
-                 onmouseleave="iniciarCierreMenuCpm()">
+            <div id="menu-desplegable-cpm" class="hidden absolute right-0 top-full pt-1.5 w-48 z-[110]" onmouseenter="cancelarCierreMenuCpm()" onmouseleave="iniciarCierreMenuCpm()">
               <div class="bg-white border border-gray-200 rounded-xl shadow-2xl py-1">
                 <button type="button" onclick="alternarCapaRutaCritica(); cerrarMenuCpmInmediato()" class="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-rose-50 hover:text-rose-700 flex items-center space-x-2 transition cursor-pointer">
                   <span>🔥</span>
@@ -553,13 +549,11 @@
             </div>
           </div>
 
-          <!-- 3. Botón Cuadrado: Excel -->
-          <button type="button" onclick="exportarExcelCSV()" class="h-[30px] w-[34px] bg-[#107c41] hover:bg-[#0c5c30] text-white border border-[#0d6535] rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Exportar cronograma a Excel">
-            <span class="text-sm leading-none">📊</span>
+          <button type="button" onclick="exportarExcelCSV()" class="h-[30px] w-[30px] sm:w-[34px] bg-[#107c41] hover:bg-[#0c5c30] text-white border border-[#0d6535] rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Exportar a Excel">
+            <span class="text-xs sm:text-sm leading-none">📊</span>
           </button>
 
-          <!-- 4. Botón Cuadrado: Guardar Plantilla -->
-          <button type="button" id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[34px] bg-[#4f46e5] hover:bg-[#4338ca] text-white border border-indigo-700 rounded-lg text-sm font-bold transition-all duration-300 shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap flex-shrink-0" title="Guardar plantilla">
+          <button type="button" id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[30px] sm:w-[34px] bg-[#4f46e5] hover:bg-[#4338ca] text-white border border-indigo-700 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap flex-shrink-0" title="Guardar plantilla">
             <span id="ico-accion-plantilla" class="leading-none">📥</span>
             <span id="txt-accion-plantilla" class="hidden"></span>
           </button>
@@ -1987,6 +1981,6 @@
     </button>
 
     <!-- Carga del Módulo Orquestador Principal ES6 -->
-    <script type="module" src="/static/js/main.js?v=100019"></script>
+    <script type="module" src="/static/js/main.js?v=100020"></script>
 </body>
 </html>
