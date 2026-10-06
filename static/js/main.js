@@ -8,6 +8,7 @@ import { inicializarFormularioLogin, actualizarDisplaysUsuario, mostrarLogin } f
 import { cargarHubProyectos } from "./modules/hub.js";
 import "./modules/admin-ti.js";           // Directorio, UO ROF, feriados, procesos
 import "./modules/project-view/index.js"; // Dominio completo de Proyectos
+import "./modules/agenda/agenda-pendientes.js"; // Agenda de pendientes privados
 
 document.addEventListener("DOMContentLoaded", async () => {
   // 1. Reubicar modales en la raíz directa del BODY para evitar colisiones de stacking context
@@ -17,7 +18,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     "modal-trabajadores-baja", "modal-notificacion-correo", "modal-comentarios", 
     "modal-nuevo-proyecto", "modal-guardar-plantilla", "modal-importar-plantilla-proyecto",
     "modal-dialog-imarpe", "modal-input-custom", "modal-fecha-custom", "modal-fin-interactiva",
-    "modal-asignar-responsables", "modal-estadisticas-hub", "modal-editar-feriado"
+    "modal-asignar-responsables", "modal-estadisticas-hub", "modal-editar-feriado",
+    "modal-agenda-pendiente"
   ];
   idsModales.forEach(id => {
     const el = document.getElementById(id);
