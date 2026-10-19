@@ -47,6 +47,7 @@ class TrabajadorAltaModel(BaseModel):
     apellidos: str
     unidad_organica: str
     correo_usuario: str
+    celular: Optional[str] = ""
     cargo: Optional[str] = "Especialista"
     es_directivo: Optional[int] = 0
     crear_acceso: Optional[bool] = True
@@ -58,6 +59,7 @@ class TrabajadorActualizarModel(BaseModel):
     apellidos: str
     unidad_organica: str
     correo_usuario: str
+    celular: Optional[str] = ""
     cargo: Optional[str] = "Sin cargo / nivel"
     es_directivo: Optional[int] = 0
 

@@ -207,6 +207,7 @@ def actualizar_dependencia_rof_unidad(
 def listar_trabajadores(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     rows = db.execute("""
         SELECT id, nombres, apellidos, nombre_completo, unidad_organica, correo, 
+               COALESCE(celular, '') as celular,
                COALESCE(cargo, 'Sin cargo / nivel') as cargo, 
                COALESCE(es_directivo, 0) as es_directivo, 
                COALESCE(estado, 'ACTIVO') as estado 
@@ -226,15 +227,16 @@ def crear_trabajador(data: TrabajadorAltaModel, user: dict = Depends(get_current
     
     usuario_correo = data.correo_usuario.strip().lower().replace("@imarpe.gob.pe", "")
     correo_final = f"{usuario_correo}@imarpe.gob.pe"
+    celular_limp = (data.celular or "").strip()
     cargo_final = (data.cargo or "Especialista").strip()
     es_dir = int(data.es_directivo or 0)
     uo_final = data.unidad_organica.strip().upper()
 
     try:
         db.execute("""
-            INSERT INTO trabajadores (nombres, apellidos, nombre_completo, unidad_organica, correo, cargo, es_directivo, estado)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVO')
-        """, (nombres_limp, apellidos_limp, nombre_completo, uo_final, correo_final, cargo_final, es_dir))
+            INSERT INTO trabajadores (nombres, apellidos, nombre_completo, unidad_organica, correo, celular, cargo, es_directivo, estado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVO')
+        """, (nombres_limp, apellidos_limp, nombre_completo, uo_final, correo_final, celular_limp, cargo_final, es_dir))
         trabajador_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
 
         db.execute("""
@@ -292,6 +294,7 @@ def actualizar_trabajador(
 
     usuario_correo = data.correo_usuario.strip().lower().replace("@imarpe.gob.pe", "")
     correo_final = f"{usuario_correo}@imarpe.gob.pe"
+    celular_limp = (data.celular or "").strip()
     antiguo_correo = actual["correo"]
     cargo_final = (data.cargo or "Sin cargo / nivel").strip()
     es_dir = int(data.es_directivo or 0)
@@ -303,9 +306,9 @@ def actualizar_trabajador(
 
     db.execute("""
         UPDATE trabajadores 
-        SET nombres = ?, apellidos = ?, nombre_completo = ?, unidad_organica = ?, correo = ?, cargo = ?, es_directivo = ?
+        SET nombres = ?, apellidos = ?, nombre_completo = ?, unidad_organica = ?, correo = ?, celular = ?, cargo = ?, es_directivo = ?
         WHERE id = ?
-    """, (nombres_limp, apellidos_limp, nuevo_nombre_completo, uo_final, correo_final, cargo_final, es_dir, trabajador_id))
+    """, (nombres_limp, apellidos_limp, nuevo_nombre_completo, uo_final, correo_final, celular_limp, cargo_final, es_dir, trabajador_id))
 
     db.execute("""
         UPDATE responsables 

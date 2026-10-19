@@ -487,15 +487,21 @@
           </div>
         </div>
 
-        <!-- SECCIÓN DERECHA: ESCALA + SEM (CON BOTÓN 'Inicio' COMPLETO) + BOTONES ACCIÓN -->
+        <!-- SECCIÓN DERECHA: ESCALA + NAVEGADOR LIMPIO (◀ Inicio Hoy ▶) + HERRAMIENTAS AGRUPADAS -->
         <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
           
+          <!-- Botón Rápido: Pegar Lista de Tareas -->
+          <button type="button" onclick="abrirModalPegarListaTareas()" class="h-[30px] bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold px-2.5 rounded-lg transition shadow-2xs flex items-center space-x-1 cursor-pointer whitespace-nowrap flex-shrink-0" title="Pegar lista de tareas desde Word o Excel">
+            <span class="text-xs leading-none">📋</span>
+            <span class="hidden lg:inline">Pegar Lista</span>
+          </button>
+
           <!-- Escala Temporal -->
           <div class="relative flex items-center h-[30px] bg-[#0f2a4a] hover:bg-[#1a3d66] border border-blue-900/60 rounded-lg px-2 sm:px-2.5 shadow-2xs cursor-pointer group" title="Cambiar escala temporal">
             <div class="flex items-center space-x-1 pointer-events-none select-none">
               <span id="txt-escala-activa-label" class="text-xs font-bold text-white leading-none">Días</span>
               <svg class="w-3.5 h-3.5 text-teal-300 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
             <select id="sel-escala-temporal" onchange="fijarModoZoomDirecto(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-bold text-xs">
@@ -507,33 +513,18 @@
             </select>
           </div>
 
-          <!-- Navegación Temporal: SEM + Botón Inicio Completo -->
-          <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg pl-[1px] pr-[2px] space-x-0.5 sm:space-x-1 shadow-2xs border border-blue-900/60 transition-all duration-200">
-            <div id="box-input-semana" class="flex items-center space-x-1 overflow-hidden max-w-[120px] opacity-100 flex-shrink-0">
-              <span class="text-[9px] font-bold uppercase leading-none pl-0.5 hidden sm:inline">SEM</span>
-              <div class="flex items-center h-[24px] bg-white rounded border border-gray-300 overflow-hidden flex-shrink-0">
-                <div class="flex flex-col h-full justify-between border-r border-gray-300">
-                  <button type="button" onclick="cambiarSemanaInicio(1)" class="spin-btn text-[6.5px] px-0.5 text-gray-800 font-black leading-none border-b border-gray-300 h-1/2 flex items-center justify-center">▲</button>
-                  <button type="button" onclick="cambiarSemanaInicio(-1)" class="spin-btn text-[6.5px] px-0.5 text-gray-800 font-black leading-none h-1/2 flex items-center justify-center">▼</button>
-                </div>
-                <input type="number" id="input-semana-inicio" min="1" max="999" value="1" onchange="fijarSemanaInicio(this.value)" class="w-6 sm:w-7 text-center text-xs font-black text-[#0f2a4a] outline-none leading-none">
-              </div>
-            </div>
-            <!-- Botón Inicio completo garantizado -->
-            <button type="button" onclick="irAInicioProyecto()" class="h-[24px] bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0">Inicio</button>
-            <button type="button" onclick="irASemanaActual()" class="h-[24px] bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-1.5 sm:px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0">Hoy</button>
+          <!-- Navegador Temporal Simplificado: ◀ | Inicio | Hoy | ▶ -->
+          <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg px-1 space-x-1 shadow-2xs border border-blue-900/60">
+            <input type="hidden" id="input-semana-inicio" value="1">
+            <button type="button" onclick="cambiarSemanaInicio(-1)" class="h-[24px] w-[22px] hover:bg-white/15 text-teal-300 font-black text-[10px] rounded flex items-center justify-center transition cursor-pointer" title="Retroceder en el calendario">◀</button>
+            <button type="button" onclick="irAInicioProyecto()" class="h-[24px] bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0 cursor-pointer">Inicio</button>
+            <button type="button" onclick="irASemanaActual()" class="h-[24px] bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0 cursor-pointer">Hoy</button>
+            <button type="button" onclick="cambiarSemanaInicio(1)" class="h-[24px] w-[22px] hover:bg-white/15 text-teal-300 font-black text-[10px] rounded flex items-center justify-center transition cursor-pointer" title="Avanzar en el calendario">▶</button>
           </div>
 
           <div class="h-5 w-px bg-gray-300 mx-0.5 flex-shrink-0"></div>
 
-          <!-- Botones Cuadrados: Columnas, CPM, Excel y Plantillas -->
-          <button type="button" onclick="abrirModalColumnas()" class="h-[30px] w-[30px] sm:w-[34px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white border border-blue-700 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Configurar columnas">
-            <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-          </button>
-
+          <!-- Botón CPM (Ruta Crítica y Predecesoras) -->
           <div class="relative z-[100] flex items-center flex-shrink-0" onmouseenter="cancelarCierreMenuCpm()" onmouseleave="iniciarCierreMenuCpm()">
             <button type="button" onclick="document.getElementById('menu-desplegable-cpm').classList.toggle('hidden')" class="h-[30px] w-[30px] sm:w-[34px] bg-[#ea580c] hover:bg-[#c2410c] text-white border border-orange-700 rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer" title="Ruta crítica y dependencias">
               <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
@@ -555,14 +546,28 @@
             </div>
           </div>
 
-          <button type="button" onclick="exportarExcelCSV()" class="h-[30px] w-[30px] sm:w-[34px] bg-[#107c41] hover:bg-[#0c5c30] text-white border border-[#0d6535] rounded-lg transition shadow-2xs flex items-center justify-center cursor-pointer flex-shrink-0" title="Exportar a Excel">
-            <span class="text-xs sm:text-sm leading-none">📊</span>
-          </button>
+          <!-- Menú Agrupado de Herramientas de Vista y Exportación (Columnas, Excel, Plantillas) -->
+          <div class="relative z-[100] flex items-center flex-shrink-0">
+            <button type="button" onclick="document.getElementById('menu-herramientas-vista').classList.toggle('hidden')" class="h-[30px] px-2.5 bg-slate-100 hover:bg-slate-200 text-[#0f2a4a] border border-gray-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer" title="Más opciones y herramientas del proyecto">
+              <span>⚙️</span>
+              <span class="hidden sm:inline">Opciones</span>
+            </button>
 
-          <button type="button" id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica()" class="h-[30px] w-[30px] sm:w-[34px] bg-[#4f46e5] hover:bg-[#4338ca] text-white border border-indigo-700 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap flex-shrink-0" title="Guardar plantilla">
-            <span id="ico-accion-plantilla" class="leading-none">📥</span>
-            <span id="txt-accion-plantilla" class="hidden"></span>
-          </button>
+            <div id="menu-herramientas-vista" class="hidden absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 z-[110] text-xs font-bold text-gray-700">
+              <button type="button" onclick="abrirModalColumnas(); document.getElementById('menu-herramientas-vista').classList.add('hidden')" class="w-full text-left px-3.5 py-2 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2.5 transition cursor-pointer">
+                <span>👁️</span>
+                <span>Columnas visibles</span>
+              </button>
+              <button type="button" onclick="exportarExcelCSV(); document.getElementById('menu-herramientas-vista').classList.add('hidden')" class="w-full text-left px-3.5 py-2 hover:bg-emerald-50 hover:text-emerald-700 flex items-center space-x-2.5 transition cursor-pointer">
+                <span>📊</span>
+                <span>Exportar a Excel (CSV)</span>
+              </button>
+              <button type="button" id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica(); document.getElementById('menu-herramientas-vista').classList.add('hidden')" class="w-full text-left px-3.5 py-2 hover:bg-indigo-50 hover:text-indigo-700 flex items-center space-x-2.5 transition cursor-pointer border-t border-gray-100">
+                <span id="ico-accion-plantilla">📥</span>
+                <span id="txt-accion-plantilla">Guardar / Usar Plantilla</span>
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -922,6 +927,11 @@
                 <span class="bg-gray-100 px-2 py-2 text-gray-500 font-bold text-xs border-l border-gray-200">@imarpe.gob.pe</span>
               </div>
             </div>
+
+            <div class="sm:col-span-3">
+              <label class="block font-bold text-gray-600 mb-1">📱 Celular / WhatsApp (Para envío de alertas de vencimiento):</label>
+              <input type="text" id="tra-input-celular" placeholder="Ej. 999888777" class="w-full sm:w-64 p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+            </div>
           </div>
 
           <div class="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200">
@@ -1164,12 +1174,17 @@
             </select>
           </div>
 
-          <div class="sm:col-span-2">
-            <label class="block font-bold text-gray-600 mb-1">Usuario Login / Correo Institucional:</label>
+          <div>
+            <label class="block font-bold text-gray-600 mb-1">Usuario Login / Correo:</label>
             <div class="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
               <input type="text" id="edit-tra-correo-user" required class="w-full p-2 font-semibold outline-none text-right">
-              <span class="bg-gray-100 px-2.5 py-2 text-gray-500 font-bold text-xs border-l border-gray-200">@imarpe.gob.pe</span>
+              <span class="bg-gray-100 px-2 py-2 text-gray-500 font-bold text-xs border-l border-gray-200">@imarpe.gob.pe</span>
             </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-gray-600 mb-1">📱 Celular / WhatsApp:</label>
+            <input type="text" id="edit-tra-celular" placeholder="Ej. 999888777" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
           </div>
         </div>
 
@@ -2032,6 +2047,6 @@
     </div>
 
     <!-- Carga del Módulo Orquestador Principal ES6 -->
-    <script type="module" src="/static/js/main.js?v=100024"></script>
+    <script type="module" src="/static/js/main.js?v=100025"></script>
 </body>
 </html>

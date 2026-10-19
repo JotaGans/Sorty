@@ -222,12 +222,17 @@ def init_db():
             nombre_completo TEXT NOT NULL,
             unidad_organica TEXT NOT NULL,
             correo TEXT UNIQUE NOT NULL,
+            celular TEXT DEFAULT '',
             cargo TEXT DEFAULT 'Sin cargo / nivel',
             es_directivo INTEGER DEFAULT 0,
             estado TEXT DEFAULT 'ACTIVO'
         )
     """)
-    for col, defn in [("cargo", "TEXT DEFAULT 'Sin cargo / nivel'"), ("es_directivo", "INTEGER DEFAULT 0")]:
+    for col, defn in [
+        ("cargo", "TEXT DEFAULT 'Sin cargo / nivel'"),
+        ("es_directivo", "INTEGER DEFAULT 0"),
+        ("celular", "TEXT DEFAULT ''")
+    ]:
         try:
             c.execute(f"ALTER TABLE trabajadores ADD COLUMN {col} {defn}")
         except sqlite3.OperationalError:

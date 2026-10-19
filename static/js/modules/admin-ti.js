@@ -130,6 +130,9 @@ export function abrirModalEditarTrabajador(id) {
   const usuarioLogin = (t.correo || "").split("@")[0];
   document.getElementById("edit-tra-correo-user").value = usuarioLogin;
 
+  const inpCel = document.getElementById("edit-tra-celular");
+  if (inpCel) inpCel.value = t.celular || "";
+
   document.getElementById("modal-editar-trabajador-ti")?.classList.remove("hidden");
 }
 
@@ -181,6 +184,7 @@ export async function guardarEdicionTrabajador(e) {
   const cargo = document.getElementById("edit-tra-cargo").value;
   const esDirectivo = parseInt(document.getElementById("edit-tra-nivel-mando").value || "0");
   const usuarioLogin = document.getElementById("edit-tra-correo-user").value.trim();
+  const celular = document.getElementById("edit-tra-celular")?.value.trim() || "";
 
   if (!nombres || !apellidos || !uo || !usuarioLogin) {
     alert("Por favor complete todos los campos obligatorios.");
@@ -190,7 +194,7 @@ export async function guardarEdicionTrabajador(e) {
   try {
     const res = await apiFetch(`/trabajadores/${id}`, {
       method: "PUT",
-      body: JSON.stringify({ nombres, apellidos, unidad_organica: uo, cargo, es_directivo: esDirectivo, correo_usuario: usuarioLogin })
+      body: JSON.stringify({ nombres, apellidos, unidad_organica: uo, cargo, es_directivo: esDirectivo, correo_usuario: usuarioLogin, celular })
     });
 
     if (res.ok) {
@@ -212,6 +216,7 @@ export async function registrarTrabajadorTI(e) {
   const apellidos = document.getElementById("tra-input-apellidos").value.trim();
   const uo = document.getElementById("tra-input-uo-valor").value || document.getElementById("tra-input-uo-busq").value.trim();
   const correo_user = document.getElementById("tra-input-correo-user").value.trim();
+  const celular = document.getElementById("tra-input-celular")?.value.trim() || "";
   const cargo = document.getElementById("tra-input-cargo")?.value.trim() || "Sin cargo / nivel";
   const esDirectivo = parseInt(document.getElementById("tra-input-nivel-mando")?.value || "0");
   const crearAcceso = document.getElementById("tra-chk-crear-acceso")?.checked !== false;
@@ -225,7 +230,7 @@ export async function registrarTrabajadorTI(e) {
   try {
     const res = await apiFetch("/trabajadores", {
       method: "POST",
-      body: JSON.stringify({ nombres, apellidos, unidad_organica: uo, correo_usuario: correo_user, cargo, es_directivo: esDirectivo, crear_acceso: crearAcceso, password_inicial: passInicial, rol_sistema: "OPERADOR" })
+      body: JSON.stringify({ nombres, apellidos, unidad_organica: uo, correo_usuario: correo_user, celular, cargo, es_directivo: esDirectivo, crear_acceso: crearAcceso, password_inicial: passInicial, rol_sistema: "OPERADOR" })
     });
 
     if (res.ok) {
@@ -235,6 +240,7 @@ export async function registrarTrabajadorTI(e) {
       document.getElementById("tra-input-uo-busq").value = "";
       document.getElementById("tra-input-uo-valor").value = "";
       document.getElementById("tra-input-correo-user").value = "";
+      if (document.getElementById("tra-input-celular")) document.getElementById("tra-input-celular").value = "";
       await cargarDirectorioTrabajadores();
     } else {
       const err = await res.json().catch(() => ({}));

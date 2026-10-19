@@ -1,9 +1,10 @@
 import json
 import sqlite3
-from typing import List
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from app.database.connection import get_db
 from app.core.security import get_current_user
+from app.core.config import ZONA_PERU
 from app.models.schemas import PendienteCrearModel, PendienteEstadoUpdate, PendienteDetalleUpdate
 
 router = APIRouter(tags=["Agenda y Pendientes Privados"])
@@ -50,7 +51,8 @@ def crear_pendiente(
     if not fecha_limite:
         raise HTTPException(status_code=400, detail="La fecha límite es obligatoria.")
 
-    dias_json = json.dumps(sorted(list(set(data.dias_recordatorio or [])), reverse=True))
+    lista_dias = sorted(list(set(data.dias_recordatorio or [])), reverse=True)
+    dias_json = json.dumps(lista_dias)
 
     db.execute("""
         INSERT INTO pendientes_personales (usuario_id, titulo, descripcion_detallada, fecha_limite, dias_recordatorio, estado)
@@ -58,8 +60,26 @@ def crear_pendiente(
     """, (user["id"], titulo_limpio, desc_det, fecha_limite, dias_json))
 
     nuevo_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
-    db.commit()
 
+    # Registrar en la cola unificada de alertas (Correo + WhatsApp)
+    try:
+        dt_limite = datetime.strptime(fecha_limite, "%Y-%m-%d").date()
+        hoy_obj = datetime.now(ZONA_PERU).date()
+        nombre_u = user.get("nombre_completo") or user["username"]
+        t_info = db.execute("SELECT correo FROM trabajadores WHERE nombre_completo = ? LIMIT 1", (nombre_u,)).fetchone()
+        correo_u = t_info["correo"] if t_info and t_info["correo"] else f"{user['username']}@imarpe.gob.pe"
+
+        for d in lista_dias:
+            dt_prog = max(hoy_obj, dt_limite - timedelta(days=int(d)))
+            db.execute("""
+                INSERT INTO alertas_notificaciones 
+                (proyecto_id, codigo_actividad, destinatario_nombre, destinatario_correo, tipo_alerta, dias_antes, fecha_programada, estado)
+                VALUES (0, ?, ?, ?, 'PENDIENTE_PERSONAL', ?, ?, 'PROGRAMADO')
+            """, (f"PEND-{nuevo_id}", nombre_u, correo_u, int(d), dt_prog.strftime("%Y-%m-%d")))
+    except Exception:
+        pass
+
+    db.commit()
     return {"status": "success", "mensaje": "Pendiente registrado exitosamente", "id": nuevo_id}
 
 @router.put("/pendientes/{pendiente_id}/detalle")
@@ -105,13 +125,21 @@ def actualizar_estado_pendiente(
     if item["usuario_id"] != user["id"]:
         raise HTTPException(status_code=403, detail="No autorizado.")
 
+    nuevo_est = data.estado.strip()
     db.execute("""
         UPDATE pendientes_personales
         SET estado = ?
         WHERE id = ? AND usuario_id = ?
-    """, (data.estado.strip(), pendiente_id, user["id"]))
-    db.commit()
+    """, (nuevo_est, pendiente_id, user["id"]))
 
+    if nuevo_est == "Completado":
+        db.execute("""
+            UPDATE alertas_notificaciones 
+            SET estado = 'CANCELADO_POR_CUMPLIMIENTO' 
+            WHERE proyecto_id = 0 AND codigo_actividad = ? AND estado = 'PROGRAMADO'
+        """, (f"PEND-{pendiente_id}",))
+
+    db.commit()
     return {"status": "success", "mensaje": f"Estado actualizado a {data.estado}"}
 
 @router.delete("/pendientes/{pendiente_id}")
@@ -127,5 +155,6 @@ def eliminar_pendiente(
         raise HTTPException(status_code=403, detail="No autorizado.")
 
     db.execute("DELETE FROM pendientes_personales WHERE id = ? AND usuario_id = ?", (pendiente_id, user["id"]))
+    db.execute("DELETE FROM alertas_notificaciones WHERE proyecto_id = 0 AND codigo_actividad = ?", (f"PEND-{pendiente_id}",))
     db.commit()
     return {"status": "success", "mensaje": "Pendiente eliminado."}
