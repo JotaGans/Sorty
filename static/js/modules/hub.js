@@ -23,6 +23,10 @@ export async function cargarHubProyectos() {
   document.getElementById("view-hub")?.classList.remove("hidden");
 
   try {
+    if (typeof window.cargarMisPendientesServidor === "function") {
+      window.cargarMisPendientesServidor();
+    }
+
     if (!state.catalogoUnidadesGlobal || state.catalogoUnidadesGlobal.length === 0) {
       const resUo = await apiFetch("/unidades-organicas").catch(() => null);
       if (resUo && resUo.ok) state.catalogoUnidadesGlobal = await resUo.json();

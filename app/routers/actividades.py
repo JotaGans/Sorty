@@ -575,6 +575,12 @@ def crear_actividades_en_lote(
 
     # Determinar el último código raíz existente
     existentes = db.execute("SELECT codigo, fecha_fin FROM actividades WHERE proyecto_id = ?", (proyecto_id,)).fetchall()
+    if len(existentes) > 0 and len(lineas_limpias) > 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Para evitar sobrescribir su cronograma, la opción 'Pegar lista' solo está disponible en proyectos vacíos (sin actividades)."
+        )
+
     max_raiz = 0
     ultima_fecha_fin = hoy_habil
 
@@ -600,7 +606,7 @@ def crear_actividades_en_lote(
     for linea in lineas_limpias:
         # Detectar si la línea ya trae código WBS al inicio (ej. "1.1 Elaborar informe" o "- Elaborar")
         match_wbs = re.match(r"^(\d+(?:\.\d+){0,3})[\.\)\s\-]+(.+)$", linea)
-        if match_wbs:
+        if match_wbs and len(existentes) == 0:
             cod_cand = match_wbs.group(1).rstrip(".")
             desc_limpia = match_wbs.group(2).strip()
         else:

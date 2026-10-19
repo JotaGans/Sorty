@@ -389,9 +389,6 @@ export function renderizarTabla() {
           <button type="button" onclick="crearActividadRapidaInline()" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg shadow-2xs transition cursor-pointer whitespace-nowrap">
             + Agregar (Enter)
           </button>
-          <button type="button" onclick="abrirModalPegarListaTareas()" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-lg transition cursor-pointer whitespace-nowrap" title="Pegar varias tareas desde Word o Excel">
-            📋 Pegar lista
-          </button>
         </div>
       </td>
     `;
@@ -1706,6 +1703,10 @@ export async function crearActividadRapidaInline() {
 
 export function abrirModalPegarListaTareas() {
   if (!state.proyectoEsGestor) return;
+  if (state.actividadesGlobal && state.actividadesGlobal.length > 0) {
+    alert("ℹ️ El proyecto ya cuenta con actividades registradas.\n\nPara evitar sobrescribir su planificación, la opción 'Pegar lista' solo se utiliza en proyectos en blanco (sin actividades). Puede usar la barra inferior de creación rápida para añadir tareas individuales al final.");
+    return;
+  }
   const txt = document.getElementById("lote-textarea-lineas");
   if (txt) txt.value = "";
   document.getElementById("modal-pegar-lote-tareas")?.classList.remove("hidden");

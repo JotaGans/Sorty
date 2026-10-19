@@ -286,25 +286,29 @@ export function actualizarBotonPlantillaDinamico() {
   const btn = document.getElementById("btn-accion-plantilla-dinamico");
   const ico = document.getElementById("ico-accion-plantilla");
   const txt = document.getElementById("txt-accion-plantilla");
+  const btnPegar = document.getElementById("btn-pegar-lista-toolbar");
   if (!btn || !ico) return;
 
   if (!state.proyectoEsGestor && state.currentUser.rol !== "ADMIN_TI") {
     btn.classList.add("hidden");
+    if (btnPegar) btnPegar.classList.add("hidden");
     return;
   }
   btn.classList.remove("hidden");
 
   const tieneActividades = state.actividadesGlobal && state.actividadesGlobal.length > 0;
+  // Ocultar el botón "Pegar lista" si el proyecto ya tiene actividades para evitar sobrescrituras
+  if (btnPegar) {
+    btnPegar.classList.toggle("hidden", tieneActividades);
+  }
+
+  btn.className = "w-full text-left px-3.5 py-2 hover:bg-indigo-50 hover:text-indigo-700 flex items-center space-x-2.5 transition cursor-pointer border-t border-gray-100";
   if (tieneActividades) {
-    btn.className = "group h-[29px] px-2 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap";
-    btn.title = "Guardar Plantilla";
     ico.innerText = "📥";
-    if (txt) txt.innerText = "Guardar Plantilla";
+    if (txt) txt.innerText = "Guardar como plantilla";
   } else {
-    btn.className = "group h-[29px] px-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xs flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden whitespace-nowrap animate-pulse";
-    btn.title = "Importar Plantilla";
     ico.innerText = "📂";
-    if (txt) txt.innerText = "Importar Plantilla";
+    if (txt) txt.innerText = "Importar plantilla";
   }
 }
 

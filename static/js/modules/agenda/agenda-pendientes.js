@@ -27,6 +27,8 @@ function formatearFechaLatinaCorta(fISO) {
 }
 
 export async function cargarMisPendientesServidor() {
+  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  if (!token) return;
   try {
     const res = await apiPendientesFetch("/pendientes");
     if (!res.ok) return;
