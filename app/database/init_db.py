@@ -70,10 +70,10 @@ def init_db():
             pass
 
     # 2. Cuenta de Administrador TI institucional
-    hashed_admin_pass = hash_password("admin123")
     c.execute("SELECT id FROM usuarios WHERE username = 'admin'")
     admin_row = c.fetchone()
     if not admin_row:
+        hashed_admin_pass = hash_password("admin123")
         c.execute("""
             INSERT INTO usuarios (username, password, nombre_completo, rol, estado)
             VALUES ('admin', ?, 'Administrador TI IMARPE', 'ADMIN_TI', 'ACTIVO')
@@ -83,9 +83,9 @@ def init_db():
         admin_id = admin_row[0]
         c.execute("""
             UPDATE usuarios 
-            SET password = ?, rol = 'ADMIN_TI', estado = 'ACTIVO', nombre_completo = 'Administrador TI IMARPE'
+            SET rol = 'ADMIN_TI', estado = 'ACTIVO'
             WHERE username = 'admin'
-        """, (hashed_admin_pass,))
+        """)
 
     # 3. Tabla Proyectos y Programas
     c.execute("""

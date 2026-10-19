@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "modal-nuevo-proyecto", "modal-guardar-plantilla", "modal-importar-plantilla-proyecto",
     "modal-dialog-imarpe", "modal-input-custom", "modal-fecha-custom", "modal-fin-interactiva",
     "modal-asignar-responsables", "modal-estadisticas-hub", "modal-editar-feriado",
-    "modal-agenda-pendiente"
+    "modal-agenda-pendiente", "modal-detalle-pendiente"
   ];
   idsModales.forEach(id => {
     const el = document.getElementById(id);
@@ -319,12 +319,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (e.key === "Escape") {
       const idsPrioridadCierre = [
-        "modal-editar-feriado", "modal-notificacion-correo", "modal-dialog-imarpe",
-        "modal-input-custom", "modal-fecha-custom", "modal-fin-interactiva",
-        "modal-asignar-responsables", "modal-wizard-creacion", "modal-columnas",
-        "modal-comentarios", "modal-dependencias", "modal-cpm", "modal-historial",
-        "modal-responsables", "modal-nuevo-proyecto", "modal-guardar-plantilla",
-        "modal-importar-plantilla-proyecto", "modal-estadisticas-hub"
+        "modal-detalle-pendiente", "modal-agenda-pendiente", "modal-editar-feriado",
+        "modal-notificacion-correo", "modal-dialog-imarpe", "modal-input-custom",
+        "modal-fecha-custom", "modal-fin-interactiva", "modal-asignar-responsables",
+        "modal-wizard-creacion", "modal-columnas", "modal-comentarios",
+        "modal-dependencias", "modal-cpm", "modal-historial", "modal-responsables",
+        "modal-nuevo-proyecto", "modal-guardar-plantilla", "modal-importar-plantilla-proyecto",
+        "modal-estadisticas-hub"
       ];
       for (const id of idsPrioridadCierre) {
         const el = document.getElementById(id);

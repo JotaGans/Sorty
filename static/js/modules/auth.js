@@ -50,7 +50,7 @@ export function actualizarDisplaysUsuario() {
   if (rGantt) rGantt.innerText = roleText;
 
   const esAdminTI = (state.currentUser.rol === "ADMIN_TI");
-  const btnTI = document.getElementById("btn-admin-ti-hub");
+  const btnTI = document.getElementById("btn-admin-ti") || document.getElementById("btn-admin-ti-hub");
   if (btnTI) btnTI.classList.toggle("hidden", !esAdminTI);
 }
 

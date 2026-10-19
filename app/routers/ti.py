@@ -99,7 +99,7 @@ def actualizar_rol_global_usuario(
 
 # 2. Estructura Orgánica (ROF)
 @router.get("/unidades-organicas")
-def listar_unidades_organicas(db: sqlite3.Connection = Depends(get_db)):
+def listar_unidades_organicas(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     try:
         rows = db.execute("""
             SELECT uo.id, uo.nombre, uo.sigla, 
@@ -204,7 +204,7 @@ def actualizar_dependencia_rof_unidad(
 
 # 3. Directorio de Trabajadores Institucionales
 @router.get("/trabajadores")
-def listar_trabajadores(db: sqlite3.Connection = Depends(get_db)):
+def listar_trabajadores(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     rows = db.execute("""
         SELECT id, nombres, apellidos, nombre_completo, unidad_organica, correo, 
                COALESCE(cargo, 'Sin cargo / nivel') as cargo, 
@@ -354,7 +354,7 @@ def alternar_estado_trabajador(
 
 # 4. Catálogo de Procesos Institucionales
 @router.get("/procesos-institucionales")
-def listar_procesos_institucionales(todos: bool = False, db: sqlite3.Connection = Depends(get_db)):
+def listar_procesos_institucionales(todos: bool = False, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     filtro = "" if todos else "WHERE estado = 'ACTIVO'"
     rows = db.execute(f"""
         SELECT id, codigo, nombre, nivel, codigo_padre, estado 
@@ -569,7 +569,7 @@ def toggle_feriado_admin(data: FeriadoToggleModel, user: dict = Depends(get_curr
 
 # 6. Catálogo de Responsables para WBS
 @router.get("/responsables")
-def listar_responsables(db: sqlite3.Connection = Depends(get_db)):
+def listar_responsables(user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     rows = db.execute("SELECT nombre, cargo, correo FROM responsables ORDER BY nombre ASC").fetchall()
     return [dict(r) for r in rows]
 

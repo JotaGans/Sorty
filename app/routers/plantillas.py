@@ -4,12 +4,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.database.connection import get_db
 from app.core.security import get_current_user
 from app.core.config import ahora_peru_str, ZONA_PERU
+from app.routers.actividades import obtener_set_feriados, es_dia_laborable, calcular_fecha_fin_habil
 from app.models.schemas import (
     GuardarPlantillaDesdeProyectoModel,
     CrearProyectoDesdePlantillaModel
 )
 
 router = APIRouter(tags=["Plantillas Maestras"])
+
+def siguiente_dia_habil(dt: datetime.date, feriados_set: set) -> datetime.date:
+    cur = dt
+    while not es_dia_laborable(cur, feriados_set):
+        cur += timedelta(days=1)
+    return cur
 
 # 1. Listar biblioteca de plantillas disponibles
 @router.get("/plantillas")
@@ -89,7 +96,7 @@ def guardar_plantilla_desde_proyecto(
     db.commit()
     return {"status": "success", "mensaje": "Plantilla guardada exitosamente en la biblioteca institucional.", "plantilla_id": plantilla_id}
 
-# 4. Crear un proyecto completo a partir de una plantilla
+# 4. Crear un proyecto completo a partir de una plantilla (Respetando días hábiles y feriados)
 @router.post("/proyectos/desde-plantilla")
 def crear_proyecto_desde_plantilla(
     data: CrearProyectoDesdePlantillaModel,
@@ -141,11 +148,14 @@ def crear_proyecto_desde_plantilla(
     nuevo_proy_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     db.execute("INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, es_gestor, permiso) VALUES (?, ?, 1, 'GESTOR')", (nuevo_proy_id, user["id"]))
 
+    feriados_set = obtener_set_feriados(db)
     try:
         p_fecha = data.fecha_inicio.strip().split("/")
-        dt_base = datetime(int(p_fecha[2]), int(p_fecha[1]), int(p_fecha[0]))
+        dt_base = datetime(int(p_fecha[2]), int(p_fecha[1]), int(p_fecha[0])).date()
     except Exception:
-        dt_base = datetime.now(ZONA_PERU)
+        dt_base = datetime.now(ZONA_PERU).date()
+
+    dt_base = siguiente_dia_habil(dt_base, feriados_set)
 
     def clave_wbs(r):
         return [int(p) if p.isdigit() else p for p in str(r["codigo"]).rstrip(".").split(".")]
@@ -166,13 +176,11 @@ def crear_proyecto_desde_plantilla(
                 if pr in mapa_fechas_fin and (max_fin_pred is None or mapa_fechas_fin[pr] > max_fin_pred):
                     max_fin_pred = mapa_fechas_fin[pr]
             if max_fin_pred:
-                dt_ini_act = max_fin_pred + timedelta(days=1)
+                dt_ini_act = siguiente_dia_habil(max_fin_pred + timedelta(days=1), feriados_set)
         
-        dt_fin_act = dt_ini_act + timedelta(days=dias - 1)
+        dias_calculo = max(1, (dias + 7) // 8) if modo_duracion == "hours" else dias
+        dt_fin_act = calcular_fecha_fin_habil(dt_ini_act, dias_calculo, feriados_set)
         mapa_fechas_fin[cod] = dt_fin_act
-
-        f_ini_str = dt_ini_act.strftime("%d/%m/%Y")
-        f_fin_str = dt_fin_act.strftime("%d/%m/%Y")
 
         acts_a_insertar.append((
             nuevo_proy_id,
@@ -181,8 +189,8 @@ def crear_proyecto_desde_plantilla(
             "No asignado",
             "No iniciado",
             0,
-            f_ini_str,
-            f_fin_str,
+            dt_ini_act.strftime("%d/%m/%Y"),
+            dt_fin_act.strftime("%d/%m/%Y"),
             dias,
             a["predecesores"] or ""
         ))
@@ -229,11 +237,14 @@ def aplicar_plantilla_en_proyecto_existente(
     if not acts_plantilla:
         raise HTTPException(status_code=400, detail="La plantilla no contiene actividades.")
 
+    feriados_set = obtener_set_feriados(db)
     try:
         p_fecha = data.fecha_inicio.strip().split("/")
-        dt_base = datetime(int(p_fecha[2]), int(p_fecha[1]), int(p_fecha[0]))
+        dt_base = datetime(int(p_fecha[2]), int(p_fecha[1]), int(p_fecha[0])).date()
     except Exception:
-        dt_base = datetime.now(ZONA_PERU)
+        dt_base = datetime.now(ZONA_PERU).date()
+
+    dt_base = siguiente_dia_habil(dt_base, feriados_set)
 
     def clave_wbs(r):
         return [int(p) if p.isdigit() else p for p in str(r["codigo"]).rstrip(".").split(".")]
@@ -254,9 +265,9 @@ def aplicar_plantilla_en_proyecto_existente(
                 if pr in mapa_fechas_fin and (max_fin_pred is None or mapa_fechas_fin[pr] > max_fin_pred):
                     max_fin_pred = mapa_fechas_fin[pr]
             if max_fin_pred:
-                dt_ini_act = max_fin_pred + timedelta(days=1)
+                dt_ini_act = siguiente_dia_habil(max_fin_pred + timedelta(days=1), feriados_set)
         
-        dt_fin_act = dt_ini_act + timedelta(days=dias - 1)
+        dt_fin_act = calcular_fecha_fin_habil(dt_ini_act, dias, feriados_set)
         mapa_fechas_fin[cod] = dt_fin_act
 
         acts_a_insertar.append((

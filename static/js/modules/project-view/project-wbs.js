@@ -964,10 +964,90 @@ export function abrirWizardCreacion(codigoBase = null, modoForzado = "hijo") {
   if (selEst) selEst.value = "No iniciado";
   evaluarEstadoWizard("No iniciado");
 
+  state.wizardResponsablesSeleccionados = [];
+  const inpBusqWz = document.getElementById("wz-busq-responsable");
+  if (inpBusqWz) inpBusqWz.value = "";
+  const sugWz = document.getElementById("wz-sug-responsables");
+  if (sugWz) sugWz.classList.add("hidden");
+  renderizarResponsablesWizard();
+
+  if (!state.catalogoTrabajadoresGlobal || state.catalogoTrabajadoresGlobal.length === 0) {
+    apiFetch("/trabajadores").then(r => r.ok ? r.json() : []).then(d => { state.catalogoTrabajadoresGlobal = d; }).catch(() => {});
+  }
+
   irAPasoWizard(1);
   document.getElementById("modal-wizard-creacion")?.classList.remove("hidden");
   setTimeout(() => document.getElementById("wz-input-desc")?.focus(), 100);
 }
+
+export function autocompletarResponsableWizard(termino) {
+  const term = (termino || "").toLowerCase().trim();
+  const divSug = document.getElementById("wz-sug-responsables");
+  if (!divSug) return;
+
+  if (!term) {
+    divSug.innerHTML = "";
+    divSug.classList.add("hidden");
+    return;
+  }
+
+  const matches = (state.catalogoTrabajadoresGlobal || []).filter(t =>
+    (t.estado === "ACTIVO" || !t.estado) &&
+    ((t.nombre_completo && t.nombre_completo.toLowerCase().includes(term)) ||
+     (t.unidad_organica && t.unidad_organica.toLowerCase().includes(term)))
+  );
+
+  divSug.innerHTML = "";
+  if (matches.length === 0) {
+    divSug.innerHTML = `<div class="p-2 text-gray-400 italic">Sin coincidencias para '${termino}'</div>`;
+  } else {
+    matches.slice(0, 6).forEach(t => {
+      const item = document.createElement("div");
+      item.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition";
+      item.innerHTML = `
+        <span class="font-bold text-[#0f2a4a]">${t.nombre_completo}</span>
+        <span class="text-[10px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">${t.unidad_organica}</span>
+      `;
+      item.onclick = () => {
+        if (!state.wizardResponsablesSeleccionados) state.wizardResponsablesSeleccionados = [];
+        if (!state.wizardResponsablesSeleccionados.includes(t.nombre_completo)) {
+          state.wizardResponsablesSeleccionados.push(t.nombre_completo);
+          renderizarResponsablesWizard();
+        }
+        const inp = document.getElementById("wz-busq-responsable");
+        if (inp) inp.value = "";
+        divSug.classList.add("hidden");
+      };
+      divSug.appendChild(item);
+    });
+  }
+  divSug.classList.remove("hidden");
+}
+
+export function quitarResponsableWizard(idx) {
+  if (!state.wizardResponsablesSeleccionados) return;
+  state.wizardResponsablesSeleccionados.splice(idx, 1);
+  renderizarResponsablesWizard();
+}
+
+export function renderizarResponsablesWizard() {
+  const cont = document.getElementById("wz-responsables-seleccionados");
+  if (!cont) return;
+  const lista = state.wizardResponsablesSeleccionados || [];
+  if (lista.length === 0) {
+    cont.innerHTML = `<span class="text-[11px] text-gray-400 italic p-1">Ningún responsable seleccionado aún.</span>`;
+    return;
+  }
+  cont.innerHTML = lista.map((nom, idx) => `
+    <span class="inline-flex items-center space-x-1 bg-teal-50 text-teal-900 border border-teal-200 px-2 py-0.5 rounded-md text-[11px] font-bold">
+      <span>👤 ${nom}</span>
+      <button type="button" onclick="quitarResponsableWizard(${idx})" class="text-teal-600 hover:text-rose-600 font-black ml-1 cursor-pointer">&times;</button>
+    </span>
+  `).join("");
+}
+
+window.autocompletarResponsableWizard = autocompletarResponsableWizard;
+window.quitarResponsableWizard = quitarResponsableWizard;
 
 export function cambiarTipoCreacionDesdeNivel1(modo) {
   cambiarModoSeleccionadoWizard(modo);
@@ -1068,11 +1148,15 @@ export async function guardarActividadDesdeWizard() {
   if (estado === "Ejecutado") avance = 100;
   else if (estado === "En proceso") avance = parseInt(document.getElementById("wz-input-avance")?.value) || 50;
 
+  const respFinalWz = (state.wizardResponsablesSeleccionados && state.wizardResponsablesSeleccionados.length > 0)
+    ? state.wizardResponsablesSeleccionados.join("; ")
+    : "No asignado";
+
   const payload = {
     proyecto_id: parseInt(state.proyectoActualId),
     codigo: state.wizardCodigoGenerado,
     descripcion: document.getElementById("wz-input-desc").value.trim(),
-    responsable: "No asignado",
+    responsable: respFinalWz,
     estado: estado,
     avance: avance,
     fecha_inicio: formatearFechaLatina(fIniRaw),

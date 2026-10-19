@@ -6,7 +6,7 @@ ZONA_PERU = timezone(timedelta(hours=-5))
 def ahora_peru_str() -> str:
     return datetime.now(ZONA_PERU).strftime("%Y-%m-%d %H:%M:%S")
 
-SECRET_KEY = "IMARPE_SGAS_SUPER_SECRET_KEY_2026_SECURITY_TOKEN"
+SECRET_KEY = os.getenv("SPRIN_SECRET_KEY", "IMARPE_SGAS_SUPER_SECRET_KEY_2026_SECURITY_TOKEN")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
