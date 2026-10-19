@@ -1986,7 +1986,52 @@
       📝
     </button>
 
+    <!-- MODAL: PEGAR LISTA DE TAREAS EN LOTE (FRICCIÓN CERO) -->
+    <div id="modal-pegar-lote-tareas" class="hidden fixed inset-0 bg-black/60 z-[155] flex items-center justify-center p-4 backdrop-blur-[1px]">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 flex flex-col">
+        <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <span class="text-lg">⚡</span>
+            <div>
+              <h3 class="font-black text-sm">Pegar Lista de Actividades (Word / Excel)</h3>
+              <p class="text-[10px] text-teal-300 font-medium">Crea múltiples actividades en 1 segundo</p>
+            </div>
+          </div>
+          <button type="button" onclick="cerrarModalPegarListaTareas()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none cursor-pointer">&times;</button>
+        </div>
+
+        <div class="p-5 space-y-4 text-xs">
+          <div class="bg-teal-50 border border-teal-200 rounded-xl p-3 text-teal-950 font-medium leading-relaxed">
+            💡 <strong>¿Cómo funciona?</strong> Copia una lista de actividades desde Word, Excel o un correo y pégala abajo (una tarea por renglón). Si incluyes códigos como <code>1</code>, <code>1.1</code>, <code>1.2</code>, el sistema armará la jerarquía automáticamente.
+          </div>
+
+          <div>
+            <label class="block font-bold text-gray-700 uppercase mb-1">Pega o escribe tus actividades (1 por línea):</label>
+            <textarea id="lote-textarea-lineas" rows="7" placeholder="Ejemplo:&#10;1. Elaborar Términos de Referencia&#10;1.1 Coordinar especificaciones con el área&#10;1.2 Visar requerimiento en SIGA&#10;2. Indagación de mercado&#10;3. Emisión de Orden de Servicio" class="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] leading-relaxed"></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 items-center">
+            <div>
+              <label class="block font-bold text-gray-600 mb-1">Duración base por tarea (días hábiles):</label>
+              <input type="number" id="lote-input-dias" min="1" value="3" class="w-24 p-1.5 bg-white border border-gray-300 rounded-lg font-black text-[#0f2a4a] text-center outline-none">
+            </div>
+            <div>
+              <label class="inline-flex items-center space-x-2 font-bold text-[#0f2a4a] cursor-pointer mt-2 sm:mt-0">
+                <input type="checkbox" id="lote-chk-encadenar" checked class="rounded text-teal-600 focus:ring-0 cursor-pointer">
+                <span>Encadenar fechas una tras otra automáticamente</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-3.5 bg-gray-50 border-t border-gray-200 flex justify-end space-x-2">
+          <button type="button" onclick="cerrarModalPegarListaTareas()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition cursor-pointer">Cancelar</button>
+          <button type="button" onclick="confirmarPegadoLoteTareas()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black rounded-lg shadow transition cursor-pointer">✨ Generar Cronograma Ahora</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Carga del Módulo Orquestador Principal ES6 -->
-    <script type="module" src="/static/js/main.js?v=100023"></script>
+    <script type="module" src="/static/js/main.js?v=100024"></script>
 </body>
 </html>

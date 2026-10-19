@@ -561,51 +561,132 @@ def init_db():
             VALUES (?, ?, ?, ?, 'ACTIVO')
         """, procesos_semilla)
 
-    # Semilla de Plantillas Maestras
-    c.execute("SELECT COUNT(*) FROM plantillas")
-    if c.fetchone()[0] == 0:
-        plantillas_semilla = [
-            (
-                "Gestión y Formalización de Convenios",
-                "Estructura estándar para la negociación, revisión técnica-legal y suscripción de convenios interinstitucionales.",
-                "Convenios y Cooperación",
-                admin_id,
-                [
-                    ("1", "FASE 1: ACTOS PREPARATORIOS Y PROPUESTA", 10, ""),
-                    ("1.1", "Recepción y revisión técnica de la propuesta", 4, ""),
-                    ("1.2", "Evaluación de viabilidad y objetivos conjuntos", 3, "1.1"),
-                    ("1.3", "Elaboración del informe técnico preliminar", 3, "1.2"),
-                    ("2", "FASE 2: REVISIÓN Y OPINIÓN LEGAL", 12, "1"),
-                    ("2.1", "Remisión de expediente a Asesoría Jurídica", 2, "1.3"),
-                    ("2.2", "Subsanación de observaciones técnicas", 5, "2.1"),
-                    ("2.3", "Emisión de Dictamen Legal favorable", 5, "2.2"),
-                    ("3", "FASE 3: SUSCRIPCIÓN Y REGISTRO OFICIAL", 6, "2"),
-                    ("3.1", "Firma y protocolización del convenio", 3, "2.3"),
-                    ("3.2", "Publicación y distribución a órganos ejecutores", 3, "3.1")
-                ]
-            ),
-            (
-                "Estandarización y Optimización de Procesos",
-                "Metodología ágil para el levantamiento, rediseño, validación y formalización de trámites internos.",
-                "Modernización y Procesos",
-                admin_id,
-                [
-                    ("1", "FASE 1: DIAGNÓSTICO Y LEVANTAMIENTO AS-IS", 15, ""),
-                    ("1.1", "Planificación de entrevistas y talleres de trabajo", 3, ""),
-                    ("1.2", "Ejecución de entrevistas a personal operativo y táctico", 7, "1.1"),
-                    ("1.3", "Mapeo y diagramación del flujo actual (AS-IS)", 5, "1.2"),
-                    ("2", "FASE 2: REDISEÑO Y PROPUESTA TO-BE", 14, "1"),
-                    ("2.1", "Identificación de cuellos de botella y demoras", 4, "1.3"),
-                    ("2.2", "Diseño de la propuesta optimizada (TO-BE)", 6, "2.1"),
-                    ("2.3", "Taller de validación con líderes de proceso", 4, "2.2"),
-                    ("3", "FASE 3: FORMALIZACIÓN Y MANUALES", 10, "2"),
-                    ("3.1", "Redacción de la ficha técnica y manual de procedimiento", 6, "2.3"),
-                    ("3.2", "Aprobación formal e implementación operativa", 4, "3.1")
-                ]
-            )
-        ]
+    # Semilla de Plantillas Maestras Institucionales IMARPE
+    plantillas_semilla = [
+        (
+            "Gestión y Formalización de Convenios",
+            "Estructura estándar para la negociación, revisión técnica-legal y suscripción de convenios interinstitucionales.",
+            "Convenios y Cooperación (E4.3)",
+            admin_id,
+            [
+                ("1", "FASE 1: ACTOS PREPARATORIOS Y PROPUESTA", 10, ""),
+                ("1.1", "Recepción y revisión técnica de la propuesta", 4, ""),
+                ("1.2", "Evaluación de viabilidad y objetivos conjuntos", 3, "1.1"),
+                ("1.3", "Elaboración del informe técnico sustentatorio", 3, "1.2"),
+                ("2", "FASE 2: OPINIÓN DE PLANEAMIENTO Y ASESORÍA JURÍDICA", 10, "1"),
+                ("2.1", "Emisión de opinión técnica de OPPM", 4, "1.3"),
+                ("2.2", "Revisión legal y emisión de dictamen por OAJ", 6, "2.1"),
+                ("3", "FASE 3: SUSCRIPCIÓN Y REGISTRO OFICIAL", 5, "2"),
+                ("3.1", "Firma de convenio por Alta Dirección", 3, "2.2"),
+                ("3.2", "Notificación a coordinadores y registro en archivo", 2, "3.1")
+            ]
+        ),
+        (
+            "Estandarización y Optimización de Procesos",
+            "Metodología ágil para el levantamiento, rediseño, validación y formalización de trámites internos.",
+            "Modernización y Procesos (E2.1.2)",
+            admin_id,
+            [
+                ("1", "FASE 1: DIAGNÓSTICO Y LEVANTAMIENTO AS-IS", 12, ""),
+                ("1.1", "Planificación de entrevistas con dueños de proceso", 2, ""),
+                ("1.2", "Levantamiento de información y tiempos de ciclo", 6, "1.1"),
+                ("1.3", "Diagramación BPMN del flujo actual (AS-IS)", 4, "1.2"),
+                ("2", "FASE 2: REDISEÑO Y MEJORA TO-BE", 10, "1"),
+                ("2.1", "Identificación de cuellos de botella y simplificación", 4, "1.3"),
+                ("2.2", "Modelado de proceso propuesto (TO-BE) y ficha técnica", 6, "2.1"),
+                ("3", "FASE 3: VALIDACIÓN Y APROBACIÓN", 6, "2"),
+                ("3.1", "Conformidad técnica del área usuaria", 3, "2.2"),
+                ("3.2", "Aprobación resolutiva y difusión interna", 3, "3.1")
+            ]
+        ),
+        (
+            "Contratación de Bienes y Servicios (TDR / EETT)",
+            "Ruta administrativa desde el requerimiento del área usuaria, indagación de mercado hasta la emisión de orden o contrato.",
+            "Logística y Adquisiciones (S2.2)",
+            admin_id,
+            [
+                ("1", "ETAPA 1: DEFINICIÓN DEL REQUERIMIENTO", 5, ""),
+                ("1.1", "Elaboración de Términos de Referencia (TDR) o EETT", 3, ""),
+                ("1.2", "Autorización y firma de pedido SIGA en el área usuaria", 2, "1.1"),
+                ("2", "ETAPA 2: INDAGACIÓN DE MERCADO Y CERTIFICACIÓN", 8, "1"),
+                ("2.1", "Solicitud de cotizaciones a proveedores (UACP)", 5, "1.2"),
+                ("2.2", "Solicitud y aprobación de Certificación Presupuestal (CPP)", 3, "2.1"),
+                ("3", "ETAPA 3: EMISIÓN DE ORDEN Y EJECUCIÓN", 5, "2"),
+                ("3.1", "Emisión y notificación de Orden de Servicio / Compra", 2, "2.2"),
+                ("3.2", "Recepción de entregable y emisión de Conformidad", 3, "3.1")
+            ]
+        ),
+        (
+            "Crucero de Investigación Científica / Salida de Campo",
+            "Planificación operativa, alistamiento logístico, ejecución de muestreo en mar y procesamiento de datos.",
+            "Investigación Científica (M2)",
+            admin_id,
+            [
+                ("1", "FASE 1: PLANIFICACIÓN CIENTÍFICA Y LOGÍSTICA", 10, ""),
+                ("1.1", "Elaboración y aprobación del Plan de Crucero / Comisión", 4, ""),
+                ("1.2", "Requerimiento de víveres, combustible, equipos y viáticos", 6, "1.1"),
+                ("2", "FASE 2: EJECUCIÓN Y RECOLECCIÓN DE MUESTRAS", 15, "1"),
+                ("2.1", "Embarque, calibración acústica y zarpe", 2, "1.2"),
+                ("2.2", "Muestreo biológico, oceanográfico y acústico", 13, "2.1"),
+                ("3", "FASE 3: PROCESAMIENTO E INFORME TÉCNICO", 10, "2"),
+                ("3.1", "Análisis en laboratorio y validación de bases de datos", 5, "2.2"),
+                ("3.2", "Redacción y elevación del Informe Ejecutivo de Crucero", 5, "3.1")
+            ]
+        ),
+        (
+            "Elaboración de Informe Técnico-Científico para PRODUCE",
+            "Flujo rápido para la consolidación de datos, redacción, revisión por Dirección/GC y remisión oficial.",
+            "Producción Científica (M4.1)",
+            admin_id,
+            [
+                ("1", "CONSOLIDACIÓN Y ANÁLISIS DE DATOS", 4, ""),
+                ("1.1", "Corte de información biométrica y desembarques", 2, ""),
+                ("1.2", "Modelamiento y corrida de indicadores poblacionales", 2, "1.1"),
+                ("2", "REDACCIÓN Y REVISIÓN CIENTÍFICA", 4, "1"),
+                ("2.1", "Redacción del borrador de Informe Técnico", 2, "1.2"),
+                ("2.2", "Revisión por Dirección de Línea y Gerencia Científica", 2, "2.1"),
+                ("3", "APROBACIÓN Y REMISIÓN OFICIAL", 2, "2"),
+                ("3.1", "Visado final y despacho de oficio a PRODUCE por PE", 2, "2.2")
+            ]
+        ),
+        (
+            "Auditoría Interna del Sistema de Gestión Integrado (ISO 9001 / 37001)",
+            "Programa de preparación, ejecución de auditoría, levantamiento de hallazgos y planes de acción correctiva.",
+            "Sistema de Gestión Integrado (E2.2.9)",
+            admin_id,
+            [
+                ("1", "PREPARACIÓN DE LA AUDITORÍA", 5, ""),
+                ("1.1", "Elaboración y comunicación del Plan de Auditoría", 2, ""),
+                ("1.2", "Preparación de listas de verificación por proceso", 3, "1.1"),
+                ("2", "EJECUCIÓN E INFORME DE AUDITORÍA", 8, "1"),
+                ("2.1", "Reunión de apertura y entrevistas de campo", 5, "1.2"),
+                ("2.2", "Redacción y entrega del Informe de Auditoría", 3, "2.1"),
+                ("3", "TRATAMIENTO DE NO CONFORMIDADES", 10, "2"),
+                ("3.1", "Análisis de causa raíz con las unidades auditadas", 5, "2.2"),
+                ("3.2", "Registro y seguimiento de planes de acción", 5, "3.1")
+            ]
+        ),
+        (
+            "Desarrollo e Implementación de Software / Módulo TI",
+            "Ciclo ágil para análisis de requerimientos, desarrollo, pruebas de calidad y despliegue en servidores IMARPE.",
+            "Gobierno Digital y TI (E5)",
+            admin_id,
+            [
+                ("1", "ANÁLISIS Y DISEÑO", 5, ""),
+                ("1.1", "Levantamiento de requerimientos con el área usuaria", 3, ""),
+                ("1.2", "Diseño de arquitectura y modelo de base de datos", 2, "1.1"),
+                ("2", "DESARROLLO Y PRUEBAS", 12, "1"),
+                ("2.1", "Codificación de Backend (API) y Frontend (UI)", 8, "1.2"),
+                ("2.2", "Pruebas funcionales e iteración con usuarios clave", 4, "2.1"),
+                ("3", "DESPLIEGUE Y CAPACITACIÓN", 4, "2"),
+                ("3.1", "Puesta en producción en Intranet y capacitación", 4, "2.2")
+            ]
+        )
+    ]
 
-        for p_nom, p_desc, p_cat, p_creador, acts in plantillas_semilla:
+    for p_nom, p_desc, p_cat, p_creador, acts in plantillas_semilla:
+        existe_pl = c.execute("SELECT id FROM plantillas WHERE nombre = ?", (p_nom,)).fetchone()
+        if not existe_pl:
             c.execute("INSERT INTO plantillas (nombre, descripcion, categoria, creador_id) VALUES (?, ?, ?, ?)",
                       (p_nom, p_desc, p_cat, p_creador))
             p_id = c.lastrowid

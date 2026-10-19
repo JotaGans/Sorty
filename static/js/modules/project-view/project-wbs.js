@@ -184,7 +184,30 @@ export function renderizarTabla() {
   tbody.innerHTML = "";
 
   if (!state.actividadesGlobal || state.actividadesGlobal.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-400 font-bold">No hay actividades creadas en este proyecto. Utilice el botón "+ Actividad" para comenzar.</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" class="p-6 text-center space-y-3 bg-slate-50/50">
+          <p class="text-gray-500 font-bold text-xs">Este proyecto aún no tiene actividades registradas.</p>
+          ${state.proyectoEsGestor ? `
+            <div class="flex flex-wrap items-center justify-center gap-2 max-w-xl mx-auto">
+              <input type="text" id="input-quick-add-wbs" 
+                     onkeydown="if(event.key==='Enter'){event.preventDefault(); crearActividadRapidaInline();}"
+                     placeholder="⚡ Escribe la primera actividad aquí y presiona Enter..." 
+                     class="flex-1 min-w-[240px] text-xs font-semibold text-gray-800 bg-white border-2 border-teal-400 focus:border-[#0f2a4a] rounded-xl px-3.5 py-2 outline-none shadow-sm">
+              <button type="button" onclick="crearActividadRapidaInline()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black rounded-xl shadow transition cursor-pointer">
+                + Crear Rápido
+              </button>
+              <button type="button" onclick="abrirModalPegarListaTareas()" class="px-4 py-2 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white text-xs font-bold rounded-xl shadow transition cursor-pointer">
+                📋 Pegar Lista de Word/Excel
+              </button>
+              <button type="button" onclick="abrirModalImportarPlantillaProyecto()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold rounded-xl transition cursor-pointer">
+                📂 Usar Plantilla IMARPE
+              </button>
+            </div>
+          ` : ''}
+        </td>
+      </tr>
+    `;
     actualizarKPIs();
     actualizarBotonPlantillaDinamico();
     return;
@@ -350,6 +373,30 @@ export function renderizarTabla() {
     `;
     tbody.appendChild(tr);
   });
+
+  // Inyectar fila rápida de "Fricción Cero" al final de la tabla para el Gestor
+  if (state.proyectoEsGestor) {
+    const trQuick = document.createElement("tr");
+    trQuick.className = "bg-teal-50/40 hover:bg-teal-50/80 transition border-t border-dashed border-teal-300";
+    trQuick.innerHTML = `
+      <td class="p-2 text-center font-mono text-xs font-black text-teal-700 border-r border-b border-gray-200">+</td>
+      <td colspan="9" class="p-1.5 border-b border-gray-200">
+        <div class="flex items-center space-x-2 max-w-2xl">
+          <input type="text" id="input-quick-add-wbs" 
+                 onkeydown="if(event.key==='Enter'){event.preventDefault(); crearActividadRapidaInline();}"
+                 placeholder="⚡ Creación rápida: escribe el nombre de una nueva actividad aquí y presiona Enter..." 
+                 class="flex-1 text-xs font-semibold text-gray-800 bg-white border border-teal-300 focus:border-[#0f2a4a] rounded-lg px-3 py-1.5 outline-none shadow-2xs">
+          <button type="button" onclick="crearActividadRapidaInline()" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg shadow-2xs transition cursor-pointer whitespace-nowrap">
+            + Agregar (Enter)
+          </button>
+          <button type="button" onclick="abrirModalPegarListaTareas()" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-lg transition cursor-pointer whitespace-nowrap" title="Pegar varias tareas desde Word o Excel">
+            📋 Pegar lista
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(trQuick);
+  }
 
   actualizarKPIs();
   actualizarBotonPlantillaDinamico();
@@ -1622,3 +1669,91 @@ export async function confirmarEnvioNotificaciones() {
     alert("Error de comunicación con el servidor al programar notificaciones.");
   }
 }
+
+// =========================================================================
+// ACELERADORES DE FRICCIÓN CERO: QUICK-ADD INLINE Y PEGADO EN LOTE
+// =========================================================================
+
+export async function crearActividadRapidaInline() {
+  const inp = document.getElementById("input-quick-add-wbs");
+  if (!inp) return;
+  const desc = inp.value.trim();
+  if (!desc) return;
+
+  inp.disabled = true;
+  try {
+    const res = await apiFetch(`/proyectos/${state.proyectoActualId}/actividades-lote`, {
+      method: "POST",
+      body: JSON.stringify({
+        proyecto_id: parseInt(state.proyectoActualId),
+        lineas: [desc],
+        dias_por_defecto: (state.proyectoModoDuracion === "hours") ? 8 : 3,
+        encadenar_secuencialmente: true
+      })
+    });
+
+    if (res.ok) {
+      notificarToast(`Actividad agregada: "${desc}"`, "success", 2500);
+      await sincronizarDatosProyecto(state.proyectoActualId);
+      setTimeout(() => document.getElementById("input-quick-add-wbs")?.focus(), 80);
+    } else {
+      inp.disabled = false;
+    }
+  } catch (e) {
+    inp.disabled = false;
+  }
+}
+
+export function abrirModalPegarListaTareas() {
+  if (!state.proyectoEsGestor) return;
+  const txt = document.getElementById("lote-textarea-lineas");
+  if (txt) txt.value = "";
+  document.getElementById("modal-pegar-lote-tareas")?.classList.remove("hidden");
+  setTimeout(() => txt?.focus(), 100);
+}
+
+export function cerrarModalPegarListaTareas() {
+  document.getElementById("modal-pegar-lote-tareas")?.classList.add("hidden");
+}
+
+export async function confirmarPegadoLoteTareas() {
+  const txt = document.getElementById("lote-textarea-lineas")?.value || "";
+  const diasDef = parseInt(document.getElementById("lote-input-dias")?.value || "3");
+  const encadenar = document.getElementById("lote-chk-encadenar")?.checked !== false;
+
+  const lineas = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lineas.length === 0) {
+    alert("⚠️ Pegue o escriba al menos una línea de actividad.");
+    return;
+  }
+
+  cerrarModalPegarListaTareas();
+
+  try {
+    const res = await apiFetch(`/proyectos/${state.proyectoActualId}/actividades-lote`, {
+      method: "POST",
+      body: JSON.stringify({
+        proyecto_id: parseInt(state.proyectoActualId),
+        lineas: lineas,
+        dias_por_defecto: Math.max(1, diasDef),
+        encadenar_secuencialmente: encadenar
+      })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      notificarToast(data.mensaje || "Cronograma generado con éxito.", "success");
+      await sincronizarDatosProyecto(state.proyectoActualId);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "No se pudo procesar el lote de actividades.");
+    }
+  } catch (e) {
+    alert("Error de conexión al procesar la lista.");
+  }
+}
+
+window.crearActividadRapidaInline = crearActividadRapidaInline;
+window.abrirModalPegarListaTareas = abrirModalPegarListaTareas;
+window.cerrarModalPegarListaTareas = cerrarModalPegarListaTareas;
+window.confirmarPegadoLoteTareas = confirmarPegadoLoteTareas;

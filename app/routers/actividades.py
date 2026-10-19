@@ -10,7 +10,8 @@ from app.models.schemas import (
     AsignacionResponsableModel,
     ReordenarActividadesModel,
     ComentarioCreate,
-    ComentarioUpdate
+    ComentarioUpdate,
+    ActividadesLoteModel
 )
 
 router = APIRouter(tags=["Actividades y WBS"])
@@ -544,3 +545,113 @@ def eliminar_comentario(comentario_id: int, user: dict = Depends(get_current_use
     db.commit()
 
     return {"status": "success", "message": "Comentario eliminado."}
+
+    # 8. Creación Masiva por Lote (Pegado Inteligente desde Excel / Word)
+@router.post("/proyectos/{proyecto_id}/actividades-lote")
+def crear_actividades_en_lote(
+    proyecto_id: int,
+    data: ActividadesLoteModel,
+    user: dict = Depends(get_current_user),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    import re
+    es_gestor = db.execute("""
+        SELECT 1 FROM proyectos p 
+        LEFT JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id AND pu.usuario_id = ?
+        WHERE p.id = ? AND (p.creador_id = ? OR pu.es_gestor = 1 OR pu.permiso = 'GESTOR')
+    """, (user["id"], proyecto_id, user["id"])).fetchone()
+
+    if not es_gestor and user.get("rol") != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo un Gestor del Proyecto puede importar listas de actividades.")
+
+    lineas_limpias = [l.strip() for l in (data.lineas or []) if l and l.strip()]
+    if not lineas_limpias:
+        raise HTTPException(status_code=400, detail="No se detectaron líneas de texto válidas.")
+
+    feriados_set = obtener_set_feriados(db)
+    hoy_habil = datetime.now().date()
+    while not es_dia_laborable(hoy_habil, feriados_set):
+        hoy_habil += timedelta(days=1)
+
+    # Determinar el último código raíz existente
+    existentes = db.execute("SELECT codigo, fecha_fin FROM actividades WHERE proyecto_id = ?", (proyecto_id,)).fetchall()
+    max_raiz = 0
+    ultima_fecha_fin = hoy_habil
+
+    for r in existentes:
+        cod_str = str(r["codigo"]).rstrip(".")
+        if "." not in cod_str and cod_str.isdigit():
+            max_raiz = max(max_raiz, int(cod_str))
+        if r["fecha_fin"]:
+            try:
+                pf = str(r["fecha_fin"]).split("/")
+                dt_f = datetime(int(pf[2]), int(pf[1]), int(pf[0])).date()
+                if dt_f > ultima_fecha_fin:
+                    ultima_fecha_fin = dt_f
+            except Exception:
+                pass
+
+    dias_def = max(1, int(data.dias_por_defecto or 3))
+    cursor_fecha = hoy_habil if not existentes else ultima_fecha_fin
+    nuevas_filas = []
+    contador_raiz = max_raiz
+    ultimo_codigo_hoja = None
+
+    for linea in lineas_limpias:
+        # Detectar si la línea ya trae código WBS al inicio (ej. "1.1 Elaborar informe" o "- Elaborar")
+        match_wbs = re.match(r"^(\d+(?:\.\d+){0,3})[\.\)\s\-]+(.+)$", linea)
+        if match_wbs:
+            cod_cand = match_wbs.group(1).rstrip(".")
+            desc_limpia = match_wbs.group(2).strip()
+        else:
+            # Limpiar viñetas comunes (-, *, •)
+            desc_limpia = re.sub(r"^[\-\*\•\›\>]+\s*", "", linea).strip()
+            contador_raiz += 1
+            cod_cand = str(contador_raiz)
+
+        if not desc_limpia:
+            continue
+
+        while not es_dia_laborable(cursor_fecha, feriados_set):
+            cursor_fecha += timedelta(days=1)
+
+        dt_ini = cursor_fecha
+        dt_fin = calcular_fecha_fin_habil(dt_ini, dias_def, feriados_set)
+
+        pred_str = ""
+        if data.encadenar_secuencialmente and ultimo_codigo_hoja and "." not in cod_cand:
+            pred_str = ultimo_codigo_hoja
+
+        nuevas_filas.append((
+            proyecto_id,
+            cod_cand,
+            desc_limpia,
+            user.get("nombre_completo") or "No asignado",
+            "No iniciado",
+            0,
+            dt_ini.strftime("%d/%m/%Y"),
+            dt_fin.strftime("%d/%m/%Y"),
+            dias_def,
+            pred_str
+        ))
+
+        ultimo_codigo_hoja = cod_cand
+        if data.encadenar_secuencialmente:
+            cursor_fecha = dt_fin + timedelta(days=1)
+
+    if nuevas_filas:
+        db.executemany("""
+            INSERT OR REPLACE INTO actividades 
+            (proyecto_id, codigo, descripcion, responsable, estado, avance, fecha_inicio, fecha_fin, dias, predecesores)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, nuevas_filas)
+
+        reestructurar_codigos_wbs(proyecto_id, db)
+
+        db.execute("""
+            INSERT INTO historial (proyecto_id, timestamp, usuario, accion, detalle)
+            VALUES (?, ?, ?, 'Creación Rápida por Lote', ?)
+        """, (proyecto_id, ahora_peru_str(), user["username"], f"Importó {len(nuevas_filas)} actividad(es) en bloque"))
+        db.commit()
+
+    return {"status": "success", "creadas": len(nuevas_filas), "mensaje": f"Se crearon {len(nuevas_filas)} actividades automáticamente."}

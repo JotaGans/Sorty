@@ -210,3 +210,10 @@ class PendienteDetalleUpdate(BaseModel):
 
 class PendienteEstadoUpdate(BaseModel):
     estado: str  # 'Pendiente' | 'En proceso' | 'Completado'
+
+# 13. Modelo de Creación Rápida por Lote (Fricción Cero)
+class ActividadesLoteModel(BaseModel):
+    proyecto_id: int
+    lineas: List[str]
+    dias_por_defecto: Optional[int] = 3
+    encadenar_secuencialmente: Optional[bool] = True
