@@ -6,9 +6,67 @@ import { state } from "./core/state.js";
 import { notificarToast } from "./core/ui-dialogs.js";
 import { inicializarFormularioLogin, actualizarDisplaysUsuario, mostrarLogin } from "./modules/auth.js";
 import { cargarHubProyectos } from "./modules/hub.js";
-import "./modules/admin-ti.js";           // Directorio, UO ROF, feriados, procesos
-import "./modules/project-view/index.js"; // Dominio completo de Proyectos
-import "./modules/agenda/agenda-pendientes.js"; // Agenda de pendientes privados
+import { ingresarAlProyecto } from "./modules/project-view/project-core.js";
+import { cambiarSemanaInicio } from "./modules/project-view/project-gantt.js";
+import "./modules/admin-ti.js";
+import "./modules/project-view/index.js";
+import "./modules/agenda/agenda-pendientes.js";
+
+// 0. Funciones Globales Garantizadas (Splash, Flechas Gantt y Menú Opciones)
+window.mostrarSplashSprin = (texto = "Cargando espacio de trabajo...") => {
+  const sp = document.getElementById("splash-screen-sprin");
+  const txt = document.getElementById("splash-texto-estado");
+  const bar = document.getElementById("splash-barra-progreso");
+  if (txt) txt.innerText = texto;
+  if (bar) bar.style.width = "35%";
+  if (sp) {
+    sp.classList.remove("hidden", "opacity-0", "pointer-events-none");
+    sp.classList.add("opacity-100");
+    setTimeout(() => { if (bar) bar.style.width = "90%"; }, 40);
+  }
+};
+
+window.ocultarSplashSprin = () => {
+  const sp = document.getElementById("splash-screen-sprin");
+  const bar = document.getElementById("splash-barra-progreso");
+  if (bar) bar.style.width = "100%";
+  if (sp) {
+    setTimeout(() => {
+      sp.classList.remove("opacity-100");
+      sp.classList.add("opacity-0", "pointer-events-none");
+      setTimeout(() => sp.classList.add("hidden"), 200);
+    }, 120);
+  }
+};
+
+// Flechas Izquierda / Derecha del Gantt adaptadas a la escala (Días, Semanas, Meses, Trimestres, Semestres)
+window.desplazarGanttPorEscala = (direccion) => {
+  const dir = direccion > 0 ? 1 : -1;
+  let salto = 1;
+  if (state.modoZoom === "meses") salto = 4;
+  else if (state.modoZoom === "trimestres") salto = 12;
+  else if (state.modoZoom === "semestres") salto = 24;
+  cambiarSemanaInicio(dir * salto);
+};
+
+// Auto-cierre inteligente del menú Opciones al retirar el mouse o hacer clic afuera
+let timerCierreOpcionesGlobal = null;
+window.iniciarCierreMenuOpciones = () => {
+  clearTimeout(timerCierreOpcionesGlobal);
+  timerCierreOpcionesGlobal = setTimeout(() => {
+    document.getElementById("menu-herramientas-vista")?.classList.add("hidden");
+  }, 220);
+};
+window.cancelarCierreMenuOpciones = () => {
+  if (timerCierreOpcionesGlobal) {
+    clearTimeout(timerCierreOpcionesGlobal);
+    timerCierreOpcionesGlobal = null;
+  }
+};
+window.cerrarMenuOpcionesInmediato = () => {
+  window.cancelarCierreMenuOpciones();
+  document.getElementById("menu-herramientas-vista")?.classList.add("hidden");
+};
 
 document.addEventListener("DOMContentLoaded", async () => {
   // 1. Reubicar modales en la raíz directa del BODY para evitar colisiones de stacking context
@@ -43,6 +101,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (divSug && !divSug.classList.contains("hidden")) {
       if (!divSug.contains(e.target) && e.target !== inpBusq) divSug.classList.add("hidden");
     }
+    const menuOpc = document.getElementById("menu-herramientas-vista");
+    if (menuOpc && !menuOpc.classList.contains("hidden")) {
+      if (!e.target.closest("#menu-herramientas-vista") && !e.target.closest("[onclick*='menu-herramientas-vista']")) {
+        menuOpc.classList.add("hidden");
+      }
+    }
   });
 
   // Deseleccionar fila si se hace clic en el área vacía del dashboard o fuera de las filas
@@ -69,35 +133,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  // 3. Inicializar autenticación y evaluar sesión activa (respetando vista de proyecto al dar F5)
+  // 3. Inicializar autenticación y evaluar sesión activa (manteniendo el proyecto en F5)
   inicializarFormularioLogin();
 
   if (state.token && state.currentUser.username) {
     document.getElementById("view-login")?.classList.add("hidden");
     actualizarDisplaysUsuario();
 
-    const proyGuardadoStr = sessionStorage.getItem("sprin_proyecto_activo");
+    const proyGuardadoStr = localStorage.getItem("sprin_proyecto_activo");
     if (proyGuardadoStr) {
       try {
         const proyG = JSON.parse(proyGuardadoStr);
-        if (proyG && proyG.id && typeof window.ingresarAlProyecto === "function") {
-          await window.ingresarAlProyecto(proyG.id, proyG.nombre, proyG.esGestor);
-          ocultarSplashInicial();
+        if (proyG && proyG.id) {
+          await ingresarAlProyecto(proyG.id, proyG.nombre, proyG.esGestor);
+          window.ocultarSplashSprin();
         } else {
           await cargarHubProyectos();
-          ocultarSplashInicial();
+          window.ocultarSplashSprin();
         }
       } catch (e) {
         await cargarHubProyectos();
-        ocultarSplashInicial();
+        window.ocultarSplashSprin();
       }
     } else {
       await cargarHubProyectos();
-      ocultarSplashInicial();
+      window.ocultarSplashSprin();
     }
   } else {
     mostrarLogin();
-    ocultarSplashInicial();
+    window.ocultarSplashSprin();
   }
 
   // 4. Autoguardado reactivo del nombre del proyecto (máx. 80 caracteres, 1 o 2 líneas y contador en vivo)

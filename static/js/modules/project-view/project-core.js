@@ -8,11 +8,15 @@ import { renderizarTabla, recalcularJerarquiaWBS, poblarFiltroResponsablesDinami
 import { cargarComentariosProyecto, abrirModalGuardarPlantilla, abrirModalImportarPlantillaProyecto } from "./project-aux.js";
 
 export async function ingresarAlProyecto(id, nombre, esGestor) {
+  if (typeof window.mostrarSplashSprin === "function") {
+    window.mostrarSplashSprin("Cargando cronograma del proyecto...");
+  }
+
   state.proyectoActualId = id;
   state.proyectoEsGestor = Boolean(esGestor === 1 || esGestor === true || state.currentUser.rol === "ADMIN_TI");
 
-  // Guardar sesión del proyecto actual para mantener la vista si el usuario presiona F5
-  sessionStorage.setItem("sprin_proyecto_activo", JSON.stringify({
+  // Guardar en localStorage para mantenernos en este proyecto al presionar F5
+  localStorage.setItem("sprin_proyecto_activo", JSON.stringify({
     id: id,
     nombre: nombre,
     esGestor: state.proyectoEsGestor
@@ -78,9 +82,14 @@ export async function ingresarAlProyecto(id, nombre, esGestor) {
   aplicarVisibilidadColumnas();
   inicializarRedimensionDescripcion();
   await sincronizarDatosProyecto(id);
+
+  if (typeof window.ocultarSplashSprin === "function") {
+    window.ocultarSplashSprin();
+  }
 }
 
 export function volverAlHub() {
+  localStorage.removeItem("sprin_proyecto_activo");
   sessionStorage.removeItem("sprin_proyecto_activo");
   state.proyectoActualId = null;
   document.getElementById("view-dashboard")?.classList.add("hidden");
@@ -91,18 +100,7 @@ export function volverAlHub() {
 
 export async function sincronizarDatosProyecto(id) {
   try {
-    // Renderizado instantáneo desde caché local si existe mientras responde el servidor
-    const cacheActs = localStorage.getItem(`cache_acts_proj_${id}`);
-    if (cacheActs && (!state.actividadesGlobal || state.actividadesGlobal.length === 0)) {
-      try {
-        state.actividadesGlobal = JSON.parse(cacheActs);
-        construirCalendarioAnual();
-        autoAjustarSemanaInicio();
-        renderizarCabeceraGantt();
-        renderizarTabla();
-      } catch (e) {}
-    }
-
+    
     // Lanzar todas las consultas en paralelo para máxima velocidad
     const promesas = [
       apiFetch(`/proyectos/${id}/actividades`),

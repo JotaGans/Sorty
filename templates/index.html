@@ -10,10 +10,18 @@
 </head>
 <body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none" onclick="cerrarMenuContextual()">
 
-  <!-- SPLASH DE CARGA ULTRARRÁPIDO SPRIN IMARPE -->
+  <!-- SPLASH DE CARGA CON BARRA DE PROGRESO DINÁMICA SPRIN IMARPE -->
   <div id="splash-screen-sprin" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center transition-opacity duration-200">
-    <img src="/static/logo_sprin_imarpe.png" alt="SPRIN IMARPE" class="h-16 sm:h-20 object-contain mb-4" onerror="this.outerHTML='<div class=\'text-3xl font-black tracking-tight mb-3\'><span class=\'text-[#16a34a]\'>SPRIN</span> <span class=\'text-[#0f2a4a]\'>IMARPE</span></div>'">
-    <div class="w-7 h-7 border-3 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+    <img src="/static/logo_sprin_imarpe.png" alt="SPRIN IMARPE" class="h-20 sm:h-24 object-contain mb-5" onerror="this.outerHTML='<div class=\'text-3xl font-black tracking-tight mb-4\'><span class=\'text-[#16a34a]\'>SPRIN</span> <span class=\'text-[#0f2a4a]\'>IMARPE</span></div>'">
+    
+    <!-- Círculo giratorio + Barra de progreso animada -->
+    <div class="flex flex-col items-center space-y-3 w-56">
+      <div class="w-7 h-7 border-[3px] border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+      <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+        <div id="splash-barra-progreso" class="h-full bg-gradient-to-r from-[#0f2a4a] via-teal-500 to-[#16a34a] rounded-full transition-all duration-300" style="width: 85%; animation: pulse 1s infinite;"></div>
+      </div>
+      <span id="splash-texto-estado" class="text-[11px] font-bold text-slate-500 tracking-wider uppercase animate-pulse">Cargando espacio de trabajo...</span>
+    </div>
   </div>
 
   <!-- MENÚ CONTEXTUAL CLIC DERECHO FLOTANTE -->
@@ -149,13 +157,10 @@
 
     <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8 flex flex-col justify-start">
       <div class="bg-white rounded-2xl p-6 mb-5 border border-gray-200/90 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="flex items-center space-x-4">
-          <img src="/static/logo_sprin_imarpe.png" alt="SPRIN IMARPE" class="hidden sm:block h-12 object-contain flex-shrink-0" onerror="this.style.display='none'">
-          <div>
-            <span class="text-[11px] font-black text-teal-700 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">SPRIN IMARPE</span>
-            <h2 id="hub-saludo-bienvenida" class="text-2xl md:text-3xl font-extrabold text-[#0f2a4a] mt-2 tracking-tight">Mis proyectos y programas</h2>
-            <p class="text-xs text-gray-500 font-medium mt-1">Seleccione un espacio de trabajo para registrar avances o supervisar la ruta de actividades.</p>
-          </div>
+        <div>
+          <span class="text-[11px] font-black text-teal-700 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">SPRIN IMARPE</span>
+          <h2 id="hub-saludo-bienvenida" class="text-2xl md:text-3xl font-extrabold text-[#0f2a4a] mt-2 tracking-tight">Mis proyectos y programas</h2>
+          <p class="text-xs text-gray-500 font-medium mt-1">Seleccione un espacio de trabajo para registrar avances o supervisar la ruta de actividades.</p>
         </div>
 
         <div class="flex items-center space-x-2.5 self-start md:self-auto flex-shrink-0">
@@ -1981,42 +1986,7 @@
     </div>
   </div>
 
-  <!-- Enlace de delegación segura para funciones originales del UI -->
-    <script>
-      window.catalogoUnidadesGlobal = window.catalogoUnidadesGlobal || [];
-      window.configurarCalculadoraModalFin = window.configurarCalculadoraModalFin || function() {};
-      window.configurarCalculadoraModalFinWizard = window.configurarCalculadoraModalFinWizard || function() {};
-
-      // Delegación de clic a las funciones declaradas en app.js
-      window.cerrarMenuContextual = function(e) {
-        if (typeof window._cerrarMenuContextualOrig === 'function') return window._cerrarMenuContextualOrig(e);
-        const m = document.getElementById('menu-contextual') || document.getElementById('menuContextual');
-        if (m) m.classList.add('hidden');
-      };
-
-      window.abrirModalAdminTI = function() {
-        if (typeof window._abrirModalAdminTIOrig === 'function') return window._abrirModalAdminTIOrig();
-        const m = document.getElementById('modal-admin-ti') || document.getElementById('modalAdminTI');
-        if (m) m.classList.remove('hidden');
-      };
-
-      window.abrirModalNuevoProyecto = function() {
-        if (typeof window._abrirModalNuevoProyectoOrig === 'function') return window._abrirModalNuevoProyectoOrig();
-        const m = document.getElementById('modal-nuevo-proyecto') || document.getElementById('modalNuevoProyecto');
-        if (m) m.classList.remove('hidden');
-      };
-
-      window.ingresarAlProyecto = function(id) {
-        if (typeof window._ingresarAlProyectoOrig === 'function') return window._ingresarAlProyectoOrig(id);
-      };
-    </script>
-
-    <!-- Botón Flotante Rápido Móvil (FAB) -->
-    <button type="button" onclick="abrirModalCrearPendiente()" class="fixed bottom-5 right-5 sm:hidden z-50 w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white rounded-full shadow-2xl flex items-center justify-center text-xl cursor-pointer active:scale-95 transition" title="Anotar pendiente">
-      📝
-    </button>
-
-    <!-- MODAL: PEGAR LISTA DE ACTIVIDADES EN LOTE -->
+  <!-- MODAL: PEGAR LISTA DE ACTIVIDADES EN LOTE -->
     <div id="modal-pegar-lote-tareas" class="hidden fixed inset-0 bg-black/60 z-[155] flex items-center justify-center p-4 backdrop-blur-[1px]">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 flex flex-col">
         <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
@@ -2061,7 +2031,12 @@
       </div>
     </div>
 
+    <!-- Botón Flotante Rápido Móvil (FAB) -->
+    <button type="button" onclick="abrirModalCrearPendiente()" class="fixed bottom-5 right-5 sm:hidden z-50 w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white rounded-full shadow-2xl flex items-center justify-center text-xl cursor-pointer active:scale-95 transition" title="Anotar pendiente">
+      📝
+    </button>
+
     <!-- Carga del Módulo Orquestador Principal ES6 -->
-    <script type="module" src="/static/js/main.js?v=100027"></script>
+    <script type="module" src="/static/js/main.js?v=100028"></script>
 </body>
 </html>

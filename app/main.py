@@ -15,7 +15,7 @@ app = FastAPI(
     version="9.3"
 )
 
-# 3. Configuración de CORS
+# 3. Configuración de CORS y Control Automático de Caché
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,6 +23,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def evitar_cache_obsoleta_estaticos(request, call_next):
+    response = await call_next(request)
+    ruta = request.url.path
+    if ruta == "/" or ruta.endswith((".js", ".css", ".html")):
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
 
 # 4. Inclusión de Routers Modulares
 app.include_router(auth.router)
