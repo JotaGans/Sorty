@@ -8,19 +8,31 @@ import { renderizarTabla, recalcularJerarquiaWBS, poblarFiltroResponsablesDinami
 import { cargarComentariosProyecto, abrirModalGuardarPlantilla, abrirModalImportarPlantillaProyecto } from "./project-aux.js";
 
 export async function ingresarAlProyecto(id, nombre, esGestor) {
-  if (typeof window.mostrarSplashSprin === "function") {
-    window.mostrarSplashSprin("Cargando cronograma del proyecto...");
+  // 1. Mostrar el Splash inmediatamente para cubrir toda la transición
+  const sp = document.getElementById("splash-screen-sprin");
+  if (sp) {
+    sp.classList.remove("hidden", "opacity-0", "pointer-events-none");
+    sp.classList.add("opacity-100");
   }
 
   state.proyectoActualId = id;
   state.proyectoEsGestor = Boolean(esGestor === 1 || esGestor === true || state.currentUser.rol === "ADMIN_TI");
 
-  // Guardar en localStorage para mantenernos en este proyecto al presionar F5
-  localStorage.setItem("sprin_proyecto_activo", JSON.stringify({
+  // 2. Guardar en localStorage y sessionStorage para que F5 nos mantenga siempre en este proyecto
+  const datosProyActivo = JSON.stringify({
     id: id,
     nombre: nombre,
     esGestor: state.proyectoEsGestor
-  }));
+  });
+  localStorage.setItem("sprin_proyecto_activo", datosProyActivo);
+  sessionStorage.setItem("sprin_proyecto_activo", datosProyActivo);
+
+  // 3. Limpiar inmediatamente cualquier rastro del proyecto anterior para que nunca parpadee
+  state.actividadesGlobal = [];
+  state.comentariosGlobal = [];
+  state.codigoFilaSeleccionada = null;
+  const tbodyLimpiar = document.getElementById("lista-actividades");
+  if (tbodyLimpiar) tbodyLimpiar.innerHTML = "";
 
   const proyData = (state.proyectosUsuarioGlobal || []).find(p => p.id === id);
   state.proyectoModoDuracion = proyData?.duration_mode || "business_days";
@@ -71,18 +83,21 @@ export async function ingresarAlProyecto(id, nombre, esGestor) {
     if (btnPlantilla) btnPlantilla.classList.remove("hidden");
   }
 
+  // 4. Descargar y renderizar todas las actividades MIENTRAS el Splash sigue cubriendo la pantalla
+  aplicarVisibilidadColumnas();
+  await sincronizarDatosProyecto(id);
+
+  // 5. Cambiar las vistas ya con la tabla completamente llena y lista
   document.getElementById("view-hub")?.classList.add("hidden");
   document.getElementById("view-dashboard")?.classList.remove("hidden");
   document.getElementById("bloque-superior-gantt")?.classList.remove("hidden");
+  inicializarRedimensionDescripcion();
 
   if (txtNombre && typeof window.ajustarAlturaTituloProyecto === "function") {
-    setTimeout(() => window.ajustarAlturaTituloProyecto(txtNombre), 10);
+    window.ajustarAlturaTituloProyecto(txtNombre);
   }
 
-  aplicarVisibilidadColumnas();
-  inicializarRedimensionDescripcion();
-  await sincronizarDatosProyecto(id);
-
+  // 6. Retirar el Splash suavemente
   if (typeof window.ocultarSplashSprin === "function") {
     window.ocultarSplashSprin();
   }
@@ -92,6 +107,9 @@ export function volverAlHub() {
   localStorage.removeItem("sprin_proyecto_activo");
   sessionStorage.removeItem("sprin_proyecto_activo");
   state.proyectoActualId = null;
+  state.actividadesGlobal = [];
+  const tbodyLimpiar = document.getElementById("lista-actividades");
+  if (tbodyLimpiar) tbodyLimpiar.innerHTML = "";
   document.getElementById("view-dashboard")?.classList.add("hidden");
   document.getElementById("bloque-superior-gantt")?.classList.add("hidden");
   document.getElementById("view-hub")?.classList.remove("hidden");

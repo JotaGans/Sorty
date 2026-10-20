@@ -10,18 +10,10 @@
 </head>
 <body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none" onclick="cerrarMenuContextual()">
 
-  <!-- SPLASH DE CARGA CON BARRA DE PROGRESO DINÁMICA SPRIN IMARPE -->
+  <!-- SPLASH DE CARGA MINIMALISTA (SOLO LOGO SPRIN IMARPE + CÍRCULO) -->
   <div id="splash-screen-sprin" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center transition-opacity duration-200">
-    <img src="/static/logo_sprin_imarpe.png" alt="SPRIN IMARPE" class="h-20 sm:h-24 object-contain mb-5" onerror="this.outerHTML='<div class=\'text-3xl font-black tracking-tight mb-4\'><span class=\'text-[#16a34a]\'>SPRIN</span> <span class=\'text-[#0f2a4a]\'>IMARPE</span></div>'">
-    
-    <!-- Círculo giratorio + Barra de progreso animada -->
-    <div class="flex flex-col items-center space-y-3 w-56">
-      <div class="w-7 h-7 border-[3px] border-teal-600 border-t-transparent rounded-full animate-spin"></div>
-      <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-        <div id="splash-barra-progreso" class="h-full bg-gradient-to-r from-[#0f2a4a] via-teal-500 to-[#16a34a] rounded-full transition-all duration-300" style="width: 85%; animation: pulse 1s infinite;"></div>
-      </div>
-      <span id="splash-texto-estado" class="text-[11px] font-bold text-slate-500 tracking-wider uppercase animate-pulse">Cargando espacio de trabajo...</span>
-    </div>
+    <img src="/static/logo_sprin_imarpe.png" alt="SPRIN IMARPE" class="h-20 sm:h-24 object-contain mb-6" onerror="this.outerHTML='<div class=\'text-3xl font-black tracking-tight mb-5\'><span class=\'text-[#16a34a]\'>SPRIN</span> <span class=\'text-[#0f2a4a]\'>IMARPE</span></div>'">
+    <div class="w-8 h-8 border-[3.5px] border-teal-600 border-t-transparent rounded-full animate-spin"></div>
   </div>
 
   <!-- MENÚ CONTEXTUAL CLIC DERECHO FLOTANTE -->
@@ -2037,6 +2029,6 @@
     </button>
 
     <!-- Carga del Módulo Orquestador Principal ES6 -->
-    <script type="module" src="/static/js/main.js?v=100028"></script>
+    <script type="module" src="/static/js/main.js?v=100030"></script>
 </body>
 </html>

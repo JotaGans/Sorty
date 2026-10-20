@@ -3,43 +3,107 @@
 // =========================================================================
 
 import { state } from "./core/state.js";
+import { apiFetch } from "./core/api.js";
 import { notificarToast } from "./core/ui-dialogs.js";
 import { inicializarFormularioLogin, actualizarDisplaysUsuario, mostrarLogin } from "./modules/auth.js";
 import { cargarHubProyectos } from "./modules/hub.js";
-import { ingresarAlProyecto } from "./modules/project-view/project-core.js";
-import { cambiarSemanaInicio } from "./modules/project-view/project-gantt.js";
-import "./modules/admin-ti.js";
-import "./modules/project-view/index.js";
-import "./modules/agenda/agenda-pendientes.js";
+import { ingresarAlProyecto, volverAlHub, sincronizarDatosProyecto } from "./modules/project-view/project-core.js?v=100030";
+import { cambiarSemanaInicio } from "./modules/project-view/project-gantt.js?v=100030";
+import { sumarDiasHabiles, calcularFechaFinPorModalidad, abrirModalPegarListaTareas, cerrarModalPegarListaTareas, confirmarPegadoLoteTareas } from "./modules/project-view/project-wbs.js?v=100030";
+import "./modules/admin-ti.js?v=100030";
+import "./modules/project-view/index.js?v=100030";
+import "./modules/agenda/agenda-pendientes.js?v=100030";
 
-// 0. Funciones Globales Garantizadas (Splash, Flechas Gantt y Menú Opciones)
-window.mostrarSplashSprin = (texto = "Cargando espacio de trabajo...") => {
+// Exposición directa garantizada sin intermediarios de caché
+window.ingresarAlProyecto = ingresarAlProyecto;
+window.volverAlHub = volverAlHub;
+window.abrirModalPegarListaTareas = abrirModalPegarListaTareas;
+window.cerrarModalPegarListaTareas = cerrarModalPegarListaTareas;
+window.confirmarPegadoLoteTareas = confirmarPegadoLoteTareas;
+
+// 0. Control del Splash Minimalista (Solo Logo + Círculo)
+window.mostrarSplashSprin = () => {
   const sp = document.getElementById("splash-screen-sprin");
-  const txt = document.getElementById("splash-texto-estado");
-  const bar = document.getElementById("splash-barra-progreso");
-  if (txt) txt.innerText = texto;
-  if (bar) bar.style.width = "35%";
   if (sp) {
     sp.classList.remove("hidden", "opacity-0", "pointer-events-none");
     sp.classList.add("opacity-100");
-    setTimeout(() => { if (bar) bar.style.width = "90%"; }, 40);
   }
 };
 
 window.ocultarSplashSprin = () => {
   const sp = document.getElementById("splash-screen-sprin");
-  const bar = document.getElementById("splash-barra-progreso");
-  if (bar) bar.style.width = "100%";
   if (sp) {
     setTimeout(() => {
       sp.classList.remove("opacity-100");
       sp.classList.add("opacity-0", "pointer-events-none");
-      setTimeout(() => sp.classList.add("hidden"), 200);
-    }, 120);
+      setTimeout(() => sp.classList.add("hidden"), 180);
+    }, 80);
   }
 };
 
-// Flechas Izquierda / Derecha del Gantt adaptadas a la escala (Días, Semanas, Meses, Trimestres, Semestres)
+// Función global infalible para "+ Crear Rápido" y "+ Agregar (Enter)"
+window.crearActividadRapidaInline = async () => {
+  const inputs = Array.from(document.querySelectorAll("#input-quick-add-wbs"));
+  const inp = inputs.find(el => el.value && el.value.trim() !== "") || inputs[0];
+  if (!inp) return;
+
+  const desc = inp.value.trim();
+  if (!desc) {
+    inp.focus();
+    return;
+  }
+
+  inp.disabled = true;
+  try {
+    const raices = (state.actividadesGlobal || []).filter(a => !String(a.codigo).replace(/\.+$/, "").includes("."));
+    let maxNum = 0;
+    raices.forEach(r => {
+      const n = parseInt(String(r.codigo).replace(/\.+$/, ""), 10);
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    });
+    const nuevoCodigo = String(maxNum + 1);
+
+    const hoy = new Date();
+    const dtIniHabil = sumarDiasHabiles ? sumarDiasHabiles(hoy, 1) : hoy;
+    const duracionDef = (state.proyectoModoDuracion === "hours") ? 8 : 3;
+    const dtFinHabil = calcularFechaFinPorModalidad ? calcularFechaFinPorModalidad(dtIniHabil, duracionDef, state.proyectoModoDuracion) : dtIniHabil;
+
+    const fIniStr = `${String(dtIniHabil.getDate()).padStart(2, '0')}/${String(dtIniHabil.getMonth() + 1).padStart(2, '0')}/${dtIniHabil.getFullYear()}`;
+    const fFinStr = `${String(dtFinHabil.getDate()).padStart(2, '0')}/${String(dtFinHabil.getMonth() + 1).padStart(2, '0')}/${dtFinHabil.getFullYear()}`;
+
+    const res = await apiFetch(`/actividades`, {
+      method: "POST",
+      body: JSON.stringify({
+        proyecto_id: parseInt(state.proyectoActualId),
+        codigo: nuevoCodigo,
+        descripcion: desc,
+        responsable: state.currentUser?.nombre_completo || "No asignado",
+        estado: "No iniciado",
+        avance: 0,
+        fecha_inicio: fIniStr,
+        fecha_fin: fFinStr,
+        dias: duracionDef,
+        predecesores: ""
+      })
+    });
+
+    if (res.ok) {
+      inp.value = "";
+      notificarToast(`Actividad [${nuevoCodigo}] creada con éxito.`, "success", 2500);
+      await sincronizarDatosProyecto(state.proyectoActualId);
+      setTimeout(() => document.getElementById("input-quick-add-wbs")?.focus(), 60);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "No se pudo agregar la actividad.");
+      inp.disabled = false;
+    }
+  } catch (e) {
+    alert("Error de conexión al crear la actividad.");
+    inp.disabled = false;
+  }
+};
+
+// Flechas Izquierda / Derecha del Gantt adaptadas a la escala
 window.desplazarGanttPorEscala = (direccion) => {
   const dir = direccion > 0 ? 1 : -1;
   let salto = 1;
@@ -49,7 +113,7 @@ window.desplazarGanttPorEscala = (direccion) => {
   cambiarSemanaInicio(dir * salto);
 };
 
-// Auto-cierre inteligente del menú Opciones al retirar el mouse o hacer clic afuera
+// Auto-cierre inteligente del menú Opciones
 let timerCierreOpcionesGlobal = null;
 window.iniciarCierreMenuOpciones = () => {
   clearTimeout(timerCierreOpcionesGlobal);
