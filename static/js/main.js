@@ -61,29 +61,81 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // 3. Inicializar autenticación y evaluar sesión activa
+  const ocultarSplashInicial = () => {
+    const sp = document.getElementById("splash-screen-sprin");
+    if (sp) {
+      sp.classList.add("opacity-0", "pointer-events-none");
+      setTimeout(() => sp.remove(), 220);
+    }
+  };
+
+  // 3. Inicializar autenticación y evaluar sesión activa (respetando vista de proyecto al dar F5)
   inicializarFormularioLogin();
 
   if (state.token && state.currentUser.username) {
     document.getElementById("view-login")?.classList.add("hidden");
     actualizarDisplaysUsuario();
-    await cargarHubProyectos();
+
+    const proyGuardadoStr = sessionStorage.getItem("sprin_proyecto_activo");
+    if (proyGuardadoStr) {
+      try {
+        const proyG = JSON.parse(proyGuardadoStr);
+        if (proyG && proyG.id && typeof window.ingresarAlProyecto === "function") {
+          await window.ingresarAlProyecto(proyG.id, proyG.nombre, proyG.esGestor);
+          ocultarSplashInicial();
+        } else {
+          await cargarHubProyectos();
+          ocultarSplashInicial();
+        }
+      } catch (e) {
+        await cargarHubProyectos();
+        ocultarSplashInicial();
+      }
+    } else {
+      await cargarHubProyectos();
+      ocultarSplashInicial();
+    }
   } else {
     mostrarLogin();
+    ocultarSplashInicial();
   }
 
-  // 4. Autoguardado reactivo del nombre del proyecto
+  // 4. Autoguardado reactivo del nombre del proyecto (máx. 80 caracteres, 1 o 2 líneas y contador en vivo)
   const inputNombreProy = document.getElementById("txt-nombre-proyecto");
+  const badgeContadorTit = document.getElementById("contador-titulo-proyecto");
+
+  window.ajustarAlturaTituloProyecto = (el) => {
+    if (!el) return;
+    el.style.height = "auto";
+    const nuevaAlt = Math.min(44, Math.max(24, el.scrollHeight));
+    el.style.height = `${nuevaAlt}px`;
+    if (badgeContadorTit) {
+      badgeContadorTit.innerText = `${el.value.length}/80`;
+    }
+  };
+
   if (inputNombreProy) {
     let nombreOriginalAlEnfocar = "";
     inputNombreProy.addEventListener("focus", () => {
+      if (!state.proyectoEsGestor) return;
       nombreOriginalAlEnfocar = inputNombreProy.value.trim();
+      if (badgeContadorTit) {
+        badgeContadorTit.innerText = `${inputNombreProy.value.length}/80`;
+        badgeContadorTit.classList.remove("hidden");
+      }
     });
 
     const guardarNombreProyecto = async () => {
+      if (badgeContadorTit) badgeContadorTit.classList.add("hidden");
+      window.ajustarAlturaTituloProyecto(inputNombreProy);
       if (!state.proyectoActualId || !state.proyectoEsGestor) return;
-      const nuevoNombre = inputNombreProy.value.trim();
-      if (!nuevoNombre || nuevoNombre === nombreOriginalAlEnfocar) return;
+      const nuevoNombre = inputNombreProy.value.trim().substring(0, 80);
+      if (!nuevoNombre) {
+        inputNombreProy.value = nombreOriginalAlEnfocar;
+        window.ajustarAlturaTituloProyecto(inputNombreProy);
+        return;
+      }
+      if (nuevoNombre === nombreOriginalAlEnfocar) return;
 
       try {
         const res = await fetch(`/proyectos/${state.proyectoActualId}/nombre`, {
@@ -97,6 +149,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (res.ok) {
           nombreOriginalAlEnfocar = nuevoNombre;
+          sessionStorage.setItem("sprin_proyecto_activo", JSON.stringify({
+            id: state.proyectoActualId,
+            nombre: nuevoNombre,
+            esGestor: state.proyectoEsGestor
+          }));
           notificarToast("Nombre del proyecto actualizado con éxito.", "success");
         }
       } catch (e) {}

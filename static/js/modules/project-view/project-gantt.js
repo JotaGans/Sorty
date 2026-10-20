@@ -499,11 +499,22 @@ export function fijarSemanaInicio(val) {
 }
 
 export function cambiarSemanaInicio(delta) {
-  const input = document.getElementById("input-semana-inicio");
-  let val = (parseInt(input?.value) || 1) + delta;
+  const baseActual = (state.semanaInicioIndex || 0) + 1;
+  let val = baseActual + delta;
   if (val < 1) val = 1;
   fijarSemanaInicio(val);
 }
+
+export function desplazarGanttPorEscala(direccion) {
+  const dir = direccion > 0 ? 1 : -1;
+  let salto = 1;
+  if (state.modoZoom === "meses") salto = 4;
+  else if (state.modoZoom === "trimestres") salto = 12;
+  else if (state.modoZoom === "semestres") salto = 24;
+  cambiarSemanaInicio(dir * salto);
+}
+
+window.desplazarGanttPorEscala = desplazarGanttPorEscala;
 
 export function fijarModoZoomDirecto(modo) {
   state.modoZoom = modo;

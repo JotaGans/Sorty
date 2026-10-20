@@ -210,3 +210,28 @@ export function cerrarMenuCpmInmediato() {
   cancelarCierreMenuCpm();
   document.getElementById("menu-desplegable-cpm")?.classList.add("hidden");
 }
+
+let timerCierreOpciones = null;
+
+export function iniciarCierreMenuOpciones() {
+  clearTimeout(timerCierreOpciones);
+  timerCierreOpciones = setTimeout(() => {
+    document.getElementById("menu-herramientas-vista")?.classList.add("hidden");
+  }, 220);
+}
+
+export function cancelarCierreMenuOpciones() {
+  if (timerCierreOpciones) {
+    clearTimeout(timerCierreOpciones);
+    timerCierreOpciones = null;
+  }
+}
+
+export function cerrarMenuOpcionesInmediato() {
+  cancelarCierreMenuOpciones();
+  document.getElementById("menu-herramientas-vista")?.classList.add("hidden");
+}
+
+window.iniciarCierreMenuOpciones = iniciarCierreMenuOpciones;
+window.cancelarCierreMenuOpciones = cancelarCierreMenuOpciones;
+window.cerrarMenuOpcionesInmediato = cerrarMenuOpcionesInmediato;

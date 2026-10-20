@@ -32,9 +32,20 @@ export async function cargarHubProyectos() {
       if (resUo && resUo.ok) state.catalogoUnidadesGlobal = await resUo.json();
     }
 
+    const cacheProy = sessionStorage.getItem("sprin_cache_proyectos_hub");
+    if (cacheProy && (!state.proyectosUsuarioGlobal || state.proyectosUsuarioGlobal.length === 0)) {
+      try {
+        state.proyectosUsuarioGlobal = JSON.parse(cacheProy);
+        actualizarKPIsHub(state.proyectosUsuarioGlobal);
+        aplicarConmutadorVistaHub();
+        filtrarProyectosHub();
+      } catch (e) {}
+    }
+
     const res = await apiFetch("/proyectos");
     if (!res.ok) throw new Error("Error al cargar proyectos");
     state.proyectosUsuarioGlobal = await res.json();
+    sessionStorage.setItem("sprin_cache_proyectos_hub", JSON.stringify(state.proyectosUsuarioGlobal));
 
     inicializarFiltrosHub();
     actualizarKPIsHub(state.proyectosUsuarioGlobal);
@@ -292,7 +303,7 @@ export function renderizarTarjetasHub(lista) {
           </div>
         </div>
         
-        <h3 class="font-bold text-base text-[#0f2a4a] leading-snug flex items-center">${p.nombre}</h3>
+        <h3 class="font-bold text-base text-[#0f2a4a] leading-snug line-clamp-2 break-words" title="${p.nombre.replace(/"/g, '&quot;')}">${p.nombre}</h3>
         
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
           <p ${tooltipUo} 

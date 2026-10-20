@@ -29,10 +29,20 @@ function formatearFechaLatinaCorta(fISO) {
 export async function cargarMisPendientesServidor() {
   const token = localStorage.getItem("token") || sessionStorage.getItem("token");
   if (!token) return;
+
+  const cachePend = sessionStorage.getItem("sprin_cache_pendientes");
+  if (cachePend && misPendientesLocales.length === 0) {
+    try {
+      misPendientesLocales = JSON.parse(cachePend);
+      actualizarVistasPendientes();
+    } catch (e) {}
+  }
+
   try {
     const res = await apiPendientesFetch("/pendientes");
     if (!res.ok) return;
     misPendientesLocales = await res.json();
+    sessionStorage.setItem("sprin_cache_pendientes", JSON.stringify(misPendientesLocales));
     actualizarVistasPendientes();
   } catch (err) {
     console.error("Error al cargar pendientes:", err);

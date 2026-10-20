@@ -11,6 +11,13 @@ export async function ingresarAlProyecto(id, nombre, esGestor) {
   state.proyectoActualId = id;
   state.proyectoEsGestor = Boolean(esGestor === 1 || esGestor === true || state.currentUser.rol === "ADMIN_TI");
 
+  // Guardar sesión del proyecto actual para mantener la vista si el usuario presiona F5
+  sessionStorage.setItem("sprin_proyecto_activo", JSON.stringify({
+    id: id,
+    nombre: nombre,
+    esGestor: state.proyectoEsGestor
+  }));
+
   const proyData = (state.proyectosUsuarioGlobal || []).find(p => p.id === id);
   state.proyectoModoDuracion = proyData?.duration_mode || "business_days";
 
@@ -23,8 +30,9 @@ export async function ingresarAlProyecto(id, nombre, esGestor) {
 
   const txtNombre = document.getElementById("txt-nombre-proyecto");
   if (txtNombre) {
-    txtNombre.value = nombre;
+    txtNombre.value = (nombre || "").substring(0, 80);
     txtNombre.disabled = !state.proyectoEsGestor;
+    txtNombre.title = state.proyectoEsGestor ? "Modificar el texto (máximo 80 caracteres)" : nombre;
   }
 
   const badge = document.getElementById("badge-rol-gantt");
@@ -63,13 +71,18 @@ export async function ingresarAlProyecto(id, nombre, esGestor) {
   document.getElementById("view-dashboard")?.classList.remove("hidden");
   document.getElementById("bloque-superior-gantt")?.classList.remove("hidden");
 
+  if (txtNombre && typeof window.ajustarAlturaTituloProyecto === "function") {
+    setTimeout(() => window.ajustarAlturaTituloProyecto(txtNombre), 10);
+  }
+
   aplicarVisibilidadColumnas();
   inicializarRedimensionDescripcion();
   await sincronizarDatosProyecto(id);
-  await cargarComentariosProyecto();
 }
 
 export function volverAlHub() {
+  sessionStorage.removeItem("sprin_proyecto_activo");
+  state.proyectoActualId = null;
   document.getElementById("view-dashboard")?.classList.add("hidden");
   document.getElementById("bloque-superior-gantt")?.classList.add("hidden");
   document.getElementById("view-hub")?.classList.remove("hidden");
@@ -78,23 +91,43 @@ export function volverAlHub() {
 
 export async function sincronizarDatosProyecto(id) {
   try {
-    // 1. Asegurar catálogo de feriados institucionales para los cálculos laborales
-    if (!state.catalogoFeriadosGlobal || state.catalogoFeriadosGlobal.length === 0) {
+    // Renderizado instantáneo desde caché local si existe mientras responde el servidor
+    const cacheActs = localStorage.getItem(`cache_acts_proj_${id}`);
+    if (cacheActs && (!state.actividadesGlobal || state.actividadesGlobal.length === 0)) {
       try {
-        const resFer = await apiFetch(`/feriados`);
-        if (resFer.ok) state.catalogoFeriadosGlobal = await resFer.json();
+        state.actividadesGlobal = JSON.parse(cacheActs);
+        construirCalendarioAnual();
+        autoAjustarSemanaInicio();
+        renderizarCabeceraGantt();
+        renderizarTabla();
       } catch (e) {}
+    }
+
+    // Lanzar todas las consultas en paralelo para máxima velocidad
+    const promesas = [
+      apiFetch(`/proyectos/${id}/actividades`),
+      apiFetch(`/proyectos/${id}/comentarios`).catch(() => null)
+    ];
+
+    if (!state.catalogoFeriadosGlobal || state.catalogoFeriadosGlobal.length === 0) {
+      promesas.push(apiFetch(`/feriados`).catch(() => null));
+    } else {
+      promesas.push(Promise.resolve(null));
     }
 
     if (!state.responsablesGlobal || state.responsablesGlobal.length === 0) {
-      try {
-        const resResp = await apiFetch(`/responsables`);
-        if (resResp.ok) state.responsablesGlobal = await resResp.json();
-      } catch (e) {}
+      promesas.push(apiFetch(`/responsables`).catch(() => null));
+    } else {
+      promesas.push(Promise.resolve(null));
     }
 
-    const resActs = await apiFetch(`/proyectos/${id}/actividades`);
-    if (resActs.ok) {
+    const [resActs, resComs, resFer, resResp] = await Promise.all(promesas);
+
+    if (resFer && resFer.ok) state.catalogoFeriadosGlobal = await resFer.json();
+    if (resResp && resResp.ok) state.responsablesGlobal = await resResp.json();
+    if (resComs && resComs.ok) state.comentariosGlobal = await resComs.json();
+
+    if (resActs && resActs.ok) {
       const freshActs = await resActs.json();
       state.actividadesGlobal = (freshActs || []).sort((a, b) => {
         const pA = String(a.codigo || "").replace(/\.+$/, "").split(".");

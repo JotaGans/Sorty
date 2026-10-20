@@ -10,6 +10,12 @@
 </head>
 <body class="text-[#2c3e50] h-screen flex flex-col overflow-hidden select-none" onclick="cerrarMenuContextual()">
 
+  <!-- SPLASH DE CARGA ULTRARRÁPIDO SPRIN IMARPE -->
+  <div id="splash-screen-sprin" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center transition-opacity duration-200">
+    <img src="/static/logo_sprin_imarpe.png" alt="SPRIN IMARPE" class="h-16 sm:h-20 object-contain mb-4" onerror="this.outerHTML='<div class=\'text-3xl font-black tracking-tight mb-3\'><span class=\'text-[#16a34a]\'>SPRIN</span> <span class=\'text-[#0f2a4a]\'>IMARPE</span></div>'">
+    <div class="w-7 h-7 border-3 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+
   <!-- MENÚ CONTEXTUAL CLIC DERECHO FLOTANTE -->
   <div id="menu-contextual" class="hidden fixed bg-white rounded-xl shadow-2xl border border-gray-200 py-1.5 z-[100] text-xs font-semibold text-gray-700 min-w-[220px]">
     <div id="mc-header-info" class="px-3 py-1.5 text-[11px] font-bold text-[#0f2a4a] bg-gray-100 border-b border-gray-200 mb-1 truncate">
@@ -69,9 +75,10 @@
   <!-- VISTA DE INICIO DE SESIÓN -->
   <div id="view-login" class="hidden fixed inset-0 bg-[#0f2a4a] flex items-center justify-center p-4 z-50">
     <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-200">
-      <div class="text-center mb-6">
-        <h2 class="text-2xl font-bold text-[#0f2a4a]">SISTEMA IMARPE</h2>
-        <p class="text-xs text-gray-500 font-semibold mt-1">Control de Gestión, Programas y Proyectos</p>
+      <div class="text-center mb-6 flex flex-col items-center">
+        <img src="/static/logo_sprin_imarpe.png" alt="SPRIN IMARPE" class="h-16 object-contain mb-2" onerror="this.style.display='none'">
+        <h2 class="text-xl font-black text-[#0f2a4a]">SPRIN IMARPE</h2>
+        <p class="text-xs text-gray-500 font-semibold mt-0.5">Sistema de Proyectos y Programas Institucionales</p>
       </div>
       <form id="login-form" class="space-y-4">
         <div>
@@ -142,10 +149,13 @@
 
     <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8 flex flex-col justify-start">
       <div class="bg-white rounded-2xl p-6 mb-5 border border-gray-200/90 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <span class="text-[11px] font-black text-teal-700 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">SPRIN IMARPE</span>
-          <h2 id="hub-saludo-bienvenida" class="text-2xl md:text-3xl font-extrabold text-[#0f2a4a] mt-2 tracking-tight">Mis proyectos y programas</h2>
-          <p class="text-xs text-gray-500 font-medium mt-1">Seleccione un espacio de trabajo para registrar avances o supervisar la ruta de actividades.</p>
+        <div class="flex items-center space-x-4">
+          <img src="/static/logo_sprin_imarpe.png" alt="SPRIN IMARPE" class="hidden sm:block h-12 object-contain flex-shrink-0" onerror="this.style.display='none'">
+          <div>
+            <span class="text-[11px] font-black text-teal-700 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">SPRIN IMARPE</span>
+            <h2 id="hub-saludo-bienvenida" class="text-2xl md:text-3xl font-extrabold text-[#0f2a4a] mt-2 tracking-tight">Mis proyectos y programas</h2>
+            <p class="text-xs text-gray-500 font-medium mt-1">Seleccione un espacio de trabajo para registrar avances o supervisar la ruta de actividades.</p>
+          </div>
         </div>
 
         <div class="flex items-center space-x-2.5 self-start md:self-auto flex-shrink-0">
@@ -339,14 +349,17 @@
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-8 sm:h-9 w-auto object-contain flex-shrink-0" onerror="this.outerHTML='<span class=\'text-lg sm:text-xl font-black tracking-widest text-white\'>IMARPE</span>'">
         </div>
         
-        <!-- Centro: Título del Proyecto contenido en su propio espacio (en hasta 2 líneas) -->
-        <div class="flex-1 min-w-0 max-w-xl mx-1 sm:mx-4 flex items-center justify-center text-center">
-          <div class="w-full max-h-[46px] overflow-hidden flex items-center justify-center">
+        <!-- Centro: Título del Proyecto autoajustable (1 línea por defecto, 2 si es largo, máx 80 caracteres) -->
+        <div class="flex-1 min-w-0 max-w-xl mx-1 sm:mx-4 flex items-center justify-center text-center relative">
+          <div class="w-full flex items-center justify-center space-x-1.5">
             <textarea id="txt-nombre-proyecto" 
-                      rows="2"
-                      placeholder="NOMBRE DEL PROYECTO"
-                      class="w-full bg-transparent text-white font-black text-xs sm:text-sm md:text-base text-center border-b border-transparent hover:border-teal-400/40 focus:border-teal-400 outline-none px-1 py-0.5 transition tracking-tight leading-tight resize-none cursor-text overflow-hidden" 
-                      style="max-height: 42px; line-height: 1.25;"></textarea>
+                      rows="1"
+                      maxlength="80"
+                      title="Modificar el texto (máximo 80 caracteres)"
+                      oninput="ajustarAlturaTituloProyecto(this)"
+                      placeholder="Nombre del proyecto"
+                      class="w-full bg-transparent text-white font-black text-xs sm:text-sm md:text-base text-center border-b border-transparent hover:border-teal-400/50 focus:border-teal-400 outline-none px-1 py-0.5 transition tracking-tight leading-snug resize-none cursor-text overflow-hidden"></textarea>
+            <span id="contador-titulo-proyecto" class="hidden text-[10px] font-mono font-bold text-teal-300 bg-blue-950/90 px-1.5 py-0.5 rounded border border-teal-500/40 whitespace-nowrap flex-shrink-0">0/80</span>
           </div>
         </div>
         
@@ -513,13 +526,13 @@
             </select>
           </div>
 
-          <!-- Navegador Temporal Simplificado: ◀ | Inicio | Hoy | ▶ -->
+          <!-- Navegador Temporal Simplificado con salto inteligente según escala: ◀ | Inicio | Hoy | ▶ -->
           <div id="contenedor-spinbutton" class="h-[30px] flex items-center bg-[#0f2a4a] text-white rounded-lg px-1 space-x-1 shadow-2xs border border-blue-900/60">
             <input type="hidden" id="input-semana-inicio" value="1">
-            <button type="button" onclick="cambiarSemanaInicio(-1)" class="h-[24px] w-[22px] hover:bg-white/15 text-teal-300 font-black text-[10px] rounded flex items-center justify-center transition cursor-pointer" title="Retroceder en el calendario">◀</button>
+            <button type="button" onclick="desplazarGanttPorEscala(-1)" class="h-[24px] w-[22px] hover:bg-white/15 text-teal-300 font-black text-[10px] rounded flex items-center justify-center transition cursor-pointer" title="Retroceder en el calendario">◀</button>
             <button type="button" onclick="irAInicioProyecto()" class="h-[24px] bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0 cursor-pointer">Inicio</button>
             <button type="button" onclick="irASemanaActual()" class="h-[24px] bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-bold px-2 rounded transition shadow-2xs whitespace-nowrap flex items-center flex-shrink-0 cursor-pointer">Hoy</button>
-            <button type="button" onclick="cambiarSemanaInicio(1)" class="h-[24px] w-[22px] hover:bg-white/15 text-teal-300 font-black text-[10px] rounded flex items-center justify-center transition cursor-pointer" title="Avanzar en el calendario">▶</button>
+            <button type="button" onclick="desplazarGanttPorEscala(1)" class="h-[24px] w-[22px] hover:bg-white/15 text-teal-300 font-black text-[10px] rounded flex items-center justify-center transition cursor-pointer" title="Avanzar en el calendario">▶</button>
           </div>
 
           <div class="h-5 w-px bg-gray-300 mx-0.5 flex-shrink-0"></div>
@@ -546,26 +559,28 @@
             </div>
           </div>
 
-          <!-- Menú Agrupado de Opciones -->
-          <div class="relative z-[200] flex items-center flex-shrink-0">
+          <!-- Menú Agrupado de Opciones (con cierre automático al retirar el mouse) -->
+          <div class="relative z-[200] flex items-center flex-shrink-0" onmouseenter="cancelarCierreMenuOpciones()" onmouseleave="iniciarCierreMenuOpciones()">
             <button type="button" onclick="document.getElementById('menu-herramientas-vista').classList.toggle('hidden')" class="h-[30px] px-2.5 bg-slate-100 hover:bg-slate-200 text-[#0f2a4a] border border-gray-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center space-x-1 cursor-pointer" title="Más opciones y herramientas del proyecto">
               <span>⚙️</span>
               <span class="hidden sm:inline">Opciones</span>
             </button>
 
-            <div id="menu-herramientas-vista" class="hidden absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 z-[250] text-xs font-bold text-gray-700">
-              <button type="button" onclick="abrirModalColumnas(); document.getElementById('menu-herramientas-vista').classList.add('hidden')" class="w-full text-left px-3.5 py-2 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2.5 transition cursor-pointer">
-                <span>👁️</span>
-                <span>Columnas visibles</span>
-              </button>
-              <button type="button" onclick="exportarExcelCSV(); document.getElementById('menu-herramientas-vista').classList.add('hidden')" class="w-full text-left px-3.5 py-2 hover:bg-emerald-50 hover:text-emerald-700 flex items-center space-x-2.5 transition cursor-pointer">
-                <span>📊</span>
-                <span>Exportar a Excel (CSV)</span>
-              </button>
-              <button type="button" id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica(); document.getElementById('menu-herramientas-vista').classList.add('hidden')" class="w-full text-left px-3.5 py-2 hover:bg-indigo-50 hover:text-indigo-700 flex items-center space-x-2.5 transition cursor-pointer border-t border-gray-100">
-                <span id="ico-accion-plantilla">📥</span>
-                <span id="txt-accion-plantilla">Guardar o usar plantilla</span>
-              </button>
+            <div id="menu-herramientas-vista" class="hidden absolute right-0 top-full pt-1.5 w-52 z-[250]" onmouseenter="cancelarCierreMenuOpciones()" onmouseleave="iniciarCierreMenuOpciones()">
+              <div class="bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 text-xs font-bold text-gray-700">
+                <button type="button" onclick="abrirModalColumnas(); cerrarMenuOpcionesInmediato()" class="w-full text-left px-3.5 py-2 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-2.5 transition cursor-pointer">
+                  <span>👁️</span>
+                  <span>Columnas visibles</span>
+                </button>
+                <button type="button" onclick="exportarExcelCSV(); cerrarMenuOpcionesInmediato()" class="w-full text-left px-3.5 py-2 hover:bg-emerald-50 hover:text-emerald-700 flex items-center space-x-2.5 transition cursor-pointer">
+                  <span>📊</span>
+                  <span>Exportar a Excel (CSV)</span>
+                </button>
+                <button type="button" id="btn-accion-plantilla-dinamico" onclick="gestionarAccionPlantillaDinamica(); cerrarMenuOpcionesInmediato()" class="w-full text-left px-3.5 py-2 hover:bg-indigo-50 hover:text-indigo-700 flex items-center space-x-2.5 transition cursor-pointer border-t border-gray-100">
+                  <span id="ico-accion-plantilla">📥</span>
+                  <span id="txt-accion-plantilla">Guardar o usar plantilla</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -575,7 +590,7 @@
   </div>
 
   <!-- TABLA WBS + GANTT DESPLAZABLE -->
-  <main id="view-dashboard" oncontextmenu="abrirMenuContextualVacio(event)" class="flex-1 max-w-[1920px] w-full mx-auto px-3 md:px-6 pb-4 overflow-hidden flex flex-col">
+  <main id="view-dashboard" oncontextmenu="abrirMenuContextualVacio(event)" class="hidden flex-1 max-w-[1920px] w-full mx-auto px-3 md:px-6 pb-4 overflow-hidden flex flex-col">
     <div class="bg-white rounded-lg shadow border border-gray-200 flex-1 overflow-auto" oncontextmenu="abrirMenuContextualVacio(event)">
       <table class="w-full text-left text-xs md:text-sm border-separate border-spacing-0" id="tabla-gantt-main">
         <thead class="bg-[#0f2a4a] text-white select-none">
@@ -644,7 +659,7 @@
         <form onsubmit="guardarNuevoProyecto(event)" class="space-y-4">
           <div>
             <label class="text-[11px] font-bold text-gray-600 uppercase">Nombre del Proyecto / Programa:</label>
-            <input type="text" id="input-nuevo-proy-nombre" required placeholder="Ej. SISTEMA DE GESTION AMBIENTAL" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]">
+            <input type="text" id="input-nuevo-proy-nombre" maxlength="80" required placeholder="Ej. Sistema de Gestión Integrado (máx. 80 caracteres)" class="w-full mt-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:border-[#0f2a4a]">
           </div>
           <div class="relative">
             <label class="text-[11px] font-bold text-gray-600 uppercase">Unidad de Organización Responsable:</label>
@@ -712,7 +727,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div class="sm:col-span-2">
               <label class="block font-bold text-gray-600 mb-1">Nombre de su Nuevo Proyecto:</label>
-              <input type="text" id="np-input-clon-nombre" required placeholder="Ej. IMPLEMENTACIÓN DEL MODELO DE GESTIÓN POR PROCESOS" class="w-full p-2 border border-gray-300 rounded-lg font-bold text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
+              <input type="text" id="np-input-clon-nombre" maxlength="80" required placeholder="Ej. Implementación del Modelo de Gestión por Procesos" class="w-full p-2 border border-gray-300 rounded-lg font-bold text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
             </div>
 
             <div class="relative">
@@ -2047,6 +2062,6 @@
     </div>
 
     <!-- Carga del Módulo Orquestador Principal ES6 -->
-    <script type="module" src="/static/js/main.js?v=100026"></script>
+    <script type="module" src="/static/js/main.js?v=100027"></script>
 </body>
 </html>

@@ -1675,28 +1675,60 @@ export async function crearActividadRapidaInline() {
   const inp = document.getElementById("input-quick-add-wbs");
   if (!inp) return;
   const desc = inp.value.trim();
-  if (!desc) return;
+  if (!desc) {
+    inp.focus();
+    return;
+  }
 
   inp.disabled = true;
+
   try {
-    const res = await apiFetch(`/proyectos/${state.proyectoActualId}/actividades-lote`, {
+    // Calcular el siguiente código Nivel 1 correlativo
+    const raices = (state.actividadesGlobal || []).filter(a => !String(a.codigo).replace(/\.+$/, "").includes("."));
+    let maxNum = 0;
+    raices.forEach(r => {
+      const n = parseInt(String(r.codigo).replace(/\.+$/, ""), 10);
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    });
+    const nuevoCodigo = String(maxNum + 1);
+
+    // Calcular fecha inicio hábil y fecha fin hábil (3 días por defecto u 8 horas)
+    const hoy = new Date();
+    const dtIniHabil = sumarDiasHabiles(hoy, 1);
+    const duracionDef = (state.proyectoModoDuracion === "hours") ? 8 : 3;
+    const dtFinHabil = calcularFechaFinPorModalidad(dtIniHabil, duracionDef, state.proyectoModoDuracion);
+
+    const fIniStr = `${String(dtIniHabil.getDate()).padStart(2, '0')}/${String(dtIniHabil.getMonth() + 1).padStart(2, '0')}/${dtIniHabil.getFullYear()}`;
+    const fFinStr = `${String(dtFinHabil.getDate()).padStart(2, '0')}/${String(dtFinHabil.getMonth() + 1).padStart(2, '0')}/${dtFinHabil.getFullYear()}`;
+
+    const res = await apiFetch(`/actividades`, {
       method: "POST",
       body: JSON.stringify({
         proyecto_id: parseInt(state.proyectoActualId),
-        lineas: [desc],
-        dias_por_defecto: (state.proyectoModoDuracion === "hours") ? 8 : 3,
-        encadenar_secuencialmente: true
+        codigo: nuevoCodigo,
+        descripcion: desc,
+        responsable: state.currentUser?.nombre_completo || "No asignado",
+        estado: "No iniciado",
+        avance: 0,
+        fecha_inicio: fIniStr,
+        fecha_fin: fFinStr,
+        dias: duracionDef,
+        predecesores: ""
       })
     });
 
     if (res.ok) {
-      notificarToast(`Actividad agregada: "${desc}"`, "success", 2500);
+      inp.value = "";
+      notificarToast(`Actividad [${nuevoCodigo}] agregada con éxito.`, "success", 2500);
       await sincronizarDatosProyecto(state.proyectoActualId);
-      setTimeout(() => document.getElementById("input-quick-add-wbs")?.focus(), 80);
+      setTimeout(() => document.getElementById("input-quick-add-wbs")?.focus(), 60);
     } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "No se pudo agregar la actividad.");
       inp.disabled = false;
     }
   } catch (e) {
+    alert("Error de conexión al crear la actividad.");
     inp.disabled = false;
   }
 }
