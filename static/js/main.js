@@ -7,12 +7,12 @@ import { apiFetch } from "./core/api.js";
 import { notificarToast } from "./core/ui-dialogs.js";
 import { inicializarFormularioLogin, actualizarDisplaysUsuario, mostrarLogin } from "./modules/auth.js";
 import { cargarHubProyectos } from "./modules/hub.js";
-import { ingresarAlProyecto, volverAlHub, sincronizarDatosProyecto } from "./modules/project-view/project-core.js?v=100030";
-import { cambiarSemanaInicio } from "./modules/project-view/project-gantt.js?v=100030";
-import { sumarDiasHabiles, calcularFechaFinPorModalidad, abrirModalPegarListaTareas, cerrarModalPegarListaTareas, confirmarPegadoLoteTareas } from "./modules/project-view/project-wbs.js?v=100030";
-import "./modules/admin-ti.js?v=100030";
-import "./modules/project-view/index.js?v=100030";
-import "./modules/agenda/agenda-pendientes.js?v=100030";
+import { ingresarAlProyecto, volverAlHub, sincronizarDatosProyecto } from "./modules/project-view/project-core.js?v=100031";
+import { cambiarSemanaInicio } from "./modules/project-view/project-gantt.js?v=100031";
+import { sumarDiasHabiles, calcularFechaFinPorModalidad, abrirModalPegarListaTareas, cerrarModalPegarListaTareas, confirmarPegadoLoteTareas } from "./modules/project-view/project-wbs.js?v=100031";
+import "./modules/admin-ti.js?v=100031";
+import "./modules/project-view/index.js?v=100031";
+import "./modules/agenda/agenda-pendientes.js?v=100031";
 
 // Exposición directa garantizada sin intermediarios de caché
 window.ingresarAlProyecto = ingresarAlProyecto;

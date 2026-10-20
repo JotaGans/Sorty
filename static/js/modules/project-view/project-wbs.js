@@ -463,16 +463,109 @@ export function poblarFiltroResponsablesDinamico() {
   if (prevVal && setResponsables.has(prevVal)) select.value = prevVal;
 }
 
+export function actualizarAparienciaBotonesFiltro() {
+  // 1. Estado visual del botón Nivel
+  const lblNivel = document.getElementById("txt-nivel-activo-label");
+  const selNivel = document.getElementById("sel-filtro-nivel");
+  const niv = parseInt(state.nivelMaxVisible || 4);
+
+  if (selNivel) selNivel.value = String(niv);
+  if (lblNivel) {
+    if (niv < 4) {
+      lblNivel.innerText = `Nivel ${niv}`;
+      lblNivel.className = "hidden md:inline text-xs font-black text-teal-800 leading-none";
+    } else {
+      lblNivel.innerText = "Nivel";
+      lblNivel.className = "hidden md:inline text-xs font-semibold text-gray-700 leading-none";
+    }
+  }
+
+  // 2. Estado visual del botón Colaborador
+  const lblColab = document.getElementById("txt-colaborador-activo-label");
+  const selColab = document.getElementById("filtro-responsable-select");
+  const respVal = (selColab?.value || "").trim();
+
+  if (lblColab) {
+    if (respVal) {
+      // Mostrar Apellido o nombre corto (ej. "Salas Gue...") para que no desborde el botón
+      const nombreCorto = respVal.length > 14 ? respVal.substring(0, 13) + "…" : respVal;
+      lblColab.innerText = nombreCorto;
+      lblColab.className = "hidden md:inline text-xs font-black text-teal-800 leading-none";
+    } else {
+      lblColab.innerText = "Colaborador";
+      lblColab.className = "hidden md:inline text-xs font-semibold text-gray-700 leading-none";
+    }
+  }
+}
+
 export function filtrarNivelJerarquico(val) {
-  state.nivelFiltroActivo = parseInt(val) || 4;
-  const labelNivel = document.getElementById("txt-nivel-activo-label");
-  if (labelNivel) labelNivel.innerText = (String(val) === "4" || !val) ? "Nivel" : `Nivel ${val}`;
-  renderizarTabla();
+  const n = parseInt(val) || 4;
+  state.nivelMaxVisible = n;
+  state.colapsadosSet.clear();
+
+  if (n < 4) {
+    (state.actividadesGlobal || []).forEach(a => {
+      const cod = String(a.codigo).replace(/\.+$/, "");
+      const nivelAct = cod.split(".").length;
+      if (nivelAct === n) {
+        state.colapsadosSet.add(cod);
+      }
+    });
+  }
+
+  actualizarAparienciaBotonesFiltro();
+  aplicarFiltrosGlobales();
 }
 
 export function aplicarFiltrosGlobales() {
+  const resp = document.getElementById("filtro-responsable-select")?.value || "";
+  const busq = document.getElementById("filtro-busqueda")?.value.trim() || "";
+  const niv = parseInt(state.nivelMaxVisible || 4);
+
+  actualizarAparienciaBotonesFiltro();
+
+  const badge = document.getElementById("badge-filtro-activo");
+  const txtBadge = document.getElementById("badge-filtro-texto");
+
+  const partes = [];
+  if (niv < 4) partes.push(`Nivel ${niv}`);
+  if (resp) partes.push(`👤 ${resp}`);
+  if (busq) partes.push(`"${busq}"`);
+
+  if (partes.length > 0) {
+    if (txtBadge) txtBadge.innerText = `Filtrado por: ${partes.join(" | ")}`;
+    if (badge) {
+      badge.classList.remove("hidden");
+      badge.classList.add("flex");
+    }
+  } else {
+    if (badge) {
+      badge.classList.add("hidden");
+      badge.classList.remove("flex");
+    }
+  }
+
   renderizarTabla();
 }
+
+export function limpiarTodosFiltros() {
+  state.nivelMaxVisible = 4;
+  state.colapsadosSet.clear();
+
+  const selNivel = document.getElementById("sel-filtro-nivel");
+  if (selNivel) selNivel.value = "4";
+
+  const selResp = document.getElementById("filtro-responsable-select");
+  if (selResp) selResp.value = "";
+
+  const inpBusq = document.getElementById("filtro-busqueda");
+  if (inpBusq) inpBusq.value = "";
+
+  actualizarAparienciaBotonesFiltro();
+  aplicarFiltrosGlobales();
+}
+
+window.actualizarAparienciaBotonesFiltro = actualizarAparienciaBotonesFiltro;
 
 // --- EDICIÓN INLINE DE CELDAS ---
 export function editarDescripcion(cod) {

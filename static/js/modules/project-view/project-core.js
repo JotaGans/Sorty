@@ -27,10 +27,26 @@ export async function ingresarAlProyecto(id, nombre, esGestor) {
   localStorage.setItem("sprin_proyecto_activo", datosProyActivo);
   sessionStorage.setItem("sprin_proyecto_activo", datosProyActivo);
 
-  // 3. Limpiar inmediatamente cualquier rastro del proyecto anterior para que nunca parpadee
+  // 3. Limpiar inmediatamente cualquier rastro y filtros del proyecto anterior
   state.actividadesGlobal = [];
   state.comentariosGlobal = [];
   state.codigoFilaSeleccionada = null;
+  state.nivelMaxVisible = 4;
+  state.colapsadosSet.clear();
+  const selNiv = document.getElementById("sel-filtro-nivel");
+  if (selNiv) selNiv.value = "4";
+  const selCol = document.getElementById("filtro-responsable-select");
+  if (selCol) selCol.value = "";
+  const inpBus = document.getElementById("filtro-busqueda");
+  if (inpBus) inpBus.value = "";
+  if (typeof window.actualizarAparienciaBotonesFiltro === "function") {
+    window.actualizarAparienciaBotonesFiltro();
+  }
+  const badgeFil = document.getElementById("badge-filtro-activo");
+  if (badgeFil) {
+    badgeFil.classList.add("hidden");
+    badgeFil.classList.remove("flex");
+  }
   const tbodyLimpiar = document.getElementById("lista-actividades");
   if (tbodyLimpiar) tbodyLimpiar.innerHTML = "";
 
@@ -103,17 +119,27 @@ export async function ingresarAlProyecto(id, nombre, esGestor) {
   }
 }
 
-export function volverAlHub() {
+export async function volverAlHub() {
+  if (typeof window.mostrarSplashSprin === "function") {
+    window.mostrarSplashSprin();
+  }
+
   localStorage.removeItem("sprin_proyecto_activo");
   sessionStorage.removeItem("sprin_proyecto_activo");
   state.proyectoActualId = null;
   state.actividadesGlobal = [];
   const tbodyLimpiar = document.getElementById("lista-actividades");
   if (tbodyLimpiar) tbodyLimpiar.innerHTML = "";
+
+  await cargarHubProyectos();
+
   document.getElementById("view-dashboard")?.classList.add("hidden");
   document.getElementById("bloque-superior-gantt")?.classList.add("hidden");
   document.getElementById("view-hub")?.classList.remove("hidden");
-  cargarHubProyectos();
+
+  if (typeof window.ocultarSplashSprin === "function") {
+    window.ocultarSplashSprin();
+  }
 }
 
 export async function sincronizarDatosProyecto(id) {
