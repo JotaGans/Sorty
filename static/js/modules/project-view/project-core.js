@@ -8,114 +8,120 @@ import { renderizarTabla, recalcularJerarquiaWBS, poblarFiltroResponsablesDinami
 import { cargarComentariosProyecto, abrirModalGuardarPlantilla, abrirModalImportarPlantillaProyecto } from "./project-aux.js";
 
 export async function ingresarAlProyecto(id, nombre, esGestor) {
-  // 1. Mostrar el Splash inmediatamente para cubrir toda la transición
-  const sp = document.getElementById("splash-screen-sprin");
-  if (sp) {
-    sp.classList.remove("hidden", "opacity-0", "pointer-events-none");
-    sp.classList.add("opacity-100");
+  if (typeof window.mostrarSplashSprin === "function") {
+    window.mostrarSplashSprin();
   }
 
-  state.proyectoActualId = id;
-  state.proyectoEsGestor = Boolean(esGestor === 1 || esGestor === true || state.currentUser.rol === "ADMIN_TI");
+  try {
+    state.proyectoActualId = id;
+    state.proyectoEsGestor = Boolean(esGestor === 1 || esGestor === true || state.currentUser?.rol === "ADMIN_TI");
 
-  // 2. Guardar en localStorage y sessionStorage para que F5 nos mantenga siempre en este proyecto
-  const datosProyActivo = JSON.stringify({
-    id: id,
-    nombre: nombre,
-    esGestor: state.proyectoEsGestor
-  });
-  localStorage.setItem("sprin_proyecto_activo", datosProyActivo);
-  sessionStorage.setItem("sprin_proyecto_activo", datosProyActivo);
+    const datosProyActivo = JSON.stringify({
+      id: id,
+      nombre: nombre,
+      esGestor: state.proyectoEsGestor
+    });
+    localStorage.setItem("sprin_proyecto_activo", datosProyActivo);
+    sessionStorage.setItem("sprin_proyecto_activo", datosProyActivo);
 
-  // 3. Limpiar inmediatamente cualquier rastro y filtros del proyecto anterior
-  state.actividadesGlobal = [];
-  state.comentariosGlobal = [];
-  state.codigoFilaSeleccionada = null;
-  state.nivelMaxVisible = 4;
-  state.colapsadosSet.clear();
-  const selNiv = document.getElementById("sel-filtro-nivel");
-  if (selNiv) selNiv.value = "4";
-  const selCol = document.getElementById("filtro-responsable-select");
-  if (selCol) selCol.value = "";
-  const inpBus = document.getElementById("filtro-busqueda");
-  if (inpBus) inpBus.value = "";
-  if (typeof window.actualizarAparienciaBotonesFiltro === "function") {
-    window.actualizarAparienciaBotonesFiltro();
-  }
-  const badgeFil = document.getElementById("badge-filtro-activo");
-  if (badgeFil) {
-    badgeFil.classList.add("hidden");
-    badgeFil.classList.remove("flex");
-  }
-  const tbodyLimpiar = document.getElementById("lista-actividades");
-  if (tbodyLimpiar) tbodyLimpiar.innerHTML = "";
-
-  const proyData = (state.proyectosUsuarioGlobal || []).find(p => p.id === id);
-  state.proyectoModoDuracion = proyData?.duration_mode || "business_days";
-
-  const thDias = document.getElementById("th-dias");
-  if (thDias) {
-    thDias.innerHTML = (state.proyectoModoDuracion === "hours")
-      ? `Horas <span class="text-[10px] text-teal-300 opacity-80">✎</span>`
-      : `Días <span class="text-[10px] text-teal-300 opacity-80">✎</span>`;
-  }
-
-  const txtNombre = document.getElementById("txt-nombre-proyecto");
-  if (txtNombre) {
-    txtNombre.value = (nombre || "").substring(0, 80);
-    txtNombre.disabled = !state.proyectoEsGestor;
-    txtNombre.title = state.proyectoEsGestor ? "Modificar el texto (máximo 80 caracteres)" : nombre;
-  }
-
-  const badge = document.getElementById("badge-rol-gantt");
-  if (badge) {
-    if (state.proyectoEsGestor) {
-      badge.className = "bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-black uppercase px-2 sm:px-2.5 rounded shadow-2xs flex items-center justify-center whitespace-nowrap cursor-help";
-      badge.innerHTML = `<span class="text-xs leading-none">👑</span><span class="hidden md:inline leading-none tracking-tight ml-1">GESTOR DE PROYECTO</span>`;
-      badge.title = "Rol: Gestor de Proyecto";
+    // Limpiar rastro y filtros del proyecto anterior de forma segura
+    state.actividadesGlobal = [];
+    state.comentariosGlobal = [];
+    state.codigoFilaSeleccionada = null;
+    state.nivelMaxVisible = 4;
+    if (state.colapsadosSet && typeof state.colapsadosSet.clear === "function") {
+      state.colapsadosSet.clear();
     } else {
-      badge.className = "bg-blue-100 text-blue-900 border border-blue-300 text-[10.5px] font-black uppercase px-2 sm:px-2.5 rounded shadow-2xs flex items-center justify-center whitespace-nowrap cursor-help";
-      badge.innerHTML = `<span class="text-xs leading-none">👤</span><span class="hidden md:inline leading-none tracking-tight ml-1">RESPONSABLE ASIGNADO</span>`;
-      badge.title = "Rol: Responsable Asignado";
+      state.colapsadosSet = new Set();
     }
-  }
 
-  actualizarDisplaysUsuario();
+    const selNiv = document.getElementById("sel-filtro-nivel");
+    if (selNiv) selNiv.value = "4";
+    const selCol = document.getElementById("filtro-responsable-select");
+    if (selCol) selCol.value = "";
+    const inpBus = document.getElementById("filtro-busqueda");
+    if (inpBus) inpBus.value = "";
+    if (typeof window.actualizarAparienciaBotonesFiltro === "function") {
+      try { window.actualizarAparienciaBotonesFiltro(); } catch (e) {}
+    }
+    const badgeFil = document.getElementById("badge-filtro-activo");
+    if (badgeFil) {
+      badgeFil.classList.add("hidden");
+      badgeFil.classList.remove("flex");
+    }
+    const tbodyLimpiar = document.getElementById("lista-actividades");
+    if (tbodyLimpiar) tbodyLimpiar.innerHTML = "";
 
-  const btnNuevaAct = document.getElementById("btn-nueva-act-gantt");
-  const btnHist = document.getElementById("btn-historial-gantt");
-  const btnPers = document.getElementById("btn-personal-gantt");
-  const btnPlantilla = document.getElementById("btn-accion-plantilla-dinamico");
+    const proyData = (state.proyectosUsuarioGlobal || []).find(p => p.id === id);
+    state.proyectoModoDuracion = proyData?.duration_mode || "business_days";
 
-  if (!state.proyectoEsGestor) {
-    if (btnNuevaAct) btnNuevaAct.classList.add("hidden");
-    if (btnHist) btnHist.classList.add("hidden");
-    if (btnPers) btnPers.classList.add("hidden");
-    if (btnPlantilla) btnPlantilla.classList.add("hidden");
-  } else {
-    if (btnNuevaAct) btnNuevaAct.classList.remove("hidden");
-    if (btnHist) btnHist.classList.remove("hidden");
-    if (btnPers) btnPers.classList.remove("hidden");
-    if (btnPlantilla) btnPlantilla.classList.remove("hidden");
-  }
+    const thDias = document.getElementById("th-dias");
+    if (thDias) {
+      thDias.innerHTML = (state.proyectoModoDuracion === "hours")
+        ? `Horas <span class="text-[10px] text-teal-300 opacity-80">✎</span>`
+        : `Días <span class="text-[10px] text-teal-300 opacity-80">✎</span>`;
+    }
 
-  // 4. Descargar y renderizar todas las actividades MIENTRAS el Splash sigue cubriendo la pantalla
-  aplicarVisibilidadColumnas();
-  await sincronizarDatosProyecto(id);
+    const txtNombre = document.getElementById("txt-nombre-proyecto");
+    if (txtNombre) {
+      txtNombre.value = (nombre || "").substring(0, 80);
+      txtNombre.disabled = !state.proyectoEsGestor;
+      txtNombre.title = state.proyectoEsGestor ? "Modificar el texto (máximo 80 caracteres)" : (nombre || "");
+    }
 
-  // 5. Cambiar las vistas ya con la tabla completamente llena y lista
-  document.getElementById("view-hub")?.classList.add("hidden");
-  document.getElementById("view-dashboard")?.classList.remove("hidden");
-  document.getElementById("bloque-superior-gantt")?.classList.remove("hidden");
-  inicializarRedimensionDescripcion();
+    const badge = document.getElementById("badge-rol-gantt");
+    if (badge) {
+      if (state.proyectoEsGestor) {
+        badge.className = "bg-amber-100 text-amber-900 border border-amber-300 text-[10.5px] font-black uppercase px-2 sm:px-2.5 rounded shadow-2xs flex items-center justify-center whitespace-nowrap cursor-help";
+        badge.innerHTML = `<span class="text-xs leading-none">👑</span><span class="hidden md:inline leading-none tracking-tight ml-1">GESTOR DE PROYECTO</span>`;
+        badge.title = "Rol: Gestor de Proyecto";
+      } else {
+        badge.className = "bg-blue-100 text-blue-900 border border-blue-300 text-[10.5px] font-black uppercase px-2 sm:px-2.5 rounded shadow-2xs flex items-center justify-center whitespace-nowrap cursor-help";
+        badge.innerHTML = `<span class="text-xs leading-none">👤</span><span class="hidden md:inline leading-none tracking-tight ml-1">RESPONSABLE ASIGNADO</span>`;
+        badge.title = "Rol: Responsable Asignado";
+      }
+    }
 
-  if (txtNombre && typeof window.ajustarAlturaTituloProyecto === "function") {
-    window.ajustarAlturaTituloProyecto(txtNombre);
-  }
+    actualizarDisplaysUsuario();
 
-  // 6. Retirar el Splash suavemente
-  if (typeof window.ocultarSplashSprin === "function") {
-    window.ocultarSplashSprin();
+    const btnNuevaAct = document.getElementById("btn-nueva-act-gantt");
+    const btnHist = document.getElementById("btn-historial-gantt");
+    const btnPers = document.getElementById("btn-personal-gantt");
+    const btnPlantilla = document.getElementById("btn-accion-plantilla-dinamico");
+
+    if (!state.proyectoEsGestor) {
+      if (btnNuevaAct) btnNuevaAct.classList.add("hidden");
+      if (btnHist) btnHist.classList.add("hidden");
+      if (btnPers) btnPers.classList.add("hidden");
+      if (btnPlantilla) btnPlantilla.classList.add("hidden");
+    } else {
+      if (btnNuevaAct) btnNuevaAct.classList.remove("hidden");
+      if (btnHist) btnHist.classList.remove("hidden");
+      if (btnPers) btnPers.classList.remove("hidden");
+      if (btnPlantilla) btnPlantilla.classList.remove("hidden");
+    }
+
+    // Mostrar contenedores de proyecto antes de medir anchos y renderizar
+    document.getElementById("view-hub")?.classList.add("hidden");
+    document.getElementById("view-dashboard")?.classList.remove("hidden");
+    document.getElementById("bloque-superior-gantt")?.classList.remove("hidden");
+
+    aplicarVisibilidadColumnas();
+    inicializarRedimensionDescripcion();
+    await sincronizarDatosProyecto(id);
+
+    if (txtNombre && typeof window.ajustarAlturaTituloProyecto === "function") {
+      window.ajustarAlturaTituloProyecto(txtNombre);
+    }
+  } catch (err) {
+    console.error("Error al ingresar al proyecto:", err);
+    document.getElementById("view-hub")?.classList.add("hidden");
+    document.getElementById("view-dashboard")?.classList.remove("hidden");
+    document.getElementById("bloque-superior-gantt")?.classList.remove("hidden");
+  } finally {
+    if (typeof window.ocultarSplashSprin === "function") {
+      window.ocultarSplashSprin();
+    }
   }
 }
 
@@ -124,21 +130,28 @@ export async function volverAlHub() {
     window.mostrarSplashSprin();
   }
 
-  localStorage.removeItem("sprin_proyecto_activo");
-  sessionStorage.removeItem("sprin_proyecto_activo");
-  state.proyectoActualId = null;
-  state.actividadesGlobal = [];
-  const tbodyLimpiar = document.getElementById("lista-actividades");
-  if (tbodyLimpiar) tbodyLimpiar.innerHTML = "";
+  try {
+    localStorage.removeItem("sprin_proyecto_activo");
+    sessionStorage.removeItem("sprin_proyecto_activo");
+    state.proyectoActualId = null;
+    state.actividadesGlobal = [];
+    const tbodyLimpiar = document.getElementById("lista-actividades");
+    if (tbodyLimpiar) tbodyLimpiar.innerHTML = "";
 
-  await cargarHubProyectos();
+    await cargarHubProyectos();
 
-  document.getElementById("view-dashboard")?.classList.add("hidden");
-  document.getElementById("bloque-superior-gantt")?.classList.add("hidden");
-  document.getElementById("view-hub")?.classList.remove("hidden");
-
-  if (typeof window.ocultarSplashSprin === "function") {
-    window.ocultarSplashSprin();
+    document.getElementById("view-dashboard")?.classList.add("hidden");
+    document.getElementById("bloque-superior-gantt")?.classList.add("hidden");
+    document.getElementById("view-hub")?.classList.remove("hidden");
+  } catch (err) {
+    console.error("Error al volver al Hub:", err);
+    document.getElementById("view-dashboard")?.classList.add("hidden");
+    document.getElementById("bloque-superior-gantt")?.classList.add("hidden");
+    document.getElementById("view-hub")?.classList.remove("hidden");
+  } finally {
+    if (typeof window.ocultarSplashSprin === "function") {
+      window.ocultarSplashSprin();
+    }
   }
 }
 

@@ -7,12 +7,12 @@ import { apiFetch } from "./core/api.js";
 import { notificarToast } from "./core/ui-dialogs.js";
 import { inicializarFormularioLogin, actualizarDisplaysUsuario, mostrarLogin } from "./modules/auth.js";
 import { cargarHubProyectos } from "./modules/hub.js";
-import { ingresarAlProyecto, volverAlHub, sincronizarDatosProyecto } from "./modules/project-view/project-core.js?v=100031";
-import { cambiarSemanaInicio } from "./modules/project-view/project-gantt.js?v=100031";
-import { sumarDiasHabiles, calcularFechaFinPorModalidad, abrirModalPegarListaTareas, cerrarModalPegarListaTareas, confirmarPegadoLoteTareas } from "./modules/project-view/project-wbs.js?v=100031";
-import "./modules/admin-ti.js?v=100031";
-import "./modules/project-view/index.js?v=100031";
-import "./modules/agenda/agenda-pendientes.js?v=100031";
+import { ingresarAlProyecto, volverAlHub, sincronizarDatosProyecto } from "./modules/project-view/project-core.js?v=100032";
+import { cambiarSemanaInicio } from "./modules/project-view/project-gantt.js?v=100032";
+import { sumarDiasHabiles, calcularFechaFinPorModalidad, abrirModalPegarListaTareas, cerrarModalPegarListaTareas, confirmarPegadoLoteTareas, actualizarAparienciaBotonesFiltro } from "./modules/project-view/project-wbs.js?v=100032";
+import "./modules/admin-ti.js?v=100032";
+import "./modules/project-view/index.js?v=100032";
+import "./modules/agenda/agenda-pendientes.js?v=100032";
 
 // Exposición directa garantizada sin intermediarios de caché
 window.ingresarAlProyecto = ingresarAlProyecto;
@@ -20,24 +20,31 @@ window.volverAlHub = volverAlHub;
 window.abrirModalPegarListaTareas = abrirModalPegarListaTareas;
 window.cerrarModalPegarListaTareas = cerrarModalPegarListaTareas;
 window.confirmarPegadoLoteTareas = confirmarPegadoLoteTareas;
+window.actualizarAparienciaBotonesFiltro = actualizarAparienciaBotonesFiltro;
 
-// 0. Control del Splash Minimalista (Solo Logo + Círculo)
+// 0. Control del Splash Minimalista con seguro anti-bloqueo (Watchdog)
+let timerSeguroSplash = null;
+
 window.mostrarSplashSprin = () => {
+  clearTimeout(timerSeguroSplash);
   const sp = document.getElementById("splash-screen-sprin");
   if (sp) {
     sp.classList.remove("hidden", "opacity-0", "pointer-events-none");
     sp.classList.add("opacity-100");
   }
+  // Seguro automático: nunca permitir que el splash quede pegado más de 1.5 segundos
+  timerSeguroSplash = setTimeout(() => {
+    window.ocultarSplashSprin();
+  }, 1500);
 };
 
 window.ocultarSplashSprin = () => {
+  clearTimeout(timerSeguroSplash);
   const sp = document.getElementById("splash-screen-sprin");
   if (sp) {
-    setTimeout(() => {
-      sp.classList.remove("opacity-100");
-      sp.classList.add("opacity-0", "pointer-events-none");
-      setTimeout(() => sp.classList.add("hidden"), 180);
-    }, 80);
+    sp.classList.remove("opacity-100");
+    sp.classList.add("opacity-0", "pointer-events-none");
+    setTimeout(() => sp.classList.add("hidden"), 150);
   }
 };
 
