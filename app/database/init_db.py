@@ -702,4 +702,12 @@ def init_db():
                 """, (p_id, cod, desc, dias, pred))
 
     conn.commit()
+
+    # Ejecución de sincronización integral de procesos y plantillas oficiales
+    try:
+        from app.database.seed_plantillas_sincronizadas import sincronizar_procesos_y_plantillas
+        sincronizar_procesos_y_plantillas(conn, admin_id)
+    except Exception as e:
+        print(f"Error sincronizando plantillas normativas: {e}")
+
     conn.close()
