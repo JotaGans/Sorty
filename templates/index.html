@@ -76,14 +76,13 @@
   <div id="view-login" class="hidden fixed inset-0 bg-[#0f2a4a] flex items-center justify-center p-4 z-50">
     <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-200">
       <div class="text-center mb-6 flex flex-col items-center">
-        <img src="/static/logo_sprin_imarpe.png" alt="SPRIN IMARPE" class="h-16 object-contain mb-2" onerror="this.style.display='none'">
-        <h2 class="text-xl font-black text-[#0f2a4a]">SPRIN IMARPE</h2>
-        <p class="text-xs text-gray-500 font-semibold mt-0.5">Sistema de Proyectos y Programas Institucionales</p>
+        <img src="/static/logo_sprin_imarpe.png" alt="SPRIN IMARPE" class="h-16 sm:h-20 object-contain mb-2" onerror="this.outerHTML='<h2 class=\'text-2xl font-black text-[#0f2a4a]\'>SPRIN IMARPE</h2>'">
+        <p class="text-xs text-gray-500 font-semibold mt-1">Sistema de Proyectos y Programas Institucionales</p>
       </div>
       <form id="login-form" class="space-y-4">
         <div>
           <label class="block text-xs font-bold uppercase text-gray-600">Usuario</label>
-          <input type="text" id="login-username" required class="w-full mt-1 p-2.5 border border-gray-300 rounded focus:border-[#0f2a4a] outline-none font-semibold" placeholder="admin">
+          <input type="text" id="login-username" required class="w-full mt-1 p-2.5 border border-gray-300 rounded focus:border-[#0f2a4a] outline-none font-semibold" placeholder="nombre de usuario">
         </div>
         <div>
           <label class="block text-xs font-bold uppercase text-gray-600">Contraseña</label>
@@ -2029,6 +2028,6 @@
     </button>
 
     <!-- Carga del Módulo Orquestador Principal ES6 -->
-    <script type="module" src="/static/js/main.js?v=100032"></script>
+    <script type="module" src="/static/js/main.js?v=100033"></script>
 </body>
 </html>

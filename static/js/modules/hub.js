@@ -20,30 +20,27 @@ export async function cargarHubProyectos() {
   if (!state.token) return;
 
   document.getElementById("view-login")?.classList.add("hidden");
-  document.getElementById("view-hub")?.classList.remove("hidden");
 
   try {
+    const promesasHub = [
+      apiFetch("/proyectos")
+    ];
+
     if (typeof window.cargarMisPendientesServidor === "function") {
-      window.cargarMisPendientesServidor();
+      promesasHub.push(window.cargarMisPendientesServidor().catch(() => null));
     }
 
     if (!state.catalogoUnidadesGlobal || state.catalogoUnidadesGlobal.length === 0) {
-      const resUo = await apiFetch("/unidades-organicas").catch(() => null);
-      if (resUo && resUo.ok) state.catalogoUnidadesGlobal = await resUo.json();
+      promesasHub.push(
+        apiFetch("/unidades-organicas")
+          .then(r => r.ok ? r.json() : [])
+          .then(d => { state.catalogoUnidadesGlobal = d; })
+          .catch(() => null)
+      );
     }
 
-    const cacheProy = sessionStorage.getItem("sprin_cache_proyectos_hub");
-    if (cacheProy && (!state.proyectosUsuarioGlobal || state.proyectosUsuarioGlobal.length === 0)) {
-      try {
-        state.proyectosUsuarioGlobal = JSON.parse(cacheProy);
-        actualizarKPIsHub(state.proyectosUsuarioGlobal);
-        aplicarConmutadorVistaHub();
-        filtrarProyectosHub();
-      } catch (e) {}
-    }
-
-    const res = await apiFetch("/proyectos");
-    if (!res.ok) throw new Error("Error al cargar proyectos");
+    const [res] = await Promise.all(promesasHub);
+    if (!res || !res.ok) throw new Error("Error al cargar proyectos");
     state.proyectosUsuarioGlobal = await res.json();
     sessionStorage.setItem("sprin_cache_proyectos_hub", JSON.stringify(state.proyectosUsuarioGlobal));
 
@@ -53,6 +50,8 @@ export async function cargarHubProyectos() {
     filtrarProyectosHub();
   } catch (err) {
     console.error("Error al cargar Hub:", err);
+  } finally {
+    document.getElementById("view-hub")?.classList.remove("hidden");
   }
 }
 

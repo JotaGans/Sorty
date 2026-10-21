@@ -5,14 +5,14 @@
 import { state } from "./core/state.js";
 import { apiFetch } from "./core/api.js";
 import { notificarToast } from "./core/ui-dialogs.js";
-import { inicializarFormularioLogin, actualizarDisplaysUsuario, mostrarLogin } from "./modules/auth.js";
-import { cargarHubProyectos } from "./modules/hub.js";
-import { ingresarAlProyecto, volverAlHub, sincronizarDatosProyecto } from "./modules/project-view/project-core.js?v=100032";
-import { cambiarSemanaInicio } from "./modules/project-view/project-gantt.js?v=100032";
-import { sumarDiasHabiles, calcularFechaFinPorModalidad, abrirModalPegarListaTareas, cerrarModalPegarListaTareas, confirmarPegadoLoteTareas, actualizarAparienciaBotonesFiltro } from "./modules/project-view/project-wbs.js?v=100032";
-import "./modules/admin-ti.js?v=100032";
-import "./modules/project-view/index.js?v=100032";
-import "./modules/agenda/agenda-pendientes.js?v=100032";
+import { inicializarFormularioLogin, actualizarDisplaysUsuario, mostrarLogin } from "./modules/auth.js?v=100033";
+import { cargarHubProyectos } from "./modules/hub.js?v=100033";
+import { ingresarAlProyecto, volverAlHub, sincronizarDatosProyecto } from "./modules/project-view/project-core.js?v=100033";
+import { cambiarSemanaInicio } from "./modules/project-view/project-gantt.js?v=100033";
+import { sumarDiasHabiles, calcularFechaFinPorModalidad, abrirModalPegarListaTareas, cerrarModalPegarListaTareas, confirmarPegadoLoteTareas, actualizarAparienciaBotonesFiltro } from "./modules/project-view/project-wbs.js?v=100033";
+import "./modules/admin-ti.js?v=100033";
+import "./modules/project-view/index.js?v=100033";
+import "./modules/agenda/agenda-pendientes.js?v=100033";
 
 // Exposición directa garantizada sin intermediarios de caché
 window.ingresarAlProyecto = ingresarAlProyecto;

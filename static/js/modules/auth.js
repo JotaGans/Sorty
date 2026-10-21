@@ -110,6 +110,10 @@ export function inicializarFormularioLogin() {
       }
 
       const data = await res.json();
+      if (typeof window.mostrarSplashSprin === "function") {
+        window.mostrarSplashSprin();
+      }
+
       state.token = data.access_token;
       state.currentUser = {
         id: data.user_id || (data.user && data.user.id),
@@ -124,6 +128,10 @@ export function inicializarFormularioLogin() {
       document.getElementById("view-login")?.classList.add("hidden");
       actualizarDisplaysUsuario();
       await cargarHubProyectos();
+
+      if (typeof window.ocultarSplashSprin === "function") {
+        window.ocultarSplashSprin();
+      }
     } catch (err) {
       console.error("Error en login:", err);
       alert("Error de conexión con el servidor. Intente nuevamente.");
