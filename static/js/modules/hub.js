@@ -70,7 +70,6 @@ export function cambiarVistaHub(modo) {
   state.vistaHubActual = modo;
   localStorage.setItem("vista_hub_proyectos", modo);
   
-  // Sincronizar vista con el módulo de agenda de pendientes
   if (typeof window.adaptarVistaHubPendientes === "function") {
     window.adaptarVistaHubPendientes(modo);
   }
@@ -174,7 +173,7 @@ export async function solicitarEliminarProyecto(id, nombre, event) {
 
   const confirma = await confirmModal(
     `¿Está seguro de eliminar permanentemente el proyecto '${nombre}'?\n\nEsta acción no se puede deshacer.`,
-    "Eliminar Proyecto Vacío",
+    "Eliminar proyecto vacío",
     "danger"
   );
 
@@ -264,16 +263,10 @@ export function renderizarTarjetasHub(lista) {
     const tooltipUo = nombreCompletoUnidad ? `title="${nombreCompletoUnidad}"` : '';
     const estiloCursorUo = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
-    const tieneProceso = Boolean(p.proceso_nombre || p.proceso_codigo);
-    const nombreLimpioProceso = tieneProceso 
-      ? (p.proceso_nombre || "Proceso sin denominación") 
-      : "Sin proceso asignado";
-    
-    const detalleCompletoProceso = tieneProceso
-      ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`)
-      : "Sin proceso asignado";
-
-    const tooltipProceso = `title="${detalleCompletoProceso}"`;
+    const procesoValor = (p.proceso_relacionado || p.proceso_nombre || p.proceso_codigo || "").trim();
+    const tieneProceso = Boolean(procesoValor);
+    const nombreLimpioProceso = tieneProceso ? procesoValor : "Sin proceso asignado";
+    const tooltipProceso = `title="${nombreLimpioProceso}"`;
     const estiloCursorProceso = esGestor ? 'cursor-pointer hover:text-teal-900 transition' : '';
 
     const card = document.createElement("div");
@@ -298,7 +291,7 @@ export function renderizarTarjetasHub(lista) {
                 </svg>
               </button>
             ` : ''}
-            <span class="text-xs font-black px-2 py-0.5 rounded whitespace-nowrap ${badgeAvanceClases}">${avanceVal}% Avance</span>
+            <span class="text-xs font-black px-2 py-0.5 rounded whitespace-nowrap ${badgeAvanceClases}">${avanceVal}% avance</span>
           </div>
         </div>
         
@@ -316,7 +309,7 @@ export function renderizarTarjetasHub(lista) {
              ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}"
              class="text-[11px] font-semibold text-slate-600 inline-flex items-center space-x-1 max-w-[220px] truncate ${estiloCursorProceso}">
             <span>⚙️</span>
-            <span class="truncate ${tieneProceso ? 'text-[#0f2a4a] font-bold' : 'italic text-gray-400'}">${nombreLimpioProceso}</span>
+            <span class="truncate ${tieneProceso ? 'text-[#0f2a4a] font-bold' : 'italic text-amber-600 font-bold'}">${nombreLimpioProceso}</span>
           </p>
         </div>
 
@@ -347,7 +340,7 @@ export function renderizarTarjetasHub(lista) {
       </div>
 
       <button onclick="ingresarAlProyecto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${esGestor})" class="w-full mt-6 py-2.5 bg-[#0f2a4a] hover:bg-[#1b4f8a] text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2 cursor-pointer">
-        <span>Ingresar al Proyecto</span>
+        <span>Ingresar al proyecto</span>
         <span class="text-sm">→</span>
       </button>
     `;
@@ -362,8 +355,8 @@ export function renderizarTarjetasHub(lista) {
       <div class="w-12 h-12 rounded-full bg-teal-50 group-hover:bg-teal-600 text-teal-600 group-hover:text-white flex items-center justify-center text-xl font-black mb-3 transition shadow-sm">
         +
       </div>
-      <h4 class="text-sm font-black text-gray-700 group-hover:text-[#0f2a4a] transition">Nuevo Proyecto / Programa</h4>
-      <p class="text-[11px] text-gray-400 mt-1 max-w-[200px]">Cree un proyecto en blanco o seleccione una plantilla.</p>
+      <h4 class="text-sm font-black text-gray-700 group-hover:text-[#0f2a4a] transition">Nuevo proyecto o programa</h4>
+      <p class="text-[11px] text-gray-400 mt-1 max-w-[200px]">Cree un proyecto en blanco o seleccione una plantilla oficial o personal.</p>
       <span class="mt-4 text-[11px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-lg border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition">Comenzar</span>
     `;
     grid.appendChild(cardNuevo);
@@ -412,6 +405,8 @@ export function renderizarTablaHub(lista) {
     const tooltipDesc = esGestor ? 'title="Doble clic para editar descripción"' : '';
     const cursorDesc = esGestor ? 'cursor-pointer hover:text-teal-700 transition' : '';
 
+    const procesoValor = (p.proceso_relacionado || p.proceso_nombre || p.proceso_codigo || "").trim();
+
     tbody.innerHTML += `
       <tr class="hover:bg-gray-50 transition border-b border-gray-100">
         <td class="p-3 text-center text-gray-400 font-mono text-xs">${idx + 1}</td>
@@ -427,9 +422,9 @@ export function renderizarTablaHub(lista) {
           <div class="text-[10px] text-teal-800 font-semibold mt-0.5 flex items-center gap-1">
             <span>⚙️</span>
             <span class="${esGestor ? 'cursor-pointer hover:underline' : ''}" 
-                  title="${(p.proceso_nombre || p.proceso_codigo) ? (p.es_proceso_personalizado ? `${p.proceso_nombre} [PERSONALIZADO]` : `${p.proceso_nombre} [${p.proceso_codigo}]`) : 'Sin proceso asignado'}" 
+                  title="${procesoValor ? procesoValor : 'Sin proceso asignado'}" 
                   ondblclick="${esGestor ? `editarProcesoProyectoModal(${p.id})` : ''}">
-              ${p.proceso_nombre ? p.proceso_nombre : (p.proceso_codigo ? `[${p.proceso_codigo}]` : '<span class="text-gray-400 italic">Sin proceso asignado</span>')}
+              ${procesoValor ? procesoValor : '<span class="text-amber-600 italic font-bold">Sin proceso asignado</span>'}
             </span>
           </div>
         </td>
@@ -534,7 +529,7 @@ export function abrirModalNuevoProyecto() {
   const selVis = document.getElementById("input-nuevo-proy-visibilidad");
   if (selVis) selVis.value = "PRIVADO";
 
-  cancelarSeleccionPlantilla();
+  cambiarTabNuevoProyecto("blanco");
   document.getElementById("modal-nuevo-proyecto")?.classList.remove("hidden"); 
 }
 
@@ -575,7 +570,7 @@ export async function autocompletarProcesoNuevoProy(termino) {
         <strong class="text-[#0f2a4a] bg-slate-100 px-1.5 py-0.5 rounded border text-[10px] flex-shrink-0">[${p.codigo}]</strong>
       `;
       item.onclick = () => {
-        document.getElementById("input-nuevo-proy-proceso-busq").value = `${p.nombre} [${p.codigo}]`;
+        document.getElementById("input-nuevo-proy-proceso-busq").value = `${p.codigo} - ${p.nombre}`;
         document.getElementById("input-nuevo-proy-proceso-codigo").value = p.codigo;
         document.getElementById("input-nuevo-proy-proceso-nombre").value = p.nombre;
         document.getElementById("input-nuevo-proy-proceso-personalizado").value = "0";
@@ -588,7 +583,7 @@ export async function autocompletarProcesoNuevoProy(termino) {
 
   const itemOtro = document.createElement("div");
   itemOtro.className = "p-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold cursor-pointer border-t border-amber-200 flex items-center justify-between";
-  itemOtro.innerHTML = `<span>⚙️ Otro subproceso (Personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
+  itemOtro.innerHTML = `<span>⚙️ Otro subproceso (personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
   itemOtro.onclick = () => {
     document.getElementById("input-nuevo-proy-proceso-busq").value = "Otro subproceso";
     document.getElementById("input-nuevo-proy-proceso-codigo").value = "OTRO";
@@ -670,6 +665,7 @@ export async function guardarNuevoProyecto(e) {
   }
 
   const uoFinal = unidadValida.sigla;
+  const procRelacionado = procCod && procNom ? `${procCod} - ${procNom}` : (procNom || procCod || "");
 
   try {
     const res = await apiFetch("/proyectos", {
@@ -682,6 +678,7 @@ export async function guardarNuevoProyecto(e) {
         visibilidad: visibilidad,
         proceso_codigo: procCod,
         proceso_nombre: procNom,
+        proceso_relacionado: procRelacionado,
         es_proceso_personalizado: esPers ? 1 : 0
       })
     });
@@ -701,7 +698,7 @@ export async function guardarNuevoProyecto(e) {
 
 export function editarDescripcionProyecto(id, descActual) {
   abrirInputCustom({
-    titulo: "Editar Descripción del Proyecto",
+    titulo: "Editar descripción del proyecto",
     mensaje: "Escribe máximo 120 caracteres:",
     tipo: "text",
     valorActual: descActual || "",
@@ -728,7 +725,7 @@ export function editarDescripcionProyecto(id, descActual) {
   const txtInput = document.getElementById("mic-input-text");
   if (txtInput) {
     txtInput.setAttribute("maxlength", "120");
-    txtInput.placeholder = "Ej: Proyecto institucional orientado a...";
+    txtInput.placeholder = "Ej.: Proyecto institucional orientado a...";
   }
 }
 
@@ -739,7 +736,7 @@ export function editarUnidadOrganicaProyecto(idProy, siglaActual) {
   const esGestorDeEsteProyecto = proyectoObj ? (proyectoObj.es_gestor === 1 || proyectoObj.es_gestor === true) : false;
 
   if (!esGestorDeEsteProyecto && state.currentUser.rol !== "ADMIN_TI") {
-    alert("Solo el Gestor del Proyecto puede modificar la unidad de organización.");
+    alert("Solo el gestor del proyecto puede modificar la unidad de organización.");
     return;
   }
 
@@ -758,7 +755,7 @@ export function editarUnidadOrganicaProyecto(idProy, siglaActual) {
         <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
           <div class="flex items-center space-x-2">
             <span class="text-xl">🏢</span>
-            <h3 class="font-black text-sm tracking-wide">Modificar Unidad de Organización</h3>
+            <h3 class="font-black text-sm tracking-wide">Modificar unidad de organización</h3>
           </div>
           <button onclick="cerrarModalEditarUoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
         </div>
@@ -769,7 +766,7 @@ export function editarUnidadOrganicaProyecto(idProy, siglaActual) {
           </div>
 
           <div class="relative">
-            <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Unidad (por Sigla o Nombre):</label>
+            <label class="block font-bold text-gray-700 uppercase mb-1">Buscar unidad (por sigla o nombre):</label>
             <input type="text" id="edit-uo-input-busq" oninput="autocompletarModalUOProyecto(this.value)" placeholder="Escriba sigla o nombre completo de unidad..." class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
             <input type="hidden" id="edit-uo-input-valor">
             <div id="edit-uo-sugerencias" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-2xl mt-1 max-h-48 overflow-y-auto z-[130] text-xs divide-y divide-gray-100"></div>
@@ -778,7 +775,7 @@ export function editarUnidadOrganicaProyecto(idProy, siglaActual) {
 
         <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end space-x-2">
           <button type="button" onclick="cerrarModalEditarUoProyecto()" class="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition cursor-pointer">Cancelar</button>
-          <button type="button" onclick="confirmarCambioUoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow cursor-pointer">Actualizar Unidad</button>
+          <button type="button" onclick="confirmarCambioUoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow cursor-pointer">Actualizar unidad</button>
         </div>
       </div>
     </div>
@@ -882,7 +879,7 @@ export function editarProcesoProyectoModal(idProy) {
   const esGestor = proyectoObj ? (proyectoObj.es_gestor === 1 || proyectoObj.es_gestor === true || state.currentUser.rol === "ADMIN_TI") : false;
 
   if (!esGestor) {
-    alert("Solo el Gestor del Proyecto puede modificar el proceso relacionado.");
+    alert("Solo el gestor del proyecto puede modificar el proceso relacionado.");
     return;
   }
 
@@ -892,9 +889,7 @@ export function editarProcesoProyectoModal(idProy) {
     cargarCatalogoProcesos();
   }
 
-  const procActual = proyectoObj.proceso_nombre 
-    ? `${proyectoObj.proceso_nombre} [${proyectoObj.proceso_codigo}]` 
-    : "Ninguno";
+  const procActual = (proyectoObj.proceso_relacionado || proyectoObj.proceso_nombre || proyectoObj.proceso_codigo || "Ninguno").trim();
 
   const modalEl = document.getElementById("modal-editar-proceso-proyecto");
   if (modalEl) modalEl.remove();
@@ -905,7 +900,7 @@ export function editarProcesoProyectoModal(idProy) {
         <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
           <div class="flex items-center space-x-2">
             <span class="text-xl">⚙️</span>
-            <h3 class="font-black text-sm tracking-wide">Modificar Proceso Relacionado</h3>
+            <h3 class="font-black text-sm tracking-wide">Modificar proceso o subproceso relacionado</h3>
           </div>
           <button onclick="cerrarModalEditarProcesoProyecto()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none">&times;</button>
         </div>
@@ -916,8 +911,8 @@ export function editarProcesoProyectoModal(idProy) {
           </div>
 
           <div class="relative">
-            <label class="block font-bold text-gray-700 uppercase mb-1">Buscar Proceso o Subproceso:</label>
-            <input type="text" id="edit-proc-input-busq" oninput="autocompletarModalEditarProceso(this.value)" placeholder="Escriba código (ej. E4.3) o nombre..." class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
+            <label class="block font-bold text-gray-700 uppercase mb-1">Buscar proceso o subproceso vigente:</label>
+            <input type="text" id="edit-proc-input-busq" oninput="autocompletarModalEditarProceso(this.value)" placeholder="Escriba código (ej.: E2.1.2) o nombre..." class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a] transition" autocomplete="off">
             <input type="hidden" id="edit-proc-codigo">
             <input type="hidden" id="edit-proc-nombre">
             <input type="hidden" id="edit-proc-personalizado" value="0">
@@ -932,7 +927,7 @@ export function editarProcesoProyectoModal(idProy) {
 
         <div class="p-3 bg-gray-100 border-t border-gray-200 flex justify-end space-x-2">
           <button type="button" onclick="cerrarModalEditarProcesoProyecto()" class="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition cursor-pointer">Cancelar</button>
-          <button type="button" onclick="confirmarCambioProcesoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow cursor-pointer">Actualizar Proceso</button>
+          <button type="button" onclick="confirmarCambioProcesoProyecto()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow cursor-pointer">Actualizar proceso</button>
         </div>
       </div>
     </div>
@@ -955,7 +950,7 @@ export function autocompletarModalEditarProceso(term) {
   div.innerHTML = "";
 
   const matches = (state.catalogoProcesosGlobal || []).filter(p => 
-    p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
+    (p.codigo && p.codigo.toLowerCase().includes(q)) || (p.nombre && p.nombre.toLowerCase().includes(q))
   );
 
   matches.slice(0, 6).forEach(p => {
@@ -963,7 +958,7 @@ export function autocompletarModalEditarProceso(term) {
     row.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-medium";
     row.innerHTML = `<span>${p.nombre}</span> <strong class="text-[#0f2a4a] text-[10px]">[${p.codigo}]</strong>`;
     row.onclick = () => {
-      document.getElementById("edit-proc-input-busq").value = `${p.nombre} [${p.codigo}]`;
+      document.getElementById("edit-proc-input-busq").value = `${p.codigo} - ${p.nombre}`;
       document.getElementById("edit-proc-codigo").value = p.codigo;
       document.getElementById("edit-proc-nombre").value = p.nombre;
       document.getElementById("edit-proc-personalizado").value = "0";
@@ -975,7 +970,7 @@ export function autocompletarModalEditarProceso(term) {
 
   const itemOtro = document.createElement("div");
   itemOtro.className = "p-2 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold cursor-pointer border-t border-amber-200 flex items-center justify-between";
-  itemOtro.innerHTML = `<span>⚙️ Otro subproceso (Personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
+  itemOtro.innerHTML = `<span>⚙️ Otro subproceso (personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
   itemOtro.onclick = () => {
     document.getElementById("edit-proc-input-busq").value = "Otro subproceso";
     document.getElementById("edit-proc-codigo").value = "OTRO";
@@ -1006,6 +1001,8 @@ export async function confirmarCambioProcesoProyecto() {
     ? (document.getElementById("edit-proc-otro-texto")?.value.trim() || "Otro subproceso")
     : (document.getElementById("edit-proc-nombre")?.value || "");
 
+  const procRelacionado = procCod && procNom ? `${procCod} - ${procNom}` : (procNom || procCod || "");
+
   if (!procNom && !procCod) {
     alert("Debe seleccionar o especificar un proceso.");
     return;
@@ -1019,12 +1016,13 @@ export async function confirmarCambioProcesoProyecto() {
       body: JSON.stringify({
         proceso_codigo: procCod,
         proceso_nombre: procNom,
+        proceso_relacionado: procRelacionado,
         es_proceso_personalizado: esPers ? 1 : 0
       })
     });
 
     if (res.ok) {
-      notificarToast(`Proceso asignado: ${procNom} [${procCod}]`, "success");
+      notificarToast(`Proceso asignado: ${procRelacionado}`, "success");
       await cargarHubProyectos();
     } else {
       alert("Error al actualizar el proceso del proyecto.");
@@ -1171,14 +1169,14 @@ export function hubLimpiarTodosFiltros() {
   if (btnLimpiarUo) btnLimpiarUo.classList.add("hidden");
 
   filtrarProyectosHub();
-  notificarToast("Filtros del Hub restablecidos correctamente.", "info");
+  notificarToast("Filtros del panel restablecidos correctamente.", "info");
 }
 
 // =========================================================================
-// BIBLIOTECA DE PLANTILLAS MAESTRAS (ENTERPRISE TEMPLATES)
+// GOBERNANZA DE PLANTILLAS MAESTRAS (OFICIALES Y PERSONALES)
 // =========================================================================
 
-export function cambiarTabNuevoProyecto(tab) {
+export async function cambiarTabNuevoProyecto(tab) {
   const btnBlanco = document.getElementById("np-tab-btn-blanco");
   const btnPlantilla = document.getElementById("np-tab-btn-plantilla");
   const contentBlanco = document.getElementById("np-tab-content-blanco");
@@ -1189,8 +1187,7 @@ export function cambiarTabNuevoProyecto(tab) {
     if (btnBlanco) btnBlanco.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold";
     if (contentBlanco) contentBlanco.classList.add("hidden");
     if (contentPlantilla) contentPlantilla.classList.remove("hidden");
-    cancelarSeleccionPlantilla();
-    cargarGaleriaPlantillas();
+    await cargarPlantillasModalNuevoProyecto();
   } else {
     if (btnBlanco) btnBlanco.className = "px-4 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs flex items-center space-x-1.5 font-bold";
     if (btnPlantilla) btnPlantilla.className = "px-4 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition flex items-center space-x-1.5 font-bold";
@@ -1199,182 +1196,89 @@ export function cambiarTabNuevoProyecto(tab) {
   }
 }
 
-export async function cargarGaleriaPlantillas() {
-  const cont = document.getElementById("galeria-plantillas-contenedor");
-  if (!cont) return;
-  cont.innerHTML = `<div class="col-span-2 p-6 text-center text-gray-400 font-bold animate-pulse">Cargando biblioteca de plantillas...</div>`;
+export async function cargarPlantillasModalNuevoProyecto() {
+  const sel = document.getElementById("np-select-plantilla");
+  if (!sel) return;
 
   try {
     const res = await apiFetch("/plantillas");
-    if (!res.ok) throw new Error("Error al cargar plantillas");
-    state.catalogoPlantillasGlobal = await res.json();
-    renderizarTarjetasPlantillas(state.catalogoPlantillasGlobal);
-  } catch (e) {
-    cont.innerHTML = `<div class="col-span-2 p-6 text-center text-red-500 font-semibold">No se pudo cargar la galería de plantillas.</div>`;
-  }
-}
+    if (!res.ok) throw new Error("Error al consultar plantillas");
+    const plantillas = await res.json();
+    state.catalogoPlantillasGlobal = plantillas;
+    window.catalogoPlantillasCache = plantillas;
 
-export function renderizarTarjetasPlantillas(lista) {
-  const cont = document.getElementById("galeria-plantillas-contenedor");
-  if (!cont) return;
-  cont.innerHTML = "";
+    const oficiales = plantillas.filter(p => p.es_oficial === 1);
+    const personales = plantillas.filter(p => p.es_oficial === 0);
 
-  if (lista.length === 0) {
-    cont.innerHTML = `<div class="col-span-2 p-6 text-gray-400 italic font-semibold text-center">No se encontraron plantillas.</div>`;
-    return;
-  }
+    let html = `<option value="">-- Seleccione una plantilla --</option>`;
 
-  lista.forEach(p => {
-    const card = document.createElement("div");
-    card.className = "bg-white p-3.5 rounded-xl border border-gray-200 hover:border-teal-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group";
-    card.onclick = () => seleccionarPlantillaParaClonar(p);
-    card.innerHTML = `
-      <div>
-        <div class="flex items-center justify-between mb-1.5">
-          <span class="text-[9px] font-black uppercase text-teal-800 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">${p.categoria || 'General'}</span>
-          <span class="text-[10px] font-bold text-gray-400 font-mono">${p.total_actividades || 0} tareas</span>
-        </div>
-        <h4 class="font-bold text-xs text-[#0f2a4a] group-hover:text-teal-700 transition leading-snug">${p.nombre}</h4>
-        <p class="text-[11px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">${p.descripcion || 'Sin descripción adicional.'}</p>
-      </div>
-      <div class="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
-        <span class="text-[10px] font-bold text-gray-400">⏱️ ~${p.duracion_estimada_dias || 0}d estim.</span>
-        <span class="text-[11px] font-black text-teal-700 group-hover:underline">Seleccionar →</span>
-      </div>
-    `;
-    cont.appendChild(card);
-  });
-}
-
-export function filtrarGaleriaPlantillas() {
-  const q = (document.getElementById("filtro-plantillas-input")?.value || "").toLowerCase().trim();
-  const filtradas = (state.catalogoPlantillasGlobal || []).filter(p => 
-    (p.nombre && p.nombre.toLowerCase().includes(q)) ||
-    (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
-    (p.categoria && p.categoria.toLowerCase().includes(q))
-  );
-  renderizarTarjetasPlantillas(filtradas);
-}
-
-export function seleccionarPlantillaParaClonar(plantilla) {
-  state.plantillaSeleccionadaId = plantilla.id;
-  document.getElementById("txt-plantilla-elegida-tit").innerText = `📋 ${plantilla.nombre}`;
-  document.getElementById("txt-plantilla-elegida-cat").innerText = plantilla.categoria || "General";
-  document.getElementById("np-input-clon-nombre").value = plantilla.nombre;
-  document.getElementById("np-input-clon-desc").value = plantilla.descripcion || "";
-  document.getElementById("np-input-clon-uo-busq").value = "";
-  document.getElementById("np-input-clon-uo-valor").value = "";
-  document.getElementById("np-input-clon-proceso-busq").value = "";
-  document.getElementById("np-input-clon-proceso-codigo").value = "";
-  document.getElementById("np-input-clon-proceso-nombre").value = "";
-  document.getElementById("np-input-clon-proceso-personalizado").value = "0";
-
-  const contOtro = document.getElementById("contenedor-otro-subproceso-clon");
-  if (contOtro) contOtro.classList.add("hidden");
-  const inpOtroTexto = document.getElementById("input-otro-subproceso-clon-texto");
-  if (inpOtroTexto) inpOtroTexto.value = "";
-
-  const selModo = document.getElementById("np-input-clon-duration-mode");
-  if (selModo) selModo.value = "business_days";
-  const selVis = document.getElementById("np-input-clon-visibilidad");
-  if (selVis) selVis.value = "PRIVADO";
-
-  const hoyISO = new Date().toISOString().split("T")[0];
-  document.getElementById("np-input-clon-fechaini").value = hoyISO;
-
-  const bloque = document.getElementById("bloque-config-clonacion");
-  bloque?.classList.remove("hidden");
-  bloque?.scrollIntoView({ behavior: 'smooth' });
-}
-
-export function cancelarSeleccionPlantilla() {
-  state.plantillaSeleccionadaId = null;
-  const bloque = document.getElementById("bloque-config-clonacion");
-  if (bloque) bloque.classList.add("hidden");
-}
-
-export function autocompletarProcesoClonacion(term) {
-  const q = (term || "").toLowerCase().trim();
-  const div = document.getElementById("sugerencias-proceso-clonacion");
-  const contOtro = document.getElementById("contenedor-otro-subproceso-clon");
-  if (!div) return;
-
-  if (!q) {
-    div.classList.add("hidden");
-    return;
-  }
-  div.innerHTML = "";
-
-  const matches = (state.catalogoProcesosGlobal || []).filter(p => 
-    p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
-  );
-
-  matches.slice(0, 6).forEach(p => {
-    const row = document.createElement("div");
-    row.className = "p-2.5 hover:bg-teal-50 cursor-pointer flex justify-between items-center font-semibold text-gray-800";
-    row.innerHTML = `<span>${p.nombre}</span> <strong class="text-[#0f2a4a] bg-gray-100 px-1.5 py-0.5 rounded text-[10px]">[${p.codigo}]</strong>`;
-    row.onclick = () => {
-      document.getElementById("np-input-clon-proceso-busq").value = `${p.nombre} [${p.codigo}]`;
-      document.getElementById("np-input-clon-proceso-codigo").value = p.codigo;
-      document.getElementById("np-input-clon-proceso-nombre").value = p.nombre;
-      document.getElementById("np-input-clon-proceso-personalizado").value = "0";
-      div.classList.add("hidden");
-      if (contOtro) contOtro.classList.add("hidden");
-    };
-    div.appendChild(row);
-  });
-
-  const itemOtro = document.createElement("div");
-  itemOtro.className = "p-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold cursor-pointer border-t border-amber-200 flex items-center justify-between";
-  itemOtro.innerHTML = `<span>⚙️ Otro subproceso (Personalizado)</span> <span class="text-[10px] text-amber-700">Especificar</span>`;
-  itemOtro.onclick = () => {
-    document.getElementById("np-input-clon-proceso-busq").value = "Otro subproceso";
-    document.getElementById("np-input-clon-proceso-codigo").value = "OTRO";
-    document.getElementById("np-input-clon-proceso-nombre").value = "";
-    document.getElementById("np-input-clon-proceso-personalizado").value = "1";
-    div.classList.add("hidden");
-    if (contOtro) {
-      contOtro.classList.remove("hidden");
-      document.getElementById("input-otro-subproceso-clon-texto")?.focus();
+    if (personales.length > 0) {
+      html += `<optgroup label="👤 MIS PLANTILLAS PERSONALES (visibles solo para mí)">`;
+      personales.forEach(p => {
+        const num = (p.actividades || []).length;
+        html += `<option value="${p.id}">⭐ ${p.nombre} (${num} tareas)</option>`;
+      });
+      html += `</optgroup>`;
     }
-  };
-  div.appendChild(itemOtro);
-  div.classList.remove("hidden");
+
+    if (oficiales.length > 0) {
+      html += `<optgroup label="🏛️ PLANTILLAS OFICIALES IMARPE (${oficiales.length} disponibles)">`;
+      oficiales.forEach(p => {
+        const num = (p.actividades || []).length;
+        const codCorto = (p.categoria && p.categoria.includes(" - ")) ? `[${p.categoria.split(" - ")[0]}] ` : "";
+        html += `<option value="${p.id}">${codCorto}${p.nombre} (${num} tareas)</option>`;
+      });
+      html += `</optgroup>`;
+    }
+
+    sel.innerHTML = html;
+
+    if (plantillas.length > 0) {
+      sel.value = String(plantillas[0].id);
+      vincularProcesoDesdePlantillaSeleccionada();
+    }
+  } catch (e) {
+    console.error("Error cargando plantillas:", e);
+  }
 }
 
-export function autocompletarUOClonacion(termino) {
-  const term = (termino || "").toLowerCase().trim();
-  const divSug = document.getElementById("sugerencias-uo-clonacion");
-  if (!divSug) return;
+export function vincularProcesoDesdePlantillaSeleccionada() {
+  const selPlant = document.getElementById("np-select-plantilla");
+  if (!selPlant) return;
+  const pId = parseInt(selPlant.value, 10);
+  if (!pId) return;
 
-  if (!term) {
-    divSug.classList.add("hidden");
-    return;
+  const listaPlantillas = window.catalogoPlantillasCache || state.catalogoPlantillasGlobal || [];
+  const plant = listaPlantillas.find(x => x.id === pId);
+  if (!plant) return;
+
+  const procVal = (plant.categoria && plant.categoria !== "General") ? plant.categoria : "";
+  const inpProcOculto = document.getElementById("input-nuevo-proy-proceso");
+  const inpBusqProc = document.getElementById("np-busqueda-proceso");
+
+  if (inpProcOculto) inpProcOculto.value = procVal;
+  if (inpBusqProc) inpBusqProc.value = procVal;
+
+  const inpDescClon = document.getElementById("np-input-clon-desc");
+  if (inpDescClon && plant.descripcion) inpDescClon.value = plant.descripcion;
+
+  const inpNomClon = document.getElementById("np-input-clon-nombre");
+  if (inpNomClon) inpNomClon.value = (plant.nombre || "").substring(0, 80);
+
+  const inpFechaIni = document.getElementById("np-input-clon-fechaini");
+  if (inpFechaIni && !inpFechaIni.value) {
+    inpFechaIni.value = new Date().toISOString().split("T")[0];
   }
-  const matches = (state.catalogoUnidadesGlobal || []).filter(u => 
-    u.sigla.toLowerCase().includes(term) || u.nombre.toLowerCase().includes(term)
-  );
-  divSug.innerHTML = "";
-  if (matches.length === 0) {
-    divSug.innerHTML = `<div class="p-2 text-gray-400">Sin coincidencias</div>`;
-  } else {
-    matches.slice(0, 5).forEach(u => {
-      const item = document.createElement("div");
-      item.className = "p-2 hover:bg-teal-50 cursor-pointer flex justify-between font-semibold";
-      item.innerHTML = `<span>${u.nombre}</span><strong class="text-[#0f2a4a] ml-2">[${u.sigla}]</strong>`;
-      item.onclick = () => {
-        document.getElementById("np-input-clon-uo-busq").value = `${u.sigla} - ${u.nombre}`;
-        document.getElementById("np-input-clon-uo-valor").value = u.sigla;
-        divSug.classList.add("hidden");
-      };
-      divSug.appendChild(item);
-    });
-  }
-  divSug.classList.remove("hidden");
 }
 
 export async function ejecutarCreacionDesdePlantilla() {
-  if (!state.plantillaSeleccionadaId) return;
+  const selPlant = document.getElementById("np-select-plantilla");
+  const plantillaId = selPlant ? parseInt(selPlant.value, 10) : null;
+
+  if (!plantillaId) {
+    alert("Por favor seleccione una plantilla de la lista.");
+    return;
+  }
 
   const nombre = document.getElementById("np-input-clon-nombre").value.trim();
   const uo = document.getElementById("np-input-clon-uo-valor").value || document.getElementById("np-input-clon-uo-busq").value.trim();
@@ -1382,16 +1286,21 @@ export async function ejecutarCreacionDesdePlantilla() {
   const desc = document.getElementById("np-input-clon-desc")?.value.trim() || "";
   const durMode = document.getElementById("np-input-clon-duration-mode")?.value || "business_days";
   const visib = document.getElementById("np-input-clon-visibilidad")?.value || "PRIVADO";
-
-  const esPers = document.getElementById("np-input-clon-proceso-personalizado")?.value === "1";
-  const procCod = esPers ? "OTRO" : (document.getElementById("np-input-clon-proceso-codigo")?.value || "");
-  const procNom = esPers 
-    ? (document.getElementById("input-otro-subproceso-clon-texto")?.value.trim() || "Otro subproceso")
-    : (document.getElementById("np-input-clon-proceso-nombre")?.value || "");
+  const procRelacionado = document.getElementById("input-nuevo-proy-proceso")?.value.trim() || document.getElementById("np-busqueda-proceso")?.value.trim() || "";
 
   if (!nombre) {
     alert("Por favor ingrese un nombre para el proyecto.");
     return;
+  }
+
+  let procCod = "";
+  let procNom = "";
+  if (procRelacionado.includes(" - ")) {
+    const partes = procRelacionado.split(" - ");
+    procCod = partes[0].trim();
+    procNom = partes.slice(1).join(" - ").trim();
+  } else {
+    procNom = procRelacionado;
   }
 
   const fIniLatina = formatearFechaLatina(fIniISO);
@@ -1400,14 +1309,15 @@ export async function ejecutarCreacionDesdePlantilla() {
     const res = await apiFetch("/proyectos/desde-plantilla", {
       method: "POST",
       body: JSON.stringify({
-        plantilla_id: state.plantillaSeleccionadaId,
+        plantilla_id: plantillaId,
         nombre_proyecto: nombre,
         descripcion: desc,
         unidad_organica: uo,
         fecha_inicio: fIniLatina,
         proceso_codigo: procCod,
         proceso_nombre: procNom,
-        es_proceso_personalizado: esPers ? 1 : 0,
+        proceso_relacionado: procRelacionado,
+        es_proceso_personalizado: 0,
         duration_mode: durMode,
         visibilidad: visib
       })
@@ -1418,7 +1328,7 @@ export async function ejecutarCreacionDesdePlantilla() {
       cerrarModalNuevoProyecto();
       notificarToast("Proyecto generado desde plantilla exitosamente.", "success");
       await cargarHubProyectos();
-      if (data.proyecto_id) {
+      if (data.proyecto_id && typeof window.ingresarAlProyecto === "function") {
         window.ingresarAlProyecto(data.proyecto_id, nombre, true);
       }
     } else {
@@ -1501,7 +1411,7 @@ export function aplicarFiltrosEstadisticas() {
 
     if (procCod || procTexto) {
       const codP = (p.proceso_codigo || "").toUpperCase();
-      const nomP = (p.proceso_nombre || "").toUpperCase();
+      const nomP = (p.proceso_nombre || p.proceso_relacionado || "").toUpperCase();
       const matchCod = procCod && (codP === procCod || codP.startsWith(procCod + "."));
       const matchNom = procTexto && (nomP.includes(procTexto) || codP.includes(procTexto));
       if (!matchCod && !matchNom) return false;
@@ -1617,7 +1527,7 @@ function renderizarTablaDetalleEstadisticas(lista) {
         <p class="text-[11px] text-gray-500 flex items-center gap-2 mt-0.5">
           <span>🏢 ${p.unidad_organica || 'Sin UO'}</span>
           <span>•</span>
-          <span class="text-teal-700 font-semibold">⚙️ ${p.proceso_nombre ? `${p.proceso_nombre} [${p.proceso_codigo}]` : 'Sin proceso'}</span>
+          <span class="text-teal-700 font-semibold">⚙️ ${p.proceso_relacionado ? p.proceso_relacionado : (p.proceso_nombre ? `${p.proceso_nombre} [${p.proceso_codigo}]` : 'Sin proceso')}</span>
         </p>
       </div>
       <div class="flex items-center space-x-3">
@@ -1651,7 +1561,7 @@ export function autocompletarSlicerProceso(term) {
   div.innerHTML = "";
 
   const matches = (state.catalogoProcesosGlobal || []).filter(p => 
-    p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
+    (p.codigo && p.codigo.toLowerCase().includes(q)) || (p.nombre && p.nombre.toLowerCase().includes(q))
   );
 
   if (matches.length === 0) {
@@ -1717,12 +1627,8 @@ window.limpiarFiltroUnidadHub = limpiarFiltroUnidadHub;
 window.filtrarProyectosHub = filtrarProyectosHub;
 window.hubLimpiarTodosFiltros = hubLimpiarTodosFiltros;
 window.cambiarTabNuevoProyecto = cambiarTabNuevoProyecto;
-window.cargarGaleriaPlantillas = cargarGaleriaPlantillas;
-window.filtrarGaleriaPlantillas = filtrarGaleriaPlantillas;
-window.seleccionarPlantillaParaClonar = seleccionarPlantillaParaClonar;
-window.cancelarSeleccionPlantilla = cancelarSeleccionPlantilla;
-window.autocompletarProcesoClonacion = autocompletarProcesoClonacion;
-window.autocompletarUOClonacion = autocompletarUOClonacion;
+window.cargarPlantillasModalNuevoProyecto = cargarPlantillasModalNuevoProyecto;
+window.vincularProcesoDesdePlantillaSeleccionada = vincularProcesoDesdePlantillaSeleccionada;
 window.ejecutarCreacionDesdePlantilla = ejecutarCreacionDesdePlantilla;
 window.abrirModalEstadisticasHub = abrirModalEstadisticasHub;
 window.cerrarModalEstadisticasHub = cerrarModalEstadisticasHub;

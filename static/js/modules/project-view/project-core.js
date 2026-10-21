@@ -55,6 +55,9 @@ export async function ingresarAlProyecto(id, nombre, esGestor) {
     const proyData = (state.proyectosUsuarioGlobal || []).find(p => p.id === id);
     state.proyectoModoDuracion = proyData?.duration_mode || "business_days";
 
+    const procesoActual = (proyData?.proceso_relacionado || proyData?.proceso_nombre || proyData?.proceso_codigo || "").trim();
+    renderizarIndicadorProcesoProyecto(procesoActual);
+
     const thDias = document.getElementById("th-dias");
     if (thDias) {
       thDias.innerHTML = (state.proyectoModoDuracion === "hours")
@@ -466,3 +469,100 @@ export function aplicarVisibilidadColumnas() {
   setCol("th-avance", state.visibilidadColumnas.avance);
   setCol("th-gantt", state.visibilidadColumnas.gantt);
 }
+
+// =========================================================================
+// INDICADOR Y REASIGNACIÓN DE PROCESO VIGENTE EN EL PROYECTO ACTIVO
+// =========================================================================
+
+export function renderizarIndicadorProcesoProyecto(procesoActual) {
+  const btn = document.getElementById("btn-cambiar-proceso-proy");
+  if (!btn) return;
+
+  const procLimpio = (procesoActual || "").trim();
+  if (procLimpio) {
+    btn.className = "text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-teal-200 border border-white/15 transition cursor-pointer flex items-center space-x-1 max-w-[90vw] truncate";
+    btn.innerHTML = `<span>⚙️</span><span class="truncate">${procLimpio}</span><span class="opacity-70 ml-1">✎</span>`;
+    btn.title = "Proceso o subproceso institucional vinculado (clic para modificar)";
+  } else {
+    btn.className = "text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-400 hover:bg-amber-300 text-[#0f2a4a] shadow-xs animate-pulse transition cursor-pointer flex items-center space-x-1";
+    btn.innerHTML = `<span>⚠️</span><span>Seleccionar proceso o subproceso institucional</span>`;
+    btn.title = "Este proyecto no tiene un subproceso asignado o fue modificado en el catálogo. Clic para seleccionarlo.";
+  }
+}
+
+export async function abrirSelectorProcesoProyectoActivo() {
+  if (!state.proyectoEsGestor && state.currentUser?.rol !== "ADMIN_TI") {
+    alert("Solo el gestor del proyecto o el Administrador TI pueden vincular el proceso institucional.");
+    return;
+  }
+
+  const modal = document.getElementById("modal-reasignar-proceso-proy");
+  const sel = document.getElementById("select-reasignar-proceso-proy");
+  if (!modal || !sel) return;
+
+  try {
+    const res = await apiFetch("/procesos-institucionales");
+    if (res.ok) {
+      const procs = await res.json();
+      state.catalogoProcesosGlobal = procs;
+      let html = `<option value="">-- Seleccione el proceso o subproceso vigente --</option>`;
+      procs.forEach(p => {
+        const pref = p.nivel === 0 ? "🔷 " : (p.nivel === 1 ? "  ↳ " : "      • ");
+        const val = `${p.codigo} - ${p.nombre}`;
+        html += `<option value="${val.replace(/"/g, '&quot;')}">${pref}${val}</option>`;
+      });
+      sel.innerHTML = html;
+
+      const proyData = (state.proyectosUsuarioGlobal || []).find(p => p.id === state.proyectoActualId);
+      const valActual = (proyData?.proceso_relacionado || proyData?.proceso_nombre || proyData?.proceso_codigo || "").trim();
+      if (valActual) {
+        sel.value = valActual;
+      }
+    }
+  } catch (e) {
+    console.error("Error al cargar procesos para reasignación:", e);
+  }
+
+  modal.classList.remove("hidden");
+}
+
+export function cerrarSelectorProcesoProyectoActivo() {
+  document.getElementById("modal-reasignar-proceso-proy")?.classList.add("hidden");
+}
+
+export async function confirmarReasignacionProcesoProyecto() {
+  const sel = document.getElementById("select-reasignar-proceso-proy");
+  if (!sel || !state.proyectoActualId) return;
+  const nuevoProc = sel.value.trim();
+
+  if (!nuevoProc) {
+    alert("Por favor seleccione un proceso o subproceso de la lista.");
+    return;
+  }
+
+  try {
+    const res = await apiFetch(`/proyectos/${state.proyectoActualId}/proceso`, {
+      method: "PUT",
+      body: JSON.stringify({ proceso_relacionado: nuevoProc })
+    });
+
+    if (res.ok) {
+      const proyData = (state.proyectosUsuarioGlobal || []).find(p => p.id === state.proyectoActualId);
+      if (proyData) proyData.proceso_relacionado = nuevoProc;
+      renderizarIndicadorProcesoProyecto(nuevoProc);
+      cerrarSelectorProcesoProyectoActivo();
+      notificarToast(`Proceso vinculado: ${nuevoProc}`, "success");
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "No se pudo actualizar el proceso del proyecto.");
+    }
+  } catch (e) {
+    alert("Error de conexión al actualizar el proceso del proyecto.");
+  }
+}
+
+// Exposición al objeto window para eventos onclick del HTML
+window.renderizarIndicadorProcesoProyecto = renderizarIndicadorProcesoProyecto;
+window.abrirSelectorProcesoProyectoActivo = abrirSelectorProcesoProyectoActivo;
+window.cerrarSelectorProcesoProyectoActivo = cerrarSelectorProcesoProyectoActivo;
+window.confirmarReasignacionProcesoProyecto = confirmarReasignacionProcesoProyecto;

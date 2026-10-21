@@ -1021,25 +1021,152 @@ def sincronizar_procesos_y_plantillas(conn: sqlite3.Connection, admin_id: int):
         )
     ]
 
+    # Asegurar que la columna es_oficial exista en la tabla plantillas
+    cols_p = [col[1] for col in c.execute("PRAGMA table_info(plantillas)").fetchall()]
+    if "es_oficial" not in cols_p:
+        c.execute("ALTER TABLE plantillas ADD COLUMN es_oficial INTEGER DEFAULT 1")
+
+    mapeo_subproceso_exacto = {
+        "Programación Multianual de Bienes, Servicios y Obras (Fase de Identificación del CMN)": "S2.1",
+        "Consolidación, Aprobación y Modificación del Cuadro Multianual de Necesidades (CMN)": "S2.1",
+        "Elaboración, Aprobación y Seguimiento del Plan Anual de Contrataciones (PAC)": "S2.1",
+        "Licitación Pública / Concurso Público de Bienes, Servicios y Obras": "S2.2.1",
+        "Licitación Abreviada y Concurso Abreviado": "S2.2.2",
+        "Comparación de Precios y Subasta Inversa Electrónica": "S2.2.4",
+        "Contratación Menor a 8 UIT (Compras Menores no Sujetas a Procedimiento)": "S2.2.3",
+        "Ejecución Contractual, Modificaciones Contractuales y Liquidación": "S2.2.6",
+        "Almacenamiento, Recepción e Internamiento de Bienes Muebles": "S2.3.1",
+        "Distribución, Despacho y Transporte de Bienes a Sedes Desconcentradas": "S2.3.2",
+        "Inventario Físico Masivo Anual de Existencias de Almacén": "S2.3.3",
+        "Gestión Patrimonial: Alta, Codificación y Asignación de Bienes Muebles": "S2.3.4",
+        "Gestión Patrimonial: Baja y Disposición Final de Bienes Muebles (RAEE y Ordinarios)": "S2.3.5",
+        "Inventario Físico Anual de Bienes Patrimoniales Muebles e Inmuebles": "S2.3.6",
+        "Planificación y Contratación del Aseguramiento de Bienes Muebles e Inmuebles": "S2.3.7",
+        "Mantenimiento Preventivo y Correctivo de la Flota Vehicular Terrestre": "S2.4.1",
+        "Mantenimiento de Infraestructura Física, Instalaciones y Servicios Generales": "S2.4.2",
+        "Elaboración y Aprobación de Expedientes Técnicos y Documentos Equivalentes (UEI)": "S2.5.1",
+        "Ejecución Física, Supervisión de Obra y Control en INFOBRAS (UEI)": "S2.5.2",
+        "Liquidación Técnica-Financiera, Cierre y Transferencia de Inversiones (Formato 09)": "S2.5.3",
+        "Formulación y Actualización del Plan Estratégico Institucional (PEI)": "E1.2",
+        "Elaboración y Aprobación del Plan Operativo Institucional (POI) Multianual": "E1.3",
+        "Consistencia del POI Anual con el Presupuesto Institucional de Apertura (PIA)": "E1.3",
+        "Seguimiento y Evaluación Periódica del POI y PEI (Trimestral / Semestral / Anual)": "E1.3",
+        "Diseño, Mantenimiento y Aprobación del Mapa de Procesos Institucional (MPI)": "E2.1.2",
+        "Despliegue de Procesos a Nivel 1, 2 y 3 (Fichas de Proceso y Matriz SIPOC)": "E2.1.2",
+        "Elaboración y Aprobación de Documentos Normativos Institucionales (Directivas y Procedimientos)": "E2.1.3",
+        "Mantenimiento y Auditoría del Sistema de Gestión Integrado (ISO 9001 / ISO 37001)": "E2.2.9",
+        "Programación Multianual Presupuestaria y Formulación del Presupuesto Institucional": "S3.1.1",
+        "Aprobación y Desagregación del Presupuesto Institucional de Apertura (PIA)": "S3.1.2",
+        "Gestión de Modificaciones Presupuestarias en el Nivel Funcional y Programático": "S3.1.3",
+        "Gestión de Certificaciones de Crédito Presupuestario (CCP) y Previsiones": "S3.1.4",
+        "Evaluación Semestral y Anual de la Ejecución Presupuestaria": "S3.1.5",
+        "Diagnóstico Institucional de Brechas y Criterios de Priorización de Inversiones (UF)": "S3.4.1",
+        "Identificación y Registro de Ideas de Proyectos de Inversión y Programas (Formato 05-A)": "S3.4.2",
+        "Identificación y Registro Agregado de Ideas de IOARR (Formato 05-B)": "S3.4.3",
+        "Formulación, Evaluación y Declaración de Viabilidad de Proyectos de Inversión CTI (UF)": "S3.4.4",
+        "Identificación, Sustento Técnico y Aprobación de IOARR (Formato 07-C)": "S3.4.5",
+        "Evaluación de Consistencia Técnica entre el Expediente Técnico y la Viabilidad (Formato 08 Sección A)": "S3.4.6",
+        "Determinación, Recaudación y Depósito de Fondos Públicos (TUSNE y Otros)": "S3.2.1",
+        "Control Previo y Formalización del Gasto Devengado (Directiva N° 001-2024-EF/52.01)": "S3.2.2",
+        "Programación de Calendario de Pago y Gestión de Giros Electrónicos (CUT)": "S3.2.3",
+        "Apertura, Ejecución, Rendición y Reembolso del Fondo Fijo de Caja Chica": "S3.2.4",
+        "Gestión de Pasivos Financieros, Servicio de Deuda y Endeudamiento Público": "S3.2.5",
+        "Registro Sistemático de Operaciones y Conciliaciones Contables Mensuales": "S3.3.1",
+        "Elaboración de Estados Financieros, Presupuestarios y Cuenta General de la República": "S3.3.2",
+        "Implementación y Evaluación del Sistema de Control Interno (SCI)": "E3.1",
+        "Seguimiento de Servicios de Control Gubernamental (OCI y CGR)": "E3.2",
+        "Implementación del Modelo de Integridad y Lucha Contra la Corrupción": "E3.3"
+    }
+
+    filas_proc = c.execute("SELECT codigo, nombre FROM procesos_institucionales").fetchall()
+    dict_procesos = {r[0]: f"{r[0]} - {r[1]}" for r in filas_proc}
+
+    import re
+
+    # Siglas y nombres propios oficiales que SÍ deben mantener su mayúscula en español
+    EXCEPCIONES_MAYUSCULA = {
+        "IMARPE": "IMARPE", "PRODUCE": "PRODUCE", "CEPLAN": "CEPLAN", "MEF": "MEF",
+        "DGPP": "DGPP", "DGTP": "DGTP", "DGCP": "DGCP", "DGA": "DGA", "CGR": "CGR",
+        "OCI": "OCI", "PCM": "PCM", "SGP": "SGP", "SIP": "SIP", "SUNAT": "SUNAT",
+        "SEACE": "SEACE", "SIGA": "SIGA", "SIAF": "SIAF", "RNP": "RNP", "CUT": "CUT",
+        "TUSNE": "TUSNE", "SPOT": "SPOT", "IGV": "IGV", "CCI": "CCI", "NIC": "NIC",
+        "SP": "SP", "RP": "RP", "SCI": "SCI", "SAGU": "SAGU", "ICP": "ICP", "DJI": "DJI",
+        "PEI": "PEI", "POI": "POI", "PIA": "PIA", "PESEM": "PESEM", "OEI": "OEI",
+        "AEI": "AEI", "OPPM": "OPPM", "OGA": "OGA", "OGAJ": "OGAJ", "OTI": "OTI",
+        "MPI": "MPI", "ROF": "ROF", "BPMN": "BPMN", "BPM": "BPM", "SIPOC": "SIPOC",
+        "SGI": "SGI", "ISO": "ISO", "APM": "APM", "PPR": "PpR", "CMN": "CMN",
+        "PAC": "PAC", "PMBSO": "PMBSO", "CUBSO": "CUBSO", "UIT": "UIT", "TDR": "TDR",
+        "NEA": "NEA", "PECOSA": "PECOSA", "SNA": "SNA", "RAEE": "RAEE", "ITSE": "ITSE",
+        "UEI": "UEI", "UF": "UF", "UP": "UP", "CTI": "CTI", "OPMI": "OPMI", "PMI": "PMI",
+        "IOARR": "IOARR", "BI": "BI", "FTS": "FTS", "FTBYM": "FTByM", "VANS": "VANS",
+        "ET": "ET", "BIM": "BIM", "PIM": "PIM", "INFOBRAS": "INFOBRAS", "WBS": "WBS",
+        "EDT": "EDT", "TI": "TI", "N°": "N°",
+        # Nombres propios o entidades con inicial mayúscula
+        "Pladicop": "Pladicop", "Estado": "Estado", "República": "República",
+        "Cuenta": "Cuenta", "General": "General", "Banco": "Banco", "Inversiones": "Inversiones",
+        "Formato": "Formato", "Directiva": "Directiva", "Ley": "Ley", "Anexo": "Anexo",
+        "Sección": "Sección", "Fase": "Fase", "Unidad": "Unidad", "Formuladora": "Formuladora"
+    }
+
+    MAPA_UPPER = {k.upper(): v for k, v in EXCEPCIONES_MAYUSCULA.items()}
+
+    def normalizar_titulo_espanol(texto: str) -> str:
+        if not texto:
+            return ""
+        def reemplazar_palabra(match):
+            palabra = match.group(0)
+            inicio = match.start()
+            pal_upper = palabra.upper()
+            if pal_upper in MAPA_UPPER:
+                return MAPA_UPPER[pal_upper]
+            # Si es la primera palabra del título o va justo después de ": " o "(", mantiene inicial mayúscula
+            prefijo_inmediato = texto[max(0, inicio - 2):inicio]
+            if inicio == 0 or prefijo_inmediato.endswith(": ") or prefijo_inmediato.endswith("("):
+                return palabra[0].upper() + palabra[1:].lower()
+            return palabra.lower()
+
+        return re.sub(r'[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9°]+', reemplazar_palabra, texto)
+
+    def resolver_categoria_oficial(nombre_plantilla_orig: str, cat_bruta: str) -> str:
+        cod_exacto = mapeo_subproceso_exacto.get(nombre_plantilla_orig)
+        if cod_exacto and cod_exacto in dict_procesos:
+            return dict_procesos[cod_exacto]
+        m = re.search(r'\(([EMS]\d+(?:\.\d+)*)\)', cat_bruta or "")
+        if not m:
+            m = re.match(r'^([EMS]\d+(?:\.\d+)*)', (cat_bruta or "").strip())
+        if m:
+            cod = m.group(1)
+            if cod in dict_procesos:
+                return dict_procesos[cod]
+        return cat_bruta
+
     total_creadas = 0
     total_actualizadas = 0
 
-    for p_nom, p_cat, p_desc, acts in plantillas_consolidadas:
-        p_row = c.execute("SELECT id FROM plantillas WHERE nombre = ?", (p_nom,)).fetchone()
+    for p_nom_orig, p_cat, p_desc, acts in plantillas_consolidadas:
+        p_nom_esp = normalizar_titulo_espanol(p_nom_orig)
+        cat_oficial = resolver_categoria_oficial(p_nom_orig, p_cat)
+
+        # Buscar tanto por el nombre original (en Title Case) como por el ya corregido en español
+        p_row = c.execute(
+            "SELECT id FROM plantillas WHERE nombre = ? OR nombre = ?",
+            (p_nom_orig, p_nom_esp)
+        ).fetchone()
+
         if p_row:
             p_id = p_row[0]
             c.execute("""
                 UPDATE plantillas 
-                SET descripcion = ?, categoria = ? 
+                SET nombre = ?, descripcion = ?, categoria = ?, es_oficial = 1 
                 WHERE id = ?
-            """, (p_desc, p_cat, p_id))
+            """, (p_nom_esp, p_desc, cat_oficial, p_id))
             c.execute("DELETE FROM plantillas_actividades WHERE plantilla_id = ?", (p_id,))
             total_actualizadas += 1
         else:
             c.execute("""
-                INSERT INTO plantillas (nombre, descripcion, categoria, creador_id) 
-                VALUES (?, ?, ?, ?)
-            """, (p_nom, p_desc, p_cat, admin_id))
+                INSERT INTO plantillas (nombre, descripcion, categoria, creador_id, es_oficial) 
+                VALUES (?, ?, ?, ?, 1)
+            """, (p_nom_esp, p_desc, cat_oficial, admin_id))
             p_id = c.lastrowid
             total_creadas += 1
 
@@ -1049,5 +1176,15 @@ def sincronizar_procesos_y_plantillas(conn: sqlite3.Connection, admin_id: int):
                 VALUES (?, ?, ?, ?, ?)
             """, (p_id, cod, desc, dias, pred))
 
+    otras_plantillas = c.execute("SELECT id, nombre, categoria, creador_id FROM plantillas").fetchall()
+    for op_id, op_nom, op_cat, op_creador in otras_plantillas:
+        nom_corregido = normalizar_titulo_espanol(op_nom)
+        nueva_cat = resolver_categoria_oficial(op_nom, op_cat or "")
+        es_of = 1 if (op_creador == admin_id or op_creador is None) else 0
+        c.execute(
+            "UPDATE plantillas SET nombre = ?, categoria = ?, es_oficial = COALESCE(es_oficial, ?) WHERE id = ?",
+            (nom_corregido, nueva_cat, es_of, op_id)
+        )
+
     conn.commit()
-    print(f"✅ Sincronización exitosa: {total_creadas} plantillas nuevas y {total_actualizadas} actualizadas.")
+    print(f"✅ Sincronización exitosa: {total_creadas} plantillas nuevas y {total_actualizadas} actualizadas con ortografía en español.")

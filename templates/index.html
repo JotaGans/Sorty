@@ -345,8 +345,8 @@
           <img src="/static/IMARPE%20IMAGOTIPO.png" alt="IMARPE" class="h-8 sm:h-9 w-auto object-contain flex-shrink-0" onerror="this.outerHTML='<span class=\'text-lg sm:text-xl font-black tracking-widest text-white\'>IMARPE</span>'">
         </div>
         
-        <!-- Centro: Título del Proyecto autoajustable (1 línea por defecto, 2 si es largo, máx 80 caracteres) -->
-        <div class="flex-1 min-w-0 max-w-xl mx-1 sm:mx-4 flex items-center justify-center text-center relative">
+        <!-- Centro: Título del proyecto autoajustable e indicador de proceso vinculado -->
+        <div class="flex-1 min-w-0 max-w-xl mx-1 sm:mx-4 flex flex-col items-center justify-center text-center relative">
           <div class="w-full flex items-center justify-center space-x-1.5">
             <textarea id="txt-nombre-proyecto" 
                       rows="1"
@@ -356,6 +356,9 @@
                       placeholder="Nombre del proyecto"
                       class="w-full bg-transparent text-white font-black text-xs sm:text-sm md:text-base text-center border-b border-transparent hover:border-teal-400/50 focus:border-teal-400 outline-none px-1 py-0.5 transition tracking-tight leading-snug resize-none cursor-text overflow-hidden"></textarea>
             <span id="contador-titulo-proyecto" class="hidden text-[10px] font-mono font-bold text-teal-300 bg-blue-950/90 px-1.5 py-0.5 rounded border border-teal-500/40 whitespace-nowrap flex-shrink-0">0/80</span>
+          </div>
+          <div id="barra-proceso-proyecto-activo" class="flex items-center justify-center mt-0.5">
+            <button type="button" id="btn-cambiar-proceso-proy" onclick="abrirSelectorProcesoProyectoActivo()" class="text-[10px] font-bold px-2 py-0.5 rounded-full transition cursor-pointer flex items-center space-x-1"></button>
           </div>
         </div>
         
@@ -708,81 +711,64 @@
       </div>
 
       <div id="np-tab-content-plantilla" class="hidden p-5 space-y-4 overflow-y-auto flex-1 bg-[#f8f9fa]">
-        <div class="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-gray-200 shadow-xs">
-          <input type="text" id="filtro-plantillas-input" oninput="filtrarGaleriaPlantillas()" placeholder="🔍 Buscar plantilla por nombre, proceso o categoría..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-semibold outline-none focus:bg-white focus:border-[#0f2a4a]">
+        <div class="bg-white p-3.5 rounded-xl border border-gray-200 shadow-xs space-y-2">
+          <label class="block font-bold text-gray-700 text-xs uppercase">Seleccione la plantilla base:</label>
+          <select id="np-select-plantilla" onchange="vincularProcesoDesdePlantillaSeleccionada()" class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg font-bold text-[#0f2a4a] text-xs outline-none focus:bg-white focus:border-[#0f2a4a] cursor-pointer">
+            <option value="">-- Seleccione una plantilla --</option>
+          </select>
         </div>
 
-        <div id="galeria-plantillas-contenedor" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[280px] overflow-y-auto pr-1"></div>
-
-        <div id="bloque-config-clonacion" class="hidden bg-white p-4 rounded-xl border-2 border-teal-600 shadow-sm space-y-3">
-          <div class="flex items-center justify-between border-b border-gray-100 pb-2">
-            <span class="text-xs font-black text-[#0f2a4a]" id="txt-plantilla-elegida-tit">Plantilla Seleccionada</span>
-            <span class="text-[10px] bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded font-bold" id="txt-plantilla-elegida-cat">Categoría</span>
-          </div>
-
+        <div id="bloque-config-clonacion" class="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div class="sm:col-span-2">
-              <label class="block font-bold text-gray-600 mb-1">Nombre de su Nuevo Proyecto:</label>
-              <input type="text" id="np-input-clon-nombre" maxlength="80" required placeholder="Ej. Implementación del Modelo de Gestión por Procesos" class="w-full p-2 border border-gray-300 rounded-lg font-bold text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
+              <label class="block font-bold text-gray-600 mb-1">Nombre de su nuevo proyecto:</label>
+              <input type="text" id="np-input-clon-nombre" maxlength="80" required placeholder="Ej.: Implementación de la gestión por procesos" class="w-full p-2 border border-gray-300 rounded-lg font-bold text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
             </div>
 
             <div class="relative">
-              <label class="block font-bold text-gray-600 mb-1">Unidad de Organización Responsable:</label>
-              <input type="text" id="np-input-clon-uo-busq" oninput="autocompletarUOClonacion(this.value)" placeholder="Escriba sigla o unidad (ej. OPPM)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
+              <label class="block font-bold text-gray-600 mb-1">Unidad de organización responsable:</label>
+              <input type="text" id="np-input-clon-uo-busq" oninput="autocompletarUOClonacion(this.value)" placeholder="Escriba sigla o unidad (ej.: OPPM)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
               <input type="hidden" id="np-input-clon-uo-valor">
               <div id="sugerencias-uo-clonacion" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-36 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
             </div>
 
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Fecha de Inicio del Proyecto:</label>
+              <label class="block font-bold text-gray-600 mb-1">Fecha de inicio del proyecto:</label>
               <input type="date" id="np-input-clon-fechaini" class="w-full p-2 border border-gray-300 rounded-lg font-bold text-teal-800 outline-none focus:border-[#0f2a4a]">
             </div>
 
             <div class="relative sm:col-span-2">
-              <label class="block font-bold text-gray-600 mb-1">Proceso / Subproceso Relacionado:</label>
-              <input type="text" id="np-input-clon-proceso-busq" oninput="autocompletarProcesoClonacion(this.value)" placeholder="Buscar por denominación o código del proceso (ej: E2.1.2)..." class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]" autocomplete="off">
-              <input type="hidden" id="np-input-clon-proceso-codigo">
-              <input type="hidden" id="np-input-clon-proceso-nombre">
-              <input type="hidden" id="np-input-clon-proceso-personalizado" value="0">
-              
-              <div id="sugerencias-proceso-clonacion" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 text-xs divide-y divide-gray-100"></div>
-
-              <div id="contenedor-otro-subproceso-clon" class="hidden mt-2 p-2.5 bg-amber-50 rounded-lg border border-amber-200">
-                <label class="block text-[10px] font-bold text-amber-800 uppercase mb-1">Especifique la denominación del subproceso:</label>
-                <input type="text" id="input-otro-subproceso-clon-texto" placeholder="Ingrese el nombre del proceso o trámite..." class="w-full p-2 bg-white border border-amber-300 rounded text-xs font-semibold text-gray-800 outline-none focus:border-amber-600">
-              </div>
+              <label class="block font-bold text-gray-600 mb-1">Proceso o subproceso relacionado (autocompletado):</label>
+              <input type="text" id="np-busqueda-proceso" placeholder="Se completará según la plantilla elegida..." class="w-full p-2 bg-slate-50 border border-gray-300 rounded-lg font-bold text-teal-900 outline-none focus:border-[#0f2a4a]">
+              <input type="hidden" id="input-nuevo-proy-proceso">
             </div>
 
             <div class="sm:col-span-2">
-              <label class="block font-bold text-gray-600 mb-1">Descripción / Alcance:</label>
+              <label class="block font-bold text-gray-600 mb-1">Descripción o alcance:</label>
               <textarea id="np-input-clon-desc" rows="2" placeholder="Detalles u objetivos del proyecto..." class="w-full p-2 border border-gray-300 rounded-lg font-medium outline-none focus:border-[#0f2a4a]"></textarea>
             </div>
 
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Modalidad de Estimación Temporal:</label>
+              <label class="block font-bold text-gray-600 mb-1">Modalidad de estimación temporal:</label>
               <select id="np-input-clon-duration-mode" class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]">
-                <option value="business_days" selected>Días Hábiles (L-V, excluye feriados)</option>
-                <option value="hours">Horas de Dedicación Neta</option>
+                <option value="business_days" selected>Días hábiles (L-V, excluye feriados)</option>
+                <option value="hours">Horas de dedicación neta</option>
               </select>
             </div>
 
             <div>
-              <label class="block font-bold text-gray-600 mb-1">Alcance / Privacidad del Proyecto:</label>
+              <label class="block font-bold text-gray-600 mb-1">Alcance o privacidad del proyecto:</label>
               <select id="np-input-clon-visibilidad" class="w-full p-2 border border-gray-300 rounded-lg font-semibold outline-none focus:border-[#0f2a4a]">
-                <option value="PRIVADO" selected>🔒 Privado (Solo miembros asignados)</option>
+                <option value="PRIVADO" selected>🔒 Privado (solo miembros asignados)</option>
                 <option value="PUBLICO">🌐 Institucional</option>
               </select>
             </div>
           </div>
 
           <div class="flex justify-end space-x-2 pt-2 border-t border-gray-100">
-            <button type="button" onclick="cancelarSeleccionPlantilla()" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cambiar Plantilla</button>
-            <button type="button" onclick="ejecutarCreacionDesdePlantilla()" class="px-5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black rounded-lg shadow transition">✨ Generar Proyecto Completo</button>
+            <button type="button" onclick="cerrarModalNuevoProyecto()" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cancelar</button>
+            <button type="button" onclick="ejecutarCreacionDesdePlantilla()" class="px-5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black rounded-lg shadow transition">✨ Generar proyecto completo</button>
           </div>
-        </div>
-
-        <div class="flex justify-end pt-2 border-t border-gray-200">
-          <button type="button" onclick="cerrarModalNuevoProyecto()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg transition">Cerrar</button>
         </div>
       </div>
     </div>
@@ -868,10 +854,11 @@
       </div>
 
       <div class="flex border-b border-gray-200 bg-gray-100 text-xs font-bold px-4 pt-2 space-x-1 flex-shrink-0 overflow-x-auto">
-        <button id="ti-tab-btn-trabajadores" onclick="cambiarTabTI('trabajadores')" class="px-3.5 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold whitespace-nowrap">👥 Directorio & Cuentas</button>
+        <button id="ti-tab-btn-trabajadores" onclick="cambiarTabTI('trabajadores')" class="px-3.5 py-2 rounded-t-lg bg-white text-[#0f2a4a] border-t border-l border-r border-gray-200 shadow-xs font-bold whitespace-nowrap">👥 Directorio y cuentas</button>
         <button id="ti-tab-btn-unidades" onclick="cambiarTabTI('unidades')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">🏢 Unidades de organización</button>
         <button id="ti-tab-btn-feriados" onclick="cambiarTabTI('feriados')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">📅 Feriados</button>
         <button id="ti-tab-btn-procesos" onclick="cambiarTabTI('procesos')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">⚙️ Procesos</button>
+        <button id="ti-tab-btn-plantillas" onclick="cambiarTabTI('plantillas')" class="px-3.5 py-2 rounded-t-lg text-gray-500 hover:text-[#0f2a4a] transition font-bold whitespace-nowrap">📋 Plantillas institucionales</button>
       </div>
 
       <!-- Tab: Trabajadores -->
@@ -1093,30 +1080,159 @@
 
       <!-- Tab: Procesos -->
       <div id="ti-tab-content-procesos" class="hidden p-5 overflow-y-auto space-y-4 flex-1 bg-[#f8f9fa] text-xs">
-        <form onsubmit="guardarProcesoTI(event)" class="bg-white p-3 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-3 shadow-xs">
+        <form onsubmit="guardarProcesoTI(event)" class="bg-white p-3.5 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-3 shadow-xs">
+          <div class="md:col-span-2">
+            <label class="block font-bold text-gray-600 mb-1">Código:</label>
+            <input type="text" id="input-proc-ti-codigo" required placeholder="Ej.: E2.1.2" class="w-full p-2 border border-gray-300 rounded font-bold uppercase outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-5">
+            <label class="block font-bold text-gray-600 mb-1">Denominación del proceso:</label>
+            <input type="text" id="input-proc-ti-nombre" required placeholder="Ej.: Gestión por procesos y simplificación administrativa" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block font-bold text-gray-600 mb-1">Nivel:</label>
+            <select id="input-proc-ti-nivel" class="w-full p-2 border border-gray-300 rounded font-semibold bg-white outline-none focus:border-[#0f2a4a]">
+              <option value="0">Nivel 0 (Macroproceso)</option>
+              <option value="1">Nivel 1 (Proceso)</option>
+              <option value="2" selected>Nivel 2 (Subproceso)</option>
+            </select>
+          </div>
           <div class="md:col-span-3">
-            <label class="block font-bold text-gray-600 mb-1">Código del proceso:</label>
-            <input type="text" id="input-proc-ti-codigo" required placeholder="Ej. E2.1" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
+            <label class="block font-bold text-gray-600 mb-1">Proceso padre:</label>
+            <select id="input-proc-ti-padre" class="w-full p-2 border border-gray-300 rounded font-semibold bg-white outline-none focus:border-[#0f2a4a]">
+              <option value="">-- Ninguno (nivel 0) --</option>
+            </select>
           </div>
-          <div class="md:col-span-7">
-            <label class="block font-bold text-gray-600 mb-1">Denominación del Proceso:</label>
-            <input type="text" id="input-proc-ti-nombre" required placeholder="Ej. Planeamiento Operativo Institucional" class="w-full p-2 border border-gray-300 rounded font-semibold outline-none focus:border-[#0f2a4a]">
-          </div>
-          <div class="md:col-span-2 flex items-end">
-            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 rounded transition shadow">+ Guardar</button>
+          <div class="md:col-span-12 flex justify-end space-x-2 pt-1">
+            <button type="button" id="btn-cancelar-edicion-proc" onclick="cancelarEdicionProcesoTI()" class="hidden px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition cursor-pointer">Cancelar edición</button>
+            <button type="submit" id="btn-guardar-proc-ti" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition shadow cursor-pointer">+ Guardar proceso</button>
           </div>
         </form>
 
-        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-64 overflow-y-auto">
           <table class="w-full text-xs text-left">
             <thead class="sticky top-0 bg-[#0f2a4a] text-white">
               <tr>
                 <th class="p-2.5 font-bold w-24">Código</th>
-                <th class="p-2.5 font-bold">Nombre del Proceso</th>
-                <th class="p-2.5 font-bold text-center w-24">Acción</th>
+                <th class="p-2.5 font-bold">Denominación del proceso</th>
+                <th class="p-2.5 font-bold text-center w-20">Nivel</th>
+                <th class="p-2.5 font-bold text-center w-24">Padre</th>
+                <th class="p-2.5 font-bold text-center w-32 whitespace-nowrap">Acción</th>
               </tr>
             </thead>
             <tbody id="tabla-procesos-ti-body" class="divide-y divide-gray-100 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Plantillas Institucionales (Pestaña 5 con Constructor WBS) -->
+      <div id="ti-tab-content-plantillas" class="hidden p-5 overflow-y-auto space-y-4 flex-1 bg-[#f8f9fa] text-xs">
+        <div class="bg-white p-3.5 rounded-xl border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-xs">
+          <div>
+            <h4 class="text-xs font-black uppercase text-[#0f2a4a]">Catálogo y constructor de plantillas</h4>
+            <p class="text-[11px] text-gray-500 mt-0.5">Gestione las plantillas oficiales del IMARPE, promueva plantillas personales o edite sus actividades (madres, hijas y hermanas).</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button type="button" onclick="abrirNuevaPlantillaAdmin()" class="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black rounded-lg shadow-xs cursor-pointer transition whitespace-nowrap">
+              + Nueva plantilla oficial
+            </button>
+            <select id="admin-plantillas-filtro-tipo" onchange="filtrarTablaAdminPlantillas()" class="p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-[#0f2a4a] outline-none">
+              <option value="TODOS">Todas las plantillas</option>
+              <option value="OFICIALES">🏛️ Solo oficiales IMARPE</option>
+              <option value="PERSONALES">👤 Solo personales de usuarios</option>
+            </select>
+            <input type="text" id="admin-plantillas-busqueda" oninput="filtrarTablaAdminPlantillas()" placeholder="🔍 Buscar plantilla o proceso..." class="w-full sm:w-56 p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold outline-none focus:bg-white focus:border-[#0f2a4a]">
+          </div>
+        </div>
+
+        <!-- Panel Desplegable: Constructor WBS de Plantilla -->
+        <div id="box-editar-plantilla-admin" class="hidden bg-slate-50 border-2 border-[#0f2a4a]/20 rounded-xl p-4 space-y-4 shadow-md">
+          <div class="flex justify-between items-center border-b border-gray-200 pb-2.5">
+            <div class="flex items-center space-x-2">
+              <span class="text-base">🛠️</span>
+              <div>
+                <h5 id="titulo-box-editor-plantilla" class="text-xs font-black text-[#0f2a4a] uppercase">Editor de plantilla y estructura WBS</h5>
+                <p class="text-[10px] text-gray-500 font-medium">Modifique los datos generales o inserte actividades madre (nivel 1), hijas (nivel 2) y subactividades (nivel 3).</p>
+              </div>
+            </div>
+            <button type="button" onclick="cerrarEdicionPlantillaAdmin()" class="text-xs font-bold text-gray-500 hover:text-rose-600 cursor-pointer px-2 py-1">✕ Cerrar editor</button>
+          </div>
+
+          <input type="hidden" id="edit-plantilla-id">
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs bg-white p-3.5 rounded-xl border border-gray-200">
+            <div>
+              <label class="block font-bold text-gray-700 mb-1">Nombre de la plantilla:</label>
+              <input type="text" id="edit-plantilla-nombre" placeholder="Ej.: Contratación menor a 8 UIT" class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-[#0f2a4a] outline-none focus:bg-white focus:border-[#0f2a4a]">
+            </div>
+            <div>
+              <label class="block font-bold text-gray-700 mb-1">Proceso o subproceso relacionado:</label>
+              <select id="edit-plantilla-proceso" class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0f2a4a]">
+                <option value="General">Sin proceso específico (General)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-gray-700 mb-1">Visibilidad institucional:</label>
+              <select id="edit-plantilla-oficial" class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-[#0f2a4a] outline-none focus:bg-white focus:border-[#0f2a4a]">
+                <option value="1">🏛️ Oficial IMARPE (visible para todos)</option>
+                <option value="0">👤 Personal (solo visible para su creador)</option>
+              </select>
+            </div>
+            <div class="md:col-span-3">
+              <label class="block font-bold text-gray-700 mb-1">Descripción o alcance normativo:</label>
+              <input type="text" id="edit-plantilla-descripcion" placeholder="Breve descripción de cuándo utilizar esta plantilla..." class="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg font-medium text-gray-700 outline-none focus:bg-white focus:border-[#0f2a4a]">
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="bg-[#0f2a4a] text-white px-3.5 py-2.5 flex flex-wrap justify-between items-center gap-2">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-black uppercase tracking-wider">📑 Estructura secuencial de actividades (EDT / WBS)</span>
+                <span id="badge-conteo-tareas-editor" class="bg-teal-500/20 text-teal-200 border border-teal-400/30 text-[10px] font-bold px-2 py-0.5 rounded-full">0 ítems</span>
+              </div>
+              <div>
+                <button type="button" onclick="agregarFaseMadrePlantilla()" class="px-2.5 py-1 bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-black rounded-md shadow-2xs cursor-pointer transition">
+                  + Nueva fase madre (nivel 1)
+                </button>
+              </div>
+            </div>
+
+            <div class="max-h-[260px] overflow-y-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-extrabold sticky top-0 z-10 border-b border-gray-200">
+                  <tr>
+                    <th class="py-2 px-3 w-20">Código</th>
+                    <th class="py-2 px-3">Denominación de la actividad (madre, hija o subtarea)</th>
+                    <th class="py-2 px-2 w-20 text-center">Días háb.</th>
+                    <th class="py-2 px-2 w-24 text-center">Predecesor</th>
+                    <th class="py-2 px-3 w-44 text-center">Insertar / eliminar</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-editor-wbs-plantilla" class="divide-y divide-gray-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-2 pt-1">
+            <button type="button" onclick="cerrarEdicionPlantillaAdmin()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg cursor-pointer">Cancelar</button>
+            <button type="button" onclick="guardarEdicionPlantillaAdmin()" class="px-5 py-2 bg-[#0f2a4a] hover:bg-[#1a3d66] text-white text-xs font-black rounded-lg shadow cursor-pointer">💾 Guardar plantilla y actividades</button>
+          </div>
+        </div>
+
+        <!-- Tabla principal de plantillas -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-64 overflow-y-auto">
+          <table class="w-full text-xs text-left">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
+              <tr>
+                <th class="p-2.5 font-bold w-10 text-center">#</th>
+                <th class="p-2.5 font-bold">Nombre de la plantilla y descripción</th>
+                <th class="p-2.5 font-bold w-64">Proceso o subproceso relacionado</th>
+                <th class="p-2.5 font-bold w-36 text-center">Visibilidad</th>
+                <th class="p-2.5 font-bold w-16 text-center">Tareas</th>
+                <th class="p-2.5 font-bold text-center w-28 whitespace-nowrap">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-admin-plantillas" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
           </table>
         </div>
       </div>
@@ -2022,12 +2138,35 @@
       </div>
     </div>
 
+    <!-- MODAL RÁPIDO: SELECCIONAR O ACTUALIZAR PROCESO DEL PROYECTO -->
+    <div id="modal-reasignar-proceso-proy" class="hidden fixed inset-0 bg-black/60 z-[180] flex items-center justify-center p-4 backdrop-blur-[1px]">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200">
+        <div class="bg-[#0f2a4a] text-white p-4 flex justify-between items-center">
+          <div>
+            <h3 class="font-black text-sm">Vincular proceso o subproceso institucional</h3>
+            <p class="text-[10px] text-teal-300 font-medium">Seleccione el proceso vigente del Mapa de Procesos del IMARPE</p>
+          </div>
+          <button type="button" onclick="cerrarSelectorProcesoProyectoActivo()" class="text-white text-2xl font-bold hover:text-gray-300 leading-none cursor-pointer">&times;</button>
+        </div>
+        <div class="p-5 space-y-4 text-xs">
+          <div>
+            <label class="block font-bold text-gray-700 uppercase mb-1.5">Proceso o subproceso vigente:</label>
+            <select id="select-reasignar-proceso-proy" class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl font-bold text-[#0f2a4a] outline-none focus:bg-white focus:border-[#0f2a4a]"></select>
+          </div>
+        </div>
+        <div class="p-3.5 bg-gray-50 border-t border-gray-200 flex justify-end space-x-2">
+          <button type="button" onclick="cerrarSelectorProcesoProyectoActivo()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-lg cursor-pointer">Cancelar</button>
+          <button type="button" onclick="confirmarReasignacionProcesoProyecto()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black rounded-lg shadow cursor-pointer">Guardar proceso</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Botón Flotante Rápido Móvil (FAB) -->
     <button type="button" onclick="abrirModalCrearPendiente()" class="fixed bottom-5 right-5 sm:hidden z-50 w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white rounded-full shadow-2xl flex items-center justify-center text-xl cursor-pointer active:scale-95 transition" title="Anotar pendiente">
       📝
     </button>
 
     <!-- Carga del Módulo Orquestador Principal ES6 -->
-    <script type="module" src="/static/js/main.js?v=100033"></script>
+    <script type="module" src="/static/js/main.js?v=100035"></script>
 </body>
 </html>

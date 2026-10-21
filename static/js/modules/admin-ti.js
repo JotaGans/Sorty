@@ -13,7 +13,8 @@ export async function abrirModalAdminTI() {
     cargarDirectorioTrabajadores(),
     cargarCatalogoUnidades(),
     cargarListaFeriados(),
-    cargarListaProcesosTI()
+    cargarListaProcesosTI(),
+    cargarAdminPlantillas()
   ]);
 }
 
@@ -24,7 +25,7 @@ export function cerrarModalAdminTI() {
 
 export function cambiarTabTI(tab) {
   state.tabTIActiva = tab;
-  const tabs = ["trabajadores", "unidades", "feriados", "procesos"];
+  const tabs = ["trabajadores", "unidades", "feriados", "procesos", "plantillas"];
 
   tabs.forEach(t => {
     const btn = document.getElementById(`ti-tab-btn-${t}`);
@@ -44,6 +45,7 @@ export function cambiarTabTI(tab) {
   if (tab === "unidades") cargarCatalogoUnidades();
   if (tab === "feriados") cargarListaFeriados();
   if (tab === "procesos") cargarListaProcesosTI();
+  if (tab === "plantillas") cargarAdminPlantillas();
 }
 
 // --- TRABAJADORES ---
@@ -303,7 +305,7 @@ export async function alternarEstadoTrabajador(id) {
 }
 
 export async function solicitarDarDeBajaTrabajador(id, nombre) {
-  const confirma = await confirmModal(`¿Está seguro de dar de baja al trabajador '${nombre}'?`, "Confirmar Baja", "warning");
+  const confirma = await confirmModal(`¿Está seguro de dar de baja al trabajador '${nombre}'?`, "Confirmar baja", "warning");
   if (!confirma) return;
   await alternarEstadoTrabajador(id);
 }
@@ -376,7 +378,7 @@ export function renderizarTablaTrabajadoresBaja(query = "") {
 }
 
 export async function solicitarReactivarTrabajador(id, nombre) {
-  const confirma = await confirmModal(`¿Desea reactivar a '${nombre}' e integrarlo(a) al directorio activo?`, "Reactivar Trabajador", "question");
+  const confirma = await confirmModal(`¿Desea reactivar a '${nombre}' e integrarlo(a) al directorio activo?`, "Reactivar trabajador", "question");
   if (!confirma) return;
 
   try {
@@ -429,7 +431,7 @@ export async function cargarCatalogoUnidades() {
     let htmlFilas = "";
     state.catalogoUnidadesGlobal.forEach(u => {
       const siglaPadreActual = String(u.sigla_padre || "").trim().toUpperCase();
-      let opcionesPadre = `<option value="" ${siglaPadreActual === "" ? "selected" : ""}>(Nivel Máximo / Alta Dirección)</option>`;
+      let opcionesPadre = `<option value="" ${siglaPadreActual === "" ? "selected" : ""}>(Nivel máximo / Alta dirección)</option>`;
       
       state.catalogoUnidadesGlobal.forEach(padreCand => {
         const siglaCand = String(padreCand.sigla || "").trim().toUpperCase();
@@ -512,7 +514,7 @@ export async function actualizarDependenciaROF(unidadId, siglaPadre, siglaHijo) 
     });
 
     if (res.ok) {
-      const destino = siglaPadre ? `[${siglaPadre}]` : "Alta Dirección";
+      const destino = siglaPadre ? `[${siglaPadre}]` : "Alta dirección";
       notificarToast(`Dependencia de [${siglaHijo}] actualizada hacia ${destino}.`, "success");
       await cargarCatalogoUnidades();
     } else {
@@ -660,7 +662,7 @@ export async function guardarEdicionFeriadoModal(e) {
 }
 
 export async function eliminarFeriado(id) {
-  const confirma = await confirmModal("¿Desea eliminar esta fecha del calendario institucional?", "Eliminar Feriado", "danger");
+  const confirma = await confirmModal("¿Desea eliminar esta fecha del calendario institucional?", "Eliminar feriado", "danger");
   if (!confirma) return;
 
   try {
@@ -677,7 +679,7 @@ export async function eliminarFeriado(id) {
 }
 
 export async function proyectarFeriadosSiguienteAno() {
-  const confirma = await confirmModal("¿Desea proyectar los feriados institucionales para el siguiente año fiscal?", "Proyección Anual de Feriados", "question");
+  const confirma = await confirmModal("¿Desea proyectar los feriados institucionales para el siguiente año fiscal?", "Proyección anual de feriados", "question");
   if (!confirma) return;
 
   try {
@@ -697,79 +699,636 @@ export async function proyectarFeriadosSiguienteAno() {
   }
 }
 
-// --- PROCESOS ---
+// --- PROCESOS INSTITUCIONALES ---
+let cacheProcesosAdminTI = [];
+let procesoEditandoId = null;
+
 export async function cargarListaProcesosTI() {
   const tbody = document.getElementById("tabla-procesos-ti-body");
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400">Cargando procesos...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400 font-semibold animate-pulse">Cargando procesos institucionales...</td></tr>';
 
   try {
-    const res = await apiFetch("/procesos-institucionales");
+    const res = await apiFetch("/procesos-institucionales?incluir_inactivos=true");
     if (!res.ok) throw new Error("Error al obtener catálogo");
-    state.catalogoProcesosGlobal = await res.json();
-    tbody.innerHTML = "";
+    const procesos = await res.json();
+    cacheProcesosAdminTI = procesos;
+    state.catalogoProcesosGlobal = procesos.filter(p => p.estado === "ACTIVO");
 
-    if (state.catalogoProcesosGlobal.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400 italic">No hay procesos registrados.</td></tr>';
+    // Llenar el selector de procesos padre del formulario
+    const selPadre = document.getElementById("input-proc-ti-padre");
+    if (selPadre) {
+      let htmlPadres = '<option value="">-- Ninguno (nivel 0) --</option>';
+      procesos.filter(p => p.nivel < 2).forEach(p => {
+        const sangria = p.nivel === 1 ? "  ↳ " : "";
+        htmlPadres += `<option value="${p.codigo}">${sangria}[${p.codigo}] ${p.nombre}</option>`;
+      });
+      selPadre.innerHTML = htmlPadres;
+    }
+
+    tbody.innerHTML = "";
+    if (procesos.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-gray-400 italic font-semibold">No hay procesos registrados.</td></tr>';
       return;
     }
 
-    state.catalogoProcesosGlobal.forEach(p => {
-      const pNombre = (p.nombre || "").replace(/'/g, "\\'");
-      tbody.innerHTML += `
-        <tr class="hover:bg-gray-50 border-b border-gray-100">
-          <td class="p-2.5 font-bold font-mono text-[#0f2a4a]">[${p.codigo || ''}]</td>
-          <td class="p-2.5 font-semibold text-gray-800">${p.nombre || ''}</td>
-          <td class="p-2.5 text-center">
-            <button onclick="eliminarProcesoTI(${p.id}, '${pNombre}')" class="text-rose-500 hover:text-rose-700 font-bold px-1 cursor-pointer" title="Eliminar proceso">🗑️</button>
+    tbody.innerHTML = procesos.map(p => {
+      const sangria = p.nivel === 1 ? "pl-5 font-bold text-teal-800" : (p.nivel >= 2 ? "pl-9 font-semibold text-gray-700" : "font-black text-[#0f2a4a]");
+      const iconoNivel = p.nivel === 0 ? "🔷 " : (p.nivel === 1 ? "↳ " : "• ");
+      const badgeNivel = p.nivel === 0
+        ? `<span class="bg-blue-100 text-blue-900 px-2 py-0.5 rounded text-[10px] font-black">Nivel 0</span>`
+        : (p.nivel === 1
+          ? `<span class="bg-teal-100 text-teal-900 px-2 py-0.5 rounded text-[10px] font-bold">Nivel 1</span>`
+          : `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-semibold">Nivel 2</span>`);
+
+      const pNombreEscapado = (p.nombre || "").replace(/'/g, "\\'");
+
+      return `
+        <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
+          <td class="p-2 font-mono font-bold text-[#0f2a4a] text-xs whitespace-nowrap">${p.codigo || ''}</td>
+          <td class="p-2 text-xs ${sangria}">${iconoNivel}${p.nombre || ''}</td>
+          <td class="p-2 text-center">${badgeNivel}</td>
+          <td class="p-2 text-center font-mono text-gray-500 text-xs">${p.codigo_padre || '-'}</td>
+          <td class="p-2 text-center whitespace-nowrap space-x-1.5">
+            <button onclick="prepararEdicionProcesoTI(${p.id})" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[10px] font-bold cursor-pointer transition" title="Editar código o denominación">✏️</button>
+            <button onclick="eliminarProcesoTI(${p.id}, '${p.codigo}', '${pNombreEscapado}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-[10px] font-bold cursor-pointer transition" title="Eliminar proceso y limpiar proyectos">🗑️</button>
           </td>
         </tr>
       `;
-    });
+    }).join("");
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-rose-500">Error al cargar catálogo de procesos.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-rose-500 font-semibold">Error al cargar catálogo de procesos.</td></tr>';
   }
+}
+
+export function prepararEdicionProcesoTI(id) {
+  const p = cacheProcesosAdminTI.find(x => x.id === id);
+  if (!p) return;
+  procesoEditandoId = p.id;
+
+  const inpCod = document.getElementById("input-proc-ti-codigo");
+  const inpNom = document.getElementById("input-proc-ti-nombre");
+  const selNiv = document.getElementById("input-proc-ti-nivel");
+  const selPad = document.getElementById("input-proc-ti-padre");
+  const btnGuardar = document.getElementById("btn-guardar-proc-ti");
+  const btnCancelar = document.getElementById("btn-cancelar-edicion-proc");
+
+  if (inpCod) inpCod.value = p.codigo || "";
+  if (inpNom) inpNom.value = p.nombre || "";
+  if (selNiv) selNiv.value = String(p.nivel ?? 2);
+  if (selPad) selPad.value = p.codigo_padre || "";
+
+  if (btnGuardar) {
+    btnGuardar.innerText = "💾 Actualizar proceso";
+    btnGuardar.className = "px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition shadow cursor-pointer";
+  }
+  if (btnCancelar) btnCancelar.classList.remove("hidden");
+  inpCod?.focus();
+}
+
+export function cancelarEdicionProcesoTI() {
+  procesoEditandoId = null;
+  const inpCod = document.getElementById("input-proc-ti-codigo");
+  const inpNom = document.getElementById("input-proc-ti-nombre");
+  const selNiv = document.getElementById("input-proc-ti-nivel");
+  const selPad = document.getElementById("input-proc-ti-padre");
+  const btnGuardar = document.getElementById("btn-guardar-proc-ti");
+  const btnCancelar = document.getElementById("btn-cancelar-edicion-proc");
+
+  if (inpCod) inpCod.value = "";
+  if (inpNom) inpNom.value = "";
+  if (selNiv) selNiv.value = "2";
+  if (selPad) selPad.value = "";
+
+  if (btnGuardar) {
+    btnGuardar.innerText = "+ Guardar proceso";
+    btnGuardar.className = "px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition shadow cursor-pointer";
+  }
+  if (btnCancelar) btnCancelar.classList.add("hidden");
 }
 
 export async function guardarProcesoTI(e) {
   e.preventDefault();
-  const codigo = document.getElementById("input-proc-ti-codigo").value.trim();
-  const nombre = document.getElementById("input-proc-ti-nombre").value.trim();
-  if (!codigo || !nombre) return;
+  const codigo = document.getElementById("input-proc-ti-codigo")?.value.trim().toUpperCase();
+  const nombre = document.getElementById("input-proc-ti-nombre")?.value.trim();
+  const nivel = parseInt(document.getElementById("input-proc-ti-nivel")?.value || "2", 10);
+  const codigo_padre = document.getElementById("input-proc-ti-padre")?.value.trim().toUpperCase() || null;
+
+  if (!codigo || !nombre) {
+    alert("Por favor ingrese el código y la denominación del proceso.");
+    return;
+  }
 
   try {
-    const res = await apiFetch("/procesos-institucionales", {
-      method: "POST",
-      body: JSON.stringify({ codigo, nombre })
-    });
+    let res;
+    if (procesoEditandoId) {
+      res = await apiFetch(`/procesos-institucionales/${procesoEditandoId}`, {
+        method: "PUT",
+        body: JSON.stringify({ codigo, nombre, nivel, codigo_padre })
+      });
+    } else {
+      res = await apiFetch("/procesos-institucionales", {
+        method: "POST",
+        body: JSON.stringify({ codigo, nombre, nivel, codigo_padre })
+      });
+    }
+
     if (res.ok) {
-      notificarToast("Proceso institucional registrado.", "success");
-      document.getElementById("input-proc-ti-codigo").value = "";
-      document.getElementById("input-proc-ti-nombre").value = "";
+      const data = await res.json().catch(() => ({}));
+      if (data.proyectos_desvinculados > 0) {
+        alert(`✅ Proceso actualizado. Se desvinculó de ${data.proyectos_desvinculados} proyecto(s) para que sus gestores vuelvan a seleccionar el subproceso vigente.`);
+      } else {
+        notificarToast("Proceso institucional guardado correctamente.", "success");
+      }
+      cancelarEdicionProcesoTI();
       await cargarListaProcesosTI();
+      await cargarAdminPlantillas();
     } else {
       const err = await res.json().catch(() => ({}));
-      alert(err.detail || "Error al registrar proceso.");
+      alert(err.detail || "Error al procesar la solicitud del proceso.");
     }
   } catch (err) {
-    alert("Error de conexión al registrar proceso.");
+    alert("Error de conexión al guardar proceso.");
   }
 }
 
-export async function eliminarProcesoTI(id, nombre) {
-  const confirma = await confirmModal(`¿Está seguro de eliminar el proceso '${nombre}'?`, "Eliminar Proceso TI", "danger");
+export async function eliminarProcesoTI(id, codigo, nombre) {
+  const confirma = await confirmModal(
+    `¿Está seguro de eliminar el proceso [${codigo}] ${nombre}?\n\nSi existen proyectos asociados a este proceso, su proceso relacionado se borrará para que el usuario pueda volver a seleccionarlo.`,
+    "Eliminar proceso institucional",
+    "danger"
+  );
   if (!confirma) return;
 
   try {
     const res = await apiFetch(`/procesos-institucionales/${id}`, { method: "DELETE" });
     if (res.ok) {
-      notificarToast("Proceso eliminado correctamente.", "info");
+      const data = await res.json().catch(() => ({}));
+      if (data.proyectos_desvinculados > 0) {
+        alert(`Proceso eliminado. Se limpió la referencia en ${data.proyectos_desvinculados} proyecto(s) asociado(s).`);
+      } else {
+        notificarToast("Proceso institucional eliminado con éxito.", "info");
+      }
+      cancelarEdicionProcesoTI();
       await cargarListaProcesosTI();
+      await cargarAdminPlantillas();
     } else {
-      alert("Error al eliminar proceso.");
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Error al eliminar proceso.");
     }
   } catch (err) {
     alert("Error de conexión al eliminar proceso.");
+  }
+}
+
+// --- GESTIÓN CENTRALIZADA DE PLANTILLAS Y CONSTRUCTOR WBS (PESTAÑA 5) ---
+let listaPlantillasAdminGlobal = [];
+let actividadesEditorWBS = [];
+
+function ordenarPorCodigoWBS(lista) {
+  return lista.sort((a, b) => {
+    const pa = String(a.codigo || "").split(".").map(n => parseInt(n, 10) || 0);
+    const pb = String(b.codigo || "").split(".").map(n => parseInt(n, 10) || 0);
+    const len = Math.max(pa.length, pb.length);
+    for (let i = 0; i < len; i++) {
+      const va = pa[i] || 0;
+      const vb = pb[i] || 0;
+      if (va !== vb) return va - vb;
+    }
+    return 0;
+  });
+}
+
+function recalcularDiasFasesMadreWBS() {
+  const raices = actividadesEditorWBS.filter(a => !String(a.codigo).includes("."));
+  raices.forEach(r => {
+    const prefijo = String(r.codigo) + ".";
+    const hijasDirectas = actividadesEditorWBS.filter(a => {
+      const c = String(a.codigo);
+      return c.startsWith(prefijo) && c.split(".").length === 2;
+    });
+    if (hijasDirectas.length > 0) {
+      r.dias = hijasDirectas.reduce((acc, h) => acc + (parseInt(h.dias, 10) || 1), 0);
+    }
+  });
+}
+
+export function renderizarEditorWBSPlantilla() {
+  const tbody = document.getElementById("tbody-editor-wbs-plantilla");
+  const badge = document.getElementById("badge-conteo-tareas-editor");
+  if (!tbody) return;
+
+  ordenarPorCodigoWBS(actividadesEditorWBS);
+  recalcularDiasFasesMadreWBS();
+
+  if (badge) badge.innerText = `${actividadesEditorWBS.length} actividades`;
+
+  if (actividadesEditorWBS.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400 font-semibold italic">Esta plantilla no tiene actividades. Haga clic en "+ Nueva fase madre (nivel 1)" arriba a la derecha.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = actividadesEditorWBS.map((act, idx) => {
+    const cod = String(act.codigo || "");
+    const partes = cod.split(".");
+    const nivel = partes.length;
+
+    const bgFila = nivel === 1
+      ? "bg-slate-100/90 font-black text-[#0f2a4a]"
+      : (nivel === 2 ? "bg-white text-gray-800 font-semibold" : "bg-slate-50/50 text-gray-600 font-medium");
+
+    const sangriaInput = nivel === 1 ? "" : (nivel === 2 ? "pl-5" : "pl-10");
+    const iconoJerarquia = nivel === 1 ? "📁 " : (nivel === 2 ? "↳ " : "  • ");
+
+    const btnHija = nivel < 3
+      ? `<button type="button" onclick="insertarActividadHijaWBS(${idx})" class="px-2 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 rounded text-[10px] font-bold cursor-pointer transition" title="Crear subactividad hija dentro de ${cod}">+ Hija</button>`
+      : "";
+
+    return `
+      <tr class="${bgFila} hover:bg-blue-50/40 transition">
+        <td class="py-1.5 px-3 font-mono text-xs font-black text-[#0f2a4a] whitespace-nowrap">
+          ${iconoJerarquia}${cod}
+        </td>
+        <td class="py-1.5 px-2 ${sangriaInput}">
+          <input type="text" value="${(act.descripcion || "").replace(/"/g, '&quot;')}"
+            oninput="actualizarCampoActividadWBS(${idx}, 'descripcion', this.value)"
+            class="w-full p-1.5 bg-white border border-gray-200 rounded-md text-xs ${nivel === 1 ? 'font-black uppercase text-[#0f2a4a]' : 'font-semibold text-gray-800'} outline-none focus:border-[#0f2a4a]">
+        </td>
+        <td class="py-1.5 px-2 text-center">
+          <input type="number" min="1" value="${act.dias || 1}"
+            oninput="actualizarCampoActividadWBS(${idx}, 'dias', this.value)"
+            class="w-16 p-1 bg-white border border-gray-200 rounded-md text-center text-xs font-bold text-[#0f2a4a] outline-none focus:border-[#0f2a4a]">
+        </td>
+        <td class="py-1.5 px-2 text-center">
+          <input type="text" value="${act.predecesores || ""}" placeholder="-"
+            oninput="actualizarCampoActividadWBS(${idx}, 'predecesores', this.value)"
+            class="w-20 p-1 bg-white border border-gray-200 rounded-md text-center font-mono text-xs font-semibold text-gray-600 outline-none focus:border-[#0f2a4a]">
+        </td>
+        <td class="py-1.5 px-2 text-center whitespace-nowrap space-x-1">
+          <button type="button" onclick="insertarActividadHermanaWBS(${idx})" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[10px] font-bold cursor-pointer transition" title="Crear actividad hermana al mismo nivel que ${cod}">+ Hermana</button>
+          ${btnHija}
+          <button type="button" onclick="eliminarActividadWBS(${idx})" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-[10px] font-bold cursor-pointer transition" title="Eliminar ${cod}">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+export function actualizarCampoActividadWBS(idx, campo, valor) {
+  if (!actividadesEditorWBS[idx]) return;
+  if (campo === "dias") {
+    actividadesEditorWBS[idx].dias = Math.max(1, parseInt(valor, 10) || 1);
+  } else {
+    actividadesEditorWBS[idx][campo] = valor;
+  }
+}
+
+export function agregarFaseMadrePlantilla() {
+  const raices = actividadesEditorWBS.filter(a => !String(a.codigo).includes("."));
+  let maxRaiz = 0;
+  raices.forEach(r => {
+    const n = parseInt(r.codigo, 10);
+    if (!isNaN(n) && n > maxRaiz) maxRaiz = n;
+  });
+  const nuevoCodMadre = String(maxRaiz + 1);
+  const predMadre = maxRaiz > 0 ? String(maxRaiz) : "";
+
+  actividadesEditorWBS.push({
+    codigo: nuevoCodMadre,
+    descripcion: `FASE ${nuevoCodMadre}: NUEVA ETAPA DEL PROCESO`,
+    dias: 3,
+    predecesores: predMadre
+  });
+  actividadesEditorWBS.push({
+    codigo: `${nuevoCodMadre}.1`,
+    descripcion: "Primera actividad operativa de la fase",
+    dias: 3,
+    predecesores: ""
+  });
+  renderizarEditorWBSPlantilla();
+}
+
+export function insertarActividadHermanaWBS(idx) {
+  const actual = actividadesEditorWBS[idx];
+  if (!actual) return;
+  const codActual = String(actual.codigo);
+  const partes = codActual.split(".");
+
+  if (partes.length === 1) {
+    agregarFaseMadrePlantilla();
+    return;
+  }
+
+  const prefijoPadre = partes.slice(0, -1).join(".");
+  const nivelObjetivo = partes.length;
+
+  const hermanas = actividadesEditorWBS.filter(a => {
+    const c = String(a.codigo);
+    return c.startsWith(prefijoPadre + ".") && c.split(".").length === nivelObjetivo;
+  });
+
+  let maxNum = 0;
+  hermanas.forEach(h => {
+    const ult = parseInt(String(h.codigo).split(".").pop(), 10);
+    if (!isNaN(ult) && ult > maxNum) maxNum = ult;
+  });
+
+  const nuevoCod = `${prefijoPadre}.${maxNum + 1}`;
+  const codAnterior = `${prefijoPadre}.${maxNum}`;
+
+  actividadesEditorWBS.push({
+    codigo: nuevoCod,
+    descripcion: "Nueva actividad operativa",
+    dias: 2,
+    predecesores: maxNum > 0 ? codAnterior : ""
+  });
+  renderizarEditorWBSPlantilla();
+}
+
+export function insertarActividadHijaWBS(idx) {
+  const madre = actividadesEditorWBS[idx];
+  if (!madre) return;
+  const codMadre = String(madre.codigo);
+  const nivelHija = codMadre.split(".").length + 1;
+  if (nivelHija > 3) return;
+
+  const hijasExistentes = actividadesEditorWBS.filter(a => {
+    const c = String(a.codigo);
+    return c.startsWith(codMadre + ".") && c.split(".").length === nivelHija;
+  });
+
+  let maxHija = 0;
+  hijasExistentes.forEach(h => {
+    const ult = parseInt(String(h.codigo).split(".").pop(), 10);
+    if (!isNaN(ult) && ult > maxHija) maxHija = ult;
+  });
+
+  const nuevoCodHija = `${codMadre}.${maxHija + 1}`;
+  const predHija = maxHija > 0 ? `${codMadre}.${maxHija}` : "";
+
+  actividadesEditorWBS.push({
+    codigo: nuevoCodHija,
+    descripcion: nivelHija === 2 ? "Nueva actividad hija" : "Nueva subtarea específica",
+    dias: 2,
+    predecesores: predHija
+  });
+  renderizarEditorWBSPlantilla();
+}
+
+export function eliminarActividadWBS(idx) {
+  const act = actividadesEditorWBS[idx];
+  if (!act) return;
+  const cod = String(act.codigo);
+  const tieneHijas = actividadesEditorWBS.some(a => String(a.codigo).startsWith(cod + "."));
+
+  if (tieneHijas) {
+    if (!confirm(`La actividad [${cod}] contiene subactividades vinculadas. ¿Desea eliminar [${cod}] y todas sus hijas?`)) return;
+  }
+
+  actividadesEditorWBS = actividadesEditorWBS.filter(a => {
+    const c = String(a.codigo);
+    return c !== cod && !c.startsWith(cod + ".");
+  });
+
+  renderizarEditorWBSPlantilla();
+}
+
+export async function cargarAdminPlantillas() {
+  try {
+    const [resPlant, resProc] = await Promise.all([
+      apiFetch("/plantillas?modo_admin=1"),
+      apiFetch("/procesos-institucionales").catch(() => null)
+    ]);
+
+    if (resPlant && resPlant.ok) {
+      listaPlantillasAdminGlobal = await resPlant.json();
+      window.catalogoPlantillasCache = listaPlantillasAdminGlobal;
+    }
+
+    if (resProc && resProc.ok) {
+      const procs = await resProc.json();
+      state.catalogoProcesosGlobal = procs;
+      const selProc = document.getElementById("edit-plantilla-proceso");
+      if (selProc) {
+        let htmlOpts = `<option value="General">Sin proceso específico (General)</option>`;
+        procs.filter(p => p.estado === "ACTIVO").forEach(p => {
+          const prefijo = p.nivel === 0 ? "🔷 " : (p.nivel === 1 ? "  ↳ " : "      • ");
+          const valorOficial = `${p.codigo} - ${p.nombre}`;
+          htmlOpts += `<option value="${valorOficial.replace(/"/g, '&quot;')}">${prefijo}${valorOficial}</option>`;
+        });
+        selProc.innerHTML = htmlOpts;
+      }
+    }
+
+    filtrarTablaAdminPlantillas();
+  } catch (e) {
+    console.error("Error cargando plantillas en Admin TI:", e);
+  }
+}
+
+export function filtrarTablaAdminPlantillas() {
+  const tbody = document.getElementById("tbody-admin-plantillas");
+  if (!tbody) return;
+
+  const q = (document.getElementById("admin-plantillas-busqueda")?.value || "").toLowerCase().trim();
+  const filtroTipo = document.getElementById("admin-plantillas-filtro-tipo")?.value || "TODOS";
+
+  const filtradas = listaPlantillasAdminGlobal.filter(p => {
+    if (filtroTipo === "OFICIALES" && p.es_oficial !== 1) return false;
+    if (filtroTipo === "PERSONALES" && p.es_oficial === 1) return false;
+    if (!q) return true;
+    return (
+      (p.nombre || "").toLowerCase().includes(q) ||
+      (p.categoria || "").toLowerCase().includes(q) ||
+      (p.descripcion || "").toLowerCase().includes(q) ||
+      (p.creador_nombre || "").toLowerCase().includes(q)
+    );
+  });
+
+  if (filtradas.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 font-semibold italic">No se encontraron plantillas con ese criterio.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtradas.map((p, idx) => {
+    const numTareas = (p.actividades || []).length;
+    const cat = p.categoria || "General";
+    const tieneProceso = cat !== "General" && cat.includes(" - ");
+    const badgeCat = tieneProceso
+      ? `<span class="inline-block bg-teal-50 text-teal-900 border border-teal-200 px-2 py-1 rounded-md text-[11px] font-bold leading-tight">${cat}</span>`
+      : `<span class="inline-block bg-amber-50 text-amber-800 border border-amber-200 px-2 py-1 rounded-md text-[11px] font-semibold leading-tight">${cat}</span>`;
+
+    const badgeAlcance = (p.es_oficial === 1)
+      ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">🏛️ OFICIAL IMARPE</span>`
+      : `<div class="flex flex-col items-center"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">👤 PERSONAL</span><span class="text-[10px] text-gray-500 font-medium mt-0.5 truncate max-w-[130px]" title="${p.creador_nombre || ''}">${p.creador_nombre || 'Usuario'}</span></div>`;
+
+    return `
+      <tr class="hover:bg-slate-50 transition border-b border-gray-100">
+        <td class="p-2.5 text-center font-mono text-gray-400 font-bold">${idx + 1}</td>
+        <td class="p-2.5">
+          <div class="font-bold text-[#0f2a4a] text-xs leading-snug">${p.nombre}</div>
+          <div class="text-[11px] text-gray-500 mt-0.5 leading-snug">${p.descripcion || "Sin descripción"}</div>
+        </td>
+        <td class="p-2.5">${badgeCat}</td>
+        <td class="p-2.5 text-center">${badgeAlcance}</td>
+        <td class="p-2.5 text-center">
+          <span class="bg-slate-100 text-slate-700 font-black px-2 py-0.5 rounded-full text-[11px]">${numTareas}</span>
+        </td>
+        <td class="p-2.5 text-center whitespace-nowrap space-x-1">
+          <button type="button" onclick="abrirEdicionPlantillaAdmin(${p.id})" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md font-bold text-[11px] cursor-pointer transition" title="Editar plantilla y actividades WBS">
+            ✏️ Editar
+          </button>
+          <button type="button" onclick="eliminarPlantillaDesdeAdmin(${p.id})" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-md font-bold text-[11px] cursor-pointer transition" title="Eliminar plantilla">
+            🗑️
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+export function abrirNuevaPlantillaAdmin() {
+  document.getElementById("edit-plantilla-id").value = "";
+  document.getElementById("edit-plantilla-nombre").value = "";
+  document.getElementById("edit-plantilla-descripcion").value = "";
+  document.getElementById("edit-plantilla-oficial").value = "1";
+  document.getElementById("edit-plantilla-proceso").value = "General";
+
+  const tit = document.getElementById("titulo-box-editor-plantilla");
+  if (tit) tit.innerText = "✨ Crear nueva plantilla oficial y estructura WBS";
+
+  actividadesEditorWBS = [
+    { codigo: "1", descripcion: "FASE 1: ACTOS PREPARATORIOS", dias: 4, predecesores: "" },
+    { codigo: "1.1", descripcion: "Elaboración y revisión del requerimiento o documento inicial", dias: 2, predecesores: "" },
+    { codigo: "1.2", descripcion: "Validación técnica y aprobación de inicio", dias: 2, predecesores: "1.1" }
+  ];
+
+  renderizarEditorWBSPlantilla();
+  const box = document.getElementById("box-editar-plantilla-admin");
+  if (box) {
+    box.classList.remove("hidden");
+    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+export function abrirEdicionPlantillaAdmin(id) {
+  const plant = listaPlantillasAdminGlobal.find(x => x.id === id);
+  if (!plant) return;
+
+  const tit = document.getElementById("titulo-box-editor-plantilla");
+  if (tit) tit.innerText = `✏️ Editando plantilla: ${plant.nombre}`;
+
+  document.getElementById("edit-plantilla-id").value = plant.id;
+  document.getElementById("edit-plantilla-nombre").value = plant.nombre || "";
+  document.getElementById("edit-plantilla-descripcion").value = plant.descripcion || "";
+
+  const selOficial = document.getElementById("edit-plantilla-oficial");
+  if (selOficial) selOficial.value = String(plant.es_oficial === 1 ? 1 : 0);
+
+  const selProc = document.getElementById("edit-plantilla-proceso");
+  if (selProc) {
+    const catActual = plant.categoria || "General";
+    const existeExacto = Array.from(selProc.options).some(opt => opt.value === catActual);
+    if (existeExacto) {
+      selProc.value = catActual;
+    } else {
+      const codMatch = catActual.match(/([EMS]\d+(?:\.\d+)*)/);
+      const optPorCod = codMatch ? Array.from(selProc.options).find(opt => opt.value.startsWith(codMatch[1] + " -")) : null;
+      selProc.value = optPorCod ? optPorCod.value : "General";
+    }
+  }
+
+  actividadesEditorWBS = (plant.actividades || []).map(a => ({
+    codigo: String(a.codigo || ""),
+    descripcion: String(a.descripcion || ""),
+    dias: parseInt(a.dias, 10) || 1,
+    predecesores: String(a.predecesores || "")
+  }));
+
+  renderizarEditorWBSPlantilla();
+
+  const box = document.getElementById("box-editar-plantilla-admin");
+  if (box) {
+    box.classList.remove("hidden");
+    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+export function cerrarEdicionPlantillaAdmin() {
+  document.getElementById("box-editar-plantilla-admin")?.classList.add("hidden");
+}
+
+export async function guardarEdicionPlantillaAdmin() {
+  const idRaw = document.getElementById("edit-plantilla-id")?.value;
+  const id = idRaw ? parseInt(idRaw, 10) : null;
+  const nombre = document.getElementById("edit-plantilla-nombre")?.value.trim();
+  const descripcion = document.getElementById("edit-plantilla-descripcion")?.value.trim();
+  const categoria = document.getElementById("edit-plantilla-proceso")?.value || "General";
+  const es_oficial = parseInt(document.getElementById("edit-plantilla-oficial")?.value ?? "1", 10);
+
+  if (!nombre) {
+    alert("El nombre de la plantilla es obligatorio.");
+    return;
+  }
+
+  if (actividadesEditorWBS.length === 0) {
+    alert("La plantilla debe tener al menos una actividad.");
+    return;
+  }
+
+  recalcularDiasFasesMadreWBS();
+
+  try {
+    const url = id ? `/plantillas/${id}` : `/plantillas`;
+    const metodo = id ? "PUT" : "POST";
+
+    const res = await apiFetch(url, {
+      method: metodo,
+      body: JSON.stringify({
+        nombre,
+        descripcion,
+        categoria,
+        es_oficial,
+        actividades: actividadesEditorWBS
+      })
+    });
+
+    if (res.ok) {
+      notificarToast("Plantilla y actividades guardadas exitosamente.", "success");
+      cerrarEdicionPlantillaAdmin();
+      await cargarAdminPlantillas();
+      if (typeof window.cargarPlantillasModalNuevoProyecto === "function") {
+        window.cargarPlantillasModalNuevoProyecto();
+      }
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "No se pudo guardar la plantilla.");
+    }
+  } catch (e) {
+    alert("Error de conexión al guardar la plantilla.");
+  }
+}
+
+export async function eliminarPlantillaDesdeAdmin(id) {
+  const plant = listaPlantillasAdminGlobal.find(x => x.id === id);
+  if (!plant) return;
+  const confirma = await confirmModal(`¿Está seguro de eliminar permanentemente la plantilla "${plant.nombre}"?`, "Eliminar plantilla", "danger");
+  if (!confirma) return;
+
+  try {
+    const res = await apiFetch(`/plantillas/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      notificarToast("Plantilla eliminada correctamente.", "info");
+      await cargarAdminPlantillas();
+      if (typeof window.cargarPlantillasModalNuevoProyecto === "function") {
+        window.cargarPlantillasModalNuevoProyecto();
+      }
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "No se pudo eliminar la plantilla.");
+    }
+  } catch (e) {
+    alert("Error al eliminar la plantilla.");
   }
 }
 
@@ -799,8 +1358,25 @@ window.guardarEdicionFeriadoModal = guardarEdicionFeriadoModal;
 window.eliminarFeriado = eliminarFeriado;
 window.proyectarFeriadosSiguienteAno = proyectarFeriadosSiguienteAno;
 window.cargarListaFeriados = cargarListaFeriados;
+window.cargarListaProcesosTI = cargarListaProcesosTI;
+window.prepararEdicionProcesoTI = prepararEdicionProcesoTI;
+window.cancelarEdicionProcesoTI = cancelarEdicionProcesoTI;
 window.guardarProcesoTI = guardarProcesoTI;
 window.eliminarProcesoTI = eliminarProcesoTI;
+
+// Funciones del módulo de plantillas y constructor WBS
+window.cargarAdminPlantillas = cargarAdminPlantillas;
+window.filtrarTablaAdminPlantillas = filtrarTablaAdminPlantillas;
+window.abrirNuevaPlantillaAdmin = abrirNuevaPlantillaAdmin;
+window.abrirEdicionPlantillaAdmin = abrirEdicionPlantillaAdmin;
+window.cerrarEdicionPlantillaAdmin = cerrarEdicionPlantillaAdmin;
+window.guardarEdicionPlantillaAdmin = guardarEdicionPlantillaAdmin;
+window.eliminarPlantillaDesdeAdmin = eliminarPlantillaDesdeAdmin;
+window.actualizarCampoActividadWBS = actualizarCampoActividadWBS;
+window.agregarFaseMadrePlantilla = agregarFaseMadrePlantilla;
+window.insertarActividadHermanaWBS = insertarActividadHermanaWBS;
+window.insertarActividadHijaWBS = insertarActividadHijaWBS;
+window.eliminarActividadWBS = eliminarActividadWBS;
 
 // --- FUNCIONES DE CIERRE DE MODALES AUXILIARES TI ---
 export function cerrarModalCrearTrabajadorTI() {

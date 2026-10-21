@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from app.database.connection import get_db
 from app.core.security import get_current_user, hash_password
 from app.core.config import ahora_peru_str, ZONA_PERU
@@ -357,82 +357,259 @@ def alternar_estado_trabajador(
 
 # 4. Catálogo de Procesos Institucionales
 @router.get("/procesos-institucionales")
-def listar_procesos_institucionales(todos: bool = False, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    filtro = "" if todos else "WHERE estado = 'ACTIVO'"
-    rows = db.execute(f"""
-        SELECT id, codigo, nombre, nivel, codigo_padre, estado 
-        FROM procesos_institucionales 
-        {filtro}
-        ORDER BY codigo ASC
-    """).fetchall()
-    return [dict(r) for r in rows]
+def obtener_procesos_institucionales(
+    incluir_inactivos: bool = False,
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if incluir_inactivos:
+        filas = db.execute(
+            "SELECT id, codigo, nombre, nivel, codigo_padre, estado FROM procesos_institucionales ORDER BY codigo ASC"
+        ).fetchall()
+    else:
+        filas = db.execute(
+            "SELECT id, codigo, nombre, nivel, codigo_padre, estado FROM procesos_institucionales WHERE estado = 'ACTIVO' ORDER BY codigo ASC"
+        ).fetchall()
+    return [dict(f) for f in filas]
+
 
 @router.post("/procesos-institucionales")
-def registrar_proceso_admin(data: ProcesoItemModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    if user.get("rol") != "ADMIN_TI":
-        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede incorporar procesos al catálogo oficial.")
-    cod_limpio = data.codigo.strip().upper()
-    nom_limpio = data.nombre.strip()
-    try:
-        db.execute("""
-            INSERT INTO procesos_institucionales (codigo, nombre, nivel, codigo_padre, estado, creado_por)
-            VALUES (?, ?, ?, ?, 'ACTIVO', ?)
-        """, (cod_limpio, nom_limpio, data.nivel, data.codigo_padre, user["username"]))
-        db.commit()
-        return {"mensaje": "Proceso registrado exitosamente"}
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail=f"El código de proceso '{cod_limpio}' ya existe en la base de datos.")
+def crear_proceso_institucional(
+    datos: dict = Body(...),
+    user: dict = Depends(get_current_user),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede gestionar el catálogo de procesos.")
 
-@router.put("/procesos-institucionales/{proceso_id}")
-def editar_proceso_admin(proceso_id: int, data: ProcesoEditarModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    if user.get("rol") != "ADMIN_TI":
-        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede modificar procesos institucionales.")
-    
-    proc_actual = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proceso_id,)).fetchone()
+    codigo = (datos.get("codigo") or "").strip().upper()
+    nombre = (datos.get("nombre") or "").strip()
+    nivel = int(datos.get("nivel") or 0)
+    codigo_padre = (datos.get("codigo_padre") or "").strip().upper() or None
+
+    if not codigo or not nombre:
+        raise HTTPException(status_code=400, detail="El código y nombre del proceso son obligatorios.")
+
+    existe = db.execute("SELECT id FROM procesos_institucionales WHERE codigo = ?", (codigo,)).fetchone()
+    if existe:
+        raise HTTPException(status_code=400, detail=f"El código de proceso {codigo} ya existe.")
+
+    db.execute(
+        "INSERT INTO procesos_institucionales (codigo, nombre, nivel, codigo_padre, estado) VALUES (?, ?, ?, ?, 'ACTIVO')",
+        (codigo, nombre, nivel, codigo_padre)
+    )
+    db.commit()
+    return {"mensaje": "Proceso institucional registrado correctamente."}
+
+
+@router.put("/procesos-institucionales/{proc_id}")
+def editar_proceso_institucional(
+    proc_id: int,
+    datos: dict = Body(...),
+    user: dict = Depends(get_current_user),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede editar procesos.")
+
+    proc_actual = db.execute("SELECT id, codigo, nombre FROM procesos_institucionales WHERE id = ?", (proc_id,)).fetchone()
     if not proc_actual:
         raise HTTPException(status_code=404, detail="Proceso no encontrado.")
 
-    nuevo_cod = data.codigo.strip().upper()
-    nuevo_nom = data.nombre.strip()
-    cod_anterior = proc_actual["codigo"]
+    nuevo_codigo = (datos.get("codigo") or "").strip().upper()
+    nuevo_nombre = (datos.get("nombre") or "").strip()
+    nuevo_nivel = int(datos.get("nivel") if datos.get("nivel") is not None else 0)
+    nuevo_padre = (datos.get("codigo_padre") or "").strip().upper() or None
 
-    try:
+    if not nuevo_codigo or not nuevo_nombre:
+        raise HTTPException(status_code=400, detail="El código y nombre son obligatorios.")
+
+    conflicto = db.execute(
+        "SELECT id FROM procesos_institucionales WHERE codigo = ? AND id != ?",
+        (nuevo_codigo, proc_id)
+    ).fetchone()
+    if conflicto:
+        raise HTTPException(status_code=400, detail=f"Ya existe otro proceso con el código {nuevo_codigo}.")
+
+    cod_ant = proc_actual["codigo"]
+    nom_ant = proc_actual["nombre"]
+    etiqueta_ant = f"{cod_ant} - {nom_ant}"
+
+    db.execute("""
+        UPDATE procesos_institucionales
+        SET codigo = ?, nombre = ?, nivel = ?, codigo_padre = ?
+        WHERE id = ?
+    """, (nuevo_codigo, nuevo_nombre, nuevo_nivel, nuevo_padre, proc_id))
+
+    # Si era padre de otros subprocesos y cambió de código, actualizar referencia de hijos
+    if cod_ant != nuevo_codigo:
+        db.execute("UPDATE procesos_institucionales SET codigo_padre = ? WHERE codigo_padre = ?", (nuevo_codigo, cod_ant))
+
+    # Si cambió código o denominación, limpiar el proceso en proyectos que lo tenían para que lo vuelvan a seleccionar
+    proyectos_afectados = 0
+    if cod_ant != nuevo_codigo or nom_ant != nuevo_nombre:
+        cur = db.execute("""
+            UPDATE proyectos
+            SET proceso_relacionado = ''
+            WHERE proceso_relacionado = ?
+               OR proceso_relacionado LIKE ?
+        """, (etiqueta_ant, f"{cod_ant} - %"))
+        proyectos_afectados = cur.rowcount
+
+        # En las plantillas actualizamos al nuevo código y nombre para mantener la biblioteca sincronizada
+        nueva_etiqueta = f"{nuevo_codigo} - {nuevo_nombre}"
         db.execute("""
-            UPDATE procesos_institucionales 
-            SET codigo = ?, nombre = ?, nivel = ?, codigo_padre = ?, estado = ?
-            WHERE id = ?
-        """, (nuevo_cod, nuevo_nom, data.nivel, data.codigo_padre, data.estado, proceso_id))
-        
-        db.execute("""
-            UPDATE proyectos 
-            SET proceso_codigo = ?, proceso_nombre = ? 
-            WHERE proceso_codigo = ? AND es_proceso_personalizado = 0
-        """, (nuevo_cod, nuevo_nom, cod_anterior))
-        
-        db.commit()
-        return {"mensaje": "Proceso actualizado correctamente y propagado a los proyectos vinculados."}
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail=f"El código '{nuevo_cod}' ya está en uso por otro proceso.")
+            UPDATE plantillas
+            SET categoria = ?
+            WHERE categoria = ? OR categoria LIKE ?
+        """, (nueva_etiqueta, etiqueta_ant, f"{cod_ant} - %"))
 
-@router.delete("/procesos-institucionales/{proceso_id}")
-def eliminar_proceso_admin(proceso_id: int, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
-    if user.get("rol") != "ADMIN_TI":
-        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede eliminar procesos institucionales.")
-    
-    proc = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proceso_id,)).fetchone()
-    if not proc:
-        raise HTTPException(status_code=404, detail="Proceso no encontrado.")
-    
-    en_uso = db.execute("SELECT COUNT(*) FROM proyectos WHERE proceso_codigo = ?", (proc["codigo"],)).fetchone()[0]
-    if en_uso > 0:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"No se puede eliminar el proceso [{proc['codigo']}] porque existen {en_uso} proyecto(s) asociados a él. Puede cambiar su estado a 'INACTIVO' para deshabilitarlo de nuevos proyectos."
-        )
-
-    db.execute("DELETE FROM procesos_institucionales WHERE id = ?", (proceso_id,))
     db.commit()
-    return {"mensaje": f"Proceso [{proc['codigo']}] eliminado con éxito."}
+    return {
+        "mensaje": "Proceso institucional actualizado correctamente.",
+        "proyectos_desvinculados": proyectos_afectados
+    }
+
+
+@router.put("/procesos-institucionales/{proc_id}/estado")
+def cambiar_estado_proceso(
+    proc_id: int,
+    datos: dict = Body(...),
+    user: dict = Depends(get_current_user),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Acceso denegado: solo Administrador TI.")
+
+    proc_actual = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proc_id,)).fetchone()
+    if not proc_actual:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado.")
+
+    nuevo_estado = datos.get("estado", "ACTIVO")
+    db.execute("UPDATE procesos_institucionales SET estado = ? WHERE id = ?", (nuevo_estado, proc_id))
+
+    proyectos_afectados = 0
+    if nuevo_estado != "ACTIVO":
+        cod_ant = proc_actual["codigo"]
+        etiqueta_ant = f"{cod_ant} - {proc_actual['nombre']}"
+        cur = db.execute("""
+            UPDATE proyectos
+            SET proceso_relacionado = ''
+            WHERE proceso_relacionado = ? OR proceso_relacionado LIKE ?
+        """, (etiqueta_ant, f"{cod_ant} - %"))
+        proyectos_afectados = cur.rowcount
+
+    db.commit()
+    return {"mensaje": f"Estado actualizado a {nuevo_estado}.", "proyectos_desvinculados": proyectos_afectados}
+
+
+@router.delete("/procesos-institucionales/{proc_id}")
+def eliminar_proceso_institucional(
+    proc_id: int,
+    user: dict = Depends(get_current_user),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if user["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede eliminar procesos.")
+
+    proc_actual = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proc_id,)).fetchone()
+    if not proc_actual:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado.")
+
+    cod_ant = proc_actual["codigo"]
+    etiqueta_ant = f"{cod_ant} - {proc_actual['nombre']}"
+
+    # Limpiar en proyectos existentes
+    cur = db.execute("""
+        UPDATE proyectos
+        SET proceso_relacionado = ''
+        WHERE proceso_relacionado = ? OR proceso_relacionado LIKE ?
+    """, (etiqueta_ant, f"{cod_ant} - %"))
+    proyectos_afectados = cur.rowcount
+
+    # Limpiar en plantillas que apuntaban al proceso eliminado
+    db.execute("""
+        UPDATE plantillas
+        SET categoria = 'General'
+        WHERE categoria = ? OR categoria LIKE ?
+    """, (etiqueta_ant, f"{cod_ant} - %"))
+
+    db.execute("DELETE FROM procesos_institucionales WHERE id = ?", (proc_id,))
+    db.commit()
+    return {
+        "mensaje": f"Proceso {cod_ant} eliminado correctamente.",
+        "proyectos_desvinculados": proyectos_afectados
+    }
+
+
+@router.put("/procesos-institucionales/{proc_id}/estado")
+def cambiar_estado_proceso(
+    proc_id: int,
+    datos: dict = Body(...),
+    usuario: dict = Depends(obtener_usuario_actual),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if usuario["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    proc_actual = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proc_id,)).fetchone()
+    if not proc_actual:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado")
+
+    nuevo_estado = datos.get("estado", "ACTIVO")
+    db.execute("UPDATE procesos_institucionales SET estado = ? WHERE id = ?", (nuevo_estado, proc_id))
+
+    proyectos_afectados = 0
+    if nuevo_estado != "ACTIVO":
+        cod_ant = proc_actual["codigo"]
+        etiqueta_ant = f"{cod_ant} - {proc_actual['nombre']}"
+        cur = db.execute("""
+            UPDATE proyectos
+            SET proceso_relacionado = ''
+            WHERE proceso_relacionado = ? OR proceso_relacionado LIKE ?
+        """, (etiqueta_ant, f"{cod_ant} - %"))
+        proyectos_afectados = cur.rowcount
+
+    db.commit()
+    return {"mensaje": f"Estado actualizado a {nuevo_estado}", "proyectos_desvinculados": proyectos_afectados}
+
+
+@router.delete("/procesos-institucionales/{proc_id}")
+def eliminar_proceso_institucional(
+    proc_id: int,
+    usuario: dict = Depends(obtener_usuario_actual),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    if usuario["rol"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Solo el Administrador TI puede eliminar procesos")
+
+    proc_actual = db.execute("SELECT codigo, nombre FROM procesos_institucionales WHERE id = ?", (proc_id,)).fetchone()
+    if not proc_actual:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado")
+
+    cod_ant = proc_actual["codigo"]
+    etiqueta_ant = f"{cod_ant} - {proc_actual['nombre']}"
+
+    # Limpiar en proyectos existentes donde se había seleccionado este proceso
+    cur = db.execute("""
+        UPDATE proyectos
+        SET proceso_relacionado = ''
+        WHERE proceso_relacionado = ? OR proceso_relacionado LIKE ?
+    """, (etiqueta_ant, f"{cod_ant} - %"))
+    proyectos_afectados = cur.rowcount
+
+    # Limpiar en plantillas que apuntaban al proceso eliminado
+    db.execute("""
+        UPDATE plantillas
+        SET categoria = 'General'
+        WHERE categoria = ? OR categoria LIKE ?
+    """, (etiqueta_ant, f"{cod_ant} - %"))
+
+    db.execute("DELETE FROM procesos_institucionales WHERE id = ?", (proc_id,))
+    db.commit()
+    return {
+        "mensaje": f"Proceso {cod_ant} eliminado correctamente",
+        "proyectos_desvinculados": proyectos_afectados
+    }
 
 # 5. Calendario Laboral y Feriados Institucionales
 @router.get("/feriados")
