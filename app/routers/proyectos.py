@@ -143,7 +143,7 @@ def listar_proyectos_usuario(user: dict = Depends(get_current_user), db: sqlite3
 
     return proyectos_resumen
 
-# 2. Creación de un proyecto en blanco
+# 2. Creación de un proyecto en blanco o desde catálogo
 @router.post("/proyectos")
 def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)):
     modo_duracion = str(p.duration_mode or "").strip().lower()
@@ -157,6 +157,15 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
     if visibilidad_final not in ("PRIVADO", "PUBLICO"):
         visibilidad_final = "PRIVADO"
 
+    p_cod = (p.proceso_codigo or "").strip()
+    p_nom = (p.proceso_nombre or "").strip()
+
+    # Si vino compuesto como 'E2.1.2 - Gestión por procesos', separar automáticamente
+    if " - " in p_nom and not p_cod:
+        partes = p_nom.split(" - ", 1)
+        p_cod = partes[0].strip()
+        p_nom = partes[1].strip()
+
     db.execute("""
         INSERT INTO proyectos (
             nombre, descripcion, unidad_organica, proceso_codigo, proceso_nombre, 
@@ -168,8 +177,8 @@ def crear_nuevo_proyecto(p: ProyectoCrearModel, user: dict = Depends(get_current
         p.nombre.strip(), 
         p.descripcion.strip(), 
         (p.unidad_organica or "").strip(),
-        (p.proceso_codigo or "").strip(),
-        (p.proceso_nombre or "").strip(),
+        p_cod,
+        p_nom,
         int(p.es_proceso_personalizado or 0),
         modo_duracion,
         unidad_tiempo,

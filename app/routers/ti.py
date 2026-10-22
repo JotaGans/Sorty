@@ -493,9 +493,9 @@ def cambiar_estado_proceso(
         etiqueta_ant = f"{cod_ant} - {proc_actual['nombre']}"
         cur = db.execute("""
             UPDATE proyectos
-            SET proceso_relacionado = ''
-            WHERE proceso_relacionado = ? OR proceso_relacionado LIKE ?
-        """, (etiqueta_ant, f"{cod_ant} - %"))
+            SET proceso_codigo = '', proceso_nombre = ''
+            WHERE proceso_codigo = ? OR proceso_nombre LIKE ?
+        """, (cod_ant, f"%{proc_actual['nombre']}%"))
         proyectos_afectados = cur.rowcount
 
     db.commit()
@@ -516,22 +516,21 @@ def eliminar_proceso_institucional(
         raise HTTPException(status_code=404, detail="Proceso no encontrado.")
 
     cod_ant = proc_actual["codigo"]
-    etiqueta_ant = f"{cod_ant} - {proc_actual['nombre']}"
 
-    # Limpiar en proyectos existentes
+    # Limpiar proyectos existentes donde se había seleccionado este proceso
     cur = db.execute("""
         UPDATE proyectos
-        SET proceso_relacionado = ''
-        WHERE proceso_relacionado = ? OR proceso_relacionado LIKE ?
-    """, (etiqueta_ant, f"{cod_ant} - %"))
+        SET proceso_codigo = '', proceso_nombre = ''
+        WHERE proceso_codigo = ? OR proceso_nombre LIKE ?
+    """, (cod_ant, f"%{proc_actual['nombre']}%"))
     proyectos_afectados = cur.rowcount
 
     # Limpiar en plantillas que apuntaban al proceso eliminado
     db.execute("""
         UPDATE plantillas
         SET categoria = 'General'
-        WHERE categoria = ? OR categoria LIKE ?
-    """, (etiqueta_ant, f"{cod_ant} - %"))
+        WHERE categoria LIKE ?
+    """, (f"{cod_ant} - %",))
 
     db.execute("DELETE FROM procesos_institucionales WHERE id = ?", (proc_id,))
     db.commit()
@@ -539,7 +538,6 @@ def eliminar_proceso_institucional(
         "mensaje": f"Proceso {cod_ant} eliminado correctamente.",
         "proyectos_desvinculados": proyectos_afectados
     }
-
 
 @router.put("/procesos-institucionales/{proc_id}/estado")
 def cambiar_estado_proceso(
