@@ -315,13 +315,11 @@ button#btn-toggle-cpm span {
   transition: none !important;
 }
 
-/* Sellar filtraciones blancas entre cabeceras sticky */
-#tabla-actividades thead th,
-thead th {
+/* Sellar cabeceras de tabla principal Gantt */
+#tabla-gantt-main thead th {
   background-color: #0f2a4a !important;
-  border-right: 1px solid #1a3a60 !important;
-  box-shadow: inset -1px 0 0 #1a3a60, inset 0 -1px 0 #1a3a60 !important;
-  background-clip: padding-box !important;
+  box-shadow: inset 0 -1px 0 #1c335a !important;
+  border: none !important;
 }
 
 /* Eliminar sombreado retenido por foco al retirar el cursor */
@@ -364,25 +362,29 @@ input[type="number"] {
   z-index: 20 !important; /* Mantenemos el sticky pero por debajo de z-40 del toolbar */
 }
 
-/* Corrección de fondo opaco y eliminación de micro-rendijas transparentes en encabezados fijos */
-#modal-admin-ti table thead tr {
+/* Sello total de cabeceras sticky en paneles y modales TI */
+#modal-admin-ti table,
+#box-editar-plantilla-admin table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+#modal-admin-ti thead,
+#box-editar-plantilla-admin thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
   background-color: #0f2a4a !important;
 }
 
-#modal-admin-ti table thead th {
+#modal-admin-ti thead th,
+#box-editar-plantilla-admin thead th {
+  position: sticky !important;
+  top: 0 !important;
   background-color: #0f2a4a !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  box-shadow: inset 0 0 0 9999px #0f2a4a, 0 1px 0 #0f2a4a !important;
-  -webkit-background-clip: padding-box !important;
-  background-clip: padding-box !important;
-}
-
-#box-editar-plantilla-admin table thead tr,
-#box-editar-plantilla-admin table thead th {
-  background-color: #0f2a4a !important;
+  color: #ffffff !important;
   border: none !important;
-  box-shadow: inset 0 0 0 9999px #0f2a4a, 0 1px 0 #0f2a4a !important;
+  outline: none !important;
+  /* Extensión de 1px a los costados para traslapar y eliminar cualquier rendija subpíxel */
+  box-shadow: 0 0 0 1px #0f2a4a !important;
 }
