@@ -543,7 +543,7 @@ def eliminar_proceso_institucional(
 def cambiar_estado_proceso(
     proc_id: int,
     datos: dict = Body(...),
-    usuario: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
     db: sqlite3.Connection = Depends(get_db)
 ):
     if usuario["rol"] != "ADMIN_TI":
@@ -574,7 +574,7 @@ def cambiar_estado_proceso(
 @router.delete("/procesos-institucionales/{proc_id}")
 def eliminar_proceso_institucional(
     proc_id: int,
-    usuario: dict = Depends(get_current_userl),
+    user: dict = Depends(get_current_user),
     db: sqlite3.Connection = Depends(get_db)
 ):
     if usuario["rol"] != "ADMIN_TI":
