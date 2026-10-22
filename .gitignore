@@ -1,4 +1,3 @@
-cat << 'EOF' > .gitignore
 # Compilados y caché de Python
 __pycache__/
 *.pyc
@@ -17,4 +16,3 @@ Thumbs.db
 
 # Bases de datos SQLite locales (descomentar si no se desean versionar)
 # *.db
-EOF
