@@ -363,3 +363,26 @@ input[type="number"] {
   top: 0;
   z-index: 20 !important; /* Mantenemos el sticky pero por debajo de z-40 del toolbar */
 }
+
+/* Corrección de fondo opaco y eliminación de micro-rendijas transparentes en encabezados fijos */
+#modal-admin-ti table thead tr {
+  background-color: #0f2a4a !important;
+}
+
+#modal-admin-ti table thead th {
+  background-color: #0f2a4a !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  box-shadow: inset 0 0 0 9999px #0f2a4a, 0 1px 0 #0f2a4a !important;
+  -webkit-background-clip: padding-box !important;
+  background-clip: padding-box !important;
+}
+
+#box-editar-plantilla-admin table thead tr,
+#box-editar-plantilla-admin table thead th {
+  background-color: #0f2a4a !important;
+  border: none !important;
+  box-shadow: inset 0 0 0 9999px #0f2a4a, 0 1px 0 #0f2a4a !important;
+}
