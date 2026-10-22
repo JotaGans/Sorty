@@ -715,13 +715,14 @@ export async function cargarListaProcesosTI() {
     cacheProcesosAdminTI = procesos;
     state.catalogoProcesosGlobal = procesos.filter(p => p.estado === "ACTIVO");
 
-    // Llenar el selector de procesos padre del formulario
+    // Llenar el selector de procesos padre del formulario con indentación de guiones limpios
     const selPadre = document.getElementById("input-proc-ti-padre");
     if (selPadre) {
       let htmlPadres = '<option value="">-- Ninguno (nivel 0) --</option>';
-      procesos.filter(p => p.nivel < 2).forEach(p => {
-        const sangria = p.nivel === 1 ? "  ↳ " : "";
-        htmlPadres += `<option value="${p.codigo}">${sangria}[${p.codigo}] ${p.nombre}</option>`;
+      procesos.forEach(p => {
+        const nivel = parseInt(p.nivel || 0);
+        const guiones = "— ".repeat(nivel);
+        htmlPadres += `<option value="${p.codigo}">${guiones}[${p.codigo}] ${p.nombre}</option>`;
       });
       selPadre.innerHTML = htmlPadres;
     }
@@ -732,22 +733,43 @@ export async function cargarListaProcesosTI() {
       return;
     }
 
-    tbody.innerHTML = procesos.map(p => {
-      const sangria = p.nivel === 1 ? "pl-5 font-bold text-teal-800" : (p.nivel >= 2 ? "pl-9 font-semibold text-gray-700" : "font-black text-[#0f2a4a]");
-      const iconoNivel = p.nivel === 0 ? "🔷 " : (p.nivel === 1 ? "↳ " : "• ");
-      const badgeNivel = p.nivel === 0
-        ? `<span class="bg-blue-100 text-blue-900 px-2 py-0.5 rounded text-[10px] font-black">Nivel 0</span>`
-        : (p.nivel === 1
-          ? `<span class="bg-teal-100 text-teal-900 px-2 py-0.5 rounded text-[10px] font-bold">Nivel 1</span>`
-          : `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-semibold">Nivel 2</span>`);
+    // Badges cromáticos definidos para soportar de forma natural desde Nivel 0 hasta Nivel 5+
+    const badgesNivel = {
+      0: "bg-blue-100 text-blue-900 border-blue-300 font-black",
+      1: "bg-teal-100 text-teal-900 border-teal-300 font-bold",
+      2: "bg-emerald-100 text-emerald-900 border-emerald-300 font-semibold",
+      3: "bg-amber-100 text-amber-900 border-amber-300 font-semibold",
+      4: "bg-purple-100 text-purple-900 border-purple-300 font-semibold",
+      5: "bg-slate-100 text-slate-800 border-slate-300 font-medium"
+    };
 
+    tbody.innerHTML = procesos.map(p => {
+      const nivel = parseInt(p.nivel || 0);
+      const paddingLeftPx = Math.min(nivel * 20, 100);
+
+      let iconoNivel = "";
+      if (nivel === 0) iconoNivel = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-[#0f2a4a] mr-2 flex-shrink-0"></span>`;
+      else if (nivel === 1) iconoNivel = `<span class="inline-block w-2 h-2 rounded-sm bg-teal-600 mr-2 flex-shrink-0"></span>`;
+      else iconoNivel = `<span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-2 flex-shrink-0"></span>`;
+
+      const badgeClase = badgesNivel[nivel] || badgesNivel[5];
+      const etiquetaNivel = nivel === 0 ? "Macroproceso" : (nivel === 1 ? "Nivel 1" : `Nivel ${nivel}`);
       const pNombreEscapado = (p.nombre || "").replace(/'/g, "\\'");
 
       return `
         <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
           <td class="p-2 font-mono font-bold text-[#0f2a4a] text-xs whitespace-nowrap">${p.codigo || ''}</td>
-          <td class="p-2 text-xs ${sangria}">${iconoNivel}${p.nombre || ''}</td>
-          <td class="p-2 text-center">${badgeNivel}</td>
+          <td class="p-2 text-xs">
+            <div style="padding-left: ${paddingLeftPx}px;" class="flex items-center">
+              ${iconoNivel}
+              <span class="${nivel === 0 ? 'font-black text-[#0f2a4a]' : (nivel === 1 ? 'font-bold text-teal-950' : 'text-gray-800')}">${p.nombre || ''}</span>
+            </div>
+          </td>
+          <td class="p-2 text-center whitespace-nowrap">
+            <span class="text-[10px] uppercase px-2 py-0.5 rounded-md border ${badgeClase}">
+              ${etiquetaNivel}
+            </span>
+          </td>
           <td class="p-2 text-center font-mono text-gray-500 text-xs">${p.codigo_padre || '-'}</td>
           <td class="p-2 text-center whitespace-nowrap space-x-1.5">
             <button onclick="prepararEdicionProcesoTI(${p.id})" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[10px] font-bold cursor-pointer transition" title="Editar código o denominación">✏️</button>
@@ -937,8 +959,8 @@ export function renderizarEditorWBSPlantilla() {
       ? "bg-slate-100/90 font-black text-[#0f2a4a]"
       : (nivel === 2 ? "bg-white text-gray-800 font-semibold" : "bg-slate-50/50 text-gray-600 font-medium");
 
-    const sangriaInput = nivel === 1 ? "" : (nivel === 2 ? "pl-5" : "pl-10");
-    const iconoJerarquia = nivel === 1 ? "📁 " : (nivel === 2 ? "↳ " : "  • ");
+    const paddingCodPx = (nivel - 1) * 12;
+    const iconoJerarquia = nivel === 1 ? "📁 " : "• ";
 
     const btnHija = nivel < 3
       ? `<button type="button" onclick="insertarActividadHijaWBS(${idx})" class="px-2 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 rounded text-[10px] font-bold cursor-pointer transition" title="Crear subactividad hija dentro de ${cod}">+ Hija</button>`
@@ -947,7 +969,7 @@ export function renderizarEditorWBSPlantilla() {
     return `
       <tr class="${bgFila} hover:bg-blue-50/40 transition">
         <td class="py-1.5 px-3 font-mono text-xs font-black text-[#0f2a4a] whitespace-nowrap">
-          ${iconoJerarquia}${cod}
+          <span style="padding-left: ${paddingCodPx}px;">${iconoJerarquia}${cod}</span>
         </td>
         <td class="py-1.5 px-2 ${sangriaInput}">
           <input type="text" value="${(act.descripcion || "").replace(/"/g, '&quot;')}"
@@ -1112,9 +1134,10 @@ export async function cargarAdminPlantillas() {
       if (selProc) {
         let htmlOpts = `<option value="General">Sin proceso específico (General)</option>`;
         procs.filter(p => p.estado === "ACTIVO").forEach(p => {
-          const prefijo = p.nivel === 0 ? "🔷 " : (p.nivel === 1 ? "  ↳ " : "      • ");
+          const nivel = parseInt(p.nivel || 0);
+          const guiones = "— ".repeat(nivel);
           const valorOficial = `${p.codigo} - ${p.nombre}`;
-          htmlOpts += `<option value="${valorOficial.replace(/"/g, '&quot;')}">${prefijo}${valorOficial}</option>`;
+          htmlOpts += `<option value="${valorOficial.replace(/"/g, '&quot;')}">${guiones}[${p.codigo}] ${p.nombre}</option>`;
         });
         selProc.innerHTML = htmlOpts;
       }
