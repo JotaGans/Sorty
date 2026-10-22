@@ -960,6 +960,7 @@ export function renderizarEditorWBSPlantilla() {
       : (nivel === 2 ? "bg-white text-gray-800 font-semibold" : "bg-slate-50/50 text-gray-600 font-medium");
 
     const paddingCodPx = (nivel - 1) * 12;
+    const paddingDescPx = (nivel - 1) * 16;
     const iconoJerarquia = nivel === 1 ? "📁 " : "• ";
 
     const btnHija = nivel < 3
@@ -971,7 +972,7 @@ export function renderizarEditorWBSPlantilla() {
         <td class="py-1.5 px-3 font-mono text-xs font-black text-[#0f2a4a] whitespace-nowrap">
           <span style="padding-left: ${paddingCodPx}px;">${iconoJerarquia}${cod}</span>
         </td>
-        <td class="py-1.5 px-2 ${sangriaInput}">
+        <td class="py-1.5 px-2" style="padding-left: ${paddingDescPx + 8}px;">
           <input type="text" value="${(act.descripcion || "").replace(/"/g, '&quot;')}"
             oninput="actualizarCampoActividadWBS(${idx}, 'descripcion', this.value)"
             class="w-full p-1.5 bg-white border border-gray-200 rounded-md text-xs ${nivel === 1 ? 'font-black uppercase text-[#0f2a4a]' : 'font-semibold text-gray-800'} outline-none focus:border-[#0f2a4a]">

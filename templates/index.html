@@ -1003,18 +1003,18 @@
         <div>
           <h4 class="text-xs font-bold uppercase text-gray-700 tracking-wider mb-2">Relación de Unidades de Organización</h4>
           <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-60 overflow-y-auto">
-            <table class="w-full text-xs text-left">
-              <thead class="sticky top-0 bg-[#0f2a4a] text-white">
-                <tr>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 w-20">Sigla</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Unidad de Organización</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900">Dependencia ROF</th>
-                  <th class="p-2.5 font-bold text-white border-b border-blue-900 min-w-[200px]">Titular / Directivo a Cargo</th>
-                </tr>
-              </thead>
-              <tbody id="uo-tabla-cuerpo" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
-            </table>
-          </div>
+          <table class="w-full text-xs text-left border-collapse">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white z-10 shadow-xs">
+              <tr class="bg-[#0f2a4a]">
+                <th class="p-2.5 font-bold text-white w-20 border-none">Sigla</th>
+                <th class="p-2.5 font-bold text-white border-none">Unidad de Organización</th>
+                <th class="p-2.5 font-bold text-white border-none">Dependencia ROF</th>
+                <th class="p-2.5 font-bold text-white min-w-[200px] border-none">Titular / Directivo a Cargo</th>
+              </tr>
+            </thead>
+            <tbody id="uo-tabla-cuerpo" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
+          </table>
+        </div>
         </div>
       </div>
 
@@ -1064,13 +1064,13 @@
         </div>
 
         <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-72 overflow-y-auto">
-          <table class="w-full text-xs text-left">
-            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
-              <tr>
-                <th class="p-2.5 font-bold w-28">Fecha</th>
-                <th class="p-2.5 font-bold w-36">Tipo Feriado</th>
-                <th class="p-2.5 font-bold">Descripción</th>
-                <th class="p-2.5 font-bold text-center w-28 whitespace-nowrap">Acción</th>
+          <table class="w-full text-xs text-left border-collapse">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white z-10 shadow-xs">
+              <tr class="bg-[#0f2a4a]">
+                <th class="p-2.5 font-bold w-28 border-none">Fecha</th>
+                <th class="p-2.5 font-bold w-36 border-none">Tipo Feriado</th>
+                <th class="p-2.5 font-bold border-none">Descripción</th>
+                <th class="p-2.5 font-bold text-center w-28 whitespace-nowrap border-none">Acción</th>
               </tr>
             </thead>
             <tbody id="tabla-feriados-body" class="divide-y divide-gray-100 font-medium"></tbody>
@@ -1110,14 +1110,14 @@
         </form>
 
         <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-64 overflow-y-auto">
-          <table class="w-full text-xs text-left">
-            <thead class="sticky top-0 bg-[#0f2a4a] text-white">
-              <tr>
-                <th class="p-2.5 font-bold w-24">Código</th>
-                <th class="p-2.5 font-bold">Denominación del proceso</th>
-                <th class="p-2.5 font-bold text-center w-20">Nivel</th>
-                <th class="p-2.5 font-bold text-center w-24">Padre</th>
-                <th class="p-2.5 font-bold text-center w-32 whitespace-nowrap">Acción</th>
+          <table class="w-full text-xs text-left border-collapse">
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white z-10 shadow-xs">
+              <tr class="bg-[#0f2a4a]">
+                <th class="p-2.5 font-bold w-24 border-none">Código</th>
+                <th class="p-2.5 font-bold border-none">Denominación del proceso</th>
+                <th class="p-2.5 font-bold text-center w-20 border-none">Nivel</th>
+                <th class="p-2.5 font-bold text-center w-24 border-none">Padre</th>
+                <th class="p-2.5 font-bold text-center w-32 whitespace-nowrap border-none">Acción</th>
               </tr>
             </thead>
             <tbody id="tabla-procesos-ti-body" class="divide-y divide-gray-100 font-medium"></tbody>
@@ -1222,14 +1222,14 @@
         <!-- Tabla principal de plantillas -->
         <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white max-h-64 overflow-y-auto">
           <table class="w-full text-xs text-left border-collapse">
-            <thead class="sticky top-0 bg-[#0f2a4a] text-white z-10">
-              <tr>
-                <th class="p-2.5 font-bold w-10 text-center border-r border-[#1a3d66]/50">#</th>
-                <th class="p-2.5 font-bold border-r border-[#1a3d66]/50">Nombre de la plantilla y descripción</th>
-                <th class="p-2.5 font-bold w-64 border-r border-[#1a3d66]/50">Proceso o subproceso relacionado</th>
-                <th class="p-2.5 font-bold w-36 text-center border-r border-[#1a3d66]/50">Visibilidad</th>
-                <th class="p-2.5 font-bold w-16 text-center border-r border-[#1a3d66]/50">Tareas</th>
-                <th class="p-2.5 font-bold text-center w-28 whitespace-nowrap">Acción</th>
+            <thead class="sticky top-0 bg-[#0f2a4a] text-white z-10 shadow-xs">
+              <tr class="bg-[#0f2a4a]">
+                <th class="p-2.5 font-bold w-10 text-center border-none">#</th>
+                <th class="p-2.5 font-bold border-none">Nombre de la plantilla y descripción</th>
+                <th class="p-2.5 font-bold w-64 border-none">Proceso o subproceso relacionado</th>
+                <th class="p-2.5 font-bold w-36 text-center border-none">Visibilidad</th>
+                <th class="p-2.5 font-bold w-16 text-center border-none">Tareas</th>
+                <th class="p-2.5 font-bold text-center w-28 whitespace-nowrap border-none">Acción</th>
               </tr>
             </thead>
             <tbody id="tbody-admin-plantillas" class="divide-y divide-gray-100 font-medium bg-white"></tbody>
